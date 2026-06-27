@@ -37,6 +37,8 @@
         .header-actions .badge-role { background:#e3f0ff; color:#1976d2; padding:6px 16px; border-radius:40px; font-weight:600; font-size:.8rem; }
         .btn-logout { background:rgba(25,118,210,.08); border:1px solid #d0e0f0; color:#0a2a44; padding:6px 18px; border-radius:40px; font-weight:600; font-size:.8rem; transition:.2s; }
         .btn-logout:hover { background:#c62828; color:#fff; border-color:#c62828; }
+        .btn-refresh { background:#e3f0ff; border:1px solid #1976d2; color:#1976d2; padding:6px 18px; border-radius:40px; font-weight:600; font-size:.8rem; transition:.2s; }
+        .btn-refresh:hover { background:#1976d2; color:#fff; border-color:#1976d2; }
         .search-box { position:relative; flex:1; min-width:200px; max-width:340px; }
         .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#8aa3bc; }
         .search-box input { width:100%; padding:8px 14px 8px 38px; border-radius:40px; border:1px solid #dce5ec; background:#f9fcff; font-size:.85rem; transition:.2s; }
@@ -251,6 +253,7 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
                 </div>
+                <button class="btn-refresh" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar todas las BD</button>
                 <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
@@ -1274,6 +1277,13 @@
                 });
                 const perPageSelect = document.getElementById('perPageSelect');
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
+            }
+
+            // ---------- ACTUALIZAR TODAS LAS BASES DE DATOS ----------
+            function actualizarTodasLasBD() {
+                loadState();
+                renderAll();
+                showToast('✅ Todas las bases de datos actualizadas (operador, empleado, secretario, defensor)', 'success');
             }
 
             // ---------- PANELES ----------
@@ -2340,6 +2350,8 @@
                 document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').style.display = 'none');
                 document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
                 document.addEventListener('click', function(e) { const a = document.getElementById('logoutAlert'); if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none'; });
+                // Botón Actualizar todas las BD
+                document.getElementById('btnActualizarBD').addEventListener('click', actualizarTodasLasBD);
                 loadState();
             });
         })();
