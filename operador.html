@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema Digital de Pases · Operador</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* ===== ESTILOS (sin cambios relevantes) ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
+        .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
+        .login-overlay.hidden { opacity:0; pointer-events:none; }
+        .login-card { background:#fff; border-radius:32px; padding:2.2rem 2rem 2rem; width:100%; max-width:440px; box-shadow:0 20px 40px -12px rgba(0,0,0,.18); text-align:center; border:1px solid rgba(25,118,210,.15); }
+        .login-card .icon { font-size:3.2rem; color:#1976d2; margin-bottom:.25rem; }
+        .login-card h2 { color:#0a2a44; font-weight:700; letter-spacing:-.3px; }
+        .login-card .sub { color:#5f7f9f; font-size:.9rem; margin-bottom:1.5rem; }
+        .login-card select, .login-card input { border-radius:60px; padding:12px 20px; border:1px solid #cbdde9; margin-bottom:1rem; background:#f9fcff; width:100%; }
+        .login-card select:focus, .login-card input:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.15); outline:none; }
+        .login-card .btn-ingresar { background:#1976d2; border:none; border-radius:60px; padding:12px; font-weight:700; width:100%; color:#fff; transition:background .2s; }
+        .login-card .btn-ingresar:hover { background:#0f5bab; }
+        .login-error { color:#c62828; font-size:.8rem; margin-top:-.5rem; margin-bottom:.75rem; display:none; }
+        .app-wrapper { max-width:1600px; margin:0 auto; padding:20px; display:none; }
+        .app-wrapper.visible { display:block; }
+        .app-header { background:#fff; border-radius:28px; padding:1rem 2rem; box-shadow:0 4px 16px rgba(0,0,0,.04); border:1px solid #e2edf7; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+        .app-header .brand { display:flex; align-items:center; gap:12px; }
+        .app-header .brand i { font-size:2rem; color:#1976d2; }
+        .app-header .brand h1 { font-size:1.4rem; font-weight:700; margin:0; color:#0a2a44; }
+        .app-header .brand small { font-size:.75rem; color:#5f7f9f; display:block; font-weight:400; }
+        .header-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .header-actions .badge-role { background:#e3f0ff; color:#1976d2; padding:6px 16px; border-radius:40px; font-weight:600; font-size:.8rem; }
+        .btn-logout { background:rgba(25,118,210,.08); border:1px solid #d0e0f0; color:#0a2a44; padding:6px 18px; border-radius:40px; font-weight:600; font-size:.8rem; transition:.2s; }
+        .btn-logout:hover { background:#c62828; color:#fff; border-color:#c62828; }
+        .search-box { position:relative; flex:1; min-width:200px; max-width:340px; }
+        .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#8aa3bc; }
+        .search-box input { width:100%; padding:8px 14px 8px 38px; border-radius:40px; border:1px solid #dce5ec; background:#f9fcff; font-size:.85rem; transition:.2s; }
+        .search-box input:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.12); outline:none; background:#fff; }
+        .card-modern { background:#fff; border-radius:24px; border:1px solid #e2edf7; box-shadow:0 2px 12px rgba(0,0,0,.03); padding:1.5rem 1.8rem; margin-bottom:1.5rem; transition:box-shadow .2s; }
+        .card-modern:hover { box-shadow:0 6px 20px rgba(0,0,0,.05); }
+        .card-modern .card-title { font-weight:700; font-size:1rem; color:#0a2a44; display:flex; align-items:center; gap:10px; margin-bottom:1.2rem; padding-bottom:.6rem; border-bottom:1px solid #eef2f7; }
+        .card-modern .card-title i { color:#1976d2; }
+        .form-modern .form-label { font-size:.75rem; font-weight:700; color:#2c5a7a; text-transform:uppercase; letter-spacing:.3px; }
+        .form-modern .form-control, .form-modern .form-select { border-radius:14px; border:1px solid #dce5ec; background:#f9fcff; padding:10px 16px; font-size:.9rem; transition:.15s; }
+        .form-modern .form-control:focus, .form-modern .form-select:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.12); background:#fff; }
+        .btn-modern { border-radius:40px; padding:10px 24px; font-weight:600; font-size:.85rem; border:none; transition:.2s; }
+        .btn-modern-primary { background:#1976d2; color:#fff; }
+        .btn-modern-primary:hover { background:#0f5bab; color:#fff; }
+        .btn-modern-outline { background:transparent; border:1px solid #dce5ec; color:#2c5a7a; }
+        .btn-modern-outline:hover { background:#f1f6fd; }
+        .btn-modern-sm { padding:4px 14px; font-size:.75rem; }
+        .table-wrap { overflow-x:auto; max-height:62vh; scrollbar-width:thin; }
+        .table-modern { margin:0; font-size:.75rem; min-width:900px; width:100%; }
+        .table-modern thead th { background:#f1f6fd; color:#1a4c74; font-weight:700; font-size:.65rem; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid #dce5ec; padding:8px 6px; white-space:nowrap; }
+        .table-modern tbody td { padding:6px 6px; vertical-align:middle; border-bottom:1px solid #eef2f7; color:#1f384f; font-size:.75rem; }
+        .table-modern tbody tr:hover { background-color:#f5faff; }
+        .pagination-bar { padding:0.5rem 0 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top:1px solid #eef2f7; margin-top:.5rem; }
+        .pagination-bar .info { font-size:.7rem; color:#5f7f9f; }
+        .pagination-bar .page-btn { background:#f0f4f9; border:none; border-radius:30px; padding:2px 10px; font-weight:600; color:#1a4c74; margin:0 2px; cursor:pointer; transition:.15s; font-size:.7rem; }
+        .pagination-bar .page-btn.active { background:#1976d2; color:#fff; }
+        .pagination-bar .page-btn:disabled { opacity:.4; pointer-events:none; }
+        .pagination-bar .page-btn:hover:not(:disabled) { background:#d0e0f0; }
+        .pagination-bar .page-selector { display:flex; align-items:center; gap:4px; font-size:.7rem; }
+        .pagination-bar .page-selector select { padding:2px 6px; border-radius:30px; border:1px solid #dce5ec; background:#fff; font-size:.7rem; }
+        .badge-estado { display:inline-block; padding:2px 10px; border-radius:30px; font-weight:700; font-size:.6rem; }
+        .badge-sec { background:#fff3e0; color:#e67e22; }
+        .badge-proc { background:#e3f2fd; color:#1976d2; }
+        .badge-fin { background:#e8f5e9; color:#2e7d32; }
+        .badge-def { background:#f3e5f5; color:#7b1fa2; }
+        .badge-dev { background:#ffebee; color:#c62828; }
+        .badge-rem { background:#e8eaf6; color:#3949ab; }
+        .badge-rech { background:#fce4ec; color:#c62828; }
+        .badge-fuente { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.55rem; font-weight:700; background:#e3f2fd; color:#1976d2; margin-right:2px; }
+        .badge-fuente.ambas { background:#e8f5e9; color:#2e7d32; }
+        .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
+        .crono.vencido { background:#ffebee; color:#c62828 !important; box-shadow:0 0 0 1px #ffcdd2; }
+        .crono.critico { background:#fff3e0; color:#e67e22 !important; box-shadow:0 0 0 1px #ffe0b2; }
+        .crono.medio { background:#e8f5e9; color:#2e7d32 !important; box-shadow:0 0 0 1px #c8e6c9; }
+        .crono.azul { background:#e3f2fd; color:#1976d2 !important; }
+        .exp-vencido { color:#c62828 !important; font-weight:700; }
+        .exp-critico { color:#e67e22 !important; font-weight:600; }
+        .toast-custom { position:fixed; bottom:24px; right:24px; z-index:3000; background:#1e293b; color:#fff; padding:14px 24px; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); font-size:.9rem; display:flex; align-items:center; gap:12px; animation:slideUp .35s ease; max-width:420px; pointer-events:auto; }
+        .toast-custom.success { border-left:5px solid #2e7d32; }
+        .toast-custom.warning { border-left:5px solid #e67e22; }
+        .toast-custom.danger { border-left:5px solid #c62828; }
+        .toast-custom.info { border-left:5px solid #1976d2; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .toast-custom.removing { animation:fadeOut .3s forwards; }
+        @keyframes fadeOut { to { opacity:0; transform:translateY(10px); } }
+        .modal-modern .modal-content { border-radius:28px; border:none; box-shadow:0 24px 60px rgba(0,0,0,.2); }
+        .modal-modern .modal-header { background:linear-gradient(135deg,#0b3b5f,#0a2a44); color:#fff; border-radius:28px 28px 0 0; padding:1.2rem 1.8rem; }
+        .modal-modern .modal-header .btn-close { filter:brightness(0) invert(1); }
+        .modal-modern .modal-body { padding:1.8rem; overflow-x:auto; }
+        .modal-modern .modal-footer { border-top:1px solid #eef2f7; padding:1rem 1.8rem; }
+        .bordered-container { border:2px solid #dce5ec; border-radius:20px; padding:1.2rem; background:#fff; height:100%; }
+        .table-container { overflow:hidden; }
+        .table-container .table-modern { min-width:auto; }
+        .table-container .table-modern thead th, .table-container .table-modern tbody td { padding:4px 6px; font-size:.7rem; }
+
+        #logoutAlert {
+            position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+            background: #fff; border-left: 6px solid #c62828; border-radius: 16px;
+            padding: 16px 20px; min-width: 250px; max-width: 340px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none;
+            flex-direction: column; gap: 12px; animation: slideUp 0.3s ease; border: 1px solid #ffcdd2;
+        }
+        #logoutAlert .alert-header { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #c62828; }
+        #logoutAlert .alert-header i { font-size: 1.4rem; }
+        #logoutAlert .alert-body { color: #333; font-size: 0.9rem; }
+        #logoutAlert .alert-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        #logoutAlert .alert-actions button { padding: 6px 18px; border-radius: 30px; border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        #logoutAlert .alert-actions .btn-cancel { background: #e0e0e0; color: #333; }
+        #logoutAlert .alert-actions .btn-cancel:hover { background: #ccc; }
+        #logoutAlert .alert-actions .btn-confirm { background: #c62828; color: #fff; }
+        #logoutAlert .alert-actions .btn-confirm:hover { background: #b71c1c; }
+
+        .ausencia-item { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #eee; }
+        .ausencia-item .fechas { font-size:.8rem; color:#2c5a7a; }
+
+        @media (max-width:768px) { .app-header { flex-direction:column; align-items:stretch; padding:1rem; } .search-box { max-width:100%; } .card-modern { padding:1rem; } .pagination-bar { flex-direction:column; align-items:stretch; text-align:center; } }
+        @media (max-width:480px) { .login-card { padding:1.5rem 1.2rem; } }
+        .text-muted-light { color:#8aa3bc; }
+        .gap-2 { gap:.5rem; }
+        .fw-600 { font-weight:600; }
+        .cursor-pointer { cursor:pointer; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #modalReporte, #modalReporte * { visibility: visible !important; }
+            #modalReporte { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: white !important; padding: 10px !important; z-index: 9999 !important; overflow: visible !important; border: none !important; box-shadow: none !important; }
+            .modal-dialog { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .modal-content { border-radius: 0 !important; box-shadow: none !important; border: none !important; background: transparent !important; }
+            .modal-header, .modal-footer, .btn-close, .btn-modern, .btn-secondary, .pagination-bar { display: none !important; }
+            .modal-body { padding: 5px !important; overflow: visible !important; max-height: none !important; }
+            .table-wrap { overflow: visible !important; max-height: none !important; }
+            .table-modern { min-width: 0 !important; width: 100% !important; font-size: 0.65rem !important; border-collapse: collapse !important; table-layout: auto !important; }
+            .table-modern th, .table-modern td { padding: 3px 4px !important; white-space: normal !important; word-break: break-word !important; border: 1px solid #ccc !important; }
+            .table-modern thead th { background: #f1f6fd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            html, body { margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+            .modal-header, .modal-footer, .btn-close, .btn-modern, .btn-secondary, .pagination-bar { display: none !important; }
+            .table-modern tr { page-break-inside: avoid; }
+        }
+
+        .filtros-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .filtros-container label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #2c5a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-right: 2px;
+        }
+        .filtros-container select {
+            padding: 4px 8px;
+            border-radius: 30px;
+            border: 1px solid #dce5ec;
+            background: #f9fcff;
+            font-size: 0.75rem;
+            max-width: 100px;
+        }
+        .filtros-container .btn-limpiar {
+            padding: 2px 12px;
+            font-size: 0.7rem;
+            border-radius: 30px;
+            background: #f0f4f9;
+            border: 1px solid #dce5ec;
+            color: #2c5a7a;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .filtros-container .btn-limpiar:hover {
+            background: #dce5ec;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <h2>Acceso Operador</h2>
+            <p class="sub">Seleccione su usuario e ingrese su clave</p>
+            <select id="loginOperador" class="form-select"><option value="">Seleccione un operador...</option></select>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
+            <div id="loginError" class="login-error">❌ Clave incorrecta o falta seleccionar operador.</div>
+            <button class="btn-ingresar" id="btnLogin"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div id="appWrapper" class="app-wrapper">
+        <header class="app-header">
+            <div class="brand">
+                <i class="bi bi-balance-scale"></i>
+                <div><h1>Sistema Digital de Pases <small>Defensoría Oficial Civil y Comercial 6</small></h1></div>
+            </div>
+            <div class="header-actions">
+                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Operador</span>
+                <span class="badge-role" id="lblOperadorActivo" style="background:#e8f5e9; color:#2e7d32;"><i class="bi bi-person-check"></i> <span id="operadorNombre"></span></span>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
+                </div>
+                <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
+            </div>
+        </header>
+
+        <!-- PANEL PRINCIPAL -->
+        <div id="panelIngreso" class="tab-panel active">
+            <div class="row g-4">
+                <!-- FORMULARIO -->
+                <div class="col-lg-5">
+                    <div class="bordered-container" id="formularioContainer">
+                        <!-- Se genera en createFormulario() -->
+                    </div>
+                </div>
+                <!-- TABLA -->
+                <div class="col-lg-7">
+                    <div class="bordered-container table-container" id="tablaContainer">
+                        <!-- Se genera en renderTabla() -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
+            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados localmente
+        </footer>
+    </div>
+
+    <!-- MODALES -->
+    <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span> <small class="ms-2 text-light-emphasis" id="modalHistorialEmpleado"></small></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalHistorialBody"><div class="text-muted">Cargando...</div></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modal-modern" id="modalReporte" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Actividad</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando...</div></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modal-modern" id="modalAusencias" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-x me-2"></i>Gestión de Ausencias de Secretarios</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="ausenciasList"></div>
+                    <hr />
+                    <h6>Agregar ausencia</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <select id="ausenciaSecretario" class="form-select form-select-sm"><option value="">Seleccione secretario...</option></select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="ausenciaFechaInicio" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="ausenciaFechaFin" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn btn-modern btn-modern-primary btn-sm" id="btnAgregarAusencia"><i class="bi bi-plus"></i> Agregar</button>
+                        </div>
+                    </div>
+                    <small class="text-muted">Si no se especifica fecha fin, se considera solo el día de inicio.</small>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modal-modern" id="modalAccion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAccionTitulo"><i class="bi bi-arrow-return-left me-2"></i>Acción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="accionCausaId" />
+                    <input type="hidden" id="accionTipo" />
+                    <div id="accionCampos">
+                        <div class="mb-3" id="campoDependencia" style="display:none;">
+                            <label class="form-label">Dependencia destino *</label>
+                            <input type="text" id="accionDependencia" class="form-control" placeholder="Ej: Juzgado N° 3" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Motivo *</label>
+                            <textarea id="accionMotivo" class="form-control" rows="3" placeholder="Ingrese el motivo de la acción..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarAccion"><i class="bi bi-check2"></i> Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="logoutAlert">
+        <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
+        <div class="alert-body">Volverás a la pantalla de inicio. Los datos no se perderán.</div>
+        <div class="alert-actions">
+            <button class="btn-cancel" id="btnCancelarSalida">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarSalida">Sí, salir</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" style="position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- CONFIG ----------
+            const CONFIG = {
+                storageKey: 'defensoria_unificada_v1',
+                operadoresClaves: { 'Boillat Enrique': '111', 'Cardozo Raquel': '222', 'Cedron Noelia': '444', 'Pablos Pato': '333' },
+                nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
+                nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
+                empleados: [
+                    { id: 'emp1', nombre: 'Bazante Nadia Romina' }, { id: 'emp2', nombre: 'Bolillat Cesar Enrique' },
+                    { id: 'emp3', nombre: 'Cardozo Maria Raquel' }, { id: 'emp4', nombre: 'Cedron Noelia' },
+                    { id: 'emp5', nombre: 'Fioravante Rómulo' }, { id: 'emp6', nombre: 'Gonzalez Alberto Misael' },
+                    { id: 'emp7', nombre: 'Gonzalez Juan Jose' }, { id: 'emp8', nombre: 'Gudiño Natalia Esther' },
+                    { id: 'emp9', nombre: 'Ortega Lucia Noemi' }, { id: 'emp10', nombre: 'Pablos Patricia Tamara' },
+                    { id: 'emp11', nombre: 'Palacios Ana Gabriela' }, { id: 'emp12', nombre: 'Sosa Rita Cecilia' }
+                ],
+                secretarios: [
+                    { id: 'sec1', nombre: 'Corrales A.Mariela' },
+                    { id: 'sec2', nombre: 'Riveros Patricia' },
+                    { id: 'sec3', nombre: 'Magnani Enzo' }
+                ],
+                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ]
+            };
+
+            // ---------- ESTADO ----------
+            let state = { causas: [], ausencias: [] };
+            let currentOperator = '';
+            let searchTerm = '';
+            let cronoInterval = null;
+            let paginationState = { ingreso: { page: 1, perPage: 10 } };
+            let formularioInicializado = false;
+            let filtroMes = '';
+            let filtroAnio = '';
+
+            // ---------- UTILS ----------
+            function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
+            function loadState() {
+                try { const raw = localStorage.getItem(CONFIG.storageKey); if (raw) state = JSON.parse(raw); if (!state.causas) state.causas = []; if (!state.ausencias) state.ausencias = []; } catch (_) { state.causas = []; state.ausencias = []; }
+                state.causas.forEach(c => {
+                    if (c.asistenciaCamaraGesell === undefined) c.asistenciaCamaraGesell = false;
+                    if (c.asistenciaGesell === undefined) c.asistenciaGesell = 'pendiente';
+                    if (c.fechaHoraGesell === undefined) c.fechaHoraGesell = null;
+                    if (c.fuenteSiged === undefined) c.fuenteSiged = false;
+                    if (c.fuenteZimbra === undefined) c.fuenteZimbra = false;
+                    if (c.motivoAccion === undefined) c.motivoAccion = null;
+                    if (c.dependenciaRemision === undefined) c.dependenciaRemision = null;
+                });
+            }
+            function saveState() { localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); }
+            function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
+            function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
+            function fmtDt(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+            function fmtDateShort(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
+
+            function getTiempoRestante(fechaLimite) {
+                if (!fechaLimite) return null;
+                const diff = new Date(fechaLimite) - Date.now();
+                if (diff <= 0) return { ms: Math.abs(diff), vencido: true, porcentaje: 0 };
+                const c = state.causas.find(x => x.fechaLimite === fechaLimite);
+                let totalMs = 3 * 86400000;
+                if (c && c.fechaAsignacion) {
+                    totalMs = new Date(c.fechaLimite) - new Date(c.fechaAsignacion);
+                    if (totalMs <= 0) totalMs = 3 * 86400000;
+                }
+                const porcentaje = Math.min(100, (diff / totalMs) * 100);
+                return { ms: diff, vencido: false, porcentaje };
+            }
+            function formatearTiempo(ms) {
+                if (ms === null || ms === undefined) return '—';
+                const seg = Math.floor(ms / 1000);
+                const horas = Math.floor((seg % 86400) / 3600);
+                const mins = Math.floor((seg % 3600) / 60);
+                const secs = Math.floor(seg % 60);
+                if (horas >= 24) return `${Math.floor(horas/24)}d ${String(horas%24).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            }
+
+            function getEstadoBadge(estado) {
+                const map = {
+                    'en_secretaria': '<span class="badge-estado badge-sec">📋 Secretaría</span>',
+                    'en_proceso': '<span class="badge-estado badge-proc">🔄 En proceso</span>',
+                    'finalizada': '<span class="badge-estado badge-fin">✅ Finalizada</span>',
+                    'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
+                    'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto a SIGED</span>',
+                    'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>',
+                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>'
+                };
+                return map[estado] || `<span class="badge-estado">${estado}</span>`;
+            }
+
+            function showToast(msg, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const icons = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', danger: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
+                const div = document.createElement('div');
+                div.className = `toast-custom ${type}`;
+                div.innerHTML = `<i class="bi ${icons[type] || 'bi-info-circle-fill'}"></i> ${msg}`;
+                container.appendChild(div);
+                setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
+            }
+
+            // ---------- GESTIÓN DE AUSENCIAS ----------
+            function estaAusente(secretarioId, fecha) {
+                if (!state.ausencias || state.ausencias.length === 0) return false;
+                const f = new Date(fecha); f.setHours(0,0,0,0);
+                return state.ausencias.some(a => {
+                    if (a.secretarioId !== secretarioId) return false;
+                    const inicio = new Date(a.fechaInicio); inicio.setHours(0,0,0,0);
+                    const fin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio); fin.setHours(0,0,0,0);
+                    return f >= inicio && f <= fin;
+                });
+            }
+            function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
+                if (!secretarioId || !fechaInicio) { showToast('Debe seleccionar secretario y fecha de inicio', 'warning'); return false; }
+                const inicio = new Date(fechaInicio); inicio.setHours(0,0,0,0);
+                const fin = fechaFin ? new Date(fechaFin) : new Date(fechaInicio); fin.setHours(0,0,0,0);
+                if (fin < inicio) { showToast('La fecha fin no puede ser anterior a la fecha inicio', 'warning'); return false; }
+                const solapada = state.ausencias.some(a => {
+                    if (a.secretarioId !== secretarioId) return false;
+                    const aIni = new Date(a.fechaInicio); aIni.setHours(0,0,0,0);
+                    const aFin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio); aFin.setHours(0,0,0,0);
+                    return !(fin < aIni || inicio > aFin);
+                });
+                if (solapada) { showToast('Ya existe una ausencia para ese período', 'warning'); return false; }
+                state.ausencias.push({ id: generateId(), secretarioId, fechaInicio, fechaFin: fechaFin || null });
+                saveState();
+                showToast('Ausencia registrada correctamente', 'success');
+                return true;
+            }
+            function eliminarAusencia(id) {
+                state.ausencias = state.ausencias.filter(a => a.id !== id);
+                saveState();
+                renderAusenciasModal();
+                showToast('Ausencia eliminada', 'info');
+            }
+            function renderAusenciasModal() {
+                const list = document.getElementById('ausenciasList');
+                if (!state.ausencias || state.ausencias.length === 0) {
+                    list.innerHTML = '<div class="text-muted">No hay ausencias registradas.</div>';
+                    return;
+                }
+                list.innerHTML = state.ausencias.map(a => {
+                    const sec = CONFIG.secretarios.find(s => s.id === a.secretarioId);
+                    const nombre = sec ? sec.nombre : 'Desconocido';
+                    const fin = a.fechaFin ? fmtDateShort(a.fechaFin) : 'solo día';
+                    return `<div class="ausencia-item">
+                        <span><strong>${nombre}</strong> · ${fmtDateShort(a.fechaInicio)} ${a.fechaFin ? '→ ' + fmtDateShort(a.fechaFin) : ''}</span>
+                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar-ausencia" data-id="${a.id}" style="padding:2px 8px;"><i class="bi bi-trash"></i></button>
+                    </div>`;
+                }).join('');
+                list.querySelectorAll('.btn-eliminar-ausencia').forEach(btn => {
+                    btn.addEventListener('click', function() { eliminarAusencia(this.dataset.id); });
+                });
+            }
+
+            // ---------- ASIGNACIÓN AUTOMÁTICA DE SECRETARIO ----------
+            function obtenerSecretarioAsignado() {
+                const hoy = new Date();
+                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
+                if (disponibles.length === 0) {
+                    showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.', 'danger');
+                    return null;
+                }
+                const conCarga = disponibles.map(s => {
+                    const carga = state.causas.filter(c => c.secretarioId === s.id && (c.estado === 'en_secretaria' || c.estado === 'en_proceso')).length;
+                    return { ...s, carga };
+                });
+                conCarga.sort((a,b) => a.carga - b.carga);
+                return conCarga[0];
+            }
+
+            // ---------- REGISTRO DE CAUSA ----------
+            function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
+                if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
+                const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
+
+                let estado = 'en_secretaria';
+                let secretarioId = null;
+                let accionHistorial = '';
+                let motivoGuardado = motivo || null;
+                let dependenciaGuardada = dependencia || null;
+
+                if (accion === 'devolver') {
+                    estado = 'devuelto_siged';
+                    accionHistorial = 'Devuelto a SIGED (ingreso directo)';
+                } else if (accion === 'remitir') {
+                    estado = 'remitido';
+                    accionHistorial = `Remitido a ${dependenciaGuardada || 'dependencia no especificada'} (ingreso directo)`;
+                } else if (accion === 'rechazar') {
+                    estado = 'rechazado';
+                    accionHistorial = 'Rechazado (ingreso directo)';
+                } else {
+                    if (esGesell) {
+                        estado = 'en_defensor';
+                        accionHistorial = 'Ingreso directo a Defensor (Cámara Gesell)';
+                    } else {
+                        const asignado = obtenerSecretarioAsignado();
+                        if (!asignado) {
+                            showToast('No hay secretarios disponibles. La causa se guarda sin asignar.', 'warning');
+                            secretarioId = null;
+                            accionHistorial = 'Ingreso sin asignación (todos ausentes)';
+                        } else {
+                            secretarioId = asignado.id;
+                            accionHistorial = `Ingreso a Secretaría (${getSecName(secretarioId)})`;
+                        }
+                    }
+                }
+
+                const nueva = {
+                    id: generateId(),
+                    numero: num.trim().toUpperCase(),
+                    tipo: tipo || 'Otro',
+                    nivelOperador: parseInt(nivel) || 2,
+                    nivelSecretario: null,
+                    puntos: 0,
+                    observaciones: obs || '',
+                    estado: estado,
+                    secretarioId: secretarioId,
+                    empleadoId: null,
+                    fechaPaseSecretario: new Date().toISOString(),
+                    fechaAsignacion: null,
+                    fechaFinalizacion: null,
+                    fechaLimite: null,
+                    fechaResolucionEmpleado: null,
+                    operador: op || currentOperator || 'Desconocido',
+                    asistenciaCamaraGesell: false,
+                    asistenciaGesell: 'pendiente',
+                    fechaHoraGesell: null,
+                    fuenteSiged: fuenteSiged || false,
+                    fuenteZimbra: fuenteZimbra || false,
+                    motivoAccion: motivoGuardado,
+                    dependenciaRemision: dependenciaGuardada,
+                    historial: [{
+                        fecha: new Date().toISOString(),
+                        accion: accionHistorial,
+                        usuario: op || currentOperator || 'Operador',
+                        comentario: motivoGuardado || obs || 'Sin observaciones'
+                    }]
+                };
+                state.causas.push(nueva);
+                saveState();
+
+                if (accion === 'devolver') {
+                    showToast(`✅ Causa ${nueva.numero} registrada como DEVUELTA a SIGED.`);
+                } else if (accion === 'remitir') {
+                    showToast(`✅ Causa ${nueva.numero} registrada como REMITIDA a ${dependenciaGuardada || 'dependencia'}.`);
+                } else if (accion === 'rechazar') {
+                    showToast(`✅ Causa ${nueva.numero} registrada como RECHAZADA.`);
+                } else {
+                    if (esGesell) {
+                        showToast(`✅ Pase registrado (Cámara Gesell) - Derivado a Defensor: ${nueva.numero}`);
+                    } else if (secretarioId) {
+                        showToast(`✅ Pase registrado: ${nueva.numero} (Secretario: ${getSecName(secretarioId)})`);
+                    } else {
+                        showToast(`✅ Pase registrado: ${nueva.numero} (sin asignar por ausencias)`);
+                    }
+                }
+                return true;
+            }
+
+            // ---------- ACCIONES DEL OPERADOR (con modal) ----------
+            function devolverSIGED(id, operador, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'devuelto_siged') { showToast('Ya fue devuelto a SIGED', 'warning'); return; }
+                cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', operador, motivo || 'Sin motivo especificado');
+            }
+            function remitirDependencia(id, operador, dependencia, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'remitido') { showToast('Ya fue remitido', 'warning'); return; }
+                if (!dependencia || dependencia.trim() === '') { showToast('Debe especificar la dependencia', 'warning'); return; }
+                cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, operador, motivo || 'Sin motivo especificado');
+                c.dependenciaRemision = dependencia.trim();
+                saveState();
+            }
+            function rechazarCausa(id, operador, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'rechazado') { showToast('Ya fue rechazada', 'warning'); return; }
+                cambiarEstado(id, 'rechazado', 'Rechazado', operador, motivo || 'Sin motivo especificado');
+            }
+            function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                c.estado = nuevoEstado;
+                if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
+                if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido' || nuevoEstado === 'rechazado') {
+                    c.empleadoId = null; c.fechaAsignacion = null; c.fechaLimite = null; c.fechaResolucionEmpleado = null;
+                }
+                c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' });
+                saveState();
+                showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+            }
+
+            // ---------- FUNCIÓN CENTRAL DE FILTRADO ----------
+            function obtenerCausasFiltradas() {
+                let causas = state.causas.filter(c => c.operador === currentOperator);
+                // Búsqueda por expediente
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causas = causas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                // Filtros de mes y año
+                if (filtroMes || filtroAnio) {
+                    causas = causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                // Ordenar por fecha descendente (más reciente primero)
+                causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                return causas;
+            }
+
+            // ---------- REPORTE (ahora usa obtenerCausasFiltradas) ----------
+            function generarReporteOperador() {
+                const causasFiltradas = obtenerCausasFiltradas();
+                const total = causasFiltradas.length;
+                const now = new Date();
+                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                // Texto de filtros aplicados
+                let filtrosTexto = [];
+                if (filtroMes) {
+                    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                    filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
+                }
+                if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
+                const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
+
+                let html = `
+                    <div class="mb-3">
+                        <p><strong>Operador:</strong> ${currentOperator}</p>
+                        <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
+                        <p><strong>Registros encontrados:</strong> ${total}</p>
+                        <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                    </div>
+                    <hr />
+                    <h6>Expedientes registrados</h6>
+                    <div class="table-wrap">
+                        <table class="table-modern table">
+                            <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <tbody>${causasFiltradas.map(c => `
+                                <tr><td><strong>${c.numero}</strong></td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td></tr>
+                            `).join('')}</tbody>
+                        </table>
+                    </div>
+                    ${total === 0 ? '<div class="text-muted">No hay registros que coincidan con los filtros.</div>' : ''}
+                `;
+                document.getElementById('modalReporteBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
+            }
+
+            // ---------- HISTORIAL ----------
+            function abrirHistorial(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                document.getElementById('modalHistorialExp').textContent = c.numero;
+                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
+                const body = document.getElementById('modalHistorialBody');
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
+                else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
+                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+            }
+
+            // ---------- PAGINACIÓN ----------
+            function paginateData(data, page, perPage = 10) {
+                const total = data.length; const totalPages = Math.ceil(total / perPage) || 1;
+                const start = (page - 1) * perPage; const end = Math.min(start + perPage, total);
+                return { items: data.slice(start, end), total, totalPages, page, start, end };
+            }
+            function renderPagination(targetId, total, totalPages, page, perPage, callback) {
+                const container = document.getElementById(targetId);
+                if (!container) return;
+                let html = `<div class="pagination-bar">
+                    <div class="info">Mostrando ${Math.min((page-1)*perPage + 1, total)} - ${Math.min(page*perPage, total)} de ${total}</div>
+                    <div>
+                        <button class="page-btn" data-page="prev" ${page<=1?'disabled':''}>Anterior</button>
+                        ${Array.from({length: Math.min(totalPages, 10)}, (_, i) => {
+                            let p = i + 1;
+                            if (totalPages > 10) { if (p < page - 4 || p > page + 4) { if (p === 1 || p === totalPages) return `<button class="page-btn" data-page="${p}">${p}</button>`; if (p === page - 5 || p === page + 5) return `<span>…</span>`; return ''; } }
+                            return `<button class="page-btn ${p===page?'active':''}" data-page="${p}">${p}</button>`;
+                        }).join('')}
+                        <button class="page-btn" data-page="next" ${page>=totalPages?'disabled':''}>Siguiente</button>
+                    </div>
+                    <div class="page-selector">
+                        <label>Ver:</label>
+                        <select class="form-select form-select-sm" style="width:70px;" id="perPageSelect">
+                            <option value="5" ${perPage===5?'selected':''}>5</option><option value="10" ${perPage===10?'selected':''}>10</option>
+                            <option value="25" ${perPage===25?'selected':''}>25</option><option value="50" ${perPage===50?'selected':''}>50</option>
+                        </select>
+                    </div>
+                </div>`;
+                container.innerHTML = html;
+                container.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const p = this.dataset.page; let newPage = page;
+                        if (p === 'prev') newPage = Math.max(1, page - 1); else if (p === 'next') newPage = Math.min(totalPages, page + 1); else newPage = parseInt(p);
+                        if (newPage !== page) callback(newPage, perPage);
+                    });
+                });
+                const perPageSelect = document.getElementById('perPageSelect');
+                if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
+            }
+
+            // ---------- CREAR FORMULARIO ----------
+            function createFormulario() {
+                if (formularioInicializado) return;
+                const container = document.getElementById('formularioContainer');
+                const operadorOptions = `<option value="${currentOperator}" selected>${currentOperator}</option>`;
+                const tipos = [
+                    'Nuevo patrocinio', 'Amparo','Acción de protección de persona', 'Alimentos', 'Cuidado personal', 'Desalojo',
+                    'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
+                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                ];
+                const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+
+                container.innerHTML = `
+                    <div class="card-title"><i class="bi bi-file-earmark-plus"></i> Nueva Causa</div>
+                    <form id="formIngreso" class="form-modern">
+                        <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
+                        <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
+                            <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Fuente</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteSiged" /><label class="form-check-label" for="fuenteSiged">SIGED</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteZimbra" /><label class="form-check-label" for="fuenteZimbra">ZIMBRA</label></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Acción previa a la asignación</label>
+                            <select id="inpAccion" class="form-select">
+                                <option value="asignar">Asignar a Secretaría (predeterminado)</option>
+                                <option value="devolver">Devolución a SIGED</option>
+                                <option value="remitir">Remisión a otra dependencia</option>
+                                <option value="rechazar">Rechazo</option>
+                            </select>
+                        </div>
+                        <div id="camposAccion" style="display:none;">
+                            <div class="mb-3" id="campoDependenciaForm">
+                                <label class="form-label">Dependencia destino *</label>
+                                <input type="text" id="inpDependencia" class="form-control" placeholder="Ej: Juzgado N° 3" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Motivo *</label>
+                                <textarea id="inpMotivo" class="form-control" rows="2" placeholder="Ingrese el motivo de la acción..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Gestión de Ausencias de Secretarios</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
+                                <span class="text-muted" style="font-size:0.75rem; align-self:center;">La asignación es automática entre los presentes.</span>
+                            </div>
+                        </div>
+                        <div class="mb-3"><label class="form-label">Observaciones</label><textarea id="inpObs" class="form-control" rows="2"></textarea></div>
+                        <button type="submit" class="btn btn-modern btn-modern-primary w-100"><i class="bi bi-send me-2"></i>Registrar</button>
+                    </form>
+                `;
+
+                // Lógica de campos condicionales
+                const accionSelect = document.getElementById('inpAccion');
+                const camposAccionDiv = document.getElementById('camposAccion');
+                const campoDependencia = document.getElementById('campoDependenciaForm');
+                const inpDependencia = document.getElementById('inpDependencia');
+                const inpMotivo = document.getElementById('inpMotivo');
+
+                function toggleCamposAccion() {
+                    const val = accionSelect.value;
+                    if (val === 'asignar') {
+                        camposAccionDiv.style.display = 'none';
+                    } else {
+                        camposAccionDiv.style.display = 'block';
+                        campoDependencia.style.display = (val === 'remitir') ? 'block' : 'none';
+                        if (val !== 'remitir') inpDependencia.value = '';
+                    }
+                }
+                accionSelect.addEventListener('change', toggleCamposAccion);
+                toggleCamposAccion();
+
+                // Submit del formulario
+                document.getElementById('formIngreso').addEventListener('submit', function(e) { 
+                    e.preventDefault(); 
+                    const operador = currentOperator;
+                    const num = document.getElementById('inpExpediente').value;
+                    const tipo = document.getElementById('inpTipo').value;
+                    const nivel = document.getElementById('inpNivel').value;
+                    const obs = document.getElementById('inpObs').value;
+                    const fuenteSiged = document.getElementById('fuenteSiged').checked;
+                    const fuenteZimbra = document.getElementById('fuenteZimbra').checked;
+                    const accion = document.getElementById('inpAccion').value;
+                    let motivo = document.getElementById('inpMotivo').value.trim();
+                    let dependencia = document.getElementById('inpDependencia').value.trim();
+
+                    if (accion !== 'asignar') {
+                        if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
+                        if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
+                    }
+
+                    const ok = registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia);
+                    if (ok) {
+                        document.getElementById('inpExpediente').value = '';
+                        document.getElementById('inpTipo').value = '';
+                        document.getElementById('inpNivel').value = '2';
+                        document.getElementById('inpObs').value = '';
+                        document.getElementById('fuenteSiged').checked = false;
+                        document.getElementById('fuenteZimbra').checked = false;
+                        document.getElementById('inpAccion').value = 'asignar';
+                        document.getElementById('camposAccion').style.display = 'none';
+                        document.getElementById('inpMotivo').value = '';
+                        document.getElementById('inpDependencia').value = '';
+                        renderTabla();
+                    }
+                });
+
+                // Botón gestionar ausencias
+                document.getElementById('btnGestionAusencias').addEventListener('click', function() {
+                    const modal = new bootstrap.Modal(document.getElementById('modalAusencias'));
+                    const select = document.getElementById('ausenciaSecretario');
+                    select.innerHTML = '<option value="">Seleccione secretario...</option>';
+                    CONFIG.secretarios.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.nombre;
+                        select.appendChild(opt);
+                    });
+                    const hoy = new Date().toISOString().split('T')[0];
+                    document.getElementById('ausenciaFechaInicio').value = hoy;
+                    document.getElementById('ausenciaFechaFin').value = '';
+                    renderAusenciasModal();
+                    modal.show();
+                });
+
+                // Botón agregar ausencia en modal
+                document.getElementById('btnAgregarAusencia').addEventListener('click', function() {
+                    const secretarioId = document.getElementById('ausenciaSecretario').value;
+                    const fechaInicio = document.getElementById('ausenciaFechaInicio').value;
+                    const fechaFin = document.getElementById('ausenciaFechaFin').value || null;
+                    if (agregarAusencia(secretarioId, fechaInicio, fechaFin)) {
+                        renderAusenciasModal();
+                        document.getElementById('ausenciaSecretario').value = '';
+                        document.getElementById('ausenciaFechaInicio').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('ausenciaFechaFin').value = '';
+                    }
+                });
+
+                formularioInicializado = true;
+            }
+
+            // ---------- RENDER TABLA (usa obtenerCausasFiltradas) ----------
+            function renderTabla() {
+                const container = document.getElementById('tablaContainer');
+                let causasFiltradas = obtenerCausasFiltradas();
+
+                // Si no hay filtros de mes/año, limitar a últimas 50 para rendimiento
+                let datosMostrar = causasFiltradas;
+                if (!filtroMes && !filtroAnio) {
+                    datosMostrar = datosMostrar.slice(0, 50);
+                }
+
+                const pState = paginationState.ingreso;
+                const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState.perPage);
+
+                // Generar opciones para años 2026-2040 (fijo)
+                const añoOptions = [];
+                for (let y = 2026; y <= 2040; y++) {
+                    añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
+                }
+                const mesOptions = [];
+                const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                for (let m = 1; m <= 12; m++) {
+                    mesOptions.push(`<option value="${m}" ${filtroMes == m ? 'selected' : ''}>${mesesNombres[m-1]}</option>`);
+                }
+
+                let html = `
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                        <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteOperador"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                        </div>
+                    </div>
+                    <div class="filtros-container">
+                        <label>Filtrar por:</label>
+                        <select id="filtroMesSelect">
+                            <option value="">Mes</option>
+                            ${mesOptions}
+                        </select>
+                        <select id="filtroAnioSelect">
+                            <option value="">Año</option>
+                            ${añoOptions}
+                        </select>
+                        <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
+                        ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                    </div>
+                `;
+
+                if (total) {
+                    html += `
+                        <div style="overflow-x:auto; width:100%;">
+                            <table class="table-modern table table-sm" style="margin-bottom:0;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th style="width:130px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(c => {
+                                        const fuentes = [];
+                                        if (c.fuenteSiged) fuentes.push('SIGED');
+                                        if (c.fuenteZimbra) fuentes.push('ZIMBRA');
+                                        const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
+                                            fuentes.length === 2 ? '<span class="badge-fuente ambas">S/Z</span>' :
+                                            `<span class="badge-fuente">${fuentes[0]}</span>`;
+                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.65rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${fuenteHtml}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td style="white-space:nowrap;">
+                                                ${c.estado === 'en_secretaria' || c.estado === 'en_proceso' || c.estado === 'en_defensor' ? `
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-accion" data-id="${c.id}" data-accion="devolver" title="Devolver a SIGED" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-arrow-return-left"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-accion" data-id="${c.id}" data-accion="remitir" title="Remitir a otra dependencia" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-send"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-accion" data-id="${c.id}" data-accion="rechazar" title="Rechazar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-x-circle"></i></button>
+                                                ` : ''}
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="paginationIngreso"></div>
+                    `;
+                } else {
+                    html += `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros</div>`;
+                }
+
+                container.innerHTML = html;
+
+                if (total > 0) {
+                    renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
+                        paginationState.ingreso.page = newPage;
+                        paginationState.ingreso.perPage = newPerPage;
+                        renderTabla();
+                    });
+                }
+
+                // Eventos de filtros
+                const mesSelect = document.getElementById('filtroMesSelect');
+                const anioSelect = document.getElementById('filtroAnioSelect');
+                const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+
+                if (mesSelect) {
+                    mesSelect.addEventListener('change', function() {
+                        filtroMes = this.value;
+                        paginationState.ingreso.page = 1;
+                        renderTabla();
+                    });
+                }
+                if (anioSelect) {
+                    anioSelect.addEventListener('change', function() {
+                        filtroAnio = this.value;
+                        paginationState.ingreso.page = 1;
+                        renderTabla();
+                    });
+                }
+                if (limpiarBtn) {
+                    limpiarBtn.addEventListener('click', function() {
+                        filtroMes = '';
+                        filtroAnio = '';
+                        paginationState.ingreso.page = 1;
+                        renderTabla();
+                    });
+                }
+
+                // Eventos de acciones
+                container.querySelectorAll('.btn-accion').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const accion = this.dataset.accion;
+                        abrirModalAccion(id, accion);
+                    });
+                });
+                container.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
+                const btnReporte = container.querySelector('#btnReporteOperador');
+                if (btnReporte) btnReporte.addEventListener('click', generarReporteOperador);
+            }
+
+            // ---------- MODAL DE ACCIÓN ----------
+            function abrirModalAccion(id, tipoAccion) {
+                const modal = new bootstrap.Modal(document.getElementById('modalAccion'));
+                document.getElementById('accionCausaId').value = id;
+                document.getElementById('accionTipo').value = tipoAccion;
+
+                const titulo = document.getElementById('modalAccionTitulo');
+                const campoDependencia = document.getElementById('campoDependencia');
+                const inpDependencia = document.getElementById('accionDependencia');
+                const inpMotivo = document.getElementById('accionMotivo');
+
+                if (tipoAccion === 'devolver') {
+                    titulo.innerHTML = '<i class="bi bi-arrow-return-left me-2"></i>Devolver a SIGED';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                } else if (tipoAccion === 'remitir') {
+                    titulo.innerHTML = '<i class="bi bi-send me-2"></i>Remitir a otra dependencia';
+                    campoDependencia.style.display = 'block';
+                } else if (tipoAccion === 'rechazar') {
+                    titulo.innerHTML = '<i class="bi bi-x-circle me-2"></i>Rechazar causa';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                }
+                inpMotivo.value = '';
+                modal.show();
+            }
+
+            document.getElementById('btnConfirmarAccion').addEventListener('click', function() {
+                const id = document.getElementById('accionCausaId').value;
+                const tipo = document.getElementById('accionTipo').value;
+                const motivo = document.getElementById('accionMotivo').value.trim();
+                const dependencia = document.getElementById('accionDependencia').value.trim();
+
+                if (!motivo) { showToast('Debe ingresar un motivo', 'warning'); return; }
+                if (tipo === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
+
+                if (tipo === 'devolver') {
+                    devolverSIGED(id, currentOperator, motivo);
+                } else if (tipo === 'remitir') {
+                    remitirDependencia(id, currentOperator, dependencia, motivo);
+                } else if (tipo === 'rechazar') {
+                    rechazarCausa(id, currentOperator, motivo);
+                }
+                bootstrap.Modal.getInstance(document.getElementById('modalAccion')).hide();
+                renderTabla();
+            });
+
+            // ---------- CRONOMETROS ----------
+            function iniciarCronometros() {
+                if (cronoInterval) clearInterval(cronoInterval);
+                cronoInterval = setInterval(() => { renderTabla(); }, 10000);
+            }
+
+            // ---------- LOGIN ----------
+            function handleLogin() {
+                const operador = document.getElementById('loginOperador').value;
+                const pass = document.getElementById('loginPassword').value;
+                const errorDiv = document.getElementById('loginError');
+
+                if (!operador) { errorDiv.textContent = '❌ Seleccione operador.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+                if (pass !== CONFIG.operadoresClaves[operador]) { errorDiv.textContent = '❌ Clave incorrecta.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+
+                errorDiv.style.display = 'none';
+                currentOperator = operador;
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('appWrapper').classList.add('visible');
+                document.getElementById('lblOperadorActivo').querySelector('span').textContent = operador;
+
+                loadState();
+                createFormulario();
+                renderTabla();
+                showToast(`Bienvenido/a ${operador}`, 'success');
+                iniciarCronometros();
+            }
+
+            function cerrarSesion() {
+                document.getElementById('logoutAlert').style.display = 'none';
+                if (cronoInterval) clearInterval(cronoInterval);
+                document.getElementById('appWrapper').classList.remove('visible');
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginOperador').value = '';
+                currentOperator = '';
+                formularioInicializado = false;
+                filtroMes = '';
+                filtroAnio = '';
+                showToast('Sesión cerrada', 'warning');
+            }
+
+            // ---------- INICIALIZACIÓN ----------
+            document.addEventListener('DOMContentLoaded', function() {
+                const opSelect = document.getElementById('loginOperador');
+                CONFIG.operadores.forEach(op => {
+                    const opt = document.createElement('option');
+                    opt.value = op;
+                    opt.textContent = op;
+                    opSelect.appendChild(opt);
+                });
+
+                document.getElementById('globalSearch').addEventListener('input', function() {
+                    searchTerm = this.value.trim();
+                    paginationState.ingreso.page = 1;
+                    renderTabla();
+                });
+
+                document.getElementById('btnLogin').addEventListener('click', handleLogin);
+                document.getElementById('loginPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
+
+                document.getElementById('btnCerrarSesion').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutAlert').style.display = 'flex';
+                });
+                document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').style.display = 'none');
+                document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+                document.addEventListener('click', function(e) {
+                    const a = document.getElementById('logoutAlert');
+                    if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none';
+                });
+
+                loadState();
+            });
+        })();
+    </script>
+</body>
+</html>

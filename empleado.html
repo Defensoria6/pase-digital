@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema Digital de Pases · Empleado</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        /* ===== ESTILOS COMPLETOS (igual que antes) ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
+        .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
+        .login-overlay.hidden { opacity:0; pointer-events:none; }
+        .login-card { background:#fff; border-radius:32px; padding:2.2rem 2rem 2rem; width:100%; max-width:440px; box-shadow:0 20px 40px -12px rgba(0,0,0,.18); text-align:center; border:1px solid rgba(25,118,210,.15); }
+        .login-card .icon { font-size:3.2rem; color:#1976d2; margin-bottom:.25rem; }
+        .login-card h2 { color:#0a2a44; font-weight:700; letter-spacing:-.3px; }
+        .login-card .sub { color:#5f7f9f; font-size:.9rem; margin-bottom:1.5rem; }
+        .login-card select, .login-card input { border-radius:60px; padding:12px 20px; border:1px solid #cbdde9; margin-bottom:1rem; background:#f9fcff; width:100%; }
+        .login-card select:focus, .login-card input:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.15); outline:none; }
+        .login-card .btn-ingresar { background:#1976d2; border:none; border-radius:60px; padding:12px; font-weight:700; width:100%; color:#fff; transition:background .2s; }
+        .login-card .btn-ingresar:hover { background:#0f5bab; }
+        .login-error { color:#c62828; font-size:.8rem; margin-top:-.5rem; margin-bottom:.75rem; display:none; }
+        .app-wrapper { max-width:1600px; margin:0 auto; padding:20px; display:none; }
+        .app-wrapper.visible { display:block; }
+        .app-header { background:#fff; border-radius:28px; padding:1rem 2rem; box-shadow:0 4px 16px rgba(0,0,0,.04); border:1px solid #e2edf7; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+        .app-header .brand { display:flex; align-items:center; gap:12px; }
+        .app-header .brand i { font-size:2rem; color:#1976d2; }
+        .app-header .brand h1 { font-size:1.4rem; font-weight:700; margin:0; color:#0a2a44; }
+        .app-header .brand small { font-size:.75rem; color:#5f7f9f; display:block; font-weight:400; }
+        .header-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .header-actions .badge-role { background:#e3f0ff; color:#1976d2; padding:6px 16px; border-radius:40px; font-weight:600; font-size:.8rem; }
+        .btn-logout { background:rgba(25,118,210,.08); border:1px solid #d0e0f0; color:#0a2a44; padding:6px 18px; border-radius:40px; font-weight:600; font-size:.8rem; transition:.2s; }
+        .btn-logout:hover { background:#c62828; color:#fff; border-color:#c62828; }
+        .search-box { position:relative; flex:1; min-width:200px; max-width:340px; }
+        .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#8aa3bc; }
+        .search-box input { width:100%; padding:8px 14px 8px 38px; border-radius:40px; border:1px solid #dce5ec; background:#f9fcff; font-size:.85rem; transition:.2s; }
+        .search-box input:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.12); outline:none; background:#fff; }
+        .card-modern { background:#fff; border-radius:24px; border:1px solid #e2edf7; box-shadow:0 2px 12px rgba(0,0,0,.03); padding:1.5rem 1.8rem; margin-bottom:1.5rem; transition:box-shadow .2s; }
+        .card-modern:hover { box-shadow:0 6px 20px rgba(0,0,0,.05); }
+        .card-modern .card-title { font-weight:700; font-size:1rem; color:#0a2a44; display:flex; align-items:center; gap:10px; margin-bottom:1.2rem; padding-bottom:.6rem; border-bottom:1px solid #eef2f7; }
+        .card-modern .card-title i { color:#1976d2; }
+        .btn-modern { border-radius:40px; padding:10px 24px; font-weight:600; font-size:.85rem; border:none; transition:.2s; }
+        .btn-modern-primary { background:#1976d2; color:#fff; }
+        .btn-modern-primary:hover { background:#0f5bab; color:#fff; }
+        .btn-modern-success { background:#2e7d32; color:#fff; }
+        .btn-modern-success:hover { background:#1b5e20; color:#fff; }
+        .btn-modern-danger { background:#c62828; color:#fff; }
+        .btn-modern-danger:hover { background:#b71c1c; color:#fff; }
+        .btn-modern-outline { background:transparent; border:1px solid #dce5ec; color:#2c5a7a; }
+        .btn-modern-outline:hover { background:#f1f6fd; }
+        .btn-modern-sm { padding:4px 14px; font-size:.75rem; }
+        .btn-modern-warning { background:#e67e22; color:#fff; }
+        .btn-modern-warning:hover { background:#d35400; color:#fff; }
+        .table-wrap { overflow-x:auto; max-height:62vh; scrollbar-width:thin; }
+        .table-modern { margin:0; font-size:.75rem; min-width:700px; width:100%; }
+        .table-modern thead th { background:#f1f6fd; color:#1a4c74; font-weight:700; font-size:.65rem; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid #dce5ec; padding:8px 6px; white-space:nowrap; }
+        .table-modern tbody td { padding:6px 6px; vertical-align:middle; border-bottom:1px solid #eef2f7; color:#1f384f; font-size:.75rem; }
+        .table-modern tbody tr:hover { background-color:#f5faff; }
+        .pagination-bar { padding:0.5rem 0 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; border-top:1px solid #eef2f7; margin-top:.5rem; }
+        .pagination-bar .info { font-size:.7rem; color:#5f7f9f; }
+        .pagination-bar .page-btn { background:#f0f4f9; border:none; border-radius:30px; padding:2px 10px; font-weight:600; color:#1a4c74; margin:0 2px; cursor:pointer; transition:.15s; font-size:.7rem; }
+        .pagination-bar .page-btn.active { background:#1976d2; color:#fff; }
+        .pagination-bar .page-btn:disabled { opacity:.4; pointer-events:none; }
+        .pagination-bar .page-btn:hover:not(:disabled) { background:#d0e0f0; }
+        .pagination-bar .page-selector { display:flex; align-items:center; gap:4px; font-size:.7rem; }
+        .pagination-bar .page-selector select { padding:2px 6px; border-radius:30px; border:1px solid #dce5ec; background:#fff; font-size:.7rem; }
+        .badge-estado { display:inline-block; padding:2px 10px; border-radius:30px; font-weight:700; font-size:.6rem; }
+        .badge-sec { background:#fff3e0; color:#e67e22; }
+        .badge-proc { background:#e3f2fd; color:#1976d2; }
+        .badge-fin { background:#e8f5e9; color:#2e7d32; }
+        .badge-def { background:#f3e5f5; color:#7b1fa2; }
+        .badge-dev { background:#ffebee; color:#c62828; }
+        .badge-rem { background:#e8eaf6; color:#3949ab; }
+        .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
+        .crono.vencido { background:#ffebee; color:#c62828 !important; box-shadow:0 0 0 1px #ffcdd2; }
+        .crono.critico { background:#fff3e0; color:#e67e22 !important; box-shadow:0 0 0 1px #ffe0b2; }
+        .crono.medio { background:#e8f5e9; color:#2e7d32 !important; box-shadow:0 0 0 1px #c8e6c9; }
+        .crono.azul { background:#e3f2fd; color:#1976d2 !important; }
+        .exp-vencido { color:#c62828 !important; font-weight:700; }
+        .exp-critico { color:#e67e22 !important; font-weight:600; }
+        .toast-custom { position:fixed; bottom:24px; right:24px; z-index:3000; background:#1e293b; color:#fff; padding:14px 24px; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); font-size:.9rem; display:flex; align-items:center; gap:12px; animation:slideUp .35s ease; max-width:420px; pointer-events:auto; }
+        .toast-custom.success { border-left:5px solid #2e7d32; }
+        .toast-custom.warning { border-left:5px solid #e67e22; }
+        .toast-custom.danger { border-left:5px solid #c62828; }
+        .toast-custom.info { border-left:5px solid #1976d2; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .toast-custom.removing { animation:fadeOut .3s forwards; }
+        @keyframes fadeOut { to { opacity:0; transform:translateY(10px); } }
+        .modal-modern .modal-content { border-radius:28px; border:none; box-shadow:0 24px 60px rgba(0,0,0,.2); }
+        .modal-modern .modal-header { background:linear-gradient(135deg,#0b3b5f,#0a2a44); color:#fff; border-radius:28px 28px 0 0; padding:1.2rem 1.8rem; }
+        .modal-modern .modal-header .btn-close { filter:brightness(0) invert(1); }
+        .modal-modern .modal-body { padding:1.8rem; overflow-x:auto; }
+        .modal-modern .modal-footer { border-top:1px solid #eef2f7; padding:1rem 1.8rem; }
+        .bordered-container { border:2px solid #dce5ec; border-radius:20px; padding:1.2rem; background:#fff; height:100%; }
+        .table-container { overflow:hidden; }
+        .table-container .table-modern { min-width:auto; }
+        .table-container .table-modern thead th, .table-container .table-modern tbody td { padding:4px 6px; font-size:.7rem; }
+
+        #logoutAlert {
+            position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+            background: #fff; border-left: 6px solid #c62828; border-radius: 16px;
+            padding: 16px 20px; min-width: 250px; max-width: 340px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none;
+            flex-direction: column; gap: 12px; animation: slideUp 0.3s ease; border: 1px solid #ffcdd2;
+        }
+        #logoutAlert .alert-header { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #c62828; }
+        #logoutAlert .alert-header i { font-size: 1.4rem; }
+        #logoutAlert .alert-body { color: #333; font-size: 0.9rem; }
+        #logoutAlert .alert-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        #logoutAlert .alert-actions button { padding: 6px 18px; border-radius: 30px; border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        #logoutAlert .alert-actions .btn-cancel { background: #e0e0e0; color: #333; }
+        #logoutAlert .alert-actions .btn-cancel:hover { background: #ccc; }
+        #logoutAlert .alert-actions .btn-confirm { background: #c62828; color: #fff; }
+        #logoutAlert .alert-actions .btn-confirm:hover { background: #b71c1c; }
+
+        @media (max-width:768px) { .app-header { flex-direction:column; align-items:stretch; padding:1rem; } .search-box { max-width:100%; } .card-modern { padding:1rem; } .pagination-bar { flex-direction:column; align-items:stretch; text-align:center; } }
+        @media (max-width:480px) { .login-card { padding:1.5rem 1.2rem; } }
+        .text-muted-light { color:#8aa3bc; }
+        .gap-2 { gap:.5rem; }
+        .fw-600 { font-weight:600; }
+
+        /* ===== ESTILOS PARA IMPRESIÓN (SOLO MODAL REPORTE) ===== */
+        @media print {
+            body * { visibility: hidden; }
+            #modalReporteEmpleado,
+            #modalReporteEmpleado * {
+                visibility: visible !important;
+            }
+            #modalReporteEmpleado {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+            }
+            .modal-header, .modal-footer, .btn-close, .btn-modern, .btn-secondary, .pagination-bar {
+                display: none !important;
+            }
+            .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            .table-wrap {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            .table-modern {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 0.6rem !important;
+                border-collapse: collapse !important;
+                table-layout: auto !important;
+            }
+            .table-modern th, .table-modern td {
+                padding: 2px 4px !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                border: 1px solid #ccc !important;
+            }
+            .table-modern thead th {
+                background: #f1f6fd !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* Resumen de KPI */
+            .kpi-grid-print {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 0.3rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            .kpi-item-print {
+                flex: 1 1 auto !important;
+                min-width: 60px !important;
+                padding: 0.2rem 0.5rem !important;
+                border: 1px solid #ddd !important;
+                background: #f9fcff !important;
+                border-radius: 4px !important;
+                text-align: center !important;
+            }
+            .kpi-item-print .label { font-size: 0.5rem !important; font-weight: 700; color: #5f7f9f; }
+            .kpi-item-print .value { font-size: 0.9rem !important; font-weight: 800; color: #0a2a44; }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            /* Estilos para el modal de estadísticas en impresión */
+            #modalEstadisticas, #modalEstadisticas * {
+                visibility: visible !important;
+            }
+            #modalEstadisticas {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #modalEstadisticas .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            #modalEstadisticas .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+            #modalEstadisticas .modal-header, #modalEstadisticas .modal-footer {
+                display: none !important;
+            }
+            #modalEstadisticas .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <h2>Acceso Empleado</h2>
+            <p class="sub">Seleccione su usuario e ingrese su clave</p>
+
+            <select id="loginEmpleado" class="form-select">
+                <option value="">Seleccione un empleado...</option>
+            </select>
+
+            <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
+            <div id="loginError" class="login-error">❌ Clave incorrecta o falta seleccionar empleado.</div>
+
+            <button class="btn-ingresar" id="btnLogin">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
+            </button>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div id="appWrapper" class="app-wrapper">
+        <header class="app-header">
+            <div class="brand">
+                <i class="bi bi-balance-scale"></i>
+                <div>
+                    <h1>Sistema Digital de Pases <small>Defensoría Oficial Civil y Comercial 6</small></h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Empleado</span>
+                <span class="badge-role" id="lblEmpleadoActivo" style="background:#e8f5e9; color:#2e7d32;"><i class="bi bi-person-check"></i> <span id="empleadoNombre"></span></span>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
+                </div>
+                <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
+                <button class="btn-logout" id="btnActualizarBD" style="background:#e3f0ff; border-color:#1976d2; color:#1976d2;"><i class="bi bi-arrow-repeat me-1"></i>Actualizar BD</button>
+            </div>
+        </header>
+
+        <!-- PANEL ÚNICO: MIS TAREAS -->
+        <div id="panelEmpleado" class="tab-panel active"></div>
+
+        <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
+            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados localmente · Actualización automática cada 5min
+        </footer>
+    </div>
+
+    <!-- MODAL HISTORIAL -->
+    <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span> <small class="ms-2 text-light-emphasis" id="modalHistorialEmpleado"></small></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalHistorialBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REPORTE EMPLEADO -->
+    <div class="modal fade modal-modern" id="modalReporteEmpleado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reporte de Actividades · <span id="modalReporteEmpNombre"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalReporteEmpBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ESTADÍSTICAS (HISTORIAL DETALLADO) -->
+    <div class="modal fade modal-modern" id="modalEstadisticas" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-bar-chart-fill me-2"></i>Historial Detallado · <span id="modalEstadisticasNombre"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalEstadisticasBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="logoutAlert">
+        <div class="alert-header">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>¿Cerrar sesión?</span>
+        </div>
+        <div class="alert-body">
+            Volverás a la pantalla de inicio. Los datos no se perderán.
+        </div>
+        <div class="alert-actions">
+            <button class="btn-cancel" id="btnCancelarSalida">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarSalida">Sí, salir</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" style="position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ---------- CONFIG ----------
+            const CONFIG = {
+                storageKey: 'defensoria_unificada_v1',
+                password: '123',
+                nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
+                nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
+                empleados: [
+                    { id: 'emp1', nombre: 'Bazante Nadia Romina' }, { id: 'emp2', nombre: 'Bolillat Cesar Enrique' },
+                    { id: 'emp3', nombre: 'Cardozo Maria Raquel' }, { id: 'emp4', nombre: 'Cedron Noelia' },
+                    { id: 'emp5', nombre: 'Fioravante Rómulo' }, { id: 'emp6', nombre: 'Gonzalez Alberto Misael' },
+                    { id: 'emp7', nombre: 'Gonzalez Juan Jose' }, { id: 'emp8', nombre: 'Gudiño Natalia Esther' },
+                    { id: 'emp9', nombre: 'Ortega Lucia Noemi' }, { id: 'emp10', nombre: 'Pablos Patricia Tamara' },
+                    { id: 'emp11', nombre: 'Palacios Ana Gabriela' }, { id: 'emp12', nombre: 'Sosa Rita Cecilia' }
+                ],
+                secretarios: [
+                    { id: 'sec1', nombre: 'Corrales Mariela' },
+                    { id: 'sec2', nombre: 'Riveros Patricia' },
+                    { id: 'sec3', nombre: 'Magnani Enzo' }
+                ],
+                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ]
+            };
+
+            // ---------- ESTADO ----------
+            let state = { causas: [] };
+            let currentEmpleadoId = '';
+            let searchTerm = '';
+            let cronoInterval = null;
+            let autoUpdateInterval = null;
+            let paginationState = { empleado: { page: 1, perPage: 10 } };
+
+            // Filtros de mes/año
+            let filtroMes = '';
+            let filtroAnio = '';
+
+            // ---------- UTILS ----------
+            function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
+            function loadState() {
+                try { const raw = localStorage.getItem(CONFIG.storageKey); if (raw) state = JSON.parse(raw); if (!state.causas) state.causas = []; } catch (_) { state.causas = []; }
+                state.causas.forEach(c => {
+                    if (c.asistenciaCamaraGesell === undefined) c.asistenciaCamaraGesell = false;
+                    if (c.asistenciaGesell === undefined) c.asistenciaGesell = 'pendiente';
+                    if (c.fechaHoraGesell === undefined) c.fechaHoraGesell = null;
+                    if (c.secretarioId === undefined) c.secretarioId = null;
+                });
+            }
+            function saveState() { localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); }
+            function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
+            function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
+            function fmtDt(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+            function fmtDateShort(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
+
+            // Obtener el comentario de la asignación (lo que escribió el secretario)
+            function getComentarioAsignacion(causa) {
+                if (!causa.historial || !causa.historial.length) return '-';
+                // Buscar el registro de asignación (acción que contiene "Asignado (Nivel")
+                const asignaciones = causa.historial.filter(h => h.accion && h.accion.includes('Asignado (Nivel'));
+                if (asignaciones.length === 0) return '-';
+                // Tomar la más reciente (última en orden de fecha, pero asumimos que el historial está ordenado cronológicamente)
+                const ultima = asignaciones[asignaciones.length - 1];
+                return ultima.comentario || '-';
+            }
+
+            function getEstadoBadge(estado) {
+                const map = {
+                    'en_secretaria': '<span class="badge-estado badge-sec">📋 Secretaría</span>',
+                    'en_proceso': '<span class="badge-estado badge-proc">🔄 En proceso</span>',
+                    'finalizada': '<span class="badge-estado badge-fin">✅ Finalizada</span>',
+                    'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
+                    'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto a SIGED</span>',
+                    'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>'
+                };
+                return map[estado] || `<span class="badge-estado">${estado}</span>`;
+            }
+
+            function getEstadoBadgePlain(estado) {
+                const map = {
+                    'en_secretaria': 'Secretaría',
+                    'en_proceso': 'En proceso',
+                    'finalizada': 'Finalizada',
+                    'en_defensor': 'Defensor',
+                    'devuelto_siged': 'Devuelto a SIGED',
+                    'remitido': 'Remitido'
+                };
+                return map[estado] || estado;
+            }
+
+            function showToast(msg, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const icons = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', danger: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
+                const div = document.createElement('div');
+                div.className = `toast-custom ${type}`;
+                div.innerHTML = `<i class="bi ${icons[type] || 'bi-info-circle-fill'}"></i> ${msg}`;
+                container.appendChild(div);
+                setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
+            }
+
+            // ---------- CRONOMETRO (tiempo transcurrido desde asignación) ----------
+            function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
+                if (!fechaAsignacion) return null;
+                const inicio = new Date(fechaAsignacion);
+                const fin = fechaCierre ? new Date(fechaCierre) : new Date();
+                const diffMs = fin - inicio;
+                if (diffMs < 0) return null;
+                const seg = Math.floor(diffMs / 1000);
+                const dias = Math.floor(seg / 86400);
+                const horas = Math.floor((seg % 86400) / 3600);
+                const mins = Math.floor((seg % 3600) / 60);
+                const secs = Math.floor(seg % 60);
+                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            }
+
+            function getCronoHtml(causa) {
+                if (!causa.fechaAsignacion) return '<span class="crono azul">—</span>';
+                let fechaCierre = null;
+                if (causa.estado === 'finalizada' && causa.fechaFinalizacion) {
+                    fechaCierre = causa.fechaFinalizacion;
+                } else if (causa.estado === 'en_secretaria' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'en_defensor' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'devuelto_siged' || causa.estado === 'remitido') {
+                    fechaCierre = causa.fechaResolucionEmpleado || causa.fechaFinalizacion || null;
+                }
+                const tiempo = getTiempoTranscurrido(causa.fechaAsignacion, fechaCierre);
+                if (!tiempo) return '<span class="crono azul">—</span>';
+                let cls = 'crono azul';
+                if (fechaCierre) {
+                    cls = 'crono medio';
+                }
+                return `<span class="${cls}">${tiempo}</span>`;
+            }
+
+            // ---------- FUNCIONES DE ESTADO ----------
+            function cambiarEstado(id, nuevoEstado, accion, usuario, com, secretarioId) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                if (nuevoEstado === 'finalizada' || nuevoEstado === 'en_secretaria' || nuevoEstado === 'en_defensor') {
+                    if (c.empleadoId) {
+                        if (!c.fechaResolucionEmpleado) c.fechaResolucionEmpleado = new Date().toISOString();
+                    }
+                }
+                c.estado = nuevoEstado;
+                if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
+                if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido') {
+                    c.empleadoId = null;
+                    c.fechaAsignacion = null;
+                    c.fechaLimite = null;
+                }
+                if (nuevoEstado === 'en_secretaria' && secretarioId) {
+                    c.secretarioId = secretarioId;
+                } else if (nuevoEstado === 'en_secretaria' && !secretarioId) {
+                    const secId = obtenerSecretarioAsignante(c);
+                    if (secId) c.secretarioId = secId;
+                }
+                c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' });
+                saveState();
+                showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+            }
+
+            // Función para obtener el secretario que asignó originalmente (del historial)
+            function obtenerSecretarioAsignante(causa) {
+                if (!causa.historial) return null;
+                for (const entry of causa.historial) {
+                    if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignó')) && entry.usuario) {
+                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
+                        if (sec) return sec.id;
+                    }
+                }
+                for (const entry of causa.historial) {
+                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoId)) {
+                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
+                        if (sec) return sec.id;
+                    }
+                }
+                return null;
+            }
+
+            // ---------- REPORTE DEL EMPLEADO (con tiempo transcurrido) ----------
+            function generarReporteEmpleado(empId) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
+                const causas = state.causas.filter(c => c.empleadoId === empId).sort((a,b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const total = causas.length;
+                const ahora = new Date();
+                const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+                const enProceso = causas.filter(c => c.estado === 'en_proceso').length;
+                const finalizadas = causas.filter(c => c.estado === 'finalizada').length;
+
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
+                            <div>
+                                <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Reporte de Actividades</h5>
+                                <p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p>
+                            </div>
+                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;">
+                                <div>${fechaStr}</div>
+                            </div>
+                        </div>
+                        <div class="kpi-grid-print">
+                            <div class="kpi-item-print">
+                                <div class="label">Total Asignadas</div>
+                                <div class="value">${total}</div>
+                            </div>
+                            <div class="kpi-item-print">
+                                <div class="label">En Proceso</div>
+                                <div class="value" style="color:#1976d2;">${enProceso}</div>
+                            </div>
+                            <div class="kpi-item-print">
+                                <div class="label">Finalizadas</div>
+                                <div class="value" style="color:#2e7d32;">${finalizadas}</div>
+                            </div>
+                        </div>
+                        <h6 style="font-weight: 600; color: #0a2a44; margin: 0.5rem 0;">Detalle de expedientes</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px;">
+                                <thead>
+                                    <tr style="background: #f1f6fd; color: #1a4c74;">
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Finalización</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${causas.map(c => {
+                                        let tiempo = '-';
+                                        let fechaCierre = null;
+                                        if (c.estado === 'finalizada' && c.fechaFinalizacion) fechaCierre = c.fechaFinalizacion;
+                                        else if (c.estado === 'en_secretaria' && c.fechaResolucionEmpleado) fechaCierre = c.fechaResolucionEmpleado;
+                                        else if (c.estado === 'en_defensor' && c.fechaResolucionEmpleado) fechaCierre = c.fechaResolucionEmpleado;
+                                        else if (c.estado === 'devuelto_siged' || c.estado === 'remitido') fechaCierre = c.fechaResolucionEmpleado || c.fechaFinalizacion || null;
+                                        if (c.fechaAsignacion) {
+                                            const t = getTiempoTranscurrido(c.fechaAsignacion, fechaCierre);
+                                            if (t) tiempo = t;
+                                        }
+                                        return `<tr style="border-bottom: 1px solid #eef2f7;">
+                                            <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
+                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
+                                            <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador}</td>
+                                            <td style="padding: 6px 8px; font-size: 0.7rem;">${fmtDateShort(c.fechaAsignacion)}</td>
+                                            <td style="padding: 6px 8px; font-size: 0.7rem; font-weight:600;">${tiempo}</td>
+                                            <td style="padding: 6px 8px; font-size: 0.7rem;">${c.fechaFinalizacion ? fmtDateShort(c.fechaFinalizacion) : (c.fechaResolucionEmpleado ? fmtDateShort(c.fechaResolucionEmpleado) : '-')}</td>
+                                            <td style="padding: 6px 8px;">${getEstadoBadgePlain(c.estado)}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                    ${total === 0 ? `<tr><td colspan="7" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.65rem; color: #8aa3bc; border-top: 1px solid #e2edf7; padding-top: 0.5rem;">
+                            Reporte generado el ${fechaStr} · Sistema Digital de Pases
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modalReporteEmpBody').innerHTML = html;
+                document.getElementById('modalReporteEmpNombre').textContent = emp.nombre;
+                new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
+            }
+
+            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) ----------
+            function generarEstadisticas(empId) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
+                const ahora = new Date();
+                const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+
+                // Obtener todas las causas que han estado asignadas a este empleado en algún momento
+                const causasDelEmpleado = state.causas.filter(c => {
+                    if (c.empleadoId === empId) return true;
+                    if (c.historial) {
+                        return c.historial.some(h => h.accion && h.accion.includes('Asignado') && h.usuario && h.usuario.includes(emp.nombre));
+                    }
+                    return false;
+                });
+
+                let totalTareas = 0;
+                let totalFinalizadas = 0;
+                const statsNivel = { 1: { total: 0, cumplidas: 0, tiempos: [] }, 2: { total: 0, cumplidas: 0, tiempos: [] }, 3: { total: 0, cumplidas: 0, tiempos: [] }, 4: { total: 0, cumplidas: 0, tiempos: [] } };
+                const asignadores = {};
+
+                causasDelEmpleado.forEach(c => {
+                    let finalizaciones = 0;
+                    let ultimaAsignacion = null;
+                    let asignaciones = [];
+
+                    if (c.historial) {
+                        const historialOrdenado = c.historial.slice().sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+                        historialOrdenado.forEach(entry => {
+                            if (entry.accion && (entry.accion.includes('Finalizada') || entry.accion.includes('Cumplido autorizado'))) {
+                                finalizaciones++;
+                            }
+                            if (entry.accion && entry.accion.includes('Asignado') && entry.usuario && entry.usuario.includes(emp.nombre)) {
+                                let nivel = c.nivelSecretario || c.nivelOperador || 1;
+                                const match = entry.accion.match(/Nivel\s*(\d+)/i);
+                                if (match) nivel = parseInt(match[1]);
+                                asignaciones.push({ fecha: entry.fecha, nivel, secretario: entry.usuario });
+                                ultimaAsignacion = { nivel, secretario: entry.usuario };
+                            }
+                        });
+                    }
+
+                    if (c.empleadoId === empId && c.estado === 'en_proceso') {
+                        if (!ultimaAsignacion) {
+                            const nivel = c.nivelSecretario || c.nivelOperador || 1;
+                            ultimaAsignacion = { nivel, secretario: c.secretarioId ? getSecName(c.secretarioId) : 'Secretario' };
+                        }
+                    }
+
+                    const tareasCausa = 1 + finalizaciones;
+                    totalTareas += tareasCausa;
+                    totalFinalizadas += finalizaciones;
+
+                    let nivelUltimo = ultimaAsignacion ? ultimaAsignacion.nivel : (c.nivelSecretario || c.nivelOperador || 1);
+                    if (c.estado === 'finalizada' && c.empleadoId === empId) {
+                        if (statsNivel[nivelUltimo]) {
+                            statsNivel[nivelUltimo].cumplidas += 1;
+                            if (c.fechaAsignacion && c.fechaFinalizacion) {
+                                const dias = (new Date(c.fechaFinalizacion) - new Date(c.fechaAsignacion)) / (1000*60*60*24);
+                                if (dias >= 0) statsNivel[nivelUltimo].tiempos.push(dias);
+                            }
+                        }
+                    }
+                    if (statsNivel[nivelUltimo]) {
+                        statsNivel[nivelUltimo].total += 1;
+                    }
+
+                    asignaciones.forEach(asig => {
+                        const secNombre = asig.secretario;
+                        if (secNombre && !secNombre.includes(emp.nombre) && !secNombre.includes('Sistema')) {
+                            const sec = CONFIG.secretarios.find(s => secNombre.includes(s.nombre) || s.nombre.includes(secNombre));
+                            const nombreFinal = sec ? sec.nombre : secNombre;
+                            asignadores[nombreFinal] = (asignadores[nombreFinal] || 0) + 1;
+                        }
+                    });
+                });
+
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
+                            <div>
+                                <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Historial Detallado</h5>
+                                <p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p>
+                            </div>
+                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;">
+                                <div>${fechaStr}</div>
+                            </div>
+                        </div>
+
+                        <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Total Tareas</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#0a2a44;">${totalTareas}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Cumplidas</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#2e7d32;">${totalFinalizadas}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${state.causas.filter(c => c.empleadoId === empId && c.estado === 'en_proceso').length}</div>
+                            </div>
+                        </div>
+
+                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Desglose por Nivel</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                                <thead>
+                                    <tr style="background:#f1f6fd; color:#1a4c74;">
+                                        <th style="padding:6px 8px; text-align:left;">Nivel</th>
+                                        <th style="padding:6px 8px; text-align:left;">Asignadas</th>
+                                        <th style="padding:6px 8px; text-align:left;">Cumplidas</th>
+                                        <th style="padding:6px 8px; text-align:left;">Promedio días</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${[1,2,3,4].map(n => {
+                                        const s = statsNivel[n];
+                                        const prom = s.tiempos.length ? (s.tiempos.reduce((a,b)=>a+b,0)/s.tiempos.length).toFixed(2) : '-';
+                                        return `<tr style="border-bottom:1px solid #eef2f7;">
+                                            <td style="padding:6px 8px; font-weight:600;">N${n}</td>
+                                            <td style="padding:6px 8px;">${s.total}</td>
+                                            <td style="padding:6px 8px;">${s.cumplidas}</td>
+                                            <td style="padding:6px 8px;">${prom}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Secretarios que asignaron</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                                <thead>
+                                    <tr style="background:#f1f6fd; color:#1a4c74;">
+                                        <th style="padding:6px 8px; text-align:left;">Secretario</th>
+                                        <th style="padding:6px 8px; text-align:left;">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${Object.entries(asignadores).map(([nombre, count]) => `
+                                        <tr style="border-bottom:1px solid #eef2f7;">
+                                            <td style="padding:6px 8px;">${nombre}</td>
+                                            <td style="padding:6px 8px;">${count}</td>
+                                        </tr>
+                                    `).join('')}
+                                    ${Object.keys(asignadores).length === 0 ? `<tr><td colspan="2" style="padding:10px; text-align:center; color:#8aa3bc;">Sin datos de asignación</td></tr>` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-top:0.5rem; font-size:0.65rem; color:#8aa3bc; border-top:1px solid #e2edf7; padding-top:0.5rem;">
+                            Reporte generado el ${fechaStr} · Sistema Digital de Pases
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('modalEstadisticasBody').innerHTML = html;
+                document.getElementById('modalEstadisticasNombre').textContent = emp.nombre;
+                new bootstrap.Modal(document.getElementById('modalEstadisticas')).show();
+            }
+
+            // ---------- PAGINACIÓN ----------
+            function paginateData(data, page, perPage = 10) {
+                const total = data.length; const totalPages = Math.ceil(total / perPage) || 1;
+                const start = (page - 1) * perPage; const end = Math.min(start + perPage, total);
+                return { items: data.slice(start, end), total, totalPages, page, start, end };
+            }
+
+            function renderPagination(targetId, total, totalPages, page, perPage, callback) {
+                const container = document.getElementById(targetId);
+                if (!container) return;
+                let html = `<div class="pagination-bar">
+                    <div class="info">Mostrando ${Math.min((page-1)*perPage + 1, total)} - ${Math.min(page*perPage, total)} de ${total}</div>
+                    <div>
+                        <button class="page-btn" data-page="prev" ${page<=1?'disabled':''}>Anterior</button>
+                        ${Array.from({length: Math.min(totalPages, 10)}, (_, i) => {
+                            let p = i + 1;
+                            if (totalPages > 10) { if (p < page - 4 || p > page + 4) { if (p === 1 || p === totalPages) return `<button class="page-btn" data-page="${p}">${p}</button>`; if (p === page - 5 || p === page + 5) return `<span>…</span>`; return ''; } }
+                            return `<button class="page-btn ${p===page?'active':''}" data-page="${p}">${p}</button>`;
+                        }).join('')}
+                        <button class="page-btn" data-page="next" ${page>=totalPages?'disabled':''}>Siguiente</button>
+                    </div>
+                    <div class="page-selector">
+                        <label>Ver:</label>
+                        <select class="form-select form-select-sm" style="width:70px;" id="perPageSelect">
+                            <option value="5" ${perPage===5?'selected':''}>5</option><option value="10" ${perPage===10?'selected':''}>10</option>
+                            <option value="25" ${perPage===25?'selected':''}>25</option><option value="50" ${perPage===50?'selected':''}>50</option>
+                        </select>
+                    </div>
+                </div>`;
+                container.innerHTML = html;
+                container.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const p = this.dataset.page; let newPage = page;
+                        if (p === 'prev') newPage = Math.max(1, page - 1); else if (p === 'next') newPage = Math.min(totalPages, page + 1); else newPage = parseInt(p);
+                        if (newPage !== page) callback(newPage, perPage);
+                    });
+                });
+                const perPageSelect = document.getElementById('perPageSelect');
+                if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
+            }
+
+            // ---------- RENDER MIS TAREAS ----------
+            function renderEmpleado() {
+                const panel = document.getElementById('panelEmpleado');
+                let causasFiltradas = state.causas.filter(c => c.empleadoId === currentEmpleadoId);
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                // Filtro por mes y año (fechaAsignacion)
+                if (filtroMes && filtroAnio) {
+                    const mes = parseInt(filtroMes);
+                    const anio = parseInt(filtroAnio);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getMonth() === mes-1 && d.getFullYear() === anio;
+                    });
+                } else if (filtroMes) {
+                    const mes = parseInt(filtroMes);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getMonth() === mes-1;
+                    });
+                } else if (filtroAnio) {
+                    const anio = parseInt(filtroAnio);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getFullYear() === anio;
+                    });
+                }
+                causasFiltradas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const pState = paginationState.empleado;
+                const { items, total, totalPages, page, start, end } = paginateData(causasFiltradas, pState.page, pState.perPage);
+
+                const anioOptions = [];
+                for (let y = 2026; y <= 2040; y++) {
+                    anioOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
+                }
+
+                panel.innerHTML = `
+                    <div class="card-modern">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
+                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnEstadisticas"><i class="bi bi-bar-chart"></i> Estadísticas</button>
+                            </div>
+                        </div>
+                        <!-- Filtros mes/año -->
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
+                                <select id="filtroMes" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Año:</label>
+                                <select id="filtroAnio" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${anioOptions.join('')}
+                                </select>
+                            </div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltros"><i class="bi bi-eraser"></i> Limpiar</button>
+                        </div>
+                        ${total ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Tipo</th>
+                                            <th>Asignación</th>
+                                            <th>Tiempo transcurrido</th>
+                                            <th>Nivel</th>
+                                            <th>Observación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${items.map(c => {
+                                            const done = c.estado === 'finalizada';
+                                            const cronoHtml = getCronoHtml(c);
+                                            const comentario = getComentarioAsignacion(c);
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.tipo}</td>
+                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaAsignacion)}</td>
+                                                <td>${cronoHtml}</td>
+                                                <td>N${c.nivelSecretario}</td>
+                                                <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
+                                                <td>
+                                                    ${!done && c.estado === 'en_proceso' ? `
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                        <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
+                                                    ` : (done ? `<i class="bi bi-check-circle-fill text-success"></i>` : `<span class="badge badge-estado badge-sec">En Secretaría</span>`)}
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div><div id="paginationEmpleado"></div>
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin tareas asignadas o sin coincidencias de filtro</div>`}
+                    </div>
+                `;
+
+                if (total > 0) renderPagination('paginationEmpleado', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.empleado.page = newPage; paginationState.empleado.perPage = newPerPage; renderEmpleado(); });
+
+                // Eventos de botones
+                // Devolver (motivo obligatorio, envía al secretario que asignó)
+                document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) return;
+                        const motivo = prompt('Motivo de devolución (obligatorio):');
+                        if (motivo === null || motivo.trim() === '') {
+                            showToast('Debe ingresar un motivo para devolver', 'warning');
+                            return;
+                        }
+                        const secId = obtenerSecretarioAsignante(causa);
+                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
+                        if (confirm(`¿Devolver a ${nombreSec} con motivo: "${motivo}"?`)) {
+                            cambiarEstado(id, 'en_secretaria', `Devuelto a Secretaría (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
+                            renderEmpleado();
+                        }
+                    });
+                });
+                // Enviar a Secretario (consulta) -> pide motivo de consulta
+                document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) return;
+                        const motivo = prompt('Motivo de consulta (obligatorio):');
+                        if (motivo === null || motivo.trim() === '') {
+                            showToast('Debe ingresar un motivo de consulta', 'warning');
+                            return;
+                        }
+                        const secId = obtenerSecretarioAsignante(causa);
+                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
+                        if (confirm(`¿Enviar a ${nombreSec} para consulta con motivo: "${motivo}"?`)) {
+                            cambiarEstado(id, 'en_secretaria', `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
+                            renderEmpleado();
+                        }
+                    });
+                });
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        abrirHistorial(this.dataset.id);
+                    });
+                });
+
+                // Reporte y Estadísticas
+                const btnReporte = document.getElementById('btnReporteEmpleado');
+                if (btnReporte) { btnReporte.addEventListener('click', function() { if (currentEmpleadoId) generarReporteEmpleado(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); }); }
+                const btnEst = document.getElementById('btnEstadisticas');
+                if (btnEst) { btnEst.addEventListener('click', function() { if (currentEmpleadoId) generarEstadisticas(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); }); }
+
+                // Filtros
+                const selectMes = document.getElementById('filtroMes');
+                const selectAnio = document.getElementById('filtroAnio');
+                if (selectMes) {
+                    selectMes.addEventListener('change', function() {
+                        filtroMes = this.value;
+                        paginationState.empleado.page = 1;
+                        renderEmpleado();
+                    });
+                }
+                if (selectAnio) {
+                    selectAnio.addEventListener('change', function() {
+                        filtroAnio = this.value;
+                        paginationState.empleado.page = 1;
+                        renderEmpleado();
+                    });
+                }
+                const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+                if (btnLimpiar) {
+                    btnLimpiar.addEventListener('click', function() {
+                        filtroMes = '';
+                        filtroAnio = '';
+                        paginationState.empleado.page = 1;
+                        renderEmpleado();
+                    });
+                }
+            }
+
+            // ---------- HISTORIAL ----------
+            function abrirHistorial(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                document.getElementById('modalHistorialExp').textContent = c.numero;
+                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
+                const body = document.getElementById('modalHistorialBody');
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
+                else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
+                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+            }
+
+            // ---------- CRONOMETROS Y ACTUALIZACIÓN AUTOMÁTICA ----------
+            function iniciarCronometros() {
+                if (cronoInterval) clearInterval(cronoInterval);
+                cronoInterval = setInterval(() => { renderEmpleado(); }, 10000);
+            }
+
+            function iniciarAutoActualizacion() {
+                if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+                autoUpdateInterval = setInterval(() => {
+                    loadState();
+                    renderEmpleado();
+                    showToast('🔄 Base de datos actualizada automáticamente', 'info');
+                }, 5 * 60 * 1000);
+            }
+
+            function actualizarManual() {
+                loadState();
+                renderEmpleado();
+                showToast('✅ Base de datos actualizada manualmente', 'success');
+            }
+
+            // ---------- LOGIN ----------
+            function handleLogin() {
+                const empId = document.getElementById('loginEmpleado').value;
+                const pass = document.getElementById('loginPassword').value;
+                const errorDiv = document.getElementById('loginError');
+
+                if (!empId) { errorDiv.textContent = '❌ Seleccione un empleado.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+                if (pass !== CONFIG.password) { errorDiv.textContent = '❌ Clave incorrecta.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+
+                errorDiv.style.display = 'none';
+                currentEmpleadoId = empId;
+                const empNombre = getEmpName(empId);
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('appWrapper').classList.add('visible');
+                document.getElementById('empleadoNombre').textContent = empNombre;
+
+                loadState();
+                renderEmpleado();
+                showToast(`Bienvenido/a ${empNombre}`, 'success');
+                iniciarCronometros();
+                iniciarAutoActualizacion();
+            }
+
+            function cerrarSesion() {
+                document.getElementById('logoutAlert').style.display = 'none';
+                if (cronoInterval) clearInterval(cronoInterval);
+                if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+                document.getElementById('appWrapper').classList.remove('visible');
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginEmpleado').value = '';
+                currentEmpleadoId = '';
+                showToast('Sesión cerrada', 'warning');
+            }
+
+            // ---------- INICIALIZACIÓN ----------
+            document.addEventListener('DOMContentLoaded', function() {
+                const empSelect = document.getElementById('loginEmpleado');
+                CONFIG.empleados.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp.id;
+                    opt.textContent = emp.nombre;
+                    empSelect.appendChild(opt);
+                });
+
+                document.getElementById('globalSearch').addEventListener('input', function() {
+                    searchTerm = this.value.trim();
+                    paginationState.empleado.page = 1;
+                    renderEmpleado();
+                });
+
+                document.getElementById('btnLogin').addEventListener('click', handleLogin);
+                document.getElementById('loginPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
+
+                document.getElementById('btnCerrarSesion').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutAlert').style.display = 'flex';
+                });
+                document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').style.display = 'none');
+                document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+                document.addEventListener('click', function(e) {
+                    const a = document.getElementById('logoutAlert');
+                    if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none';
+                });
+
+                document.getElementById('btnActualizarBD').addEventListener('click', actualizarManual);
+
+                loadState();
+            });
+        })();
+    </script>
+</body>
+</html>
