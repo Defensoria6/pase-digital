@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistema Digital de Pases · Defensor (Integrado)</title>
+    <title>Sistema Digital de Pases · Administrador</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
@@ -232,7 +232,7 @@
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card">
             <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
-            <h2>Acceso Defensor</h2>
+            <h2>Acceso Administrador</h2>
             <p class="sub">Ingrese su contraseña para acceder</p>
             <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
             <div id="loginError" class="login-error">❌ Clave incorrecta.</div>
@@ -252,7 +252,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Defensor (Full)</span>
+                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Administrador</span>
                 <div class="search-box">
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
@@ -270,13 +270,14 @@
         <div id="panelEmpleado" class="tab-panel"></div>
         <div id="panelGraficos" class="tab-panel"></div>
         <div id="panelAuditoria" class="tab-panel"></div>
+        <div id="panelAdmin" class="tab-panel"></div> <!-- NUEVA pestaña Administración -->
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
             <i class="bi bi-cloud-check"></i> Datos en la nube · Sincronización automática · Todos los módulos integrados
         </footer>
     </div>
 
-    <!-- MODALES -->
+    <!-- MODALES (sin cambios) -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -428,7 +429,7 @@
 
             // ---------- CONFIG ----------
             const CONFIG = {
-                password: 'def6',
+                password: 'admin', // Cambiado a 'admin'
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
@@ -449,7 +450,7 @@
 
             // ---------- ESTADO ----------
             let state = { causas: [], ausencias: [] };
-            let currentRole = 'defensor';
+            let currentRole = 'admin';
             let searchTerm = '';
             let chartInstances = {};
             let cronoInterval = null;
@@ -459,7 +460,8 @@
                 proceso: { page: 1, perPage: 10 },
                 defensor: { page: 1, perPage: 10 },
                 empleado: { page: 1, perPage: 10 },
-                auditoria: { page: 1, perPage: 10 }
+                auditoria: { page: 1, perPage: 10 },
+                admin: { page: 1, perPage: 10 }
             };
             let filtroMes = '';
             let filtroAnio = '';
@@ -602,6 +604,23 @@
                 }
             }
 
+            // ---------- NUEVA FUNCIÓN ELIMINAR ----------
+            async function eliminarCausa(id) {
+                const causa = state.causas.find(c => c.id === id);
+                if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
+                if (!confirm(`¿Eliminar permanentemente la causa ${causa.numero}? Esta acción no se puede deshacer.`)) return;
+
+                try {
+                    await db.collection('operador').doc(id).delete();
+                    state.causas = state.causas.filter(c => c.id !== id);
+                    showToast(`✅ Causa ${causa.numero} eliminada correctamente`, 'success');
+                    renderAll(); // Refresca todas las vistas
+                } catch (error) {
+                    console.error('Error al eliminar:', error);
+                    showToast('Error al eliminar en Firestore', 'danger');
+                }
+            }
+
             // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO (adaptadas) ----------
             async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
@@ -653,7 +672,7 @@
                     fechaFinalizacion: null,
                     fechaLimite: null,
                     fechaResolucionEmpleado: null,
-                    operador: op || 'Defensor',
+                    operador: op || 'Administrador',
                     asistenciaCamaraGesell: false,
                     asistenciaGesell: 'pendiente',
                     fechaHoraGesell: null,
@@ -664,7 +683,7 @@
                     historial: [{
                         fecha: new Date().toISOString(),
                         accion: accionHistorial,
-                        usuario: op || 'Defensor',
+                        usuario: op || 'Administrador',
                         comentario: motivoGuardado || obs || 'Sin observaciones'
                     }]
                 };
@@ -790,7 +809,7 @@
                 c.historial.push({
                     fecha: new Date().toISOString(),
                     accion: `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)}`,
-                    usuario: 'Defensor',
+                    usuario: 'Administrador',
                     comentario: com || `Asignado a ${getEmpName(empId)}`
                 });
                 try {
@@ -828,7 +847,7 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado === 'devuelto_siged') { showToast('Ya fue devuelto a SIGED', 'warning'); return; }
-                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', 'Defensor', 'Devolución por Defensor');
+                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', 'Administrador', 'Devolución por Administrador');
             }
 
             async function remitirDependencia(id) {
@@ -837,7 +856,7 @@
                 if (c.estado === 'remitido') { showToast('Ya fue remitido', 'warning'); return; }
                 const dependencia = prompt('Ingrese la dependencia a la que se remite:');
                 if (dependencia === null || dependencia.trim() === '') { showToast('Remisión cancelada', 'info'); return; }
-                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, 'Defensor', `Dependencia: ${dependencia.trim()}`);
+                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, 'Administrador', `Dependencia: ${dependencia.trim()}`);
             }
 
             async function rechazarCausa(id) {
@@ -846,7 +865,7 @@
                 if (c.estado === 'rechazado') { showToast('Ya fue rechazada', 'warning'); return; }
                 const motivo = prompt('Motivo del rechazo:');
                 if (motivo === null) return;
-                await cambiarEstado(id, 'rechazado', 'Rechazado', 'Defensor', motivo || 'Sin motivo');
+                await cambiarEstado(id, 'rechazado', 'Rechazado', 'Administrador', motivo || 'Sin motivo');
             }
 
             // ---------- FUNCIONES DE SECRETARIO (adicionales) adaptadas ----------
@@ -855,7 +874,7 @@
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado !== 'en_proceso') { showToast('Solo se puede cumplir causas en proceso', 'warning'); return; }
                 if (confirm(`¿Autorizar cumplimiento de ${c.numero}?`)) {
-                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Secretario', 'Defensor', 'Cumplido autorizado');
+                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Administrador', 'Administrador', 'Cumplido autorizado');
                     renderAll();
                 }
             }
@@ -869,7 +888,7 @@
                 }
                 const motivo = prompt('Motivo de elevación al Defensor (opcional):');
                 if (motivo === null) return;
-                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', motivo || 'Sin motivo');
+                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', motivo || 'Sin motivo');
                 renderAll();
             }
 
@@ -1273,7 +1292,7 @@
                 new bootstrap.Modal(document.getElementById('modalEquidad')).show();
             }
 
-            // ---------- PAGINACIÓN (sin cambios) ----------
+            // ---------- PAGINACIÓN ----------
             function paginateData(data, page, perPage = 10) {
                 const total = data.length; const totalPages = Math.ceil(total / perPage) || 1;
                 const start = (page - 1) * perPage; const end = Math.min(start + perPage, total);
@@ -1321,7 +1340,7 @@
                 showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
             }
 
-            // ---------- PANELES (se mantienen igual, pero con async/await en eventos) ----------
+            // ---------- PANELES (se mantienen igual, pero con async/await) ----------
             // 1. INGRESO (Operador)
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
@@ -1409,6 +1428,7 @@
                                                             <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-siged" data-id="${c.id}" title="Devolver a SIGED" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-arrow-return-left"></i></button>
                                                             <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-remitir" data-id="${c.id}" title="Remitir a otra dependencia" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-send"></i></button>
                                                             <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-rechazar" data-id="${c.id}" title="Rechazar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-x-circle"></i></button>
+                                                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem; color:#c62828;"><i class="bi bi-trash"></i></button>
                                                         ` : ''}
                                                         <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-eye"></i></button>
                                                     </td>
@@ -1509,16 +1529,17 @@
                     }
                 });
 
-                // Eventos de acciones
+                // Eventos de acciones (incluyendo eliminar)
                 document.querySelectorAll('.btn-devolver-siged').forEach(btn => { btn.addEventListener('click', async function() { await devolverSIGED(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-remitir').forEach(btn => { btn.addEventListener('click', async function() { await remitirDependencia(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-rechazar').forEach(btn => { btn.addEventListener('click', async function() { await rechazarCausa(this.dataset.id); renderAll(); }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
                 const btnReporte = document.getElementById('btnReporteGeneralIngreso');
                 if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN (Secretario) - se mantiene igual pero con async/await
+            // 2. DISTRIBUCIÓN (Secretario) - se mantiene igual pero con async/await y botón eliminar
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
                 const pend = getFilteredCausas().filter(c => c.estado === 'en_secretaria').sort((a, b) => b.nivelOperador - a.nivelOperador);
@@ -1586,6 +1607,7 @@
                                                 <td>
                                                     <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
                                                     <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                     <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                                 </td>
                                             </tr>
@@ -1614,6 +1636,7 @@
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
                                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar a Defensor</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i> Consultas</button>
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                             </td>
                                         </tr>`;
@@ -1695,7 +1718,8 @@
                 // Eventos (async)
                 document.querySelectorAll('.btn-asignar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const emp = document.getElementById(`em_${id}`).value; const niv = document.getElementById(`nv_${id}`).value; if (!emp) { showToast('Seleccione un empleado', 'warning'); return; } await asignarCausa(id, niv, emp); renderAll(); }); });
                 document.querySelectorAll('.btn-auto-asig').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const niv = document.getElementById(`nv_${id}`).value; await asignarAlMenosCargado(id, niv); renderAll(); }); });
-                document.querySelectorAll('.btn-elevar-def').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const com = prompt('Motivo de elevación a Defensor:'); if (com !== null) { await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', com || 'Sin motivo'); renderAll(); } }); });
+                document.querySelectorAll('.btn-elevar-def').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const com = prompt('Motivo de elevación a Defensor:'); if (com !== null) { await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', com || 'Sin motivo'); renderAll(); } }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
                 document.querySelectorAll('.btn-cumplido').forEach(btn => { btn.addEventListener('click', async function() { await marcarCumplido(this.dataset.id); }); });
                 document.querySelectorAll('.btn-elevar-defensor').forEach(btn => { btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); }); });
@@ -1706,9 +1730,6 @@
                         const empNombre = this.dataset.emp;
                         const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
                         if (emp) {
-                            // Lógica de ausencia de empleado (local, no persistida en Firestore en este módulo)
-                            // Simplemente se guarda en el estado local (no compartido) para demostración.
-                            // En un entorno real, se podría guardar en otro documento.
                             showToast(`Cambio de estado de ${emp.nombre} (solo local)`, 'info');
                         }
                     });
@@ -1732,7 +1753,7 @@
                 if (btnEquidad) { btnEquidad.addEventListener('click', generarInformeEquidad); }
             }
 
-            // 3. DEFENSOR (propio) - se mantiene igual pero con async/await
+            // 3. DEFENSOR (propio) - se mantiene igual pero con async/await y botón eliminar
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -1772,6 +1793,7 @@
                                             <td>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-guardar-gesell" data-id="${c.id}">Guardar</button>
                                                 ${c.estado === 'en_defensor' ? `<button class="btn btn-modern btn-modern-outline btn-modern-sm btn-finalizar-gesell" data-id="${c.id}">Finalizar</button>` : ''}
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -1813,6 +1835,7 @@
                                             </td>
                                             <td>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-def-finalizar" data-id="${c.id}">Finalizar</button> 
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                             </td>
                                         </tr>
@@ -1863,7 +1886,7 @@
                             c.historial.push({
                                 fecha: new Date().toISOString(),
                                 accion: `Asignado (Nivel ${nLvl}) a ${getEmpName(empId)}`,
-                                usuario: 'Defensor',
+                                usuario: 'Administrador',
                                 comentario: `Reasignado desde Defensor`
                             });
                             try {
@@ -1877,7 +1900,8 @@
                     });
                 });
 
-                document.querySelectorAll('.btn-def-finalizar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; if (confirm('¿Finalizar esta causa?')) { await cambiarEstado(id, 'finalizada', 'Finalizada por Defensor', 'Defensor'); renderAll(); } }); });
+                document.querySelectorAll('.btn-def-finalizar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; if (confirm('¿Finalizar esta causa?')) { await cambiarEstado(id, 'finalizada', 'Finalizada por Administrador', 'Administrador'); renderAll(); } }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
 
                 document.querySelectorAll('.btn-guardar-gesell').forEach(btn => {
@@ -1893,7 +1917,7 @@
                         causa.historial.push({
                             fecha: new Date().toISOString(),
                             accion: `Actualización Cámara Gesell: Asistencia=${asistencia}, Fecha/Hora=${fechaHora || 'No especificada'}`,
-                            usuario: 'Defensor',
+                            usuario: 'Administrador',
                             comentario: ''
                         });
                         try {
@@ -1910,7 +1934,7 @@
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
                         if (confirm('¿Finalizar esta causa?')) {
-                            await cambiarEstado(id, 'finalizada', 'Finalizada por Defensor (Gesell)', 'Defensor');
+                            await cambiarEstado(id, 'finalizada', 'Finalizada por Administrador (Gesell)', 'Administrador');
                             renderAll();
                         }
                     });
@@ -2209,7 +2233,7 @@
                 }, 150);
             }
 
-            // 6. AUDITORIA (se mantiene igual)
+            // 6. AUDITORIA (con botón eliminar)
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
@@ -2233,8 +2257,11 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Ver</th></tr></thead>
-                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}</tbody>
+                                    <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Acciones</th></tr></thead>
+                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td>
+                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
+                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                    </td></tr>`).join('')}</tbody>
                                 </table>
                             </div><div id="paginationAuditoria"></div>
                         ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros</div>`}
@@ -2245,8 +2272,88 @@
 
                 const filtro = document.getElementById('auditoriaFiltroOperador'); if (filtro) filtro.addEventListener('change', function() { paginationState.auditoria.page = 1; renderAuditoria(); });
                 const btnReporte = document.getElementById('btnReportePorOperador'); if (btnReporte) btnReporte.addEventListener('click', function() { const op = document.getElementById('auditoriaFiltroOperador').value; if (!op) { showToast('Seleccione un operador.', 'warning'); return; } generarReportePorOperador(op); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
                 document.getElementById('btnReiniciarStorage').addEventListener('click', async function() { if (confirm('⚠️ ¿Eliminar todos los datos de Firestore? Esta acción es irreversible.')) { try { const snapshot = await db.collection('operador').get(); const batch = db.batch(); snapshot.forEach(doc => { batch.delete(doc.ref); }); await batch.commit(); state.causas = []; state.ausencias = []; showToast('Datos reiniciados', 'warning'); renderAll(); } catch (e) { showToast('Error al reiniciar', 'danger'); } } });
+            }
+
+            // 7. ADMINISTRACIÓN (NUEVO PANEL PARA ELIMINAR REGISTROS)
+            function renderAdmin() {
+                const panel = document.getElementById('panelAdmin');
+                const filterSelect = document.getElementById('adminFiltroOperador');
+                const filterEstado = document.getElementById('adminFiltroEstado');
+                let operadorFiltro = filterSelect ? filterSelect.value : '';
+                let estadoFiltro = filterEstado ? filterEstado.value : '';
+
+                let causasFiltradas = getFilteredCausas();
+                if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
+                if (estadoFiltro) causasFiltradas = causasFiltradas.filter(c => c.estado === estadoFiltro);
+
+                causasFiltradas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                const pState = paginationState.admin;
+                const { items, total, totalPages, page, start, end } = paginateData(causasFiltradas, pState.page, pState.perPage);
+
+                const opciones = CONFIG.operadores.map(op => `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`).join('');
+                const estados = ['en_secretaria','en_proceso','finalizada','en_defensor','devuelto_siged','remitido','rechazado'];
+                const opcionesEstado = estados.map(e => `<option value="${e}" ${e === estadoFiltro ? 'selected' : ''}>${getEstadoBadgePlain(e)}</option>`).join('');
+
+                panel.innerHTML = `
+                    <div class="card-modern">
+                        <div class="card-title"><i class="bi bi-tools"></i> Administración · Eliminación de Registros</div>
+                        <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
+                            <label class="form-label me-1" style="font-size:0.8rem; font-weight:600;">Operador:</label>
+                            <select id="adminFiltroOperador" class="form-select form-select-sm" style="width:auto; display:inline-block;"><option value="">Todos</option>${opciones}</select>
+                            <label class="form-label me-1" style="font-size:0.8rem; font-weight:600;">Estado:</label>
+                            <select id="adminFiltroEstado" class="form-select form-select-sm" style="width:auto; display:inline-block;"><option value="">Todos</option>${opcionesEstado}</select>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltrosAdmin"><i class="bi bi-eraser"></i> Limpiar</button>
+                            <span class="text-muted" style="font-size:0.8rem;">Total: ${total}</span>
+                        </div>
+                        ${total ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table">
+                                    <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>Acciones</th></tr></thead>
+                                    <tbody>${items.map(c => `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.operador || '-'}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td>${getEmpName(c.empleadoId)}</td>
+                                            <td>
+                                                <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar-admin" data-id="${c.id}"><i class="bi bi-trash"></i> Eliminar</button>
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}</tbody>
+                                </table>
+                            </div><div id="paginationAdmin"></div>
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>No hay registros</div>`}
+                    </div>
+                `;
+
+                if (total > 0) renderPagination('paginationAdmin', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.admin.page = newPage; paginationState.admin.perPage = newPerPage; renderAdmin(); });
+
+                document.querySelectorAll('.btn-eliminar-admin').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        await eliminarCausa(this.dataset.id);
+                        renderAdmin(); // actualizar solo este panel
+                        renderAll(); // actualizar global
+                    });
+                });
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+
+                const filtroOp = document.getElementById('adminFiltroOperador');
+                const filtroEst = document.getElementById('adminFiltroEstado');
+                if (filtroOp) filtroOp.addEventListener('change', function() { paginationState.admin.page = 1; renderAdmin(); });
+                if (filtroEst) filtroEst.addEventListener('change', function() { paginationState.admin.page = 1; renderAdmin(); });
+                const btnLimpiar = document.getElementById('btnLimpiarFiltrosAdmin');
+                if (btnLimpiar) {
+                    btnLimpiar.addEventListener('click', function() {
+                        if (filtroOp) filtroOp.value = '';
+                        if (filtroEst) filtroEst.value = '';
+                        paginationState.admin.page = 1;
+                        renderAdmin();
+                    });
+                }
             }
 
             // ---------- HISTORIAL ----------
@@ -2320,6 +2427,8 @@
                 renderTabs();
                 const activeTab = document.querySelector('.tab-btn.active');
                 if (activeTab) renderPanel(activeTab.dataset.target);
+                // Asegurar que el panel de administración se renderice si está activo
+                if (document.getElementById('panelAdmin').classList.contains('active')) renderAdmin();
                 if (document.getElementById('panelGraficos').classList.contains('active')) renderGraficos();
             }
 
@@ -2331,6 +2440,7 @@
                     case 'panelEmpleado': renderEmpleado(); break; 
                     case 'panelGraficos': renderGraficos(); break; 
                     case 'panelAuditoria': renderAuditoria(); break; 
+                    case 'panelAdmin': renderAdmin(); break; 
                     default: break; 
                 }
             }
@@ -2343,7 +2453,8 @@
                     { id: 'panelDefensor', label: '⚖️ Defensor', icon: 'bi-gavel' },
                     { id: 'panelEmpleado', label: '📋 Empleado', icon: 'bi-person-check' },
                     { id: 'panelGraficos', label: '📊 Gráficos', icon: 'bi-bar-chart-fill' },
-                    { id: 'panelAuditoria', label: '📜 Auditoría', icon: 'bi-clipboard-data' }
+                    { id: 'panelAuditoria', label: '📜 Auditoría', icon: 'bi-clipboard-data' },
+                    { id: 'panelAdmin', label: '🛠️ Administración', icon: 'bi-tools' }
                 ];
                 
                 const currentActive = container.querySelector('.tab-btn.active');
@@ -2382,7 +2493,7 @@
                     document.getElementById('appWrapper').classList.add('visible');
                     await loadStateFromFirestore();
                     renderAll();
-                    showToast('Bienvenido/a Defensor (Full Access)', 'success');
+                    showToast('Bienvenido/a Administrador', 'success');
                     iniciarCronometros();
                 } else {
                     errorDiv.textContent = '❌ Clave incorrecta.';
@@ -2416,8 +2527,10 @@
                 document.addEventListener('click', function(e) { const a = document.getElementById('logoutAlert'); if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none'; });
                 // Botón Actualizar todas las BD
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarTodasLasBD);
-                // Carga inicial (se cargará al hacer login, pero si ya hay sesión, cargar)
-                if (document.getElementById('loginOverlay').classList.contains('hidden')) {
+                // Carga inicial (si ya hay sesión)
+                if (!document.getElementById('loginOverlay').classList.contains('hidden')) {
+                    // No cargar hasta login
+                } else {
                     loadStateFromFirestore().then(() => renderAll());
                 }
             });

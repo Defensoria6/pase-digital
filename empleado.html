@@ -10,8 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        /* ===== ESTILOS COMPLETOS (igual que antes) ===== */
+        /* ===== ESTILOS (sin cambios) ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -287,7 +291,7 @@
         <div id="panelEmpleado" class="tab-panel active"></div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
-            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados localmente · Actualización automática cada 5min
+            <i class="bi bi-cloud-check"></i> Datos en la nube · Sincronización automática cada 5 min
         </footer>
     </div>
 
@@ -364,9 +368,20 @@
         (function() {
             'use strict';
 
+            // ---------- FIREBASE ----------
+            const firebaseConfig = {
+                apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+                authDomain: "pasedefensoria6.firebaseapp.com",
+                projectId: "pasedefensoria6",
+                storageBucket: "pasedefensoria6.firebasestorage.app",
+                messagingSenderId: "785250989941",
+                appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+
             // ---------- CONFIG ----------
             const CONFIG = {
-                storageKey: 'defensoria_unificada_v1',
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
@@ -405,16 +420,6 @@
 
             // ---------- UTILS ----------
             function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
-            function loadState() {
-                try { const raw = localStorage.getItem(CONFIG.storageKey); if (raw) state = JSON.parse(raw); if (!state.causas) state.causas = []; } catch (_) { state.causas = []; }
-                state.causas.forEach(c => {
-                    if (c.asistenciaCamaraGesell === undefined) c.asistenciaCamaraGesell = false;
-                    if (c.asistenciaGesell === undefined) c.asistenciaGesell = 'pendiente';
-                    if (c.fechaHoraGesell === undefined) c.fechaHoraGesell = null;
-                    if (c.secretarioId === undefined) c.secretarioId = null;
-                });
-            }
-            function saveState() { localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); }
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
             function fmtDt(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
@@ -423,10 +428,8 @@
             // Obtener el comentario de la asignación (lo que escribió el secretario)
             function getComentarioAsignacion(causa) {
                 if (!causa.historial || !causa.historial.length) return '-';
-                // Buscar el registro de asignación (acción que contiene "Asignado (Nivel")
                 const asignaciones = causa.historial.filter(h => h.accion && h.accion.includes('Asignado (Nivel'));
                 if (asignaciones.length === 0) return '-';
-                // Tomar la más reciente (última en orden de fecha, pero asumimos que el historial está ordenado cronológicamente)
                 const ultima = asignaciones[asignaciones.length - 1];
                 return ultima.comentario || '-';
             }
@@ -465,45 +468,37 @@
                 setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
             }
 
-            // ---------- CRONOMETRO (tiempo transcurrido desde asignación) ----------
-            function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
-                if (!fechaAsignacion) return null;
-                const inicio = new Date(fechaAsignacion);
-                const fin = fechaCierre ? new Date(fechaCierre) : new Date();
-                const diffMs = fin - inicio;
-                if (diffMs < 0) return null;
-                const seg = Math.floor(diffMs / 1000);
-                const dias = Math.floor(seg / 86400);
-                const horas = Math.floor((seg % 86400) / 3600);
-                const mins = Math.floor((seg % 3600) / 60);
-                const secs = Math.floor(seg % 60);
-                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            // ---------- FIRESTORE OPERATIONS ----------
+            async function loadStateFromFirestore() {
+                try {
+                    const snapshot = await db.collection('operador').get();
+                    const causas = [];
+                    snapshot.forEach(doc => {
+                        if (doc.id === 'secretario_config') return; // ignorar documento de configuración
+                        const data = doc.data();
+                        if (!data.id) data.id = doc.id;
+                        causas.push(data);
+                    });
+                    state.causas = causas;
+                } catch (error) {
+                    console.error('Error cargando datos:', error);
+                    showToast('Error al conectar con Firestore', 'danger');
+                    state.causas = [];
+                }
             }
 
-            function getCronoHtml(causa) {
-                if (!causa.fechaAsignacion) return '<span class="crono azul">—</span>';
-                let fechaCierre = null;
-                if (causa.estado === 'finalizada' && causa.fechaFinalizacion) {
-                    fechaCierre = causa.fechaFinalizacion;
-                } else if (causa.estado === 'en_secretaria' && causa.fechaResolucionEmpleado) {
-                    fechaCierre = causa.fechaResolucionEmpleado;
-                } else if (causa.estado === 'en_defensor' && causa.fechaResolucionEmpleado) {
-                    fechaCierre = causa.fechaResolucionEmpleado;
-                } else if (causa.estado === 'devuelto_siged' || causa.estado === 'remitido') {
-                    fechaCierre = causa.fechaResolucionEmpleado || causa.fechaFinalizacion || null;
+            async function updateCausaInFirestore(causa) {
+                try {
+                    await db.collection('operador').doc(causa.id).set(causa);
+                } catch (error) {
+                    console.error('Error actualizando causa:', error);
+                    showToast('Error al guardar en Firestore', 'danger');
+                    throw error;
                 }
-                const tiempo = getTiempoTranscurrido(causa.fechaAsignacion, fechaCierre);
-                if (!tiempo) return '<span class="crono azul">—</span>';
-                let cls = 'crono azul';
-                if (fechaCierre) {
-                    cls = 'crono medio';
-                }
-                return `<span class="${cls}">${tiempo}</span>`;
             }
 
             // ---------- FUNCIONES DE ESTADO ----------
-            function cambiarEstado(id, nuevoEstado, accion, usuario, com, secretarioId) {
+            async function cambiarEstado(id, nuevoEstado, accion, usuario, com, secretarioId) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
                 if (nuevoEstado === 'finalizada' || nuevoEstado === 'en_secretaria' || nuevoEstado === 'en_defensor') {
@@ -524,9 +519,17 @@
                     const secId = obtenerSecretarioAsignante(c);
                     if (secId) c.secretarioId = secId;
                 }
+                if (!c.historial) c.historial = [];
                 c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' });
-                saveState();
-                showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                try {
+                    await updateCausaInFirestore(c);
+                    showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                } catch (error) {
+                    // Revertir cambios locales si falla la actualización (opcional)
+                    // Volver a cargar desde Firestore para asegurar consistencia
+                    await loadStateFromFirestore();
+                    renderEmpleado();
+                }
             }
 
             // Función para obtener el secretario que asignó originalmente (del historial)
@@ -547,7 +550,7 @@
                 return null;
             }
 
-            // ---------- REPORTE DEL EMPLEADO (con tiempo transcurrido) ----------
+            // ---------- REPORTE DEL EMPLEADO ----------
             function generarReporteEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -948,9 +951,8 @@
                 if (total > 0) renderPagination('paginationEmpleado', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.empleado.page = newPage; paginationState.empleado.perPage = newPerPage; renderEmpleado(); });
 
                 // Eventos de botones
-                // Devolver (motivo obligatorio, envía al secretario que asignó)
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
                         const causa = state.causas.find(c => c.id === id);
                         if (!causa) return;
@@ -962,14 +964,13 @@
                         const secId = obtenerSecretarioAsignante(causa);
                         const nombreSec = secId ? getSecName(secId) : 'Secretario';
                         if (confirm(`¿Devolver a ${nombreSec} con motivo: "${motivo}"?`)) {
-                            cambiarEstado(id, 'en_secretaria', `Devuelto a Secretaría (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
+                            await cambiarEstado(id, 'en_secretaria', `Devuelto a Secretaría (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
                             renderEmpleado();
                         }
                     });
                 });
-                // Enviar a Secretario (consulta) -> pide motivo de consulta
                 document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
                         const causa = state.causas.find(c => c.id === id);
                         if (!causa) return;
@@ -981,7 +982,7 @@
                         const secId = obtenerSecretarioAsignante(causa);
                         const nombreSec = secId ? getSecName(secId) : 'Secretario';
                         if (confirm(`¿Enviar a ${nombreSec} para consulta con motivo: "${motivo}"?`)) {
-                            cambiarEstado(id, 'en_secretaria', `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
+                            await cambiarEstado(id, 'en_secretaria', `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`, getEmpName(currentEmpleadoId), motivo, secId);
                             renderEmpleado();
                         }
                     });
@@ -1039,6 +1040,42 @@
             }
 
             // ---------- CRONOMETROS Y ACTUALIZACIÓN AUTOMÁTICA ----------
+            function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
+                if (!fechaAsignacion) return null;
+                const inicio = new Date(fechaAsignacion);
+                const fin = fechaCierre ? new Date(fechaCierre) : new Date();
+                const diffMs = fin - inicio;
+                if (diffMs < 0) return null;
+                const seg = Math.floor(diffMs / 1000);
+                const dias = Math.floor(seg / 86400);
+                const horas = Math.floor((seg % 86400) / 3600);
+                const mins = Math.floor((seg % 3600) / 60);
+                const secs = Math.floor(seg % 60);
+                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            }
+
+            function getCronoHtml(causa) {
+                if (!causa.fechaAsignacion) return '<span class="crono azul">—</span>';
+                let fechaCierre = null;
+                if (causa.estado === 'finalizada' && causa.fechaFinalizacion) {
+                    fechaCierre = causa.fechaFinalizacion;
+                } else if (causa.estado === 'en_secretaria' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'en_defensor' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'devuelto_siged' || causa.estado === 'remitido') {
+                    fechaCierre = causa.fechaResolucionEmpleado || causa.fechaFinalizacion || null;
+                }
+                const tiempo = getTiempoTranscurrido(causa.fechaAsignacion, fechaCierre);
+                if (!tiempo) return '<span class="crono azul">—</span>';
+                let cls = 'crono azul';
+                if (fechaCierre) {
+                    cls = 'crono medio';
+                }
+                return `<span class="${cls}">${tiempo}</span>`;
+            }
+
             function iniciarCronometros() {
                 if (cronoInterval) clearInterval(cronoInterval);
                 cronoInterval = setInterval(() => { renderEmpleado(); }, 10000);
@@ -1046,21 +1083,21 @@
 
             function iniciarAutoActualizacion() {
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
-                autoUpdateInterval = setInterval(() => {
-                    loadState();
+                autoUpdateInterval = setInterval(async () => {
+                    await loadStateFromFirestore();
                     renderEmpleado();
                     showToast('🔄 Base de datos actualizada automáticamente', 'info');
                 }, 5 * 60 * 1000);
             }
 
-            function actualizarManual() {
-                loadState();
+            async function actualizarManual() {
+                await loadStateFromFirestore();
                 renderEmpleado();
                 showToast('✅ Base de datos actualizada manualmente', 'success');
             }
 
             // ---------- LOGIN ----------
-            function handleLogin() {
+            async function handleLogin() {
                 const empId = document.getElementById('loginEmpleado').value;
                 const pass = document.getElementById('loginPassword').value;
                 const errorDiv = document.getElementById('loginError');
@@ -1068,8 +1105,6 @@
                 if (!empId) { errorDiv.textContent = '❌ Seleccione un empleado.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
                 
                 const empleadoSeleccionado = CONFIG.empleados.find(e => e.id === empId);
-                
-                // Validación contra la clave específica del empleado
                 if (!empleadoSeleccionado || pass !== empleadoSeleccionado.clave) { 
                     errorDiv.textContent = '❌ Clave incorrecta.'; 
                     errorDiv.style.display = 'block'; 
@@ -1084,7 +1119,7 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('empleadoNombre').textContent = empNombre;
 
-                loadState();
+                await loadStateFromFirestore();
                 renderEmpleado();
                 showToast(`Bienvenido/a ${empNombre}`, 'success');
                 iniciarCronometros();
@@ -1134,8 +1169,6 @@
                 });
 
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarManual);
-
-                loadState();
             });
         })();
     </script>

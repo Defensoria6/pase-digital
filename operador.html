@@ -10,8 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
-        /* ===== ESTILOS (sin cambios relevantes) ===== */
+        /* ===== ESTILOS (sin cambios) ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -235,7 +239,7 @@
         </div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
-            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados localmente
+            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados en Firestore
         </footer>
     </div>
 
@@ -345,9 +349,20 @@
         (function() {
             'use strict';
 
+            // ---------- FIREBASE ----------
+            const firebaseConfig = {
+                apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+                authDomain: "pasedefensoria6.firebaseapp.com",
+                projectId: "pasedefensoria6",
+                storageBucket: "pasedefensoria6.firebasestorage.app",
+                messagingSenderId: "785250989941",
+                appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+
             // ---------- CONFIG ----------
             const CONFIG = {
-                storageKey: 'defensoria_unificada_v1',
                 operadoresClaves: { 'Boillat Enrique': '111', 'Cardozo Raquel': '222', 'Cedron Noelia': '444', 'Pablos Pato': '333' },
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
@@ -379,19 +394,6 @@
 
             // ---------- UTILS ----------
             function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
-            function loadState() {
-                try { const raw = localStorage.getItem(CONFIG.storageKey); if (raw) state = JSON.parse(raw); if (!state.causas) state.causas = []; if (!state.ausencias) state.ausencias = []; } catch (_) { state.causas = []; state.ausencias = []; }
-                state.causas.forEach(c => {
-                    if (c.asistenciaCamaraGesell === undefined) c.asistenciaCamaraGesell = false;
-                    if (c.asistenciaGesell === undefined) c.asistenciaGesell = 'pendiente';
-                    if (c.fechaHoraGesell === undefined) c.fechaHoraGesell = null;
-                    if (c.fuenteSiged === undefined) c.fuenteSiged = false;
-                    if (c.fuenteZimbra === undefined) c.fuenteZimbra = false;
-                    if (c.motivoAccion === undefined) c.motivoAccion = null;
-                    if (c.dependenciaRemision === undefined) c.dependenciaRemision = null;
-                });
-            }
-            function saveState() { localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); }
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
             function fmtDt(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
@@ -443,7 +445,63 @@
                 setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
             }
 
-            // ---------- GESTIÓN DE AUSENCIAS ----------
+            // ---------- FIRESTORE OPERATIONS ----------
+            async function loadState() {
+                try {
+                    // Cargar causas (todos los documentos que no sean el de ausencias)
+                    const snapshot = await db.collection('operador').get();
+                    const causas = [];
+                    let ausencias = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (doc.id === 'ausencias') {
+                            ausencias = data.ausencias || [];
+                        } else {
+                            if (!data.id) data.id = doc.id;
+                            causas.push(data);
+                        }
+                    });
+                    state.causas = causas;
+                    state.ausencias = ausencias;
+                } catch (error) {
+                    console.error('Error cargando datos:', error);
+                    showToast('Error al conectar con Firestore', 'danger');
+                    state.causas = [];
+                    state.ausencias = [];
+                }
+            }
+
+            async function addCausa(causa) {
+                try {
+                    await db.collection('operador').doc(causa.id).set(causa);
+                } catch (error) {
+                    console.error('Error al agregar causa:', error);
+                    showToast('Error al guardar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateCausa(id, updates) {
+                try {
+                    await db.collection('operador').doc(id).update(updates);
+                } catch (error) {
+                    console.error('Error al actualizar causa:', error);
+                    showToast('Error al actualizar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateAusencias(ausenciasArray) {
+                try {
+                    await db.collection('operador').doc('ausencias').set({ ausencias: ausenciasArray });
+                } catch (error) {
+                    console.error('Error al actualizar ausencias:', error);
+                    showToast('Error al guardar ausencias', 'danger');
+                    throw error;
+                }
+            }
+
+            // ---------- GESTIÓN DE AUSENCIAS (con Firestore) ----------
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
                 const f = new Date(fecha); f.setHours(0,0,0,0);
@@ -454,7 +512,8 @@
                     return f >= inicio && f <= fin;
                 });
             }
-            function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
+
+            async function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
                 if (!secretarioId || !fechaInicio) { showToast('Debe seleccionar secretario y fecha de inicio', 'warning'); return false; }
                 const inicio = new Date(fechaInicio); inicio.setHours(0,0,0,0);
                 const fin = fechaFin ? new Date(fechaFin) : new Date(fechaInicio); fin.setHours(0,0,0,0);
@@ -466,17 +525,20 @@
                     return !(fin < aIni || inicio > aFin);
                 });
                 if (solapada) { showToast('Ya existe una ausencia para ese período', 'warning'); return false; }
-                state.ausencias.push({ id: generateId(), secretarioId, fechaInicio, fechaFin: fechaFin || null });
-                saveState();
+                const nueva = { id: generateId(), secretarioId, fechaInicio, fechaFin: fechaFin || null };
+                state.ausencias.push(nueva);
+                await updateAusencias(state.ausencias);
                 showToast('Ausencia registrada correctamente', 'success');
                 return true;
             }
-            function eliminarAusencia(id) {
+
+            async function eliminarAusencia(id) {
                 state.ausencias = state.ausencias.filter(a => a.id !== id);
-                saveState();
+                await updateAusencias(state.ausencias);
                 renderAusenciasModal();
                 showToast('Ausencia eliminada', 'info');
             }
+
             function renderAusenciasModal() {
                 const list = document.getElementById('ausenciasList');
                 if (!state.ausencias || state.ausencias.length === 0) {
@@ -493,7 +555,9 @@
                     </div>`;
                 }).join('');
                 list.querySelectorAll('.btn-eliminar-ausencia').forEach(btn => {
-                    btn.addEventListener('click', function() { eliminarAusencia(this.dataset.id); });
+                    btn.addEventListener('click', async function() {
+                        await eliminarAusencia(this.dataset.id);
+                    });
                 });
             }
 
@@ -513,8 +577,8 @@
                 return conCarga[0];
             }
 
-            // ---------- REGISTRO DE CAUSA ----------
-            function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
+            // ---------- REGISTRO DE CAUSA (con Firestore) ----------
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -581,50 +645,60 @@
                         comentario: motivoGuardado || obs || 'Sin observaciones'
                     }]
                 };
-                state.causas.push(nueva);
-                saveState();
 
-                if (accion === 'devolver') {
-                    showToast(`✅ Causa ${nueva.numero} registrada como DEVUELTA a SIGED.`);
-                } else if (accion === 'remitir') {
-                    showToast(`✅ Causa ${nueva.numero} registrada como REMITIDA a ${dependenciaGuardada || 'dependencia'}.`);
-                } else if (accion === 'rechazar') {
-                    showToast(`✅ Causa ${nueva.numero} registrada como RECHAZADA.`);
-                } else {
-                    if (esGesell) {
-                        showToast(`✅ Pase registrado (Cámara Gesell) - Derivado a Defensor: ${nueva.numero}`);
-                    } else if (secretarioId) {
-                        showToast(`✅ Pase registrado: ${nueva.numero} (Secretario: ${getSecName(secretarioId)})`);
+                try {
+                    await addCausa(nueva);
+                    state.causas.push(nueva); // actualizar estado local
+                    if (accion === 'devolver') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como DEVUELTA a SIGED.`);
+                    } else if (accion === 'remitir') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como REMITIDA a ${dependenciaGuardada || 'dependencia'}.`);
+                    } else if (accion === 'rechazar') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como RECHAZADA.`);
                     } else {
-                        showToast(`✅ Pase registrado: ${nueva.numero} (sin asignar por ausencias)`);
+                        if (esGesell) {
+                            showToast(`✅ Pase registrado (Cámara Gesell) - Derivado a Defensor: ${nueva.numero}`);
+                        } else if (secretarioId) {
+                            showToast(`✅ Pase registrado: ${nueva.numero} (Secretario: ${getSecName(secretarioId)})`);
+                        } else {
+                            showToast(`✅ Pase registrado: ${nueva.numero} (sin asignar por ausencias)`);
+                        }
                     }
+                    return true;
+                } catch (error) {
+                    return false;
                 }
-                return true;
             }
 
-            // ---------- ACCIONES DEL OPERADOR (con modal) ----------
-            function devolverSIGED(id, operador, motivo) {
+            // ---------- ACCIONES DEL OPERADOR (con Firestore) ----------
+            async function devolverSIGED(id, operador, motivo) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado === 'devuelto_siged') { showToast('Ya fue devuelto a SIGED', 'warning'); return; }
-                cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', operador, motivo || 'Sin motivo especificado');
+                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', operador, motivo || 'Sin motivo especificado');
             }
-            function remitirDependencia(id, operador, dependencia, motivo) {
+
+            async function remitirDependencia(id, operador, dependencia, motivo) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado === 'remitido') { showToast('Ya fue remitido', 'warning'); return; }
                 if (!dependencia || dependencia.trim() === '') { showToast('Debe especificar la dependencia', 'warning'); return; }
-                cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, operador, motivo || 'Sin motivo especificado');
+                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, operador, motivo || 'Sin motivo especificado');
                 c.dependenciaRemision = dependencia.trim();
-                saveState();
+                // Actualizar ese campo en Firestore también
+                try {
+                    await updateCausa(id, { dependenciaRemision: dependencia.trim() });
+                } catch (e) {}
             }
-            function rechazarCausa(id, operador, motivo) {
+
+            async function rechazarCausa(id, operador, motivo) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado === 'rechazado') { showToast('Ya fue rechazada', 'warning'); return; }
-                cambiarEstado(id, 'rechazado', 'Rechazado', operador, motivo || 'Sin motivo especificado');
+                await cambiarEstado(id, 'rechazado', 'Rechazado', operador, motivo || 'Sin motivo especificado');
             }
-            function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
+
+            async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
                 c.estado = nuevoEstado;
@@ -632,20 +706,37 @@
                 if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido' || nuevoEstado === 'rechazado') {
                     c.empleadoId = null; c.fechaAsignacion = null; c.fechaLimite = null; c.fechaResolucionEmpleado = null;
                 }
-                c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' });
-                saveState();
-                showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                const historialEntry = { fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' };
+                c.historial.push(historialEntry);
+
+                // Actualizar en Firestore
+                const updates = {
+                    estado: c.estado,
+                    fechaFinalizacion: c.fechaFinalizacion || null,
+                    empleadoId: c.empleadoId || null,
+                    fechaAsignacion: c.fechaAsignacion || null,
+                    fechaLimite: c.fechaLimite || null,
+                    fechaResolucionEmpleado: c.fechaResolucionEmpleado || null,
+                    historial: c.historial
+                };
+                try {
+                    await updateCausa(id, updates);
+                    showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                } catch (error) {
+                    // revertir cambio local si falla
+                    const idx = state.causas.findIndex(x => x.id === id);
+                    if (idx !== -1) state.causas[idx] = c; // no es necesario revertir porque ya se modificó, pero podríamos recargar
+                    showToast('Error al actualizar en Firestore', 'danger');
+                }
             }
 
             // ---------- FUNCIÓN CENTRAL DE FILTRADO ----------
             function obtenerCausasFiltradas() {
                 let causas = state.causas.filter(c => c.operador === currentOperator);
-                // Búsqueda por expediente
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causas = causas.filter(c => c.numero.toLowerCase().includes(term));
                 }
-                // Filtros de mes y año
                 if (filtroMes || filtroAnio) {
                     causas = causas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -658,19 +749,17 @@
                         return match;
                     });
                 }
-                // Ordenar por fecha descendente (más reciente primero)
                 causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 return causas;
             }
 
-            // ---------- REPORTE (ahora usa obtenerCausasFiltradas) ----------
+            // ---------- REPORTE ----------
             function generarReporteOperador() {
                 const causasFiltradas = obtenerCausasFiltradas();
                 const total = causasFiltradas.length;
                 const now = new Date();
                 const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-                // Texto de filtros aplicados
                 let filtrosTexto = [];
                 if (filtroMes) {
                     const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -710,7 +799,7 @@
                 document.getElementById('modalHistorialExp').textContent = c.numero;
                 document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
                 else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
@@ -836,8 +925,8 @@
                 toggleCamposAccion();
 
                 // Submit del formulario
-                document.getElementById('formIngreso').addEventListener('submit', function(e) { 
-                    e.preventDefault(); 
+                document.getElementById('formIngreso').addEventListener('submit', async function(e) {
+                    e.preventDefault();
                     const operador = currentOperator;
                     const num = document.getElementById('inpExpediente').value;
                     const tipo = document.getElementById('inpTipo').value;
@@ -854,7 +943,7 @@
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
 
-                    const ok = registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia);
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -889,11 +978,11 @@
                 });
 
                 // Botón agregar ausencia en modal
-                document.getElementById('btnAgregarAusencia').addEventListener('click', function() {
+                document.getElementById('btnAgregarAusencia').addEventListener('click', async function() {
                     const secretarioId = document.getElementById('ausenciaSecretario').value;
                     const fechaInicio = document.getElementById('ausenciaFechaInicio').value;
                     const fechaFin = document.getElementById('ausenciaFechaFin').value || null;
-                    if (agregarAusencia(secretarioId, fechaInicio, fechaFin)) {
+                    if (await agregarAusencia(secretarioId, fechaInicio, fechaFin)) {
                         renderAusenciasModal();
                         document.getElementById('ausenciaSecretario').value = '';
                         document.getElementById('ausenciaFechaInicio').value = new Date().toISOString().split('T')[0];
@@ -904,12 +993,11 @@
                 formularioInicializado = true;
             }
 
-            // ---------- RENDER TABLA (usa obtenerCausasFiltradas) ----------
+            // ---------- RENDER TABLA ----------
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
-                // Si no hay filtros de mes/año, limitar a últimas 50 para rendimiento
                 let datosMostrar = causasFiltradas;
                 if (!filtroMes && !filtroAnio) {
                     datosMostrar = datosMostrar.slice(0, 50);
@@ -918,7 +1006,6 @@
                 const pState = paginationState.ingreso;
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState.perPage);
 
-                // Generar opciones para años 2026-2040 (fijo)
                 const añoOptions = [];
                 for (let y = 2026; y <= 2040; y++) {
                     añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
@@ -1079,7 +1166,7 @@
                 modal.show();
             }
 
-            document.getElementById('btnConfirmarAccion').addEventListener('click', function() {
+            document.getElementById('btnConfirmarAccion').addEventListener('click', async function() {
                 const id = document.getElementById('accionCausaId').value;
                 const tipo = document.getElementById('accionTipo').value;
                 const motivo = document.getElementById('accionMotivo').value.trim();
@@ -1089,11 +1176,11 @@
                 if (tipo === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
 
                 if (tipo === 'devolver') {
-                    devolverSIGED(id, currentOperator, motivo);
+                    await devolverSIGED(id, currentOperator, motivo);
                 } else if (tipo === 'remitir') {
-                    remitirDependencia(id, currentOperator, dependencia, motivo);
+                    await remitirDependencia(id, currentOperator, dependencia, motivo);
                 } else if (tipo === 'rechazar') {
-                    rechazarCausa(id, currentOperator, motivo);
+                    await rechazarCausa(id, currentOperator, motivo);
                 }
                 bootstrap.Modal.getInstance(document.getElementById('modalAccion')).hide();
                 renderTabla();
@@ -1106,7 +1193,7 @@
             }
 
             // ---------- LOGIN ----------
-            function handleLogin() {
+            async function handleLogin() {
                 const operador = document.getElementById('loginOperador').value;
                 const pass = document.getElementById('loginPassword').value;
                 const errorDiv = document.getElementById('loginError');
@@ -1120,7 +1207,8 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('lblOperadorActivo').querySelector('span').textContent = operador;
 
-                loadState();
+                // Cargar datos desde Firestore
+                await loadState();
                 createFormulario();
                 renderTabla();
                 showToast(`Bienvenido/a ${operador}`, 'success');
@@ -1138,6 +1226,8 @@
                 formularioInicializado = false;
                 filtroMes = '';
                 filtroAnio = '';
+                state.causas = [];
+                state.ausencias = [];
                 showToast('Sesión cerrada', 'warning');
             }
 
@@ -1170,8 +1260,6 @@
                     const a = document.getElementById('logoutAlert');
                     if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none';
                 });
-
-                loadState();
             });
         })();
     </script>
