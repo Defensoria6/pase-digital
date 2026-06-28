@@ -245,7 +245,6 @@
 </head>
 <body>
 
-    <!-- LOGIN -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card">
             <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
@@ -265,7 +264,6 @@
         </div>
     </div>
 
-    <!-- APP -->
     <div id="appWrapper" class="app-wrapper">
         <header class="app-header">
             <div class="brand">
@@ -286,7 +284,6 @@
             </div>
         </header>
 
-        <!-- PANEL ÚNICO: MIS TAREAS -->
         <div id="panelEmpleado" class="tab-panel active"></div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
@@ -294,7 +291,6 @@
         </footer>
     </div>
 
-    <!-- MODAL HISTORIAL -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -312,7 +308,6 @@
         </div>
     </div>
 
-    <!-- MODAL REPORTE EMPLEADO -->
     <div class="modal fade modal-modern" id="modalReporteEmpleado" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -331,7 +326,6 @@
         </div>
     </div>
 
-    <!-- MODAL ESTADÍSTICAS (HISTORIAL DETALLADO) -->
     <div class="modal fade modal-modern" id="modalEstadisticas" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -373,16 +367,21 @@
             // ---------- CONFIG ----------
             const CONFIG = {
                 storageKey: 'defensoria_unificada_v1',
-                password: '123',
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
-                    { id: 'emp1', nombre: 'Bazante Nadia Romina' }, { id: 'emp2', nombre: 'Bolillat Cesar Enrique' },
-                    { id: 'emp3', nombre: 'Cardozo Maria Raquel' }, { id: 'emp4', nombre: 'Cedron Noelia' },
-                    { id: 'emp5', nombre: 'Fioravante Rómulo' }, { id: 'emp6', nombre: 'Gonzalez Alberto Misael' },
-                    { id: 'emp7', nombre: 'Gonzalez Juan Jose' }, { id: 'emp8', nombre: 'Gudiño Natalia Esther' },
-                    { id: 'emp9', nombre: 'Ortega Lucia Noemi' }, { id: 'emp10', nombre: 'Pablos Patricia Tamara' },
-                    { id: 'emp11', nombre: 'Palacios Ana Gabriela' }, { id: 'emp12', nombre: 'Sosa Rita Cecilia' }
+                    { id: 'emp1', nombre: 'Bazante Nadia Romina', clave: '101' },
+                    { id: 'emp2', nombre: 'Bolillat Cesar Enrique', clave: '111' },
+                    { id: 'emp3', nombre: 'Cardozo Maria Raquel', clave: '222' },
+                    { id: 'emp4', nombre: 'Cedron Noelia', clave: '444' },
+                    { id: 'emp5', nombre: 'Fioravante Rómulo', clave: '505' },
+                    { id: 'emp6', nombre: 'Gonzalez Alberto Misael', clave: '606' },
+                    { id: 'emp7', nombre: 'Gonzalez Juan Jose', clave: '707' },
+                    { id: 'emp8', nombre: 'Gudiño Natalia Esther', clave: '808' },
+                    { id: 'emp9', nombre: 'Ortega Lucia Noemi', clave: '909' },
+                    { id: 'emp10', nombre: 'Pablos Patricia Tamara', clave: '333' },
+                    { id: 'emp11', nombre: 'Palacios Ana Gabriela', clave: '112' },
+                    { id: 'emp12', nombre: 'Sosa Rita Cecilia', clave: '113' }
                 ],
                 secretarios: [
                     { id: 'sec1', nombre: 'Corrales Mariela' },
@@ -887,7 +886,6 @@
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnEstadisticas"><i class="bi bi-bar-chart"></i> Estadísticas</button>
                             </div>
                         </div>
-                        <!-- Filtros mes/año -->
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <div style="display:flex; align-items:center; gap:4px;">
                                 <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
@@ -1068,7 +1066,16 @@
                 const errorDiv = document.getElementById('loginError');
 
                 if (!empId) { errorDiv.textContent = '❌ Seleccione un empleado.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
-                if (pass !== CONFIG.password) { errorDiv.textContent = '❌ Clave incorrecta.'; errorDiv.style.display = 'block'; setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+                
+                const empleadoSeleccionado = CONFIG.empleados.find(e => e.id === empId);
+                
+                // Validación contra la clave específica del empleado
+                if (!empleadoSeleccionado || pass !== empleadoSeleccionado.clave) { 
+                    errorDiv.textContent = '❌ Clave incorrecta.'; 
+                    errorDiv.style.display = 'block'; 
+                    setTimeout(() => errorDiv.style.display = 'none', 3000); 
+                    return; 
+                }
 
                 errorDiv.style.display = 'none';
                 currentEmpleadoId = empId;
