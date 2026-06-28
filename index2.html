@@ -111,8 +111,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2.2rem;
-            max-width: 1100px;
-            width: 100%;
+            width: 80%; /* Ocupa exactamente el 80% de la pantalla de escritorio */
+            max-width: none;
         }
 
         .module-card {
@@ -160,14 +160,10 @@
 
         /* Colores distintivos por módulo */
         .module-card.operador i { color: #1976d2; }
-        .module-card.secretario i { color: #e67e22; }
         .module-card.empleados i { color: #2e7d32; }
-        .module-card.defensor i { color: #7b1fa2; }
 
         .module-card.operador { border-left: 4px solid #1976d2; }
-        .module-card.secretario { border-left: 4px solid #e67e22; }
         .module-card.empleados { border-left: 4px solid #2e7d32; }
-        .module-card.defensor { border-left: 4px solid #7b1fa2; }
 
         /* --- IFRAME VIEW --- */
         .iframe-view {
@@ -208,6 +204,7 @@
             }
             .launcher-grid {
                 gap: 1.4rem;
+                width: 100%; /* En tablets ocupa todo el ancho */
                 max-width: 600px;
             }
             .module-card {
@@ -262,6 +259,7 @@
             .launcher-grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
+                width: 100%;
                 max-width: 100%;
             }
 
@@ -350,22 +348,10 @@
                         <div class="card-sub">Registro de Entrada y Salida de causas</div>
                     </div>
 
-                    <div class="module-card secretario" data-url="secretario.html">
-                        <i class="bi bi-share"></i>
-                        <div class="card-title">Secretario</div>
-                        <div class="card-sub">Distribución y gestión de tareas</div>
-                    </div>
-
                     <div class="module-card empleados" data-url="empleado.html">
                         <i class="bi bi-person-check"></i>
                         <div class="card-title">Empleados</div>
                         <div class="card-sub">Visualización de tareas asignadas</div>
-                    </div>
-
-                    <div class="module-card defensor" data-url="defensor.html">
-                        <i class="bi bi-shield-check"></i>
-                        <div class="card-title">Defensor</div>
-                        <div class="card-sub">Resolución y control general</div>
                     </div>
 
                 </div>
