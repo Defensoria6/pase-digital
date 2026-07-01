@@ -94,6 +94,8 @@
         .badge-dev { background:#ffebee; color:#c62828; }
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-rech { background:#fce4ec; color:#c62828; }
+        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
+        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
         .badge-fuente { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.55rem; font-weight:700; background:#e3f2fd; color:#1976d2; margin-right:2px; }
         .badge-fuente.ambas { background:#e8f5e9; color:#2e7d32; }
         .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
@@ -603,7 +605,7 @@
             }
 
             // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO (adaptadas) ----------
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -640,6 +642,7 @@
                 const nueva = {
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
+                    dni: dni.trim() || '',
                     tipo: tipo || 'Otro',
                     nivelOperador: parseInt(nivel) || 2,
                     nivelSecretario: null,
@@ -648,6 +651,10 @@
                     estado: estado,
                     secretarioId: secretarioId,
                     empleadoId: null,
+                    empleadoAsignado: null,
+                    empleadoOriginal: null,
+                    tipoAsignacion: null,
+                    esReingreso: false,
                     fechaPaseSecretario: new Date().toISOString(),
                     fechaAsignacion: null,
                     fechaFinalizacion: null,
@@ -778,38 +785,98 @@
             }
 
             // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas ----------
-            async function asignarCausa(id, nivSec, empId, com = '') {
+            function obtenerSecretarioAsignante(causa) {
+                if (!causa.historial) return null;
+                for (const entry of causa.historial) {
+                    if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignó')) && entry.usuario) {
+                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
+                        if (sec) return sec.id;
+                    }
+                }
+                for (const entry of causa.historial) {
+                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoId)) {
+                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
+                        if (sec) return sec.id;
+                    }
+                }
+                return null;
+            }
+
+            async function asignarCausa(id, nivSec, empId, com = '', secId = null) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
+
+                // --- DETECCIÓN DE REINGRESO ---
+                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
+                let empleadoOriginal = null;
+                let tipoAsignacion = 'Nuevo Patrocinio';
+                let esReingreso = false;
+
+                if (existing.length > 0) {
+                    existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
+                    empleadoOriginal = existing[0].empleadoAsignado;
+                    tipoAsignacion = 'Seguimiento';
+                    esReingreso = true;
+                    empId = empleadoOriginal;
+                    showToast(`🔁 Reingreso detectado. Asignando a ${getEmpName(empId)} (seguimiento)`, 'info');
+                } else {
+                    tipoAsignacion = 'Nuevo Patrocinio';
+                    esReingreso = false;
+                    empleadoOriginal = empId;
+                }
+
                 c.nivelSecretario = parseInt(nivSec);
                 c.puntos = CONFIG.nivelesPuntos[c.nivelSecretario] || 2;
                 c.empleadoId = empId;
+                c.empleadoAsignado = empId;
+                c.empleadoOriginal = empleadoOriginal;
+                c.tipoAsignacion = tipoAsignacion;
+                c.esReingreso = esReingreso;
                 c.estado = 'en_proceso';
                 c.fechaAsignacion = new Date().toISOString();
                 c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000).toISOString();
+
+                const userRoleName = getSecName(secId || c.secretarioId) || 'Defensor';
+                const accion = `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)} - ${tipoAsignacion}`;
                 c.historial.push({
                     fecha: new Date().toISOString(),
-                    accion: `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)}`,
-                    usuario: 'Defensor',
+                    accion: accion,
+                    usuario: userRoleName,
                     comentario: com || `Asignado a ${getEmpName(empId)}`
                 });
+
                 try {
                     await updateCausaInFirestore(c);
-                    showToast(`📌 ${c.numero} asignado a ${getEmpName(empId)}`);
+                    showToast(`📌 ${c.numero} asignado a ${getEmpName(empId)} (${tipoAsignacion})`);
                     return true;
                 } catch (error) {
                     return false;
                 }
             }
 
-            async function asignarAlMenosCargado(id, nivSec) {
-                nivSec = parseInt(nivSec);
+            async function asignarAlMenosCargado(id, nivSec, comentario = '') {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return false;
+
+                // --- DETECCIÓN DE REINGRESO ---
+                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
+                if (existing.length > 0) {
+                    existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
+                    const empId = existing[0].empleadoAsignado;
+                    if (empId) {
+                        const result = await asignarCausa(id, nivSec, empId, comentario || 'Reasignación automática por reingreso');
+                        return result;
+                    }
+                }
+
                 let candidatos = CONFIG.empleados.map(e => {
                     const activas = state.causas.filter(c => c.empleadoId === e.id && c.estado === 'en_proceso');
                     const cargaTotal = activas.reduce((sum, c) => sum + (c.puntos || 0), 0);
-                    const countMismoNivel = activas.filter(c => c.nivelSecretario === nivSec).length;
-                    return { id: e.id, cargaTotal, countMismoNivel, atrasado: tieneAtrasos(e.id) };
+                    const countMismoNivel = activas.filter(c => c.nivelSecretario === parseInt(nivSec)).length;
+                    const atrasado = state.causas.some(c => c.empleadoId === e.id && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
+                    return { id: e.id, cargaTotal, countMismoNivel, atrasado };
                 });
+
                 let elegibles = candidatos.filter(c => !c.atrasado);
                 if (elegibles.length === 0) elegibles = candidatos;
                 elegibles.sort((a, b) => {
@@ -818,7 +885,7 @@
                 });
                 const mejorEmp = elegibles[0]?.id;
                 if (mejorEmp) {
-                    return await asignarCausa(id, nivSec, mejorEmp, 'Asignación automática equitativa (Nivel ' + nivSec + ')');
+                    return await asignarCausa(id, nivSec, mejorEmp, comentario || 'Asignación automática equitativa (Nivel ' + nivSec + ')');
                 }
                 showToast('No se pudo asignar automáticamente', 'danger');
                 return false;
@@ -952,7 +1019,7 @@
                 new bootstrap.Modal(document.getElementById('modalHistorialSecretario')).show();
             }
 
-            // ---------- REPORTES (sin cambios) ----------
+            // ---------- REPORTES ----------
             function generarReporteGeneral() {
                 const causas = state.causas;
                 const total = causas.length;
@@ -968,10 +1035,11 @@
                     <h6>Expedientes</h6>
                     <div class="table-wrap">
                         <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <thead><tr><th>Expediente</th><th>DNI</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
                             <tbody>${causas.slice().reverse().map(c => `
                                 <tr>
                                     <td><strong>${c.numero}</strong></td>
+                                    <td>${c.dni || '-'}</td>
                                     <td>${c.operador || '-'}</td>
                                     <td>${getEstadoBadge(c.estado)}</td>
                                     <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
@@ -999,10 +1067,11 @@
                     <h6>Expedientes (${total})</h6>
                     <div class="table-wrap">
                         <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <thead><tr><th>Expediente</th><th>DNI</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
                             <tbody>${causas.slice().reverse().map(c => `
                                 <tr>
                                     <td><strong>${c.numero}</strong></td>
+                                    <td>${c.dni || '-'}</td>
                                     <td>${getEstadoBadge(c.estado)}</td>
                                     <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                 </tr>
@@ -1054,6 +1123,7 @@
                                 <thead>
                                     <tr style="background: #f1f6fd; color: #1a4c74;">
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">DNI</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
@@ -1065,6 +1135,7 @@
                                     ${causas.map(c => `
                                         <tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
+                                            <td style="padding: 6px 8px;">${c.dni || '-'}</td>
                                             <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
                                             <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador}</td>
                                             <td style="padding: 6px 8px; font-size: 0.7rem;">${fmtDateShort(c.fechaAsignacion)}</td>
@@ -1072,7 +1143,7 @@
                                             <td style="padding: 6px 8px;">${getEstadoBadgePlain(c.estado)}</td>
                                         </tr>
                                     `).join('')}
-                                    ${total === 0 ? `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
+                                    ${total === 0 ? `<tr><td colspan="7" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -1249,6 +1320,7 @@
                                 <thead>
                                     <tr>
                                         <th>Expediente</th>
+                                        <th>DNI</th>
                                         <th>Tipo</th>
                                         <th>Estado</th>
                                         <th>Asistencia</th>
@@ -1259,6 +1331,7 @@
                                     ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${getEstadoBadgePlain(c.estado)}</td>
                                             <td>${c.asistenciaGesell === 'asistio' ? '✅ Asistió' : c.asistenciaGesell === 'no_asistio' ? '❌ No asistió' : '⏳ Pendiente'}</td>
@@ -1273,7 +1346,7 @@
                 new bootstrap.Modal(document.getElementById('modalEquidad')).show();
             }
 
-            // ---------- PAGINACIÓN (sin cambios) ----------
+            // ---------- PAGINACIÓN ----------
             function paginateData(data, page, perPage = 10) {
                 const total = data.length; const totalPages = Math.ceil(total / perPage) || 1;
                 const start = (page - 1) * perPage; const end = Math.min(start + perPage, total);
@@ -1321,7 +1394,7 @@
                 showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
             }
 
-            // ---------- PANELES (se mantienen igual, pero con async/await en eventos) ----------
+            // ---------- PANELES ----------
             // 1. INGRESO (Operador)
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
@@ -1346,6 +1419,13 @@
                                 <form id="formIngreso" class="form-modern">
                                     <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select">${operadorOptions}</select></div>
                                     <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
+                                    <div class="mb-3">
+                                        <label class="form-label">DNI *</label>
+                                        <input type="text" id="inpDni" class="form-control" required autocomplete="off"
+                                               placeholder="Ingrese el DNI (8 dígitos)" maxlength="8"
+                                               pattern="[0-9]{7,8}" title="El DNI debe tener entre 7 y 8 dígitos numéricos"
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                    </div>
                                     <div class="row g-3">
                                         <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
                                         <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
@@ -1397,10 +1477,11 @@
                                 ${total ? `
                                     <div style="overflow:hidden; width:100%;">
                                         <table class="table-modern table table-sm" style="margin-bottom:0;">
-                                            <thead><tr><th>Expediente</th><th>Nivel</th><th>Pase</th><th>Estado</th><th style="width:120px;">Acciones</th></tr></thead>
+                                            <thead><tr><th>Expediente</th><th>DNI</th><th>Nivel</th><th>Pase</th><th>Estado</th><th style="width:120px;">Acciones</th></tr></thead>
                                             <tbody>${items.map(c => `
                                                 <tr>
                                                     <td><strong>${c.numero}</strong></td>
+                                                    <td>${c.dni || '-'}</td>
                                                     <td>N${c.nivelOperador}</td>
                                                     <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                                     <td>${getEstadoBadge(c.estado)}</td>
@@ -1457,13 +1538,19 @@
                     const accion = document.getElementById('inpAccion').value;
                     let motivo = document.getElementById('inpMotivo').value.trim();
                     let dependencia = document.getElementById('inpDependencia').value.trim();
+                    const dni = document.getElementById('inpDni').value.trim();
+
+                    if (!dni || !/^\d{7,8}$/.test(dni)) {
+                        showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
+                        return;
+                    }
 
                     if (accion !== 'asignar') {
                         if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
 
-                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia);
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -1475,6 +1562,7 @@
                         document.getElementById('camposAccion').style.display = 'none';
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
+                        document.getElementById('inpDni').value = '';
                         renderAll();
                     }
                 });
@@ -1518,7 +1606,7 @@
                 if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN (Secretario) - se mantiene igual pero con async/await
+            // 2. DISTRIBUCIÓN (Secretario)
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
                 const pend = getFilteredCausas().filter(c => c.estado === 'en_secretaria').sort((a, b) => b.nivelOperador - a.nivelOperador);
@@ -1576,11 +1664,11 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Tipo</th><th>Nivel Op.</th><th>Revisión</th><th>Asignar a</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Nivel Op.</th><th>Revisión</th><th>Asignar a</th><th>Acciones</th></tr></thead>
                                     <tbody>
                                         ${items.map(c => `
                                             <tr>
-                                                <td><strong>${c.numero}</strong></td><td>${c.tipo}</td><td>N${c.nivelOperador}</td>
+                                                <td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.tipo}</td><td>N${c.nivelOperador}</td>
                                                 <td><select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;"><option value="1" ${c.nivelOperador===1?'selected':''}>N1</option><option value="2" ${c.nivelOperador===2?'selected':''}>N2</option><option value="3" ${c.nivelOperador===3?'selected':''}>N3</option><option value="4" ${c.nivelOperador===4?'selected':''}>N4</option></select></td>
                                                 <td><select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;"><option value="">Seleccionar...</option>${optsEmpleados}</select> <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button></td>
                                                 <td>
@@ -1602,13 +1690,18 @@
                         ${procTotal ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Empleado</th><th>Nivel</th><th>Demora</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Empleado</th><th>Nivel</th><th>Tipo Asignación</th><th>Demora</th><th>Acciones</th></tr></thead>
                                     <tbody>${procItems.map(c => {
                                         const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
+                                        const badgeTipo = c.tipoAsignacion === 'Nuevo Patrocinio' 
+                                            ? '<span class="badge badge-tipo-nuevo">Nuevo</span>' 
+                                            : (c.tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
                                             <td>${getEmpName(c.empleadoId)}</td>
                                             <td>N${c.nivelSecretario || c.nivelOperador}</td>
+                                            <td>${badgeTipo}</td>
                                             <td>${demora ? `<span class="crono azul">${demora}</span>` : '-'}</td>
                                             <td>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
@@ -1706,9 +1799,6 @@
                         const empNombre = this.dataset.emp;
                         const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
                         if (emp) {
-                            // Lógica de ausencia de empleado (local, no persistida en Firestore en este módulo)
-                            // Simplemente se guarda en el estado local (no compartido) para demostración.
-                            // En un entorno real, se podría guardar en otro documento.
                             showToast(`Cambio de estado de ${emp.nombre} (solo local)`, 'info');
                         }
                     });
@@ -1732,7 +1822,7 @@
                 if (btnEquidad) { btnEquidad.addEventListener('click', generarInformeEquidad); }
             }
 
-            // 3. DEFENSOR (propio) - se mantiene igual pero con async/await
+            // 3. DEFENSOR (propio)
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -1752,11 +1842,12 @@
                     tablaGesell = `
                         <div class="table-wrap">
                             <table class="table-modern table">
-                                <thead><tr><th>Expediente</th><th>Tipo</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora Audiencia</th><th>Acción</th></tr></thead>
+                                <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora Audiencia</th><th>Acción</th></tr></thead>
                                 <tbody>
                                     ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${getEstadoBadge(c.estado)}</td>
                                             <td>
@@ -1796,10 +1887,11 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Nivel</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
                                     <tbody>${items.map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>N${c.nivelOperador}</td>
                                             <td>
@@ -1857,6 +1949,7 @@
                         if (c) {
                             c.estado = 'en_proceso';
                             c.empleadoId = empId;
+                            c.empleadoAsignado = empId;
                             c.fechaAsignacion = new Date().toISOString();
                             const nLvl = c.nivelSecretario || c.nivelOperador || 2;
                             c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[nLvl] || 3) * 86400000).toISOString();
@@ -1946,7 +2039,7 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 4. EMPLEADO (visualización) - se mantiene igual
+            // 4. EMPLEADO (visualización) - ahora con dos tablas
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let empSeleccionado = document.getElementById('simularEmpleado')?.value || CONFIG.empleados[0]?.id || '';
@@ -1978,9 +2071,18 @@
                     });
                 }
 
-                mis.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pState = paginationState.empleado;
-                const { items, total, totalPages, page, start, end } = paginateData(mis, pState.page, pState.perPage);
+                // Separar en Nuevos Patrocinios y Seguimientos
+                const nuevos = mis.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio');
+                const seguimientos = mis.filter(c => c.tipoAsignacion === 'Seguimiento');
+
+                nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+
+                const pStateNuevos = { page: 1, perPage: 5 };
+                const pStateSeg = { page: 1, perPage: 5 };
+
+                const { items: itemsN, total: totalN } = paginateData(nuevos, pStateNuevos.page, pStateNuevos.perPage);
+                const { items: itemsS, total: totalS } = paginateData(seguimientos, pStateSeg.page, pStateSeg.perPage);
 
                 const opts = CONFIG.empleados.map(e => `<option value="${e.id}" ${e.id===empSeleccionado?'selected':''}>${e.nombre}</option>`).join('');
 
@@ -1989,11 +2091,59 @@
                     anioOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
                 }
 
+                function generarTabla(items, tipo) {
+                    if (!items.length) return `<div class="text-muted py-3">Sin ${tipo}</div>`;
+                    return `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>DNI</th>
+                                        <th>Tipo</th>
+                                        <th>Asignación</th>
+                                        <th>Tiempo</th>
+                                        <th>Nivel</th>
+                                        <th>Observación</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(c => {
+                                        const done = c.estado === 'finalizada';
+                                        const cronoHtml = getCronoHtml(c);
+                                        const comentario = getComentarioAsignacion(c);
+                                        const badgeTipo = c.tipoAsignacion === 'Nuevo Patrocinio' 
+                                            ? '<span class="badge badge-tipo-nuevo">Nuevo</span>' 
+                                            : (c.tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
+                                        return `<tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
+                                            <td>${c.tipo}</td>
+                                            <td>${badgeTipo}</td>
+                                            <td>${cronoHtml}</td>
+                                            <td>N${c.nivelSecretario}</td>
+                                            <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
+                                            <td>
+                                                ${!done && c.estado === 'en_proceso' ? `
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                    <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
+                                                ` : (done ? `<i class="bi bi-check-circle-fill text-success"></i>` : `<span class="badge badge-estado badge-sec">En Secretaría</span>`)}
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
                 panel.innerHTML = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-person-check"></i> Tareas de Empleados</div>
-                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <div class="d-flex flex-wrap gap-2">
                                 <label class="form-label me-1" style="font-size:0.75rem; margin:0;">Empleado:</label>
                                 <select id="simularEmpleado" class="form-select form-select-sm" style="width:auto;display:inline-block;">${opts}</select>
                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
@@ -2013,33 +2163,56 @@
                             </select>
                             <button class="btn-limpiar" id="btnLimpiarFiltrosEmp">Limpiar</button>
                         </div>
-                        ${total ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Empleado</th><th>Tipo</th><th>Asignación</th><th>Vencimiento</th><th>Tiempo</th><th>Nivel</th><th>Ver</th></tr></thead>
-                                    <tbody>${items.map(c => {
-                                        const done = c.estado === 'finalizada';
-                                        const cronoHtml = done ? '<span class="badge badge-estado badge-fin">✅ Listo</span>' : getCronoHtml(c.fechaLimite);
-                                        return `<tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${getEmpName(c.empleadoId)}</td>
-                                                <td>${c.tipo}</td>
-                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaAsignacion)}</td>
-                                                <td style="font-size:0.75rem;">${c.fechaLimite ? fmtDt(c.fechaLimite) : '-'}</td>
-                                                <td>${cronoHtml}</td>
-                                                <td>N${c.nivelSecretario}</td>
-                                                <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td>
-                                            </tr>`;
-                                    }).join('')}</tbody>
-                                </table>
-                            </div><div id="paginationEmpleado"></div>
-                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin tareas asignadas</div>`}
+                        <div class="mb-4">
+                            <h6><i class="bi bi-star text-success"></i> Nuevos Patrocinios</h6>
+                            ${generarTabla(itemsN, 'Nuevos Patrocinios')}
+                        </div>
+                        <div>
+                            <h6><i class="bi bi-arrow-repeat text-warning"></i> Seguimiento Posterior</h6>
+                            ${generarTabla(itemsS, 'Seguimiento')}
+                        </div>
                     </div>
                 `;
 
-                if (total > 0) renderPagination('paginationEmpleado', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.empleado.page = newPage; paginationState.empleado.perPage = newPerPage; renderEmpleado(); });
-
+                // Eventos para acciones de empleado
+                document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) return;
+                        const motivo = prompt('Motivo de devolución (obligatorio):');
+                        if (motivo === null || motivo.trim() === '') {
+                            showToast('Debe ingresar un motivo para devolver', 'warning');
+                            return;
+                        }
+                        const secId = obtenerSecretarioAsignante(causa);
+                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
+                        if (confirm(`¿Devolver a ${nombreSec} con motivo: "${motivo}"?`)) {
+                            await cambiarEstado(id, 'en_secretaria', `Devuelto a Secretaría (${nombreSec}) - Motivo: ${motivo}`, getEmpName(empSeleccionado), motivo);
+                            renderEmpleado();
+                        }
+                    });
+                });
+                document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) return;
+                        const motivo = prompt('Motivo de consulta (obligatorio):');
+                        if (motivo === null || motivo.trim() === '') {
+                            showToast('Debe ingresar un motivo de consulta', 'warning');
+                            return;
+                        }
+                        const secId = obtenerSecretarioAsignante(causa);
+                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
+                        if (confirm(`¿Enviar a ${nombreSec} para consulta con motivo: "${motivo}"?`)) {
+                            await cambiarEstado(id, 'en_secretaria', `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`, getEmpName(empSeleccionado), motivo);
+                            renderEmpleado();
+                        }
+                    });
+                });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+
                 document.getElementById('simularEmpleado').addEventListener('change', function() { renderAll(); });
                 const btnReporteEmp = document.getElementById('btnReporteEmpleado');
                 if (btnReporteEmp) { btnReporteEmp.addEventListener('click', function() { const empId = document.getElementById('simularEmpleado').value; if (empId) generarReporteEmpleado(empId); else showToast('Seleccione un empleado', 'warning'); }); }
@@ -2052,14 +2225,12 @@
                 if (selectMes) {
                     selectMes.addEventListener('change', function() {
                         filtroMes = this.value;
-                        paginationState.empleado.page = 1;
                         renderEmpleado();
                     });
                 }
                 if (selectAnio) {
                     selectAnio.addEventListener('change', function() {
                         filtroAnio = this.value;
-                        paginationState.empleado.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -2068,7 +2239,6 @@
                     btnLimpiar.addEventListener('click', function() {
                         filtroMes = '';
                         filtroAnio = '';
-                        paginationState.empleado.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -2209,7 +2379,7 @@
                 }, 150);
             }
 
-            // 6. AUDITORIA (se mantiene igual)
+            // 6. AUDITORIA
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
@@ -2233,8 +2403,8 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Ver</th></tr></thead>
-                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}</tbody>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Ver</th></tr></thead>
+                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}</tbody>
                                 </table>
                             </div><div id="paginationAuditoria"></div>
                         ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros</div>`}
@@ -2256,7 +2426,7 @@
                 document.getElementById('modalHistorialExp').textContent = c.numero;
                 document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
                 else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
@@ -2277,42 +2447,33 @@
                 return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
             }
 
-            function getCronoHtml(fechaLimite) {
-                if (!fechaLimite) return '<span class="crono azul">—</span>';
-                const info = getTiempoRestante(fechaLimite);
-                if (!info) return '<span class="crono azul">—</span>';
-                const texto = formatearTiempo(info.ms);
-                let cls = 'crono';
-                if (info.vencido) cls += ' vencido';
-                else if (info.porcentaje < 20) cls += ' critico';
-                else if (info.porcentaje < 50) cls += ' medio';
-                else cls += ' azul';
-                return `<span class="${cls}">${texto}</span>`;
-            }
-
-            function getTiempoRestante(fechaLimite) {
-                if (!fechaLimite) return null;
-                const diff = new Date(fechaLimite) - Date.now();
-                if (diff <= 0) return { ms: Math.abs(diff), vencido: true, porcentaje: 0 };
-                const c = state.causas.find(x => x.fechaLimite === fechaLimite);
-                let totalMs = 3 * 86400000;
-                if (c && c.fechaAsignacion) {
-                    totalMs = new Date(c.fechaLimite) - new Date(c.fechaAsignacion);
-                    if (totalMs <= 0) totalMs = 3 * 86400000;
+            function getCronoHtml(causa) {
+                if (!causa.fechaAsignacion) return '<span class="crono azul">—</span>';
+                let fechaCierre = null;
+                if (causa.estado === 'finalizada' && causa.fechaFinalizacion) {
+                    fechaCierre = causa.fechaFinalizacion;
+                } else if (causa.estado === 'en_secretaria' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'en_defensor' && causa.fechaResolucionEmpleado) {
+                    fechaCierre = causa.fechaResolucionEmpleado;
+                } else if (causa.estado === 'devuelto_siged' || causa.estado === 'remitido') {
+                    fechaCierre = causa.fechaResolucionEmpleado || causa.fechaFinalizacion || null;
                 }
-                const porcentaje = Math.min(100, (diff / totalMs) * 100);
-                return { ms: diff, vencido: false, porcentaje };
+                const tiempo = getTiempoTranscurrido(causa.fechaAsignacion, fechaCierre);
+                if (!tiempo) return '<span class="crono azul">—</span>';
+                let cls = 'crono azul';
+                if (fechaCierre) {
+                    cls = 'crono medio';
+                }
+                return `<span class="${cls}">${tiempo}</span>`;
             }
 
-            function formatearTiempo(ms) {
-                if (ms === null || ms === undefined) return '—';
-                const seg = Math.floor(ms / 1000);
-                const dias = Math.floor(seg / 86400);
-                const horas = Math.floor((seg % 86400) / 3600);
-                const mins = Math.floor((seg % 3600) / 60);
-                const secs = Math.floor(seg % 60);
-                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+            function getComentarioAsignacion(causa) {
+                if (!causa.historial || !causa.historial.length) return '-';
+                const asignaciones = causa.historial.filter(h => h.accion && h.accion.includes('Asignado (Nivel'));
+                if (asignaciones.length === 0) return '-';
+                const ultima = asignaciones[asignaciones.length - 1];
+                return ultima.comentario || '-';
             }
 
             // ---------- RENDER ALL ----------
@@ -2414,9 +2575,7 @@
                 document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').style.display = 'none');
                 document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
                 document.addEventListener('click', function(e) { const a = document.getElementById('logoutAlert'); if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none'; });
-                // Botón Actualizar todas las BD
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarTodasLasBD);
-                // Carga inicial (se cargará al hacer login, pero si ya hay sesión, cargar)
                 if (document.getElementById('loginOverlay').classList.contains('hidden')) {
                     loadStateFromFirestore().then(() => renderAll());
                 }
