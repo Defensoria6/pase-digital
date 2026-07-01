@@ -80,6 +80,8 @@
         .badge-def { background:#f3e5f5; color:#7b1fa2; }
         .badge-dev { background:#ffebee; color:#c62828; }
         .badge-rem { background:#e8eaf6; color:#3949ab; }
+        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
+        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
         .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
         .crono.vencido { background:#ffebee; color:#c62828 !important; box-shadow:0 0 0 1px #ffcdd2; }
         .crono.critico { background:#fff3e0; color:#e67e22 !important; box-shadow:0 0 0 1px #ffe0b2; }
@@ -412,7 +414,10 @@
             let searchTerm = '';
             let cronoInterval = null;
             let autoUpdateInterval = null;
-            let paginationState = { empleado: { page: 1, perPage: 10 } };
+            let paginationState = {
+                empleadoNuevos: { page: 1, perPage: 5 },
+                empleadoSeg: { page: 1, perPage: 5 }
+            };
 
             // Filtros de mes/año
             let filtroMes = '';
@@ -474,7 +479,7 @@
                     const snapshot = await db.collection('operador').get();
                     const causas = [];
                     snapshot.forEach(doc => {
-                        if (doc.id === 'secretario_config') return; // ignorar documento de configuración
+                        if (doc.id === 'secretario_config') return;
                         const data = doc.data();
                         if (!data.id) data.id = doc.id;
                         causas.push(data);
@@ -525,14 +530,11 @@
                     await updateCausaInFirestore(c);
                     showToast(`🔄 ${c.numero} actualizado: ${accion}`);
                 } catch (error) {
-                    // Revertir cambios locales si falla la actualización (opcional)
-                    // Volver a cargar desde Firestore para asegurar consistencia
                     await loadStateFromFirestore();
                     renderEmpleado();
                 }
             }
 
-            // Función para obtener el secretario que asignó originalmente (del historial)
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
@@ -550,7 +552,7 @@
                 return null;
             }
 
-            // ---------- REPORTE DEL EMPLEADO ----------
+            // ---------- REPORTE DEL EMPLEADO (MODIFICADO: incluye tipoAsignacion) ----------
             function generarReporteEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -560,6 +562,8 @@
                 const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
                 const enProceso = causas.filter(c => c.estado === 'en_proceso').length;
                 const finalizadas = causas.filter(c => c.estado === 'finalizada').length;
+                const nuevos = causas.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio').length;
+                const seguimientos = causas.filter(c => c.tipoAsignacion === 'Seguimiento').length;
 
                 let html = `
                     <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
@@ -585,6 +589,14 @@
                                 <div class="label">Finalizadas</div>
                                 <div class="value" style="color:#2e7d32;">${finalizadas}</div>
                             </div>
+                            <div class="kpi-item-print">
+                                <div class="label">Nuevos Patrocinios</div>
+                                <div class="value" style="color:#1b5e20;">${nuevos}</div>
+                            </div>
+                            <div class="kpi-item-print">
+                                <div class="label">Seguimientos</div>
+                                <div class="value" style="color:#f57f17;">${seguimientos}</div>
+                            </div>
                         </div>
                         <h6 style="font-weight: 600; color: #0a2a44; margin: 0.5rem 0;">Detalle de expedientes</h6>
                         <div class="table-wrap">
@@ -593,6 +605,7 @@
                                     <tr style="background: #f1f6fd; color: #1a4c74;">
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo</th>
@@ -612,9 +625,14 @@
                                             const t = getTiempoTranscurrido(c.fechaAsignacion, fechaCierre);
                                             if (t) tiempo = t;
                                         }
+                                        const tipoAsignacion = c.tipoAsignacion || 'N/D';
+                                        const badgeAsignacion = tipoAsignacion === 'Nuevo Patrocinio' 
+                                            ? `<span class="badge badge-tipo-nuevo">Nuevo</span>` 
+                                            : (tipoAsignacion === 'Seguimiento' ? `<span class="badge badge-tipo-seguimiento">Seguimiento</span>` : 'N/D');
                                         return `<tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
                                             <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
+                                            <td style="padding: 6px 8px;">${badgeAsignacion}</td>
                                             <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador}</td>
                                             <td style="padding: 6px 8px; font-size: 0.7rem;">${fmtDateShort(c.fechaAsignacion)}</td>
                                             <td style="padding: 6px 8px; font-size: 0.7rem; font-weight:600;">${tiempo}</td>
@@ -622,7 +640,7 @@
                                             <td style="padding: 6px 8px;">${getEstadoBadgePlain(c.estado)}</td>
                                         </tr>`;
                                     }).join('')}
-                                    ${total === 0 ? `<tr><td colspan="7" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
+                                    ${total === 0 ? `<tr><td colspan="8" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -636,14 +654,13 @@
                 new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
             }
 
-            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) ----------
+            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) MODIFICADO: incluye tipoAsignacion ----------
             function generarEstadisticas(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
                 const ahora = new Date();
                 const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
 
-                // Obtener todas las causas que han estado asignadas a este empleado en algún momento
                 const causasDelEmpleado = state.causas.filter(c => {
                     if (c.empleadoId === empId) return true;
                     if (c.historial) {
@@ -654,7 +671,12 @@
 
                 let totalTareas = 0;
                 let totalFinalizadas = 0;
-                const statsNivel = { 1: { total: 0, cumplidas: 0, tiempos: [] }, 2: { total: 0, cumplidas: 0, tiempos: [] }, 3: { total: 0, cumplidas: 0, tiempos: [] }, 4: { total: 0, cumplidas: 0, tiempos: [] } };
+                let totalNuevos = 0;
+                let totalSeguimientos = 0;
+                const statsNivel = { 1: { total: 0, cumplidas: 0, tiempos: [], nuevos: 0, seg: 0 }, 
+                                     2: { total: 0, cumplidas: 0, tiempos: [], nuevos: 0, seg: 0 },
+                                     3: { total: 0, cumplidas: 0, tiempos: [], nuevos: 0, seg: 0 },
+                                     4: { total: 0, cumplidas: 0, tiempos: [], nuevos: 0, seg: 0 } };
                 const asignadores = {};
 
                 causasDelEmpleado.forEach(c => {
@@ -689,6 +711,9 @@
                     totalTareas += tareasCausa;
                     totalFinalizadas += finalizaciones;
 
+                    if (c.tipoAsignacion === 'Nuevo Patrocinio') totalNuevos++;
+                    else if (c.tipoAsignacion === 'Seguimiento') totalSeguimientos++;
+
                     let nivelUltimo = ultimaAsignacion ? ultimaAsignacion.nivel : (c.nivelSecretario || c.nivelOperador || 1);
                     if (c.estado === 'finalizada' && c.empleadoId === empId) {
                         if (statsNivel[nivelUltimo]) {
@@ -701,6 +726,8 @@
                     }
                     if (statsNivel[nivelUltimo]) {
                         statsNivel[nivelUltimo].total += 1;
+                        if (c.tipoAsignacion === 'Nuevo Patrocinio') statsNivel[nivelUltimo].nuevos++;
+                        else if (c.tipoAsignacion === 'Seguimiento') statsNivel[nivelUltimo].seg++;
                     }
 
                     asignaciones.forEach(asig => {
@@ -738,9 +765,17 @@
                                 <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
                                 <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${state.causas.filter(c => c.empleadoId === empId && c.estado === 'en_proceso').length}</div>
                             </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Nuevos</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1b5e20;">${totalNuevos}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Seguimientos</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#f57f17;">${totalSeguimientos}</div>
+                            </div>
                         </div>
 
-                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Desglose por Nivel</h6>
+                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Desglose por Nivel y Tipo</h6>
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
                                 <thead>
@@ -748,6 +783,8 @@
                                         <th style="padding:6px 8px; text-align:left;">Nivel</th>
                                         <th style="padding:6px 8px; text-align:left;">Asignadas</th>
                                         <th style="padding:6px 8px; text-align:left;">Cumplidas</th>
+                                        <th style="padding:6px 8px; text-align:left;">Nuevos</th>
+                                        <th style="padding:6px 8px; text-align:left;">Seguimientos</th>
                                         <th style="padding:6px 8px; text-align:left;">Promedio días</th>
                                     </tr>
                                 </thead>
@@ -759,6 +796,8 @@
                                             <td style="padding:6px 8px; font-weight:600;">N${n}</td>
                                             <td style="padding:6px 8px;">${s.total}</td>
                                             <td style="padding:6px 8px;">${s.cumplidas}</td>
+                                            <td style="padding:6px 8px;">${s.nuevos}</td>
+                                            <td style="padding:6px 8px;">${s.seg}</td>
                                             <td style="padding:6px 8px;">${prom}</td>
                                         </tr>`;
                                     }).join('')}
@@ -839,7 +878,7 @@
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
             }
 
-            // ---------- RENDER MIS TAREAS ----------
+            // ---------- RENDER MIS TAREAS (divide en dos tablas) ----------
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let causasFiltradas = state.causas.filter(c => c.empleadoId === currentEmpleadoId);
@@ -871,16 +910,76 @@
                         return d.getFullYear() === anio;
                     });
                 }
-                causasFiltradas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pState = paginationState.empleado;
-                const { items, total, totalPages, page, start, end } = paginateData(causasFiltradas, pState.page, pState.perPage);
+
+                // --- DIVISIÓN EN DOS LISTAS según tipoAsignacion ---
+                const nuevos = causasFiltradas.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio');
+                const seguimientos = causasFiltradas.filter(c => c.tipoAsignacion === 'Seguimiento');
+
+                // Ordenar por fecha de asignación (más reciente primero)
+                nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+
+                // Paginación para cada tabla
+                const pStateNuevos = paginationState.empleadoNuevos || { page: 1, perPage: 5 };
+                const pStateSeg = paginationState.empleadoSeg || { page: 1, perPage: 5 };
+
+                const { items: itemsN, total: totalN, totalPages: totalPagesN, page: pageN } = paginateData(nuevos, pStateNuevos.page, pStateNuevos.perPage);
+                const { items: itemsS, total: totalS, totalPages: totalPagesS, page: pageS } = paginateData(seguimientos, pStateSeg.page, pStateSeg.perPage);
+
+                // Función auxiliar para generar tabla
+                function generarTabla(items, tipo) {
+                    if (!items.length) return `<div class="text-muted py-3">Sin ${tipo.toLowerCase()}</div>`;
+                    return `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Tipo</th>
+                                        <th>Asignación</th>
+                                        <th>Tiempo</th>
+                                        <th>Nivel</th>
+                                        <th>Observación</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(c => {
+                                        const done = c.estado === 'finalizada';
+                                        const cronoHtml = getCronoHtml(c);
+                                        const comentario = getComentarioAsignacion(c);
+                                        const tipoAsignacion = c.tipoAsignacion || 'N/D';
+                                        const badgeAsignacion = tipoAsignacion === 'Nuevo Patrocinio' 
+                                            ? '<span class="badge badge-tipo-nuevo">Nuevo</span>' 
+                                            : (tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
+                                        return `<tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.tipo}</td>
+                                            <td>${badgeAsignacion}</td>
+                                            <td>${cronoHtml}</td>
+                                            <td>N${c.nivelSecretario}</td>
+                                            <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
+                                            <td>
+                                                ${!done && c.estado === 'en_proceso' ? `
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                    <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
+                                                ` : (done ? `<i class="bi bi-check-circle-fill text-success"></i>` : `<span class="badge badge-estado badge-sec">En Secretaría</span>`)}
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
 
                 const anioOptions = [];
                 for (let y = 2026; y <= 2040; y++) {
                     anioOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
                 }
 
-                panel.innerHTML = `
+                let html = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
@@ -906,49 +1005,30 @@
                             </div>
                             <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltros"><i class="bi bi-eraser"></i> Limpiar</button>
                         </div>
-                        ${total ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Tipo</th>
-                                            <th>Asignación</th>
-                                            <th>Tiempo transcurrido</th>
-                                            <th>Nivel</th>
-                                            <th>Observación</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${items.map(c => {
-                                            const done = c.estado === 'finalizada';
-                                            const cronoHtml = getCronoHtml(c);
-                                            const comentario = getComentarioAsignacion(c);
-                                            return `<tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${c.tipo}</td>
-                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaAsignacion)}</td>
-                                                <td>${cronoHtml}</td>
-                                                <td>N${c.nivelSecretario}</td>
-                                                <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
-                                                <td>
-                                                    ${!done && c.estado === 'en_proceso' ? `
-                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
-                                                        <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
-                                                    ` : (done ? `<i class="bi bi-check-circle-fill text-success"></i>` : `<span class="badge badge-estado badge-sec">En Secretaría</span>`)}
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>`;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div><div id="paginationEmpleado"></div>
-                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin tareas asignadas o sin coincidencias de filtro</div>`}
+                        <div class="mb-4">
+                            <h6><i class="bi bi-star text-success"></i> Nuevos Patrocinios</h6>
+                            ${generarTabla(itemsN, 'Nuevos Patrocinios')}
+                            <div id="paginationNuevos"></div>
+                        </div>
+                        <div>
+                            <h6><i class="bi bi-arrow-repeat text-warning"></i> Seguimiento Posterior</h6>
+                            ${generarTabla(itemsS, 'Seguimiento')}
+                            <div id="paginationSeg"></div>
+                        </div>
                     </div>
                 `;
 
-                if (total > 0) renderPagination('paginationEmpleado', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.empleado.page = newPage; paginationState.empleado.perPage = newPerPage; renderEmpleado(); });
+                panel.innerHTML = html;
+
+                // Renderizar paginación para cada tabla
+                if (totalN > 0) renderPagination('paginationNuevos', totalN, totalPagesN, pageN, pStateNuevos.perPage, (newPage, newPerPage) => {
+                    paginationState.empleadoNuevos = { page: newPage, perPage: newPerPage };
+                    renderEmpleado();
+                });
+                if (totalS > 0) renderPagination('paginationSeg', totalS, totalPagesS, pageS, pStateSeg.perPage, (newPage, newPerPage) => {
+                    paginationState.empleadoSeg = { page: newPage, perPage: newPerPage };
+                    renderEmpleado();
+                });
 
                 // Eventos de botones
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
@@ -1005,14 +1085,16 @@
                 if (selectMes) {
                     selectMes.addEventListener('change', function() {
                         filtroMes = this.value;
-                        paginationState.empleado.page = 1;
+                        paginationState.empleadoNuevos.page = 1;
+                        paginationState.empleadoSeg.page = 1;
                         renderEmpleado();
                     });
                 }
                 if (selectAnio) {
                     selectAnio.addEventListener('change', function() {
                         filtroAnio = this.value;
-                        paginationState.empleado.page = 1;
+                        paginationState.empleadoNuevos.page = 1;
+                        paginationState.empleadoSeg.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -1021,7 +1103,8 @@
                     btnLimpiar.addEventListener('click', function() {
                         filtroMes = '';
                         filtroAnio = '';
-                        paginationState.empleado.page = 1;
+                        paginationState.empleadoNuevos.page = 1;
+                        paginationState.empleadoSeg.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -1150,7 +1233,8 @@
 
                 document.getElementById('globalSearch').addEventListener('input', function() {
                     searchTerm = this.value.trim();
-                    paginationState.empleado.page = 1;
+                    paginationState.empleadoNuevos.page = 1;
+                    paginationState.empleadoSeg.page = 1;
                     renderEmpleado();
                 });
 

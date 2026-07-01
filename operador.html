@@ -448,7 +448,6 @@
             // ---------- FIRESTORE OPERATIONS ----------
             async function loadState() {
                 try {
-                    // Cargar causas (todos los documentos que no sean el de ausencias)
                     const snapshot = await db.collection('operador').get();
                     const causas = [];
                     let ausencias = [];
@@ -578,7 +577,8 @@
             }
 
             // ---------- REGISTRO DE CAUSA (con Firestore) ----------
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia) {
+            // MODIFICADO: Se agregó el parámetro 'dni' y se guarda en el documento
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -617,6 +617,7 @@
                 const nueva = {
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
+                    dni: dni.trim() || '',  // NUEVO CAMPO DNI
                     tipo: tipo || 'Otro',
                     nivelOperador: parseInt(nivel) || 2,
                     nivelSecretario: null,
@@ -625,6 +626,10 @@
                     estado: estado,
                     secretarioId: secretarioId,
                     empleadoId: null,
+                    empleadoAsignado: null,
+                    empleadoOriginal: null,
+                    tipoAsignacion: null,
+                    esReingreso: false,
                     fechaPaseSecretario: new Date().toISOString(),
                     fechaAsignacion: null,
                     fechaFinalizacion: null,
@@ -648,7 +653,7 @@
 
                 try {
                     await addCausa(nueva);
-                    state.causas.push(nueva); // actualizar estado local
+                    state.causas.push(nueva);
                     if (accion === 'devolver') {
                         showToast(`✅ Causa ${nueva.numero} registrada como DEVUELTA a SIGED.`);
                     } else if (accion === 'remitir') {
@@ -685,7 +690,6 @@
                 if (!dependencia || dependencia.trim() === '') { showToast('Debe especificar la dependencia', 'warning'); return; }
                 await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, operador, motivo || 'Sin motivo especificado');
                 c.dependenciaRemision = dependencia.trim();
-                // Actualizar ese campo en Firestore también
                 try {
                     await updateCausa(id, { dependenciaRemision: dependencia.trim() });
                 } catch (e) {}
@@ -709,7 +713,6 @@
                 const historialEntry = { fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema', comentario: com || '-' };
                 c.historial.push(historialEntry);
 
-                // Actualizar en Firestore
                 const updates = {
                     estado: c.estado,
                     fechaFinalizacion: c.fechaFinalizacion || null,
@@ -723,9 +726,8 @@
                     await updateCausa(id, updates);
                     showToast(`🔄 ${c.numero} actualizado: ${accion}`);
                 } catch (error) {
-                    // revertir cambio local si falla
                     const idx = state.causas.findIndex(x => x.id === id);
-                    if (idx !== -1) state.causas[idx] = c; // no es necesario revertir porque ya se modificó, pero podríamos recargar
+                    if (idx !== -1) state.causas[idx] = c;
                     showToast('Error al actualizar en Firestore', 'danger');
                 }
             }
@@ -862,6 +864,14 @@
                     <form id="formIngreso" class="form-modern">
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
+                        <!-- NUEVO CAMPO DNI (OBLIGATORIO, SOLO NÚMEROS, MÁXIMO 8 DÍGITOS) -->
+                        <div class="mb-3">
+                            <label class="form-label">DNI *</label>
+                            <input type="text" id="inpDni" class="form-control" required autocomplete="off"
+                                   placeholder="Ingrese el DNI (8 dígitos)" maxlength="8"
+                                   pattern="[0-9]{7,8}" title="El DNI debe tener entre 7 y 8 dígitos numéricos"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
@@ -924,7 +934,7 @@
                 accionSelect.addEventListener('change', toggleCamposAccion);
                 toggleCamposAccion();
 
-                // Submit del formulario
+                // Submit del formulario (modificado para incluir DNI)
                 document.getElementById('formIngreso').addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const operador = currentOperator;
@@ -935,15 +945,22 @@
                     const fuenteSiged = document.getElementById('fuenteSiged').checked;
                     const fuenteZimbra = document.getElementById('fuenteZimbra').checked;
                     const accion = document.getElementById('inpAccion').value;
-                    let motivo = document.getElementById('inpMotivo').value.trim();
-                    let dependencia = document.getElementById('inpDependencia').value.trim();
+                    const motivo = document.getElementById('inpMotivo').value.trim();
+                    const dependencia = document.getElementById('inpDependencia').value.trim();
+                    const dni = document.getElementById('inpDni').value.trim();
+
+                    // Validación extra del DNI (ya está con required, pero por si acaso)
+                    if (!dni || !/^\d{7,8}$/.test(dni)) {
+                        showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
+                        return;
+                    }
 
                     if (accion !== 'asignar') {
                         if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
 
-                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia);
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -955,6 +972,7 @@
                         document.getElementById('camposAccion').style.display = 'none';
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
+                        document.getElementById('inpDni').value = '';
                         renderTabla();
                     }
                 });
@@ -977,7 +995,6 @@
                     modal.show();
                 });
 
-                // Botón agregar ausencia en modal
                 document.getElementById('btnAgregarAusencia').addEventListener('click', async function() {
                     const secretarioId = document.getElementById('ausenciaSecretario').value;
                     const fechaInicio = document.getElementById('ausenciaFechaInicio').value;
@@ -1207,7 +1224,6 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('lblOperadorActivo').querySelector('span').textContent = operador;
 
-                // Cargar datos desde Firestore
                 await loadState();
                 createFormulario();
                 renderTabla();
