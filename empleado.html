@@ -604,6 +604,7 @@
                                 <thead>
                                     <tr style="background: #f1f6fd; color: #1a4c74;">
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
@@ -631,6 +632,7 @@
                                             : (tipoAsignacion === 'Seguimiento' ? `<span class="badge badge-tipo-seguimiento">Seguimiento</span>` : 'N/D');
                                         return `<tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
+                                            <td style="padding: 6px 8px;">${c.modoIntervencion || '-'}</td>
                                             <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
                                             <td style="padding: 6px 8px;">${badgeAsignacion}</td>
                                             <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador}</td>
@@ -640,7 +642,7 @@
                                             <td style="padding: 6px 8px;">${getEstadoBadgePlain(c.estado)}</td>
                                         </tr>`;
                                     }).join('')}
-                                    ${total === 0 ? `<tr><td colspan="8" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
+                                    ${total === 0 ? `<tr><td colspan="9" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -935,6 +937,7 @@
                                 <thead>
                                     <tr>
                                         <th>Expediente</th>
+                                        <th>Modo Intervención</th>
                                         <th>Tipo</th>
                                         <th>Asignación</th>
                                         <th>Tiempo</th>
@@ -954,6 +957,7 @@
                                             : (tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${badgeAsignacion}</td>
                                             <td>${cronoHtml}</td>

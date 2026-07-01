@@ -593,7 +593,7 @@
             }
 
             // ---------- REGISTRO DE CAUSA (con Firestore) ----------
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni) {
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -658,6 +658,7 @@
                     fuenteZimbra: fuenteZimbra || false,
                     motivoAccion: motivoGuardado,
                     dependenciaRemision: dependenciaGuardada,
+                    modoIntervencion: modoIntervencion || '', // NUEVO CAMPO
                     historial: [{
                         fecha: new Date().toISOString(),
                         accion: accionHistorial,
@@ -874,6 +875,26 @@
                 ];
                 const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
 
+                // Opciones para modo de intervención
+                const modoIntervencionOptions = [
+                    'Defensor Oficial',
+                    'Ministerio Principal',
+                    'Ministerio Complementario',
+                    'Patrocinante Actor',
+                    'Patrocinante Demandado',
+                    'Patrocinante Tercero',
+                    'Defensor de Ausente',
+                    'Patrocinante presunto incapaz',
+                    'Asistencia Letrada del incapaz',
+                    'Ministerio Público del incapaz',
+                    'Ministerio Público en turno Abril',
+                    'Ministerio Público en turno Agosto',
+                    'Ministerio Público en turno Diciembre',
+                    'Tutor Ad Litem',
+                    'Defensor Oficial Art 329 CPCC',
+                    'Defensor Oficial Art 626 CPCC'
+                ].map(m => `<option value="${m}">${m}</option>`).join('');
+
                 container.innerHTML = `
                     <div class="card-title"><i class="bi bi-file-earmark-plus"></i> Nueva Causa</div>
                     <form id="formIngreso" class="form-modern">
@@ -889,6 +910,13 @@
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Modo de Intervención</label>
+                            <select id="inpModoIntervencion" class="form-select">
+                                <option value="">Seleccione...</option>
+                                ${modoIntervencionOptions}
+                            </select>
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Fuente</label>
@@ -961,6 +989,7 @@
                     const motivo = document.getElementById('inpMotivo').value.trim();
                     const dependencia = document.getElementById('inpDependencia').value.trim();
                     const dni = document.getElementById('inpDni').value.trim();
+                    const modoIntervencion = document.getElementById('inpModoIntervencion').value;
 
                     if (!dni || !/^\d{7,8}$/.test(dni)) {
                         showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
@@ -972,7 +1001,7 @@
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
 
-                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni);
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -985,6 +1014,7 @@
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
                         document.getElementById('inpDni').value = '';
+                        document.getElementById('inpModoIntervencion').value = '';
                         renderTabla();
                     }
                 });

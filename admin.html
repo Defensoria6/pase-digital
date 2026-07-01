@@ -607,7 +607,7 @@
             }
 
             // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO (adaptadas) ----------
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni) {
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -670,6 +670,7 @@
                     fuenteZimbra: fuenteZimbra || false,
                     motivoAccion: motivoGuardado,
                     dependenciaRemision: dependenciaGuardada,
+                    modoIntervencion: modoIntervencion || '',
                     historial: [{
                         fecha: new Date().toISOString(),
                         accion: accionHistorial,
@@ -787,7 +788,6 @@
             }
 
             // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas ----------
-            // Función para obtener el secretario que asignó originalmente
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
@@ -984,6 +984,7 @@
                                 <thead>
                                     <tr>
                                         <th>Expediente</th>
+                                        <th>Modo Intervención</th>
                                         <th>Tipo</th>
                                         <th>Nivel</th>
                                         <th>Fecha Pase</th>
@@ -1006,6 +1007,7 @@
                                         const nivel = c.nivelSecretario || c.nivelOperador || '-';
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo || '-'}</td>
                                             <td>N${nivel}</td>
                                             <td style="font-size:0.75rem;">${fmtDt(fechaPase)}</td>
@@ -1038,11 +1040,12 @@
                     <h6>Expedientes</h6>
                     <div class="table-wrap">
                         <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>DNI</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
                             <tbody>${causas.slice().reverse().map(c => `
                                 <tr>
                                     <td><strong>${c.numero}</strong></td>
                                     <td>${c.dni || '-'}</td>
+                                    <td>${c.modoIntervencion || '-'}</td>
                                     <td>${c.operador || '-'}</td>
                                     <td>${getEstadoBadge(c.estado)}</td>
                                     <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
@@ -1070,11 +1073,12 @@
                     <h6>Expedientes (${total})</h6>
                     <div class="table-wrap">
                         <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>DNI</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
                             <tbody>${causas.slice().reverse().map(c => `
                                 <tr>
                                     <td><strong>${c.numero}</strong></td>
                                     <td>${c.dni || '-'}</td>
+                                    <td>${c.modoIntervencion || '-'}</td>
                                     <td>${getEstadoBadge(c.estado)}</td>
                                     <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                 </tr>
@@ -1127,6 +1131,7 @@
                                     <tr style="background: #f1f6fd; color: #1a4c74;">
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">DNI</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Asignación</th>
@@ -1139,6 +1144,7 @@
                                         <tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
                                             <td style="padding: 6px 8px;">${c.dni || '-'}</td>
+                                            <td style="padding: 6px 8px;">${c.modoIntervencion || '-'}</td>
                                             <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
                                             <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador}</td>
                                             <td style="padding: 6px 8px; font-size: 0.7rem;">${fmtDateShort(c.fechaAsignacion)}</td>
@@ -1146,7 +1152,7 @@
                                             <td style="padding: 6px 8px;">${getEstadoBadgePlain(c.estado)}</td>
                                         </tr>
                                     `).join('')}
-                                    ${total === 0 ? `<tr><td colspan="7" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
+                                    ${total === 0 ? `<tr><td colspan="8" style="padding: 20px; text-align: center; color: #8aa3bc;">No hay expedientes asignados a este empleado.</td></tr>` : ''}
                                 </tbody>
                             </table>
                         </div>
@@ -1324,6 +1330,7 @@
                                     <tr>
                                         <th>Expediente</th>
                                         <th>DNI</th>
+                                        <th>Modo Intervención</th>
                                         <th>Tipo</th>
                                         <th>Estado</th>
                                         <th>Asistencia</th>
@@ -1335,6 +1342,7 @@
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${getEstadoBadgePlain(c.estado)}</td>
                                             <td>${c.asistenciaGesell === 'asistio' ? '✅ Asistió' : c.asistenciaGesell === 'no_asistio' ? '❌ No asistió' : '⏳ Pendiente'}</td>
@@ -1414,6 +1422,26 @@
                 ];
                 const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
 
+                // Opciones para modo de intervención
+                const modoIntervencionOptions = [
+                    'Defensor Oficial',
+                    'Ministerio Principal',
+                    'Ministerio Complementario',
+                    'Patrocinante Actor',
+                    'Patrocinante Demandado',
+                    'Patrocinante Tercero',
+                    'Defensor de Ausente',
+                    'Patrocinante presunto incapaz',
+                    'Asistencia Letrada del incapaz',
+                    'Ministerio Público del incapaz',
+                    'Ministerio Público en turno Abril',
+                    'Ministerio Público en turno Agosto',
+                    'Ministerio Público en turno Diciembre',
+                    'Tutor Ad Litem',
+                    'Defensor Oficial Art 329 CPCC',
+                    'Defensor Oficial Art 626 CPCC'
+                ].map(m => `<option value="${m}">${m}</option>`).join('');
+
                 panel.innerHTML = `
                     <div class="row g-4">
                         <div class="col-lg-5">
@@ -1432,6 +1460,13 @@
                                     <div class="row g-3">
                                         <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
                                         <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Modo de Intervención</label>
+                                        <select id="inpModoIntervencion" class="form-select">
+                                            <option value="">Seleccione...</option>
+                                            ${modoIntervencionOptions}
+                                        </select>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label">Fuente</label>
@@ -1480,11 +1515,12 @@
                                 ${total ? `
                                     <div style="overflow:hidden; width:100%;">
                                         <table class="table-modern table table-sm" style="margin-bottom:0;">
-                                            <thead><tr><th>Expediente</th><th>DNI</th><th>Nivel</th><th>Pase</th><th>Estado</th><th style="width:120px;">Acciones</th></tr></thead>
+                                            <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Nivel</th><th>Pase</th><th>Estado</th><th style="width:120px;">Acciones</th></tr></thead>
                                             <tbody>${items.map(c => `
                                                 <tr>
                                                     <td><strong>${c.numero}</strong></td>
                                                     <td>${c.dni || '-'}</td>
+                                                    <td>${c.modoIntervencion || '-'}</td>
                                                     <td>N${c.nivelOperador}</td>
                                                     <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                                     <td>${getEstadoBadge(c.estado)}</td>
@@ -1543,6 +1579,7 @@
                     let motivo = document.getElementById('inpMotivo').value.trim();
                     let dependencia = document.getElementById('inpDependencia').value.trim();
                     const dni = document.getElementById('inpDni').value.trim();
+                    const modoIntervencion = document.getElementById('inpModoIntervencion').value;
 
                     if (!dni || !/^\d{7,8}$/.test(dni)) {
                         showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
@@ -1554,7 +1591,7 @@
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
 
-                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni);
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -1567,6 +1604,7 @@
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
                         document.getElementById('inpDni').value = '';
+                        document.getElementById('inpModoIntervencion').value = '';
                         renderAll();
                     }
                 });
@@ -1669,11 +1707,11 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Nivel Op.</th><th>Revisión</th><th>Asignar a</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel Op.</th><th>Revisión</th><th>Asignar a</th><th>Acciones</th></tr></thead>
                                     <tbody>
                                         ${items.map(c => `
                                             <tr>
-                                                <td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.tipo}</td><td>N${c.nivelOperador}</td>
+                                                <td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.tipo}</td><td>N${c.nivelOperador}</td>
                                                 <td><select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;"><option value="1" ${c.nivelOperador===1?'selected':''}>N1</option><option value="2" ${c.nivelOperador===2?'selected':''}>N2</option><option value="3" ${c.nivelOperador===3?'selected':''}>N3</option><option value="4" ${c.nivelOperador===4?'selected':''}>N4</option></select></td>
                                                 <td><select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;"><option value="">Seleccionar...</option>${optsEmpleados}</select> <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button></td>
                                                 <td>
@@ -1696,7 +1734,7 @@
                         ${procTotal ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Empleado</th><th>Nivel</th><th>Tipo Asignación</th><th>Demora</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Empleado</th><th>Nivel</th><th>Tipo Asignación</th><th>Demora</th><th>Acciones</th></tr></thead>
                                     <tbody>${procItems.map(c => {
                                         const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
                                         const badgeTipo = c.tipoAsignacion === 'Nuevo Patrocinio' 
@@ -1705,6 +1743,7 @@
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${getEmpName(c.empleadoId)}</td>
                                             <td>N${c.nivelSecretario || c.nivelOperador}</td>
                                             <td>${badgeTipo}</td>
@@ -1850,12 +1889,13 @@
                     tablaGesell = `
                         <div class="table-wrap">
                             <table class="table-modern table">
-                                <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora Audiencia</th><th>Acción</th></tr></thead>
+                                <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora Audiencia</th><th>Acción</th></tr></thead>
                                 <tbody>
                                     ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${getEstadoBadge(c.estado)}</td>
                                             <td>
@@ -1896,11 +1936,12 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Tipo</th><th>Nivel</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
                                     <tbody>${items.map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>N${c.nivelOperador}</td>
                                             <td>
@@ -2089,7 +2130,7 @@
                 nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
-                const pStateNuevos = { page: 1, perPage: 5 }; // para simplicidad, no usamos paginación aquí
+                const pStateNuevos = { page: 1, perPage: 5 };
                 const pStateSeg = { page: 1, perPage: 5 };
 
                 const { items: itemsN, total: totalN } = paginateData(nuevos, pStateNuevos.page, pStateNuevos.perPage);
@@ -2102,7 +2143,6 @@
                     anioOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
                 }
 
-                // Función para generar tabla
                 function generarTabla(items, tipo) {
                     if (!items.length) return `<div class="text-muted py-3">Sin ${tipo}</div>`;
                     return `
@@ -2112,6 +2152,7 @@
                                     <tr>
                                         <th>Expediente</th>
                                         <th>DNI</th>
+                                        <th>Modo Intervención</th>
                                         <th>Tipo</th>
                                         <th>Asignación</th>
                                         <th>Tiempo</th>
@@ -2131,6 +2172,7 @@
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>${badgeTipo}</td>
                                             <td>${cronoHtml}</td>
@@ -2415,8 +2457,8 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Acciones</th></tr></thead>
-                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Acciones</th></tr></thead>
+                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td>
                                         <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                         <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                     </td></tr>`).join('')}</tbody>
@@ -2469,11 +2511,12 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>Acciones</th></tr></thead>
                                     <tbody>${items.map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.operador || '-'}</td>
                                             <td>${getEstadoBadge(c.estado)}</td>
                                             <td>${getEmpName(c.empleadoId)}</td>
@@ -2515,6 +2558,23 @@
                 }
             }
 
+            // ---------- ELIMINAR CAUSA (función auxiliar) ----------
+            async function eliminarCausa(id) {
+                const causa = state.causas.find(c => c.id === id);
+                if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
+                if (!confirm(`¿Eliminar permanentemente la causa ${causa.numero}? Esta acción no se puede deshacer.`)) return;
+
+                try {
+                    await db.collection('operador').doc(id).delete();
+                    state.causas = state.causas.filter(c => c.id !== id);
+                    showToast(`✅ Causa ${causa.numero} eliminada correctamente`, 'success');
+                    renderAll();
+                } catch (error) {
+                    console.error('Error al eliminar:', error);
+                    showToast('Error al eliminar en Firestore', 'danger');
+                }
+            }
+
             // ---------- HISTORIAL ----------
             function abrirHistorial(id) {
                 const c = state.causas.find(x => x.id === id);
@@ -2522,7 +2582,7 @@
                 document.getElementById('modalHistorialExp').textContent = c.numero;
                 document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
                 else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
@@ -2571,23 +2631,6 @@
                 if (asignaciones.length === 0) return '-';
                 const ultima = asignaciones[asignaciones.length - 1];
                 return ultima.comentario || '-';
-            }
-
-            // Función para eliminar causa
-            async function eliminarCausa(id) {
-                const causa = state.causas.find(c => c.id === id);
-                if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
-                if (!confirm(`¿Eliminar permanentemente la causa ${causa.numero}? Esta acción no se puede deshacer.`)) return;
-
-                try {
-                    await db.collection('operador').doc(id).delete();
-                    state.causas = state.causas.filter(c => c.id !== id);
-                    showToast(`✅ Causa ${causa.numero} eliminada correctamente`, 'success');
-                    renderAll();
-                } catch (error) {
-                    console.error('Error al eliminar:', error);
-                    showToast('Error al eliminar en Firestore', 'danger');
-                }
             }
 
             // ---------- RENDER ALL ----------
