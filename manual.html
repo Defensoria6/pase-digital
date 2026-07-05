@@ -266,6 +266,161 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* --- MEJORAS PARA MÓVILES (adicionales) --- */
+        @media (max-width: 480px) {
+            .app-container {
+                padding: 0.4rem 0.4rem 0.2rem 0.4rem;
+            }
+
+            .app-header {
+                gap: 0.5rem;
+                margin-bottom: 0.8rem;
+                padding-bottom: 0.3rem;
+            }
+
+            .header-left h1 {
+                font-size: 1.4rem;
+            }
+
+            .btn-back {
+                font-size: 0.75rem;
+                padding: 6px 14px;
+                min-height: 40px;
+                gap: 4px;
+            }
+
+            .grid-view {
+                padding: 0.5rem;
+            }
+
+            .launcher-grid {
+                gap: 0.8rem;
+            }
+
+            .module-card {
+                min-height: 150px;
+                padding: 1.2rem 0.8rem;
+                border-radius: 24px;
+            }
+
+            .module-card i {
+                font-size: 2.8rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .module-card .card-title {
+                font-size: 1.2rem;
+                margin-bottom: 0.1rem;
+            }
+
+            .module-card .card-sub {
+                font-size: 0.75rem;
+            }
+
+            .content-view {
+                padding: 1rem;
+            }
+
+            .content-view h2 {
+                font-size: 1.3rem;
+                margin-bottom: 0.6rem;
+                padding-bottom: 0.3rem;
+            }
+
+            .content-view h3 {
+                font-size: 1.1rem;
+                margin-top: 1rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .content-view p,
+            .content-view li {
+                font-size: 0.9rem;
+                line-height: 1.5;
+            }
+
+            .content-view ul {
+                margin-left: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .app-footer {
+                font-size: 0.6rem;
+                padding-top: 0.4rem;
+                margin-top: 0.2rem;
+            }
+        }
+
+        /* Para móviles en landscape (pantallas más anchas pero pequeñas) */
+        @media (max-width: 800px) and (orientation: landscape) {
+            .app-container {
+                padding: 0.6rem 1rem 0.4rem 1rem;
+            }
+
+            .launcher-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+
+            .module-card {
+                min-height: 140px;
+                padding: 1rem 0.8rem;
+            }
+
+            .module-card i {
+                font-size: 2.5rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .module-card .card-title {
+                font-size: 1rem;
+            }
+
+            .content-view {
+                padding: 1rem 1.2rem;
+            }
+        }
+
+        /* Para móviles muy pequeños (ej. < 360px) */
+        @media (max-width: 360px) {
+            .header-left h1 {
+                font-size: 1.2rem;
+            }
+
+            .btn-back {
+                font-size: 0.65rem;
+                padding: 4px 10px;
+                min-height: 34px;
+            }
+
+            .module-card i {
+                font-size: 2.2rem;
+            }
+
+            .module-card .card-title {
+                font-size: 1rem;
+            }
+
+            .module-card {
+                min-height: 120px;
+                padding: 0.8rem 0.5rem;
+                border-radius: 20px;
+            }
+
+            .content-view h2 {
+                font-size: 1.1rem;
+            }
+
+            .content-view h3 {
+                font-size: 1rem;
+            }
+
+            .content-view p,
+            .content-view li {
+                font-size: 0.8rem;
+            }
+        }
     </style>
 </head>
 <body>
