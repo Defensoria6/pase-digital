@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>Manual de Uso del Sistema Digital de Pase de Causas</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #eef2f9 0%, #d9e2ef 100%);
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+            padding: 1.5rem 2rem 1rem 2rem;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(25, 118, 210, 0.15);
+            margin-bottom: 1.2rem;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .header-left h1 {
+            font-weight: 700;
+            font-size: 1.8rem;
+            color: #0a2a44;
+            margin: 0;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header-left h1 i {
+            color: #1976d2;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .header-text {
+            text-align: right;
+            font-weight: 600;
+            font-size: 1.15rem;
+            color: #0a2a44;
+            line-height: 1.3;
+        }
+        .header-text span {
+            font-weight: 400;
+            font-size: 0.9rem;
+            color: #5f7f9f;
+            display: block;
+        }
+
+        /* Modal informativo */
+        .info-modal {
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #ffffff;
+            padding: 10px 16px 12px 16px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            font-size: 0.8rem;
+            color: #0a2a44;
+            min-width: 170px;
+            text-align: left;
+            z-index: 200;
+            opacity: 1;
+            transition: opacity 0.5s ease, transform 0.3s ease;
+            transform: translateY(0);
+            border: 1px solid rgba(25, 118, 210, 0.08);
+            line-height: 1.6;
+            pointer-events: auto;
+        }
+        .info-modal.hidden {
+            opacity: 0;
+            transform: translateY(-6px);
+            pointer-events: none;
+        }
+        .info-modal strong {
+            font-weight: 700;
+            color: #0a2a44;
+        }
+        .info-modal .version {
+            color: #5f7f9f;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+
+        .btn-back {
+            background: rgba(25, 118, 210, 0.08);
+            border: 1px solid #d0e0f0;
+            color: #0a2a44;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            min-height: 44px;
+        }
+        .btn-back:hover {
+            background: #1976d2;
+            color: #fff;
+            border-color: #1976d2;
+        }
+
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            background: #ffffff;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(25, 118, 210, 0.08);
+        }
+
+        /* --- GRID VIEW --- */
+        .grid-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            overflow-y: auto;
+        }
+        .grid-view.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            position: absolute;
+            width: 100%;
+        }
+
+        .launcher-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.2rem;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        .module-card {
+            background: #ffffff;
+            border-radius: 32px;
+            padding: 3rem 2rem;
+            text-align: center;
+            text-decoration: none;
+            color: #0a2a44;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(25, 118, 210, 0.10);
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 260px;
+            cursor: pointer;
+        }
+        .module-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.02);
+            border-color: #1976d2;
+            background: #f9fcff;
+        }
+        .module-card i {
+            font-size: 4.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.2s;
+        }
+        .module-card:hover i {
+            transform: scale(1.05);
+        }
+        .module-card .card-title {
+            font-weight: 700;
+            font-size: 1.6rem;
+            margin-bottom: 0.4rem;
+            color: #0a2a44;
+        }
+        .module-card .card-sub {
+            font-size: 0.95rem;
+            color: #5f7f9f;
+            font-weight: 400;
+        }
+
+        .module-card.operador i { color: #1976d2; }
+        .module-card.secretario i { color: #e67e22; }
+        .module-card.empleados i { color: #2e7d32; }
+        .module-card.defensor i { color: #7b1fa2; }
+
+        .module-card.operador { border-left: 4px solid #1976d2; }
+        .module-card.secretario { border-left: 4px solid #e67e22; }
+        .module-card.empleados { border-left: 4px solid #2e7d32; }
+        .module-card.defensor { border-left: 4px solid #7b1fa2; }
+
+        /* --- CONTENT VIEW (REEMPLAZA AL IFRAME) --- */
+        .content-view {
+            display: none;
+            height: 100%;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            overflow-y: auto;
+            padding: 2.5rem;
+            color: #0a2a44;
+        }
+        .content-view.active {
+            display: block;
+            opacity: 1;
+        }
+        .content-view h2 {
+            color: #1976d2;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #eef2f9;
+            padding-bottom: 0.5rem;
+        }
+        .content-view h3 {
+            color: #0a2a44;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .content-view p {
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            color: #334e68;
+        }
+        .content-view ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .content-view li {
+            line-height: 1.6;
+            margin-bottom: 0.8rem;
+            color: #334e68;
+        }
+        .cite-badge {
+            font-size: 0.7rem;
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 2px 6px;
+            border-radius: 4px;
+            vertical-align: super;
+            margin-left: 4px;
+            text-decoration: none;
+        }
+
+        .app-footer {
+            flex-shrink: 0;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #8aa3bc;
+            padding-top: 0.8rem;
+            margin-top: 0.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 1rem 1.2rem 0.8rem 1.2rem;
+            }
+            .launcher-grid {
+                gap: 1.4rem;
+                max-width: 600px;
+            }
+            .module-card {
+                min-height: 200px;
+                padding: 2rem 1.5rem;
+            }
+            .content-view {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .app-container {
+                padding: 0.6rem 0.6rem 0.4rem 0.6rem;
+            }
+            .launcher-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <header class="app-header">
+            <!-- Izquierda: título -->
+            <div class="header-left">
+                <h1>
+                    <i class="bi bi-book"></i>
+                    Manual de Uso del Sistema Digital de Pase de Causas
+                </h1>
+            </div>
+
+            <!-- Derecha: texto institucional + botón volver -->
+            <div class="header-right">
+                <div class="header-text">
+                    Defensoria Civil y Comercial 6
+                    <span>Ministerio Público de Misiones</span>
+                </div>
+
+                <!-- Modal informativo (aparece al inicio y se oculta tras 4s) -->
+                <div class="info-modal" id="infoModal">
+                    <div>Diseño y Programación:</div>
+                    <div><strong>Rómulo Fioravante</strong></div>
+                    <div class="Manual de Uso">Manual de Uso</div>
+                </div>
+
+                <button class="btn-back" id="btnVolver">
+                    <i class="bi bi-arrow-left"></i> Volver a los Módulos
+                </button>
+            </div>
+        </header>
+
+        <div class="main-content">
+
+            <!-- Vista de Cuadrícula (Menú Principal) -->
+            <div class="grid-view" id="gridView">
+                <div class="launcher-grid">
+
+                    <div class="module-card operador" data-module="operador">
+                        <i class="bi bi-inbox"></i>
+                        <div class="card-title">Operador</div>
+                    </div>
+
+                    <div class="module-card secretario" data-module="secretario">
+                        <i class="bi bi-share"></i>
+                        <div class="card-title">Secretario</div>
+                    </div>
+
+                    <div class="module-card empleados" data-module="empleado">
+                        <i class="bi bi-person-check"></i>
+                        <div class="card-title">Empleados</div>
+                    </div>
+
+                    <div class="module-card defensor" data-module="defensor">
+                        <i class="bi bi-shield-check"></i>
+                        <div class="card-title">Defensor</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Vista de Contenido del Manual -->
+            <div class="content-view" id="contentView">
+                <div id="moduleContent"></div>
+            </div>
+
+        </div>
+
+        <footer class="app-footer">
+            <i class="bi bi-database"></i> Sistema Unificado Defensoria Civil y Comercial 6 · <span id="fechaActual"></span>
+        </footer>
+
+    </div>
+
+    <script>
+        (function() {
+            // Textos detallados del manual basados en los códigos reales de cada módulo
+            const manualData = {
+                operador: `
+                    <h2>Operador (Mesa de Entradas / Ingreso)</h2>
+                    <p><strong>Función:</strong> Es el encargado de ingresar las causas al sistema. Su labor se centra exclusivamente en el pase de los expedientes a los Secretarios de la Defensoría.</p>
+                    <p><strong>Restricción estricta:</strong> El Operador NO está facultado para distribuir expedientes directamente a los Empleados.</p>
+                    <p><strong>Dependencia:</strong> Los Operadores asisten y deben responder directamente a los Secretarios.</p>
+
+                    <h3>Guía Operativa por Rol: Ingreso y Registro</h3>
+                    <p>Su trabajo es el primer eslabón. Debe ser preciso en la carga de datos.</p>
+                    <ul>
+                        <li><strong>Carga del Expediente:</strong> Ingrese su nombre (Operador), el número de expediente y un DNI válido de la parte (actora, demandada, tercero).</li>
+                        <li><strong>Clasificación:</strong> Seleccione el tipo de causa (Nuevo patrocinio, Amparo, Alimentos, etc.), el modo de intervención (Defensor Oficial, Ministerio Principal, etc.) y un nivel de complejidad inicial del 1 al 4.</li>
+                        <li><strong>Fuente:</strong> Marque si el expediente proviene de SIGED y/o ZIMBRA.</li>
+                        <li><strong>Pase a Secretaría:</strong> Seleccione la opción "Asignar a Secretaría". El sistema asigna automáticamente al secretario con menor carga y que no esté ausente. Recuerde que no puede derivar a empleados.</li>
+                        <li><strong>Otras Acciones Permitidas:</strong> En caso de errores o incompetencias, el Operador puede registrar una "Devolución a SIGED", "Remisión a otra dependencia" (debe especificar la dependencia) o "Rechazo" (debiendo redactar el motivo obligatorio).</li>
+                        <li><strong>Gestión de Ausencias:</strong> Si un Secretario está de licencia, el Operador debe registrar la fecha de inicio y fin en el sistema para que no se le deriven expedientes por error durante ese lapso.</li>
+                        <li><strong>Visualización y Filtros:</strong> En la tabla de recientes puede ver las últimas causas ingresadas, filtrar por mes/año y buscar por número de expediente. Además, puede generar un reporte de actividad general.</li>
+                    </ul>
+                `,
+                secretario: `
+                    <h2>Secretario (Distribución)</h2>
+                    <p><strong>Función:</strong> Son los únicos autorizados para distribuir los expedientes a los Empleados (junto con el Defensor Oficial). Reciben el volumen de trabajo del Operador, evalúan la complejidad y lo asignan al personal.</p>
+
+                    <h3>Guía Operativa por Rol: Módulo de Distribución</h3>
+                    <p>Cada Secretario es el responsable de administrar la carga de trabajo de los empleados y revisar la tarea finalizada.</p>
+                    <ul>
+                        <li><strong>Recepción:</strong> Revise su bandeja de "Pendientes en Secretaría".</li>
+                        <li><strong>Revisión de Complejidad:</strong> Antes de asignar, puede modificar el nivel de complejidad (N1 a N4) que colocó el operador si lo considera necesario.</li>
+                        <li><strong>Distribución a Empleados (Manual):</strong> Elija al empleado desde el menú desplegable (el sistema le mostrará si el empleado está atrasado o su carga de puntos actual). También puede agregar una observación.</li>
+                        <li><strong>Distribución a Empleados (Automática):</strong> Use el botón "Auto" para que el sistema asigne equitativamente. El algoritmo prioriza empleados sin retraso, con menor carga en el mismo nivel y, en caso de empate, el que tiene fecha de reintegro más reciente (si fue marcado como ausente).</li>
+                        <li><strong>Atención a Reingresos:</strong> Si el expediente ya fue trabajado antes por un empleado, el sistema lo etiquetará como "Seguimiento" y se lo sugerirá al mismo empleado (si no está ausente).</li>
+                        <li><strong>Control de Finalización:</strong> Cuando un empleado termina una causa, el Secretario debe revisarla. Puede autorizar el "Cumplido" (finalizarla) o "Elevar a Defensor" para su firma/auditoría.</li>
+                        <li><strong>Gestión de Ausencias de Empleados:</strong> Puede marcar a un empleado como ausente (no recibirá asignaciones) y luego reintegrarlo, lo que le dará prioridad en futuras asignaciones.</li>
+                        <li><strong>Estadísticas de Equidad:</strong> Visualice la carga actual por empleado y las asignaciones por secretario. Puede generar informes detallados de equidad.</li>
+                        <li><strong>Monitoreo de Nuevos Patrocinios:</strong> Los Secrearios pueden ver un resumen de los nuevos patrocinios asignados a cada empleado.</li>
+                    </ul>
+                `,
+                empleado: `
+                    <h2>Empleado (Módulo de Trabajo)</h2>
+                    <p><strong>Función:</strong> Encargado de la tramitación de las causas.</p>
+                    <p><strong>Regla de reporte:</strong> Cada empleado tendrá en su bandeja la información exacta de cuál Secretario le asignó el expediente. El empleado debe responder y reportar los avances de esa causa exclusivamente a ese Secretario.</p>
+
+                    <h3>Guía Operativa por Rol: Módulo Empleado</h3>
+                    <p>Su objetivo es resolver los expedientes en tiempo y forma, respetando la cadena de mando.</p>
+                    <ul>
+                        <li><strong>Bandeja de Entrada:</strong> Sus causas se dividen en dos pestañas: "Nuevos Patrocinios" (primeras asignaciones) y "Seguimiento" (reingresos).</li>
+                        <li><strong>Identificación de Jefatura:</strong> Revise siempre la columna que indica qué Secretario le derivó el pase. Cualquier duda, corrección o entrega de ese expediente debe tramitarse con ese Secretario específico.</li>
+                        <li><strong>Plazos:</strong> Preste atención a los tiempos de resolución. El sistema alerta sobre expedientes atrasados (morosos), lo cual impactará en su calificación.</li>
+                        <li><strong>Acciones sobre la causa:</strong> Puede "Devolver a Secretario" (con motivo obligatorio) o "Enviar a Secretario para consulta" (con motivo obligatorio). También puede ver el historial completo de la causa.</li>
+                        <li><strong>Filtros y Búsqueda:</strong> Utilice los filtros por mes y año para visualizar sus tareas en un período específico, y la barra de búsqueda para encontrar expedientes por número.</li>
+                        <li><strong>Reportes y Estadísticas:</strong> Genere un reporte de actividades con resumen de KPI (totales, en proceso, finalizadas, nuevos, seguimientos) y un informe detallado con desglose por nivel y secretarios que le han asignado trabajo.</li>
+                    </ul>
+                `,
+                defensor: `
+                    <h2>Defensor Oficial (Auditoría y Evaluación)</h2>
+                    <p><strong>Función:</strong> Es la autoridad máxima, el auditor final del sistema. Supervisa el flujo completo, evalúa el rendimiento general y califica el trabajo final de toda la dependencia.</p>
+
+                    <h3>Guía Operativa por Rol: Auditoría</h3>
+                    <p>Únicamente el Defensor Oficial posee control total sobre el sistema para evaluar la calidad institucional.</p>
+                    <ul>
+                        <li><strong>Auditoría de Expedientes:</strong> Puede visualizar el estado histórico y actual de cualquier causa ("Elevadas a Defensor").</li>
+                        <li><strong>Gestión de Causas en Defensor:</strong> Puede ver todas las causas pendientes de resolución. Puede asignarlas a un empleado para que continúe el trámite o finalizarlas directamente.</li>
+                        <li><strong>Cámara Gesell:</strong> Administre las causas de tipo "Penal (cámara gesell)". Registre la asistencia (asistió, no asistió, pendiente) y la fecha/hora de la audiencia. Puede finalizar la causa desde aquí. Además, visualice un resumen y gráficos de estas causas.</li>
+                        <li><strong>Reportes de Equidad:</strong> Puede controlar si los Secretarios están distribuyendo el trabajo de manera justa, revisando la carga actual de cada empleado según la complejidad.</li>
+                        <li><strong>Calificación del Personal:</strong> En la pestaña de Gráficos/Auditoría, dispone del "Ranking de Desempeño". El sistema sugiere un puntaje (del 0 al 10) basado en la velocidad y el cumplimiento de plazos, permitiéndole al Defensor Oficial realizar la evaluación y calificación final del trabajo de todos los integrantes de la dependencia.</li>
+                        <li><strong>Gráficos y Estadísticas:</strong> Visualice gráficos de estado global, carga por empleado, rendimiento y distribución por nivel de complejidad.</li>
+                        <li><strong>Auditoría por Operador:</strong> Filtre las causas por el operador que las ingresó y genere reportes específicos.</li>
+                        <li><strong>Reinicio de Datos:</strong> En casos excepcionales, puede reiniciar todos los datos del sistema (solo disponible para el Defensor).</li>
+                    </ul>
+                `
+            };
+
+            const gridView = document.getElementById('gridView');
+            const contentView = document.getElementById('contentView');
+            const moduleContent = document.getElementById('moduleContent');
+            const btnVolver = document.getElementById('btnVolver');
+            const infoModal = document.getElementById('infoModal');
+
+            // Ocultar el modal después de 4 segundos
+            setTimeout(function() {
+                infoModal.classList.add('hidden');
+            }, 4000);
+
+            function mostrarModulo(moduleKey) {
+                if(manualData[moduleKey]) {
+                    gridView.classList.add('hidden');
+                    
+                    moduleContent.innerHTML = manualData[moduleKey];
+                    
+                    contentView.classList.add('active');
+                    contentView.style.display = 'block';
+                    btnVolver.style.display = 'flex';
+                }
+            }
+
+            function volverInicio() {
+                contentView.classList.remove('active');
+                contentView.style.display = 'none';
+                gridView.classList.remove('hidden');
+                btnVolver.style.display = 'none';
+                moduleContent.innerHTML = '';
+            }
+
+            document.querySelectorAll('.module-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    const moduleKey = this.dataset.module;
+                    if (moduleKey) mostrarModulo(moduleKey);
+                });
+            });
+
+            btnVolver.addEventListener('click', volverInicio);
+
+            document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && btnVolver.style.display === 'flex') {
+                    volverInicio();
+                }
+            });
+        })();
+    </script>
+
+</body>
+</html>
