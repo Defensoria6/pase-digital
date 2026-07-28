@@ -10,28 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
             font-family: 'Inter', sans-serif;
             background: linear-gradient(145deg, #eef2f9 0%, #d9e2ef 100%);
-            overflow: hidden; /* Evita scroll en body */
+            overflow: hidden;
         }
-
         .app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
             max-height: 100vh;
             padding: 1.5rem 2rem 1rem 2rem;
-            overflow: hidden; /* Evita scroll en el contenedor */
+            overflow: hidden;
         }
-
         .app-header {
             display: flex;
             align-items: center;
@@ -44,8 +37,6 @@
             flex-shrink: 0;
             position: relative;
         }
-
-        /* --- CABECERA IZQUIERDA --- */
         .header-left {
             display: flex;
             align-items: center;
@@ -53,7 +44,6 @@
             flex-wrap: wrap;
             flex: 1 1 auto;
         }
-
         .header-left h1 {
             font-weight: 700;
             font-size: 1.8rem;
@@ -65,11 +55,9 @@
             gap: 8px;
             white-space: nowrap;
         }
-        .header-left h1 i {
-            color: #1976d2;
-        }
+        .header-left h1 i { color: #1976d2; }
 
-        .btn-manual {
+        .btn-manual, .btn-video {
             background: rgba(25, 118, 210, 0.08);
             border: 1px solid #1976d2;
             color: #1976d2;
@@ -85,16 +73,23 @@
             min-height: 44px;
             white-space: nowrap;
         }
-        .btn-manual:hover {
+        .btn-manual:hover, .btn-video:hover {
             background: #1976d2;
             color: #fff;
             border-color: #1976d2;
         }
-        .btn-manual i {
-            font-size: 1.2rem;
+        .btn-manual i, .btn-video i { font-size: 1.2rem; }
+        .btn-video {
+            border-color: #e67e22;
+            color: #e67e22;
+            background: rgba(230, 126, 34, 0.08);
+        }
+        .btn-video:hover {
+            background: #e67e22;
+            color: #fff;
+            border-color: #e67e22;
         }
 
-        /* --- CABECERA DERECHA --- */
         .header-right {
             display: flex;
             align-items: center;
@@ -103,7 +98,6 @@
             position: relative;
             flex: 0 1 auto;
         }
-
         .header-text {
             text-align: right;
             font-weight: 600;
@@ -119,7 +113,6 @@
             display: block;
         }
 
-        /* Modal informativo */
         .info-modal {
             position: absolute;
             top: calc(100% + 6px);
@@ -127,7 +120,7 @@
             background: #ffffff;
             padding: 10px 16px 12px 16px;
             border-radius: 14px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             font-size: 0.8rem;
             color: #0a2a44;
             min-width: 170px;
@@ -136,7 +129,7 @@
             opacity: 1;
             transition: opacity 0.5s ease, transform 0.3s ease;
             transform: translateY(0);
-            border: 1px solid rgba(25, 118, 210, 0.08);
+            border: 1px solid rgba(25,118,210,0.08);
             line-height: 1.6;
             pointer-events: auto;
         }
@@ -145,15 +138,8 @@
             transform: translateY(-6px);
             pointer-events: none;
         }
-        .info-modal strong {
-            font-weight: 700;
-            color: #0a2a44;
-        }
-        .info-modal .version {
-            color: #5f7f9f;
-            font-size: 0.75rem;
-            margin-top: 2px;
-        }
+        .info-modal strong { font-weight: 700; color: #0a2a44; }
+        .info-modal .version { color: #5f7f9f; font-size: 0.75rem; margin-top: 2px; }
 
         .btn-back {
             background: rgba(25, 118, 210, 0.08);
@@ -183,12 +169,10 @@
             overflow: hidden;
             border-radius: 28px;
             background: #ffffff;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-            border: 1px solid rgba(25, 118, 210, 0.08);
-            min-height: 0; /* Para que flex funcione correctamente */
+            box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+            border: 1px solid rgba(25,118,210,0.08);
+            min-height: 0;
         }
-
-        /* --- GRID VIEW --- */
         .grid-view {
             display: flex;
             flex-direction: column;
@@ -205,7 +189,6 @@
             position: absolute;
             width: 100%;
         }
-
         .launcher-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -213,7 +196,6 @@
             max-width: 1100px;
             width: 100%;
         }
-
         .module-card {
             background: #ffffff;
             border-radius: 32px;
@@ -221,8 +203,8 @@
             text-align: center;
             text-decoration: none;
             color: #0a2a44;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.03);
-            border: 1px solid rgba(25, 118, 210, 0.10);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
+            border: 1px solid rgba(25,118,210,0.10);
             transition: all 0.25s ease;
             display: flex;
             flex-direction: column;
@@ -234,7 +216,7 @@
         }
         .module-card:hover {
             transform: translateY(-6px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.02);
             border-color: #1976d2;
             background: #f9fcff;
         }
@@ -243,9 +225,7 @@
             margin-bottom: 1rem;
             transition: transform 0.2s;
         }
-        .module-card:hover i {
-            transform: scale(1.05);
-        }
+        .module-card:hover i { transform: scale(1.05); }
         .module-card .card-title {
             font-weight: 700;
             font-size: 1.6rem;
@@ -257,18 +237,15 @@
             color: #5f7f9f;
             font-weight: 400;
         }
-
         .module-card.operador i { color: #1976d2; }
         .module-card.secretario i { color: #e67e22; }
         .module-card.empleados i { color: #2e7d32; }
         .module-card.defensor i { color: #7b1fa2; }
-
         .module-card.operador { border-left: 4px solid #1976d2; }
         .module-card.secretario { border-left: 4px solid #e67e22; }
         .module-card.empleados { border-left: 4px solid #2e7d32; }
         .module-card.defensor { border-left: 4px solid #7b1fa2; }
 
-        /* --- IFRAME VIEW --- */
         .iframe-view {
             display: none;
             height: 100%;
@@ -295,141 +272,127 @@
             color: #8aa3bc;
             padding-top: 0.8rem;
             margin-top: 0.5rem;
-            border-top: 1px solid rgba(0, 0, 0, 0.04);
+            border-top: 1px solid rgba(0,0,0,0.04);
         }
 
-        /* ========== RESPONSIVE MEJORADO ========== */
+        /* ===== MODAL DE VIDEO ===== */
+        .video-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            padding: 1.5rem;
+        }
+        .video-modal-overlay.active { display: flex; }
+        .video-modal-content {
+            background: #fff;
+            border-radius: 24px;
+            width: 100%;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            position: relative;
+            animation: fadeInUp 0.3s ease;
+            text-align: center;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .video-modal-content .modal-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #0a2a44;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .video-modal-content .modal-title i { color: #e67e22; }
+        .video-modal-content .close-modal {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #0a2a44;
+            cursor: pointer;
+            transition: 0.2s;
+            line-height: 1;
+            background: none;
+            border: none;
+            padding: 0 8px;
+            z-index: 10;
+        }
+        .video-modal-content .close-modal:hover {
+            color: #e67e22;
+            transform: scale(1.15);
+        }
+        
+        /* Contenedor del video con proporción 16:9 */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            background: #000;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 992px) {
-            .launcher-grid {
-                gap: 1.5rem;
-            }
-            .module-card {
-                min-height: 220px;
-                padding: 2.5rem 1.8rem;
-            }
-            .module-card i {
-                font-size: 4rem;
-            }
-            .module-card .card-title {
-                font-size: 1.4rem;
-            }
+            .launcher-grid { gap: 1.5rem; }
+            .module-card { min-height: 220px; padding: 2.5rem 1.8rem; }
+            .module-card i { font-size: 4rem; }
+            .module-card .card-title { font-size: 1.4rem; }
         }
-
         @media (max-width: 768px) {
-            .app-container {
-                padding: 1rem 1.2rem 0.8rem 1.2rem;
-            }
-
-            .header-left h1 {
-                font-size: 1.4rem;
-            }
-            .btn-manual {
-                font-size: 0.8rem;
-                padding: 4px 14px;
-                min-height: 40px;
-            }
-
-            .header-text {
-                font-size: 1rem;
-            }
-            .header-text span {
-                font-size: 0.8rem;
-            }
-
-            .launcher-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 1.2rem;
-            }
-            .module-card {
-                min-height: 200px;
-                padding: 2rem 1.5rem;
-            }
-            .module-card i {
-                font-size: 3.6rem;
-            }
-            .module-card .card-title {
-                font-size: 1.3rem;
-            }
-            .module-card .card-sub {
-                font-size: 0.85rem;
-            }
-
-            .info-modal {
-                font-size: 0.75rem;
-                min-width: 150px;
-                padding: 8px 14px;
-            }
+            .app-container { padding: 1rem 1.2rem 0.8rem 1.2rem; }
+            .header-left h1 { font-size: 1.4rem; }
+            .btn-manual, .btn-video { font-size: 0.8rem; padding: 4px 14px; min-height: 40px; }
+            .header-text { font-size: 1rem; }
+            .header-text span { font-size: 0.8rem; }
+            .launcher-grid { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+            .module-card { min-height: 200px; padding: 2rem 1.5rem; }
+            .module-card i { font-size: 3.6rem; }
+            .module-card .card-title { font-size: 1.3rem; }
+            .module-card .card-sub { font-size: 0.85rem; }
+            .info-modal { font-size: 0.75rem; min-width: 150px; padding: 8px 14px; }
+            .video-modal-content { padding: 1.5rem; }
+            .video-modal-content .modal-title { font-size: 1.3rem; }
         }
-
         @media (max-width: 576px) {
-            .app-container {
-                padding: 0.5rem 0.6rem 0.4rem 0.6rem;
-            }
-
-            .app-header {
-                gap: 0.4rem;
-                margin-bottom: 0.8rem;
-            }
-            .header-left {
-                width: 100%;
-                justify-content: space-between;
-                gap: 0.5rem;
-            }
-            .header-left h1 {
-                font-size: 1.1rem;
-                white-space: normal; /* Permite que el título se ajuste */
-                word-break: break-word;
-            }
-            .header-left h1 i {
-                font-size: 1.2rem;
-            }
-            .btn-manual {
-                font-size: 0.7rem;
-                padding: 4px 10px;
-                min-height: 36px;
-            }
-            .btn-manual i {
-                font-size: 1rem;
-            }
-
-            .header-right {
-                width: 100%;
-                justify-content: flex-end;
-                gap: 0.6rem;
-            }
-            .header-text {
-                font-size: 0.9rem;
-                text-align: right;
-                flex: 1 1 auto;
-            }
-            .header-text span {
-                font-size: 0.7rem;
-            }
-
-            .btn-back {
-                font-size: 0.8rem;
-                padding: 6px 14px;
-                min-height: 40px;
-                gap: 6px;
-            }
-            .btn-back i {
-                font-size: 1.1rem;
-            }
-
-            .main-content {
-                border-radius: 18px;
-            }
-
-            .grid-view {
-                padding: 0.8rem;
-            }
-
-            .launcher-grid {
-                grid-template-columns: 1fr; /* Una sola columna en móviles */
-                gap: 0.8rem;
-                max-width: 100%;
-            }
-
+            .app-container { padding: 0.5rem 0.6rem 0.4rem 0.6rem; }
+            .app-header { gap: 0.4rem; margin-bottom: 0.8rem; }
+            .header-left { width: 100%; justify-content: space-between; gap: 0.5rem; }
+            .header-left h1 { font-size: 1.1rem; white-space: normal; word-break: break-word; }
+            .header-left h1 i { font-size: 1.2rem; }
+            .btn-manual, .btn-video { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
+            .btn-manual i, .btn-video i { font-size: 1rem; }
+            .header-right { width: 100%; justify-content: flex-end; gap: 0.6rem; }
+            .header-text { font-size: 0.9rem; text-align: right; flex: 1 1 auto; }
+            .header-text span { font-size: 0.7rem; }
+            .btn-back { font-size: 0.8rem; padding: 6px 14px; min-height: 40px; gap: 6px; }
+            .btn-back i { font-size: 1.1rem; }
+            .main-content { border-radius: 18px; }
+            .grid-view { padding: 0.8rem; }
+            .launcher-grid { grid-template-columns: 1fr; gap: 0.8rem; max-width: 100%; }
             .module-card {
                 min-height: 140px;
                 padding: 1.2rem 1rem;
@@ -441,281 +404,219 @@
                 text-align: left;
                 border-left-width: 6px;
             }
-            .module-card i {
-                font-size: 2.6rem;
-                margin-bottom: 0;
-                flex-shrink: 0;
-            }
-            .module-card .card-title {
-                font-size: 1.2rem;
-                margin-bottom: 0.1rem;
-            }
-            .module-card .card-sub {
-                font-size: 0.8rem;
-            }
-            .module-card .card-text-group {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .iframe-view iframe {
-                border-radius: 0 0 18px 18px;
-            }
-
-            .app-footer {
-                font-size: 0.6rem;
-                padding-top: 0.4rem;
-                margin-top: 0.3rem;
-            }
-
-            .info-modal {
-                font-size: 0.7rem;
-                min-width: 130px;
-                padding: 6px 12px;
-                right: 0;
-                top: calc(100% + 4px);
-            }
+            .module-card i { font-size: 2.6rem; margin-bottom: 0; flex-shrink: 0; }
+            .module-card .card-title { font-size: 1.2rem; margin-bottom: 0.1rem; }
+            .module-card .card-sub { font-size: 0.8rem; }
+            .module-card .card-text-group { display: flex; flex-direction: column; }
+            .iframe-view iframe { border-radius: 0 0 18px 18px; }
+            .app-footer { font-size: 0.6rem; padding-top: 0.4rem; margin-top: 0.3rem; }
+            .info-modal { font-size: 0.7rem; min-width: 130px; padding: 6px 12px; right: 0; top: calc(100% + 4px); }
+            .video-modal-overlay { padding: 0.8rem; }
+            .video-modal-content { padding: 1.2rem 1rem; border-radius: 16px; }
+            .video-modal-content .modal-title { font-size: 1.1rem; }
         }
-
         @media (max-width: 400px) {
-            .app-container {
-                padding: 0.3rem 0.3rem 0.2rem 0.3rem;
-            }
-            .header-left h1 {
-                font-size: 0.95rem;
-            }
-            .header-left h1 i {
-                font-size: 1rem;
-            }
-            .btn-manual {
-                font-size: 0.6rem;
-                padding: 2px 8px;
-                min-height: 32px;
-            }
-            .btn-manual i {
-                font-size: 0.9rem;
-            }
-            .header-text {
-                font-size: 0.8rem;
-            }
-            .header-text span {
-                font-size: 0.65rem;
-            }
-            .btn-back {
-                font-size: 0.7rem;
-                padding: 4px 10px;
-                min-height: 36px;
-            }
-            .module-card {
-                min-height: 110px;
-                padding: 0.8rem 0.8rem;
-                gap: 0.8rem;
-            }
-            .module-card i {
-                font-size: 2rem;
-            }
-            .module-card .card-title {
-                font-size: 1rem;
-            }
-            .module-card .card-sub {
-                font-size: 0.7rem;
-            }
-            .info-modal {
-                font-size: 0.6rem;
-                min-width: 110px;
-                padding: 4px 10px;
-            }
+            .app-container { padding: 0.3rem; }
+            .header-left h1 { font-size: 0.95rem; }
+            .header-left h1 i { font-size: 1rem; }
+            .btn-manual, .btn-video { font-size: 0.6rem; padding: 2px 8px; min-height: 32px; }
+            .btn-manual i, .btn-video i { font-size: 0.9rem; }
+            .header-text { font-size: 0.8rem; }
+            .header-text span { font-size: 0.65rem; }
+            .btn-back { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
+            .module-card { min-height: 110px; padding: 0.8rem; gap: 0.8rem; }
+            .module-card i { font-size: 2rem; }
+            .module-card .card-title { font-size: 1rem; }
+            .module-card .card-sub { font-size: 0.7rem; }
+            .info-modal { font-size: 0.6rem; min-width: 110px; padding: 4px 10px; }
         }
-
-        /* Para orientación landscape en móviles muy pequeños */
         @media (max-height: 600px) and (orientation: landscape) {
-            .app-container {
-                padding: 0.4rem 1rem 0.2rem 1rem;
-            }
-            .app-header {
-                margin-bottom: 0.4rem;
-            }
-            .header-left h1 {
-                font-size: 1.2rem;
-            }
-            .btn-manual {
-                min-height: 32px;
-                font-size: 0.75rem;
-                padding: 2px 12px;
-            }
-            .module-card {
-                min-height: 100px;
-                padding: 0.8rem 1rem;
-                flex-direction: row;
-                gap: 0.8rem;
-            }
-            .module-card i {
-                font-size: 2rem;
-            }
-            .module-card .card-title {
-                font-size: 1rem;
-            }
-            .module-card .card-sub {
-                font-size: 0.7rem;
-            }
-            .launcher-grid {
-                gap: 0.6rem;
-            }
-            .grid-view {
-                padding: 0.5rem;
-            }
+            .app-container { padding: 0.4rem 1rem 0.2rem 1rem; }
+            .app-header { margin-bottom: 0.4rem; }
+            .header-left h1 { font-size: 1.2rem; }
+            .btn-manual, .btn-video { min-height: 32px; font-size: 0.75rem; padding: 2px 12px; }
+            .module-card { min-height: 100px; padding: 0.8rem 1rem; flex-direction: row; gap: 0.8rem; }
+            .module-card i { font-size: 2rem; }
+            .module-card .card-title { font-size: 1rem; }
+            .module-card .card-sub { font-size: 0.7rem; }
+            .launcher-grid { gap: 0.6rem; }
+            .grid-view { padding: 0.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
+<div class="app-container">
 
-        <header class="app-header">
-            <!-- Izquierda: título + botón manual -->
-            <div class="header-left">
-                <h1>
-                    <i class="bi bi-shield-check"></i>
-                    Sistema Digital de Pase de Causas
-                </h1>
-                <button class="btn-manual" id="btnManual">
-                    <i class="bi bi-book"></i> Manual para uso
-                </button>
-            </div>
-
-            <!-- Derecha: texto institucional + modal + botón volver -->
-            <div class="header-right">
-                <div class="header-text">
-                    Defensoria Civil y Comercial 6
-                    <span>Ministerio Público de Misiones</span>
-                </div>
-
-                <!-- Modal informativo (aparece al inicio y se oculta tras 4s) -->
-                <div class="info-modal" id="infoModal">
-                    <div>Diseño y Programación:</div>
-                    <div><strong>Rómulo Fioravante</strong></div>
-                    <div class="version">Versión 1.0.2026</div>
-                </div>
-
-                <button class="btn-back" id="btnVolver">
-                    <i class="bi bi-arrow-left"></i> Volver al inicio
-                </button>
-            </div>
-        </header>
-
-        <div class="main-content">
-
-            <div class="grid-view" id="gridView">
-                <div class="launcher-grid">
-
-                    <div class="module-card operador" data-url="operador.html">
-                        <i class="bi bi-inbox"></i>
-                        <div class="card-text-group">
-                            <div class="card-title">Operador</div>
-                            <div class="card-sub">Registro de Entrada y Salida de causas</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card secretario" data-url="secretario.html">
-                        <i class="bi bi-share"></i>
-                        <div class="card-text-group">
-                            <div class="card-title">Secretario</div>
-                            <div class="card-sub">Distribución y gestión de tareas</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card empleados" data-url="empleado.html">
-                        <i class="bi bi-person-check"></i>
-                        <div class="card-text-group">
-                            <div class="card-title">Empleados</div>
-                            <div class="card-sub">Visualización de tareas asignadas</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card defensor" data-url="defensor.html">
-                        <i class="bi bi-shield-check"></i>
-                        <div class="card-text-group">
-                            <div class="card-title">Defensor</div>
-                            <div class="card-sub">Resolución y control general</div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="iframe-view" id="iframeView">
-                <iframe id="moduleFrame" src="" title="Módulo del sistema"></iframe>
-            </div>
-
+    <header class="app-header">
+        <div class="header-left">
+            <h1><i class="bi bi-shield-check"></i> Sistema Digital de Pase de Causas</h1>
+            <button class="btn-manual" id="btnManual"><i class="bi bi-book"></i> Manual para uso</button>
+            <button class="btn-video" id="btnVideo"><i class="bi bi-play-circle"></i> Video Presentación</button>
         </div>
+        <div class="header-right">
+            <div class="header-text">
+                Defensoria Civil y Comercial 6
+                <span>Ministerio Público de Misiones</span>
+            </div>
+            <div class="info-modal" id="infoModal">
+                <div>Diseño y Programación:</div>
+                <div><strong>Rómulo Fioravante</strong></div>
+                <div class="version">Versión 1.0.2026</div>
+            </div>
+            <button class="btn-back" id="btnVolver"><i class="bi bi-arrow-left"></i> Volver al inicio</button>
+        </div>
+    </header>
 
-        <footer class="app-footer">
-            <i class="bi bi-database"></i>Sistema Unificado Defensoria Civil y Comercial 6 · <span id="fechaActual"></span>
-        </footer>
-
+    <div class="main-content">
+        <div class="grid-view" id="gridView">
+            <div class="launcher-grid">
+                <div class="module-card operador" data-url="operador.html">
+                    <i class="bi bi-inbox"></i>
+                    <div class="card-text-group">
+                        <div class="card-title">Operador</div>
+                        <div class="card-sub">Registro de Entrada y Salida de causas</div>
+                    </div>
+                </div>
+                <div class="module-card secretario" data-url="secretario.html">
+                    <i class="bi bi-share"></i>
+                    <div class="card-text-group">
+                        <div class="card-title">Secretario</div>
+                        <div class="card-sub">Distribución y gestión de tareas</div>
+                    </div>
+                </div>
+                <div class="module-card empleados" data-url="empleado.html">
+                    <i class="bi bi-person-check"></i>
+                    <div class="card-text-group">
+                        <div class="card-title">Empleados</div>
+                        <div class="card-sub">Visualización de tareas asignadas</div>
+                    </div>
+                </div>
+                <div class="module-card defensor" data-url="defensor.html">
+                    <i class="bi bi-shield-check"></i>
+                    <div class="card-text-group">
+                        <div class="card-title">Defensor</div>
+                        <div class="card-sub">Resolución y control general</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="iframe-view" id="iframeView">
+            <iframe id="moduleFrame" src="" title="Módulo del sistema"></iframe>
+        </div>
     </div>
 
-    <script>
-        (function() {
-            const gridView = document.getElementById('gridView');
-            const iframeView = document.getElementById('iframeView');
-            const moduleFrame = document.getElementById('moduleFrame');
-            const btnVolver = document.getElementById('btnVolver');
-            const btnManual = document.getElementById('btnManual');
-            const infoModal = document.getElementById('infoModal');
+    <footer class="app-footer">
+        <i class="bi bi-database"></i>Sistema Unificado Defensoria Civil y Comercial 6 · <span id="fechaActual"></span>
+    </footer>
 
-            // Ocultar el modal después de 4 segundos
-            setTimeout(function() {
-                infoModal.classList.add('hidden');
-            }, 4000);
+</div>
 
-            function mostrarModulo(url) {
-                gridView.classList.add('hidden');
-                iframeView.classList.add('active');
-                iframeView.style.display = 'block';
-                btnVolver.style.display = 'flex';
-                moduleFrame.src = url;
+<!-- ===== MODAL DE VIDEO ===== -->
+<div class="video-modal-overlay" id="videoModal">
+    <div class="video-modal-content" style="max-width: 800px;">
+        <button class="close-modal" id="closeVideoModal">&times;</button>
+        <div class="modal-title"><i class="bi bi-play-circle"></i> Video de presentación</div>
+        
+        <div class="video-container">
+            <iframe 
+                id="youtubeIframe" 
+                src="https://www.youtube.com/embed/8N5HSFgJsac?si=UO2uE1Iuk0xNrx3V" 
+                title="Presentación del Sistema Digital" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const gridView = document.getElementById('gridView');
+        const iframeView = document.getElementById('iframeView');
+        const moduleFrame = document.getElementById('moduleFrame');
+        const btnVolver = document.getElementById('btnVolver');
+        const btnManual = document.getElementById('btnManual');
+        const infoModal = document.getElementById('infoModal');
+
+        const videoModal = document.getElementById('videoModal');
+        const btnVideo = document.getElementById('btnVideo');
+        const closeVideoModal = document.getElementById('closeVideoModal');
+        const youtubeIframe = document.getElementById('youtubeIframe');
+
+        function abrirVideoModal() {
+            videoModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function cerrarVideoModal() {
+            videoModal.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Detener el video de YouTube recargando su iframe
+            if (youtubeIframe) {
+                const urlVideo = youtubeIframe.src;
+                youtubeIframe.src = '';
+                youtubeIframe.src = urlVideo;
             }
+        }
 
-            function volverInicio() {
-                iframeView.classList.remove('active');
-                iframeView.style.display = 'none';
-                gridView.classList.remove('hidden');
-                btnVolver.style.display = 'none';
-                moduleFrame.src = 'about:blank';
+        btnVideo.addEventListener('click', abrirVideoModal);
+        closeVideoModal.addEventListener('click', cerrarVideoModal);
+        videoModal.addEventListener('click', function(e) {
+            if (e.target === videoModal) cerrarVideoModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && videoModal.classList.contains('active')) cerrarVideoModal();
+        });
+
+        setTimeout(function() {
+            infoModal.classList.add('hidden');
+        }, 4000);
+
+        function mostrarModulo(url) {
+            gridView.classList.add('hidden');
+            iframeView.classList.add('active');
+            iframeView.style.display = 'block';
+            btnVolver.style.display = 'flex';
+            moduleFrame.src = url;
+        }
+
+        function volverInicio() {
+            iframeView.classList.remove('active');
+            iframeView.style.display = 'none';
+            gridView.classList.remove('hidden');
+            btnVolver.style.display = 'none';
+            moduleFrame.src = 'about:blank';
+        }
+
+        document.querySelectorAll('.module-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const url = this.dataset.url;
+                if (url) mostrarModulo(url);
+            });
+        });
+
+        btnManual.addEventListener('click', function() {
+            mostrarModulo('https://defensoria6.github.io/pase-digital/manual');
+        });
+
+        btnVolver.addEventListener('click', volverInicio);
+
+        document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && btnVolver.style.display === 'flex') {
+                volverInicio();
             }
-
-            // Tarjetas de módulos
-            document.querySelectorAll('.module-card').forEach(card => {
-                card.addEventListener('click', function(e) {
-                    const url = this.dataset.url;
-                    if (url) mostrarModulo(url);
-                });
-            });
-
-            // Botón Manual
-            btnManual.addEventListener('click', function() {
-                mostrarModulo('https://defensoria6.github.io/pase-digital/manual');
-            });
-
-            // Botón Volver
-            btnVolver.addEventListener('click', volverInicio);
-
-            // Fecha actual
-            document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-AR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-
-            // Tecla Escape para volver
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && btnVolver.style.display === 'flex') {
-                    volverInicio();
-                }
-            });
-        })();
-    </script>
+        });
+    })();
+</script>
 
 </body>
 </html>
