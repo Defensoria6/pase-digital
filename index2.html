@@ -43,7 +43,7 @@
             position: relative;
         }
 
-        /* --- CABECERA IZQUIERDA (título + botón manual) --- */
+        /* --- CABECERA IZQUIERDA (título + botones) --- */
         .header-left {
             display: flex;
             align-items: center;
@@ -87,6 +87,32 @@
             border-color: #1976d2;
         }
         .btn-manual i {
+            font-size: 1.2rem;
+        }
+
+        /* NUEVO: botón video (copiado de index) */
+        .btn-video {
+            background: rgba(230, 126, 34, 0.08);
+            border: 1px solid #e67e22;
+            color: #e67e22;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 44px;
+            white-space: nowrap;
+        }
+        .btn-video:hover {
+            background: #e67e22;
+            color: #fff;
+            border-color: #e67e22;
+        }
+        .btn-video i {
             font-size: 1.2rem;
         }
 
@@ -202,7 +228,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 2.2rem;
-            width: 80%; /* Ocupa exactamente el 80% de la pantalla de escritorio */
+            width: 80%;
             max-width: none;
         }
 
@@ -285,7 +311,90 @@
             border-top: 1px solid rgba(0, 0, 0, 0.04);
         }
 
-        /* --- RESPONSIVE --- */
+        /* ===== MODAL DE VIDEO (nuevo) ===== */
+        .video-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            padding: 1.5rem;
+        }
+        .video-modal-overlay.active {
+            display: flex;
+        }
+        .video-modal-content {
+            background: #fff;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            position: relative;
+            animation: fadeInUp 0.3s ease;
+            text-align: center;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .video-modal-content .modal-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: #0a2a44;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .video-modal-content .modal-title i {
+            color: #e67e22;
+        }
+        .video-modal-content .close-modal {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #0a2a44;
+            cursor: pointer;
+            transition: 0.2s;
+            line-height: 1;
+            background: none;
+            border: none;
+            padding: 0 8px;
+            z-index: 10;
+        }
+        .video-modal-content .close-modal:hover {
+            color: #e67e22;
+            transform: scale(1.15);
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            background: #000;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* --- RESPONSIVE (añadidos para .btn-video y modal) --- */
         @media (max-width: 768px) {
             .app-container {
                 padding: 1rem 1.2rem 0.8rem 1.2rem;
@@ -319,7 +428,7 @@
             .header-left {
                 gap: 0.8rem;
             }
-            .btn-manual {
+            .btn-manual, .btn-video {
                 font-size: 0.8rem;
                 padding: 4px 14px;
                 min-height: 40px;
@@ -344,7 +453,7 @@
                 font-size: 1.3rem;
                 letter-spacing: -0.3px;
             }
-            .btn-manual {
+            .btn-manual, .btn-video {
                 font-size: 0.7rem;
                 padding: 4px 10px;
                 min-height: 36px;
@@ -414,6 +523,18 @@
                 right: 0;
                 top: calc(100% + 4px);
             }
+
+            /* Ajustes para el modal en móvil */
+            .video-modal-overlay {
+                padding: 0.8rem;
+            }
+            .video-modal-content {
+                padding: 1.2rem 1rem;
+                border-radius: 16px;
+            }
+            .video-modal-content .modal-title {
+                font-size: 1.1rem;
+            }
         }
 
         @media (max-width: 400px) {
@@ -452,7 +573,7 @@
                 min-width: 110px;
                 padding: 4px 10px;
             }
-            .btn-manual {
+            .btn-manual, .btn-video {
                 font-size: 0.65rem;
                 padding: 2px 8px;
                 min-height: 32px;
@@ -465,7 +586,7 @@
     <div class="app-container">
 
         <header class="app-header">
-            <!-- Izquierda: título + botón manual -->
+            <!-- Izquierda: título + botón manual + botón video -->
             <div class="header-left">
                 <h1>
                     <i class="bi bi-shield-check"></i>
@@ -473,6 +594,10 @@
                 </h1>
                 <button class="btn-manual" id="btnManual">
                     <i class="bi bi-book"></i> Manual para uso
+                </button>
+                <!-- NUEVO: botón video -->
+                <button class="btn-video" id="btnVideo">
+                    <i class="bi bi-play-circle"></i> Video Presentación
                 </button>
             </div>
 
@@ -528,6 +653,24 @@
 
     </div>
 
+    <!-- ===== MODAL DE VIDEO (nuevo) ===== -->
+    <div class="video-modal-overlay" id="videoModal">
+        <div class="video-modal-content">
+            <button class="close-modal" id="closeVideoModal">&times;</button>
+            <div class="modal-title"><i class="bi bi-play-circle"></i> Video de presentación</div>
+            <div class="video-container">
+                <iframe
+                    id="youtubeIframe"
+                    src="https://www.youtube.com/embed/8N5HSFgJsac?si=UO2uE1Iuk0xNrx3V"
+                    title="Presentación del Sistema Digital"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
         (function() {
             const gridView = document.getElementById('gridView');
@@ -537,11 +680,45 @@
             const btnManual = document.getElementById('btnManual');
             const infoModal = document.getElementById('infoModal');
 
+            // NUEVO: elementos del video
+            const videoModal = document.getElementById('videoModal');
+            const btnVideo = document.getElementById('btnVideo');
+            const closeVideoModal = document.getElementById('closeVideoModal');
+            const youtubeIframe = document.getElementById('youtubeIframe');
+
             // Ocultar el modal después de 4 segundos
             setTimeout(function() {
                 infoModal.classList.add('hidden');
             }, 4000);
 
+            // Funciones para el video
+            function abrirVideoModal() {
+                videoModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function cerrarVideoModal() {
+                videoModal.classList.remove('active');
+                document.body.style.overflow = '';
+                // Detener el video recargando el iframe
+                if (youtubeIframe) {
+                    const urlVideo = youtubeIframe.src;
+                    youtubeIframe.src = '';
+                    youtubeIframe.src = urlVideo;
+                }
+            }
+
+            // Eventos del video
+            btnVideo.addEventListener('click', abrirVideoModal);
+            closeVideoModal.addEventListener('click', cerrarVideoModal);
+            videoModal.addEventListener('click', function(e) {
+                if (e.target === videoModal) cerrarVideoModal();
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && videoModal.classList.contains('active')) cerrarVideoModal();
+            });
+
+            // Funciones de navegación (igual que antes)
             function mostrarModulo(url) {
                 gridView.classList.add('hidden');
                 iframeView.classList.add('active');
@@ -565,7 +742,6 @@
                 });
             });
 
-            // Botón Manual
             btnManual.addEventListener('click', function() {
                 mostrarModulo('https://defensoria6.github.io/pase-digital/manual');
             });
