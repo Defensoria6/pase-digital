@@ -89,7 +89,6 @@
             border-color: #1976d2;
         }
 
-        /* Nuevo botón imprimir */
         .btn-print {
             background: rgba(25, 118, 210, 0.08);
             border: 1px solid #d0e0f0;
@@ -218,7 +217,7 @@
             border-left: 4px solid #7b1fa2;
         }
 
-        /* --- CONTENT VIEW (REEMPLAZA AL IFRAME) --- */
+        /* --- CONTENT VIEW --- */
         .content-view {
             display: none;
             height: 100%;
@@ -246,6 +245,13 @@
             margin-top: 1.5rem;
             margin-bottom: 1rem;
         }
+        .content-view h4 {
+            color: #0a2a44;
+            font-weight: 600;
+            margin-top: 1.2rem;
+            margin-bottom: 0.8rem;
+            font-size: 1.1rem;
+        }
         .content-view p {
             line-height: 1.7;
             margin-bottom: 1rem;
@@ -260,15 +266,16 @@
             margin-bottom: 0.8rem;
             color: #334e68;
         }
-        .cite-badge {
-            font-size: 0.7rem;
+        .content-view strong {
+            color: #0a2a44;
+        }
+        .content-view .badge-module {
             background: #e0e7ff;
             color: #3730a3;
-            padding: 2px 6px;
-            border-radius: 4px;
-            vertical-align: super;
-            margin-left: 4px;
-            text-decoration: none;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         .app-footer {
@@ -279,6 +286,36 @@
             padding-top: 0.8rem;
             margin-top: 0.5rem;
             border-top: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        /* --- BOTÓN FLOTANTE ADMINISTRADOR (color naranja) --- */
+        .btn-admin-fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1060;
+            background: #e67e22; /* naranja */
+            color: #fff;
+            border: none;
+            border-radius: 60px;
+            padding: 14px 28px;
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 8px 24px rgba(230, 126, 34, 0.35);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-admin-fab:hover {
+            background: #d35400;
+            transform: scale(1.03);
+            box-shadow: 0 10px 30px rgba(230, 126, 34, 0.45);
+        }
+        .btn-admin-fab i {
+            font-size: 1.6rem;
         }
 
         /* --- RESPONSIVE --- */
@@ -296,6 +333,15 @@
             }
             .content-view {
                 padding: 1.5rem;
+            }
+            .btn-admin-fab {
+                bottom: 1.2rem;
+                right: 1.2rem;
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            .btn-admin-fab i {
+                font-size: 1.3rem;
             }
         }
 
@@ -376,6 +422,16 @@
                 padding-top: 0.4rem;
                 margin-top: 0.2rem;
             }
+            .btn-admin-fab {
+                bottom: 0.8rem;
+                right: 0.8rem;
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                border-radius: 40px;
+            }
+            .btn-admin-fab i {
+                font-size: 1.2rem;
+            }
         }
 
         @media (max-width: 800px) and (orientation: landscape) {
@@ -433,9 +489,18 @@
             .content-view li {
                 font-size: 0.8rem;
             }
+            .btn-admin-fab {
+                padding: 8px 12px;
+                font-size: 0.7rem;
+                bottom: 0.5rem;
+                right: 0.5rem;
+            }
+            .btn-admin-fab i {
+                font-size: 1rem;
+            }
         }
 
-        /* --- ESTILOS DEL MODAL DE IMPRESIÓN --- */
+        /* --- MODAL DE IMPRESIÓN --- */
         .print-modal-body {
             padding: 2rem;
             font-size: 0.95rem;
@@ -454,6 +519,12 @@
             margin-top: 1.5rem;
             margin-bottom: 1rem;
         }
+        .print-modal-body h4 {
+            color: #0a2a44;
+            font-weight: 600;
+            margin-top: 1.2rem;
+            margin-bottom: 0.8rem;
+        }
         .print-modal-body p {
             margin-bottom: 1rem;
             color: #334e68;
@@ -466,10 +537,11 @@
             margin-bottom: 0.8rem;
             color: #334e68;
         }
+        .print-modal-body strong {
+            color: #0a2a44;
+        }
 
-        /* Ajustes para impresión A4 */
         @media print {
-            /* Ocultar todo excepto el modal de impresión */
             body * {
                 visibility: hidden;
             }
@@ -520,7 +592,6 @@
             .print-modal-body li {
                 font-size: 11pt;
             }
-            /* Forzar visibilidad de los elementos dentro del modal-body */
             .modal-body * {
                 visibility: visible !important;
             }
@@ -534,7 +605,7 @@
         <header class="app-header">
             <div class="header-left">
                 <h1>
-                    <i class="bi bi-book"></i>
+                    <i class="bi bi-book"></i> Manual de Uso
                 </h1>
             </div>
 
@@ -590,6 +661,11 @@
 
     </div>
 
+    <!-- Botón flotante Administrador (color naranja) -->
+    <button class="btn-admin-fab" id="btnAdminFab" title="Manual del Administrador">
+        <i class="bi bi-person-gear"></i> Administrador
+    </button>
+
     <!-- Modal de impresión -->
     <div class="modal fade" id="printModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg" style="max-width: 210mm;">
@@ -614,86 +690,279 @@
     </script>
     <script>
         (function() {
-            // Textos detallados del manual basados en los códigos reales de cada módulo
+            // ============================================================
+            //  CONTENIDO COMPLETO DEL MANUAL (sin emojis en títulos, excepto Administrador)
+            // ============================================================
             const manualData = {
                 operador: `
                     <h2>Operador (Mesa de Entradas / Ingreso)</h2>
-                    <p><strong>Función:</strong> Es el encargado de ingresar las causas al sistema. Su labor se centra exclusivamente en el pase de los expedientes a los Secretarios de la Defensoría.</p>
-                    <p><strong>Restricción estricta:</strong> El Operador NO está facultado para distribuir expedientes directamente a los Empleados.</p>
+                    <p><strong>Función:</strong> Es el encargado de ingresar las causas al sistema. Su labor se centra exclusivamente en el pase de los expedientes a los Secretarios de la Defensoría. <span class="badge-module">Restricción</span> No está facultado para distribuir expedientes directamente a los Empleados.</p>
                     <p><strong>Dependencia:</strong> Los Operadores asisten y deben responder directamente a los Secretarios.</p>
 
-                    <h3>Guía Operativa por Rol: Ingreso y Registro</h3>
-                    <p>Su trabajo es el primer eslabón. Debe ser preciso en la carga de datos.</p>
+                    <h3>1. Inicio de Sesión</h3>
                     <ul>
-                        <li><strong>Carga del Expediente:</strong> Ingrese su nombre (Operador), el número de expediente y un DNI válido de la parte (actora, demandada, tercero).</li>
-                        <li><strong>Clasificación:</strong> Seleccione el tipo de causa (Nuevo patrocinio, Amparo, Alimentos, etc.), el modo de intervención (Defensor Oficial, Ministerio Principal, etc.) y un nivel de complejidad inicial del 1 al 4.</li>
+                        <li>En la pantalla de inicio, despliegue la lista <strong>“Seleccione un operador…”</strong> y elija su nombre.</li>
+                        <li>Ingrese su <strong>contraseña</strong> en el campo de texto.</li>
+                        <li>Haga clic en el botón <strong>Ingresar</strong>. Si se equivoca, el sistema mostrará un mensaje de error.</li>
+                    </ul>
+
+                    <h3>2. Registro de un Nuevo Expediente</h3>
+                    <p>Complete el formulario <strong>“Nueva Causa”</strong> con los siguientes datos obligatorios:</p>
+                    <ul>
+                        <li><strong>N° Expediente:</strong> Número identificatorio de la causa.</li>
+                        <li><strong>Tipo:</strong> Seleccione el tipo de trámite (ej. Divorcio, Alimentos, Amparo, Cámara Gesell, etc.).</li>
+                        <li><strong>Complejidad:</strong> Nivel del 1 al 4 (por defecto Nivel 2).</li>
                         <li><strong>Fuente:</strong> Marque si el expediente proviene de SIGED y/o ZIMBRA.</li>
-                        <li><strong>Pase a Secretaría:</strong> Seleccione la opción "Asignar a Secretaría". El sistema asigna automáticamente al secretario con menor carga y que no esté ausente. Recuerde que no puede derivar a empleados.</li>
-                        <li><strong>Otras Acciones Permitidas:</strong> En caso de errores o incompetencias, el Operador puede registrar una "Devolución a SIGED", "Remisión a otra dependencia" (debe especificar la dependencia) o "Rechazo" (debiendo redactar el motivo obligatorio).</li>
-                        <li><strong>Gestión de Ausencias:</strong> Si un Secretario está de licencia, el Operador debe registrar la fecha de inicio y fin en el sistema para que no se le deriven expedientes por error durante ese lapso.</li>
-                        <li><strong>Visualización y Filtros:</strong> En la tabla de recientes puede ver las últimas causas ingresadas, filtrar por mes/año y buscar por número de expediente. Además, puede generar un reporte de actividad general.</li>
+                    </ul>
+                    <h4>Acción previa a la asignación</h4>
+                    <p>Antes de confirmar, debe decidir el destino del expediente. El sistema ofrece 4 opciones:</p>
+                    <ul>
+                        <li><strong>Asignar a Secretaría</strong> (por defecto): El sistema asigna automáticamente al secretario con menor carga (y que no esté ausente). Si es de tipo “Cámara Gesell”, se deriva directamente al Defensor.</li>
+                        <li><strong>Devolución a SIGED</strong>: Rechazo por error de origen. Requiere ingresar un <em>Motivo</em>.</li>
+                        <li><strong>Remisión a otra dependencia</strong>: Envío a otro juzgado o área. Requiere <em>Dependencia</em> y <em>Motivo</em>.</li>
+                        <li><strong>Rechazo</strong>: La causa no se tramita. Requiere <em>Motivo</em> obligatorio.</li>
+                    </ul>
+                    <p>Agregue <strong>Observaciones</strong> si es necesario y haga clic en <strong>Registrar</strong>. El sistema mostrará un mensaje de confirmación.</p>
+
+                    <h3>3. Gestión de Ausencias de Secretarios</h3>
+                    <p>Debajo del formulario se encuentra el botón <strong>“Gestionar ausencias”</strong>. Aquí el Operador puede registrar si un secretario faltará (fecha de inicio y fin). Esto evita que el sistema le asigne causas nuevas automáticamente a un secretario ausente.</p>
+
+                    <h3>4. Visualización y Seguimiento (Tabla de Recientes)</h3>
+                    <ul>
+                        <li><strong>Búsqueda rápida:</strong> En la barra superior (lupa) para encontrar expedientes por número.</li>
+                        <li><strong>Filtros:</strong> Puede filtrar por <em>Mes</em> y <em>Año</em> para ver registros históricos. Use el botón <strong>“Limpiar”</strong> para restablecer la vista.</li>
+                        <li><strong>Paginación:</strong> Elija cuántos expedientes ver por página (5, 10, 25 o 50).</li>
+                    </ul>
+
+                    <h3>5. Acciones Posteriores sobre Causas en Trámite</h3>
+                    <p>Si una causa ya está en estado <em>“Secretaría”</em> o <em>“En proceso”</em>, puede aplicar acciones rápidas con los botones al final de cada fila:</p>
+                    <ul>
+                        <li><strong>Devolver a SIGED:</strong> Cambia el estado a “devuelto”. Debe escribir el motivo.</li>
+                        <li><strong>Remitir a otra dependencia:</strong> Cambia el estado a “remitido”. Debe escribir destino y motivo.</li>
+                        <li><strong>Rechazar:</strong> Cambia el estado a “rechazado”. Debe escribir el motivo.</li>
+                        <li><strong>Ver Historial:</strong> Muestra la línea de tiempo completa del expediente (quién, cuándo y comentario).</li>
+                    </ul>
+
+                    <h3>6. Reportes y Cierre de Sesión</h3>
+                    <ul>
+                        <li><strong>Reporte de Actividad:</strong> Botón <strong>“Reporte”</strong> genera un resumen imprimible de los expedientes visibles (respeta filtros). Una vez abierto, puede imprimirlo.</li>
+                        <li><strong>Cerrar Sesión:</strong> Botón <strong>“Salir”</strong> (arriba a la derecha). El sistema pide confirmación antes de volver a la pantalla de inicio.</li>
                     </ul>
                 `,
+
                 secretario: `
                     <h2>Secretario (Distribución)</h2>
-                    <p><strong>Función:</strong> Son los únicos autorizados para distribuir los expedientes a los Empleados (junto con el Defensor Oficial). Reciben el volumen de trabajo del Operador, evalúan la complejidad y lo asignan al personal.</p>
+                    <p><strong>Función:</strong> Son los únicos autorizados para distribuir los expedientes a los Empleados (junto con el Defensor). Reciben el trabajo del Operador, evalúan la complejidad y lo asignan al personal.</p>
 
-                    <h3>Guía Operativa por Rol: Módulo de Distribución</h3>
-                    <p>Cada Secretario es el responsable de administrar la carga de trabajo de los empleados y revisar la tarea finalizada.</p>
+                    <h3>Paso 1: Acceso al Sistema</h3>
+                    <p>Ingrese a la plataforma con su <strong>contraseña de acceso</strong>. Una vez validada, el sistema carga el panel principal con todos los expedientes y estadísticas.</p>
+
+                    <h3>Paso 2: Revisión de Bandeja de Entrada</h3>
+                    <p>En el panel principal se encuentra la sección <strong>“Pendientes en Secretaría”</strong>. Aquí ingresan las nuevas causas que requieren asignación.</p>
                     <ul>
-                        <li><strong>Recepción:</strong> Revise su bandeja de "Pendientes en Secretaría".</li>
-                        <li><strong>Revisión de Complejidad:</strong> Antes de asignar, puede modificar el nivel de complejidad (N1 a N4) que colocó el operador si lo considera necesario.</li>
-                        <li><strong>Distribución a Empleados (Manual):</strong> Elija al empleado desde el menú desplegable (el sistema le mostrará si el empleado está atrasado o su carga de puntos actual). También puede agregar una observación.</li>
-                        <li><strong>Distribución a Empleados (Automática):</strong> Use el botón "Auto" para que el sistema asigne equitativamente. El algoritmo prioriza empleados sin retraso, con menor carga en el mismo nivel y, en caso de empate, el que tiene fecha de reintegro más reciente (si fue marcado como ausente).</li>
-                        <li><strong>Atención a Reingresos:</strong> Si el expediente ya fue trabajado antes por un empleado, el sistema lo etiquetará como "Seguimiento" y se lo sugerirá al mismo empleado (si no está ausente).</li>
-                        <li><strong>Control de Finalización:</strong> Cuando un empleado termina una causa, el Secretario debe revisarla. Puede autorizar el "Cumplido" (finalizarla) o "Elevar a Defensor" para su firma/auditoría.</li>
-                        <li><strong>Gestión de Ausencias de Empleados:</strong> Puede marcar a un empleado como ausente (no recibirá asignaciones) y luego reintegrarlo, lo que le dará prioridad en futuras asignaciones.</li>
-                        <li><strong>Estadísticas de Equidad:</strong> Visualice la carga actual por empleado y las asignaciones por secretario. Puede generar informes detallados de equidad.</li>
-                        <li><strong>Monitoreo de Nuevos Patrocinios:</strong> Los Secrearios pueden ver un resumen de los nuevos patrocinios asignados a cada empleado.</li>
+                        <li>Visualice el número de expediente, tipo y nivel de complejidad.</li>
+                        <li>Utilice la barra de búsqueda superior para encontrar un expediente específico.</li>
+                    </ul>
+
+                    <h3>Paso 3: Distribución y Asignación de Causas</h3>
+                    <p>El Secretario debe derivar los expedientes pendientes a los empleados. El sistema ofrece tres modalidades:</p>
+                    <ul>
+                        <li><strong>Asignación Manual:</strong> Elija el nivel de la causa, seleccione un empleado del listado, añada una observación y haga clic en <strong>“Asignar”</strong>.</li>
+                        <li><strong>Asignación Automática Individual:</strong> Al presionar el botón <strong>“Auto”</strong>, el sistema selecciona inteligentemente al empleado menos cargado en ese momento.</li>
+                        <li><strong>Distribución Masiva:</strong> Con el botón <strong>“Distribuir automático”</strong>, el sistema asigna de golpe todas las causas pendientes de la bandeja de forma equitativa.</li>
+                    </ul>
+
+                    <h3>Paso 4: Seguimiento (Causas en Proceso)</h3>
+                    <p>Una vez asignadas, las causas pasan a la sección <strong>“Causas en Proceso”</strong>. Aquí el Secretario monitorea el progreso del equipo:</p>
+                    <ul>
+                        <li><strong>Control de tiempos:</strong> El sistema muestra un cronómetro con la demora de cada trámite. Si un empleado se atrasa, su carga aparecerá en color rojo.</li>
+                        <li><strong>Consultas:</strong> Puede revisar las dudas que el empleado haya dejado usando el botón <strong>“Consultas”</strong> o ver el historial completo del expediente.</li>
+                    </ul>
+
+                    <h3>Paso 5: Resolución y Finalización</h3>
+                    <p>Cuando el empleado termina su labor, el Secretario debe revisar y dar cierre al proceso. Existen dos caminos principales:</p>
+                    <ul>
+                        <li><strong>Cumplido:</strong> Si la tarea se realizó correctamente, presione el botón <strong>“Cumplido”</strong> para autorizar la finalización del expediente.</li>
+                        <li><strong>Elevar a Defensor:</strong> Si el expediente requiere intervención superior, presione <strong>“Elevar a Defensor”</strong> e ingrese el motivo de la remisión.</li>
+                    </ul>
+
+                    <h3>Paso 6: Gestión de Personal y Reportes</h3>
+                    <ul>
+                        <li><strong>Gestión de Ausencias:</strong> En la tabla de equidad, marque a un empleado como <strong>“Ausente”</strong> para que el sistema deje de asignarle causas, y <strong>“Reintegro”</strong> cuando regrese.</li>
+                        <li><strong>Reportes:</strong> Genere un <strong>Reporte General</strong> mensual o imprima el <strong>Informe de Equidad</strong> para auditar cuántos expedientes ha resuelto cada empleado y secretario.</li>
                     </ul>
                 `,
+
                 empleado: `
                     <h2>Empleado (Módulo de Trabajo)</h2>
-                    <p><strong>Función:</strong> Encargado de la tramitación de las causas.</p>
-                    <p><strong>Regla de reporte:</strong> Cada empleado tendrá en su bandeja la información exacta de cuál Secretario le asignó el expediente. El empleado debe responder y reportar los avances de esa causa exclusivamente a ese Secretario.</p>
+                    <p><strong>Función:</strong> Encargado de la tramitación de las causas. Cada empleado tiene en su bandeja la información exacta de qué Secretario le asignó el expediente, y debe reportar los avances exclusivamente a ese Secretario.</p>
 
-                    <h3>Guía Operativa por Rol: Módulo Empleado</h3>
-                    <p>Su objetivo es resolver los expedientes en tiempo y forma, respetando la cadena de mando.</p>
+                    <h3>1. Inicio de Sesión</h3>
                     <ul>
-                        <li><strong>Bandeja de Entrada:</strong> Sus causas se dividen en dos pestañas: "Nuevos Patrocinios" (primeras asignaciones) y "Seguimiento" (reingresos).</li>
-                        <li><strong>Identificación de Jefatura:</strong> Revise siempre la columna que indica qué Secretario le derivó el pase. Cualquier duda, corrección o entrega de ese expediente debe tramitarse con ese Secretario específico.</li>
-                        <li><strong>Plazos:</strong> Preste atención a los tiempos de resolución. El sistema alerta sobre expedientes atrasados (morosos), lo cual impactará en su calificación.</li>
-                        <li><strong>Acciones sobre la causa:</strong> Puede "Devolver a Secretario" (con motivo obligatorio) o "Enviar a Secretario para consulta" (con motivo obligatorio). También puede ver el historial completo de la causa.</li>
-                        <li><strong>Filtros y Búsqueda:</strong> Utilice los filtros por mes y año para visualizar sus tareas en un período específico, y la barra de búsqueda para encontrar expedientes por número.</li>
-                        <li><strong>Reportes y Estadísticas:</strong> Genere un reporte de actividades con resumen de KPI (totales, en proceso, finalizadas, nuevos, seguimientos) y un informe detallado con desglose por nivel y secretarios que le han asignado trabajo.</li>
+                        <li>Seleccione su <strong>usuario</strong> en el menú desplegable de la pantalla principal.</li>
+                        <li>Ingrese su <strong>contraseña</strong> personal.</li>
+                        <li>Haga clic en el botón azul <strong>“Ingresar”</strong> (o presione Enter) para acceder a su bandeja de tareas.</li>
+                    </ul>
+
+                    <h3>2. Bandeja de Tareas (Mis Tareas)</h3>
+                    <p>Una vez dentro, visualizará el panel <strong>“Mis Tareas”</strong> con todos los expedientes asignados y en proceso.</p>
+                    <h4>Búsqueda y Filtros</h4>
+                    <ul>
+                        <li><strong>Búsqueda global:</strong> En la barra superior, escriba el número del expediente para encontrarlo rápidamente.</li>
+                        <li><strong>Filtros por Fecha:</strong> Seleccione un <em>Mes</em> y <em>Año</em> específico de asignación. Use el botón <strong>“Limpiar”</strong> para restablecer la vista.</li>
+                    </ul>
+                    <h4>Información del Expediente</h4>
+                    <ul>
+                        <li><strong>Expediente y Tipo:</strong> Identificación clara de la causa.</li>
+                        <li><strong>Asignación y Tiempo:</strong> Muestra la fecha exacta de asignación y un cronómetro dinámico (días, horas, minutos).</li>
+                        <li><strong>Nivel:</strong> Nivel de prioridad asignado por el secretario.</li>
+                        <li><strong>Observación:</strong> Lea atentamente esta columna; contiene el comentario o instrucción directa del Secretario.</li>
+                    </ul>
+
+                    <h3>3. Gestión y Finalización de Tareas</h3>
+                    <p>Para cada tarea en proceso, encontrará botones de acción específicos:</p>
+                    <ul>
+                        <li><strong>Devolver:</strong> Cuando la tarea ha sido cumplida y el expediente debe regresar al Secretario que lo asignó. <em>Requisito:</em> ingresar un motivo (ej. “Tarea cumplida”, “Cédula enviada”).</li>
+                        <li><strong>Enviar a Secretario:</strong> Cuando surge una duda o necesita consultar al Secretario antes de avanzar. <em>Requisito:</em> redactar la consulta o motivo.</li>
+                        <li><strong>Ver Historial:</strong> Para revisar todos los movimientos, fechas y comentarios previos de ese expediente.</li>
+                    </ul>
+
+                    <h3>4. Reportes y Actualización</h3>
+                    <ul>
+                        <li><strong>Estadísticas Personales:</strong> En la parte superior derecha, botón <strong>“Imprimir reporte”</strong> genera un documento listo para imprimir con el listado de todos sus expedientes (en proceso y finalizados), calculando tiempos de resolución. El botón <strong>“Estadísticas”</strong> muestra un resumen de tareas cumplidas desglosadas por nivel de prioridad, tiempo promedio y qué secretarios le han asignado tareas.</li>
+                        <li><strong>Sincronización:</strong> El sistema se actualiza automáticamente cada 5 minutos. Si requiere ver cambios inmediatos, presione el botón <strong>“Actualizar BD”</strong> en la barra superior.</li>
+                    </ul>
+
+                    <h3>5. Cierre de Sesión</h3>
+                    <ul>
+                        <li>Haga clic en el botón <strong>“Salir”</strong> (arriba a la derecha).</li>
+                        <li>El sistema mostrará una alerta de confirmación. Seleccione <strong>“Sí, salir”</strong> para volver a la pantalla de inicio sin perder ningún dato de su progreso.</li>
                     </ul>
                 `,
+
                 defensor: `
                     <h2>Defensor Oficial (Auditoría y Evaluación)</h2>
-                    <p><strong>Función:</strong> Es la autoridad máxima, el auditor final del sistema. Supervisa el flujo completo, evalúa el rendimiento general y califica el trabajo final de toda la dependencia.</p>
+                    <p><strong>Función:</strong> Es la autoridad máxima y el auditor final del sistema. Supervisa el flujo completo, evalúa el rendimiento general y califica el trabajo de toda la dependencia.</p>
 
-                    <h3>Guía Operativa por Rol: Auditoría</h3>
-                    <p>Únicamente el Defensor Oficial posee control total sobre el sistema para evaluar la calidad institucional.</p>
+                    <h3>1. Acceso e Inicio de Sesión</h3>
+                    <p>El Defensor ingresa con su <strong>credencial de seguridad</strong>. El sistema reconoce el perfil y habilita automáticamente la etiqueta de <em>Defensor (Full)</em>, desbloqueando privilegios máximos para visualizar módulos de operadores, secretarios y control general.</p>
+
+                    <h3>2. Recepción y Monitoreo de Causas</h3>
+                    <p>Los expedientes que requieren análisis, decisión o firma definitiva llegan al Defensor por dos vías:</p>
                     <ul>
-                        <li><strong>Auditoría de Expedientes:</strong> Puede visualizar el estado histórico y actual de cualquier causa ("Elevadas a Defensor").</li>
-                        <li><strong>Gestión de Causas en Defensor:</strong> Puede ver todas las causas pendientes de resolución. Puede asignarlas a un empleado para que continúe el trámite o finalizarlas directamente.</li>
-                        <li><strong>Cámara Gesell:</strong> Administre las causas de tipo "Penal (cámara gesell)". Registre la asistencia (asistió, no asistió, pendiente) y la fecha/hora de la audiencia. Puede finalizar la causa desde aquí. Además, visualice un resumen y gráficos de estas causas.</li>
-                        <li><strong>Reportes de Equidad:</strong> Puede controlar si los Secretarios están distribuyendo el trabajo de manera justa, revisando la carga actual de cada empleado según la complejidad.</li>
-                        <li><strong>Calificación del Personal:</strong> En la pestaña de Gráficos/Auditoría, dispone del "Ranking de Desempeño". El sistema sugiere un puntaje (del 0 al 10) basado en la velocidad y el cumplimiento de plazos, permitiéndole al Defensor Oficial realizar la evaluación y calificación final del trabajo de todos los integrantes de la dependencia.</li>
-                        <li><strong>Gráficos y Estadísticas:</strong> Visualice gráficos de estado global, carga por empleado, rendimiento y distribución por nivel de complejidad.</li>
-                        <li><strong>Auditoría por Operador:</strong> Filtre las causas por el operador que las ingresó y genere reportes específicos.</li>
-                        <li><strong>Reinicio de Datos:</strong> En casos excepcionales, puede reiniciar todos los datos del sistema (solo disponible para el Defensor).</li>
+                        <li><strong>Elevación por Secretaría:</strong> Causas ya tramitadas por los empleados que el Secretario eleva, asignándoles el estado <em>“Defensor”</em>.</li>
+                        <li><strong>Ingreso Directo:</strong> Casos críticos o especiales, como los expedientes de <strong>Cámara Gesell</strong>, se derivan automáticamente al Defensor al momento de su registro inicial.</li>
+                    </ul>
+
+                    <h3>3. Gestión Específica de Cámara Gesell</h3>
+                    <p>El Defensor asume un rol protagónico en los expedientes de índole penal o protección de personas. Para estos casos, el sistema cuenta con un flujo dedicado donde el Defensor debe:</p>
+                    <ul>
+                        <li>Auditar las fechas y horarios de las audiencias programadas.</li>
+                        <li>Registrar formalmente el cumplimiento de la medida, actualizando el estado de asistencia a <strong>“Asistió”</strong>, <strong>“No asistió”</strong> o <strong>“Pendiente”</strong>.</li>
+                    </ul>
+
+                    <h3>4. Intervención, Resoluciones y Acciones Directas</h3>
+                    <p>Desde su panel, el Defensor puede determinar el destino final de cualquier expediente. Las acciones incluyen:</p>
+                    <ul>
+                        <li><strong>Aprobación/Cumplimiento:</strong> Dar el visto bueno a causas ya gestionadas por el equipo.</li>
+                        <li><strong>Devolución a SIGED:</strong> Ordenar la restitución del expediente al sistema general por errores formales o falta de competencia.</li>
+                        <li><strong>Remisión:</strong> Trasladar formalmente la causa a una dependencia externa específica (ej. otro Juzgado).</li>
+                        <li><strong>Rechazo Fundado:</strong> Detener el avance del pase, exigiendo la carga obligatoria del motivo.</li>
+                    </ul>
+                    <p><strong>Trazabilidad:</strong> Cada resolución inscribe automáticamente un registro inalterable en el <em>Historial</em> de la causa, con fecha, acción, comentario y firma electrónica del Defensor.</p>
+
+                    <h3>5. Auditoría y Control de Gestión (Cierre de Tareas)</h3>
+                    <ul>
+                        <li><strong>Auditoría de Rendimiento (Ranking):</strong> Revisión del puntaje de desempeño (1 al 10) de los empleados, controlando quién posee causas vencidas (morosidad) o sobrecarga.</li>
+                        <li><strong>Informe de Equidad:</strong> Generación de reportes para verificar que el algoritmo de distribución haya repartido justamente las causas según los niveles de complejidad (N1 a N4) entre el personal disponible y los secretarios.</li>
+                        <li><strong>Reporte de Gesell:</strong> Emisión de estadísticas sobre la proporción de audiencias asistidas contra el volumen total de ingresos bajo esta modalidad.</li>
+                    </ul>
+                `,
+
+                administrador: `
+                    <h2>⚙️ Administrador del Sistema</h2>
+                    <p><strong>Función:</strong> El Administrador tiene control total sobre la configuración, gestión de usuarios, supervisión de todo el flujo y generación de reportes globales. Este manual detalla paso a paso sus tareas.</p>
+
+                    <h3>Fase 1: Ingreso y Configuración Inicial</h3>
+                    <h4>Paso 1: Inicio de Sesión</h4>
+                    <p>Al acceder al sistema, visualizará la pantalla de <strong>“Acceso Administrador”</strong>. Debe ingresar su <strong>contraseña de acceso</strong> (la contraseña configurada es <code>admin</code>) y hacer clic en <strong>“Ingresar”</strong>. Esto habilitará todas las pestañas de control y reportes de la plataforma.</p>
+
+                    <h4>Paso 2: Gestión de Ausencias de Secretarios</h4>
+                    <p>Antes de comenzar a derivar expedientes, es fundamental verificar la disponibilidad del personal:</p>
+                    <ul>
+                        <li>Haga clic en el botón <strong>“Gestionar ausencias”</strong> dentro de la pestaña de Ingreso.</li>
+                        <li>Seleccione al secretario ausente, especifique la fecha de inicio y de fin, y haga clic en <strong>“Agregar”</strong>.</li>
+                        <li>Esto es crítico porque el sistema realiza asignaciones automáticas y equitativas distribuyendo el trabajo únicamente entre los secretarios presentes.</li>
+                    </ul>
+
+                    <h3>Fase 2: Gestión de Expedientes (Ingreso y Distribución)</h3>
+                    <h4>Paso 3: Registro de Nuevas Causas</h4>
+                    <p>Desde el panel principal de ingreso, el Administrador es responsable de dar de alta los expedientes entrantes:</p>
+                    <ul>
+                        <li>Seleccione el <strong>Operador</strong> responsable de la carga y digite el <strong>N° de Expediente</strong>.</li>
+                        <li>Elija el <strong>Tipo</strong> de causa (ej. Divorcio, Alimentos, Amparo, Cámara Gesell, etc.) y su nivel de <strong>Complejidad</strong> (1 al 4).</li>
+                        <li>Marque las casillas de fuente de origen si corresponde (SIGED o ZIMBRA).</li>
+                        <li>Agregue cualquier <strong>observación</strong> necesaria en el cuadro de texto provisto.</li>
+                    </ul>
+
+                    <h4>Paso 4: Determinación de la Acción Inmediata</h4>
+                    <p>Antes de guardar la causa, el Administrador debe definir qué hacer con ella seleccionando una opción en <strong>“Acción previa a la asignación”</strong>:</p>
+                    <ul>
+                        <li><strong>Asignar a Secretaría</strong> (predeterminado): La causa ingresa al sistema y se deriva automáticamente a la Secretaría correspondiente para su proceso.</li>
+                        <li><strong>Devolución a SIGED:</strong> La causa es rechazada y se devuelve al sistema de gestión original.</li>
+                        <li><strong>Remisión a otra dependencia:</strong> Se envía el expediente a un destino externo (ej. Juzgado N° 3). Deberá detallar la dependencia y el motivo.</li>
+                        <li><strong>Rechazo:</strong> La causa no procede; requiere justificar obligatoriamente el motivo del rechazo.</li>
+                    </ul>
+
+                    <h4>Paso 5: Distribución y Asignación de Tareas</h4>
+                    <p>Para aquellos expedientes que continúan su curso interno, el Administrador tiene la facultad de asignar el trabajo a los empleados:</p>
+                    <ul>
+                        <li><strong>Asignación Manual:</strong> Puede elegir específicamente a qué empleado (Nadia, César, Raquel, etc.) derivar un caso particular.</li>
+                        <li><strong>Asignación Automática:</strong> El sistema permite buscar al empleado <strong>“menos cargado”</strong>. Al utilizar esta opción, el sistema evalúa a los empleados sin causas atrasadas, la cantidad de puntos que tienen asignados y su nivel, para distribuir el trabajo de forma equitativa de manera inteligente.</li>
+                    </ul>
+
+                    <h3>Fase 3: Supervisión, Modificación y Auditoría</h3>
+                    <h4>Paso 6: Supervisión y Cambio de Estados</h4>
+                    <p>A lo largo de la jornada, el Administrador monitoriza el flujo de las causas en el sistema y puede intervenir modificando su estado:</p>
+                    <ul>
+                        <li><strong>Autorizar Cumplimiento:</strong> Puede marcar causas “en proceso” como <strong>“Finalizadas”</strong> si corrobora que la labor concluyó.</li>
+                        <li><strong>Elevar al Defensor:</strong> Expedientes que requieren atención superior pueden ser elevados, adjuntando un motivo.</li>
+                        <li><strong>Acciones correctivas:</strong> Puede utilizar atajos directos en la lista de recientes para <strong>Devolver a SIGED</strong>, <strong>Remitir</strong>, o <strong>Rechazar</strong> causas que estén en proceso.</li>
+                    </ul>
+
+                    <h4>Paso 7: Corrección y Eliminación</h4>
+                    <p>En caso de que un expediente haya sido ingresado por error o contenga datos corruptos, el Administrador tiene el privilegio exclusivo de hacer clic en el botón de la papelera roja (<i class="bi bi-trash3"></i>) para <strong>Eliminar permanentemente</strong> la causa del sistema (esta acción requerirá confirmación).</p>
+
+                    <h4>Paso 8: Generación de Reportes y Estadísticas</h4>
+                    <p>Para medir el desempeño de la Defensoría, el Administrador puede generar e imprimir múltiples informes:</p>
+                    <ul>
+                        <li><strong>Reporte de Equidad:</strong> Visualiza la cantidad de causas asignadas a cada Secretario y la carga de niveles y puntos por Empleado.</li>
+                        <li><strong>Ranking de Desempeño:</strong> Genera una tabla clasificatoria (de 0 a 10 puntos) de los empleados según la rapidez de resolución, indicando carga actual y estado de morosidad (atrasos).</li>
+                        <li><strong>Reporte General y por Operador:</strong> Listados detallados de los últimos movimientos y expedientes finalizados en el día.</li>
+                        <li><strong>Informe de Cámara Gesell:</strong> Métricas específicas sobre expedientes de tipo penal.</li>
+                    </ul>
+
+                    <h3>Fase 4: Finalización</h3>
+                    <h4>Paso 9: Sincronización y Cierre</h4>
+                    <p>Una vez concluida la gestión:</p>
+                    <ul>
+                        <li>El Administrador puede presionar el botón <strong>“Actualizar todas las BD”</strong> en la cabecera para forzar una sincronización y descargar el estado más reciente de la nube (Firestore).</li>
+                        <li>Finalmente, utilizar el botón <strong>“Salir”</strong> para cerrar sesión de manera segura; los datos permanecerán respaldados automáticamente.</li>
                     </ul>
                 `
             };
 
+            // ============================================================
+            //  LÓGICA DE NAVEGACIÓN
+            // ============================================================
             const gridView = document.getElementById('gridView');
             const contentView = document.getElementById('contentView');
             const moduleContent = document.getElementById('moduleContent');
             const btnVolver = document.getElementById('btnVolver');
             const btnImprimir = document.getElementById('btnImprimir');
+            const btnAdminFab = document.getElementById('btnAdminFab');
 
-            // Modal y sus elementos
+            // Modal de impresión
             const printModalEl = document.getElementById('printModal');
             const printModalBody = document.getElementById('printModalBody');
             const printModalLabel = document.getElementById('printModalLabel');
@@ -711,13 +980,17 @@
                     btnVolver.style.display = 'flex';
                     btnImprimir.style.display = 'flex';
 
-                    // Guardar nombre del módulo para el título de impresión
-                    const card = document.querySelector(`.module-card[data-module="${moduleKey}"]`);
-                    if (card) {
-                        const titleEl = card.querySelector('.card-title');
-                        currentModuleName = titleEl ? titleEl.textContent : moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1);
+                    // Obtener nombre del módulo para el título de impresión
+                    if (moduleKey === 'administrador') {
+                        currentModuleName = 'Administrador';
                     } else {
-                        currentModuleName = moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1);
+                        const card = document.querySelector(`.module-card[data-module="${moduleKey}"]`);
+                        if (card) {
+                            const titleEl = card.querySelector('.card-title');
+                            currentModuleName = titleEl ? titleEl.textContent : moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1);
+                        } else {
+                            currentModuleName = moduleKey.charAt(0).toUpperCase() + moduleKey.slice(1);
+                        }
                     }
                 }
             }
@@ -732,17 +1005,28 @@
                 currentModuleName = '';
             }
 
-            // Evento para abrir el modal de impresión
+            // Eventos de las tarjetas
+            document.querySelectorAll('.module-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    const moduleKey = this.dataset.module;
+                    if (moduleKey) mostrarModulo(moduleKey);
+                });
+            });
+
+            // Botón flotante Administrador
+            btnAdminFab.addEventListener('click', function() {
+                mostrarModulo('administrador');
+            });
+
+            btnVolver.addEventListener('click', volverInicio);
+
+            // Botón Imprimir
             btnImprimir.addEventListener('click', function() {
                 if (!moduleContent.innerHTML.trim()) return;
 
-                // Copiar el contenido del módulo al modal
                 printModalBody.innerHTML = moduleContent.innerHTML;
-
-                // Actualizar título del modal
                 printModalLabel.textContent = `Imprimir Manual - ${currentModuleName}`;
 
-                // Mostrar el modal
                 if (!printModalInstance) {
                     printModalInstance = new bootstrap.Modal(printModalEl, {
                         backdrop: 'static',
@@ -752,23 +1036,9 @@
                 printModalInstance.show();
             });
 
-            // Evento para el botón "Imprimir" dentro del modal
             btnPrintAction.addEventListener('click', function() {
                 window.print();
             });
-
-            // Cerrar modal después de imprimir (opcional, se puede dejar abierto)
-            // También se puede cerrar al hacer clic en el botón Cerrar o con la X.
-
-            // Eventos de las tarjetas
-            document.querySelectorAll('.module-card').forEach(card => {
-                card.addEventListener('click', function(e) {
-                    const moduleKey = this.dataset.module;
-                    if (moduleKey) mostrarModulo(moduleKey);
-                });
-            });
-
-            btnVolver.addEventListener('click', volverInicio);
 
             document.getElementById('fechaActual').textContent = new Date().toLocaleDateString('es-AR', {
                 day: '2-digit',
@@ -782,7 +1052,6 @@
                 }
             });
 
-            // Al cerrar el modal, no hacemos nada especial
         })();
     </script>
 
