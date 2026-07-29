@@ -482,6 +482,10 @@
                         if (doc.id === 'secretario_config') return;
                         const data = doc.data();
                         if (!data.id) data.id = doc.id;
+                        // Asegurar empleadoAsignado para retrocompatibilidad
+                        if (!data.empleadoAsignado && data.empleadoId) {
+                            data.empleadoAsignado = data.empleadoId;
+                        }
                         causas.push(data);
                     });
                     state.causas = causas;
@@ -507,7 +511,7 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
                 if (nuevoEstado === 'finalizada' || nuevoEstado === 'en_secretaria' || nuevoEstado === 'en_defensor') {
-                    if (c.empleadoId) {
+                    if (c.empleadoAsignado) {
                         if (!c.fechaResolucionEmpleado) c.fechaResolucionEmpleado = new Date().toISOString();
                     }
                 }
@@ -515,6 +519,7 @@
                 if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
                 if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido') {
                     c.empleadoId = null;
+                    c.empleadoAsignado = null;
                     c.fechaAsignacion = null;
                     c.fechaLimite = null;
                 }
@@ -544,7 +549,7 @@
                     }
                 }
                 for (const entry of causa.historial) {
-                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoId)) {
+                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoAsignado)) {
                         const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
                         if (sec) return sec.id;
                     }
@@ -552,11 +557,11 @@
                 return null;
             }
 
-            // ---------- REPORTE DEL EMPLEADO (MODIFICADO: incluye tipoAsignacion) ----------
+            // ---------- REPORTE DEL EMPLEADO (MODIFICADO: incluye tipoAsignacion y empleadoAsignado) ----------
             function generarReporteEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
-                const causas = state.causas.filter(c => c.empleadoId === empId).sort((a,b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const causas = state.causas.filter(c => c.empleadoAsignado === empId).sort((a,b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 const total = causas.length;
                 const ahora = new Date();
                 const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -656,7 +661,7 @@
                 new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
             }
 
-            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) MODIFICADO: incluye tipoAsignacion ----------
+            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) MODIFICADO: incluye tipoAsignacion y empleadoAsignado ----------
             function generarEstadisticas(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -664,7 +669,7 @@
                 const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
 
                 const causasDelEmpleado = state.causas.filter(c => {
-                    if (c.empleadoId === empId) return true;
+                    if (c.empleadoAsignado === empId) return true;
                     if (c.historial) {
                         return c.historial.some(h => h.accion && h.accion.includes('Asignado') && h.usuario && h.usuario.includes(emp.nombre));
                     }
@@ -702,7 +707,7 @@
                         });
                     }
 
-                    if (c.empleadoId === empId && c.estado === 'en_proceso') {
+                    if (c.empleadoAsignado === empId && c.estado === 'en_proceso') {
                         if (!ultimaAsignacion) {
                             const nivel = c.nivelSecretario || c.nivelOperador || 1;
                             ultimaAsignacion = { nivel, secretario: c.secretarioId ? getSecName(c.secretarioId) : 'Secretario' };
@@ -717,7 +722,7 @@
                     else if (c.tipoAsignacion === 'Seguimiento') totalSeguimientos++;
 
                     let nivelUltimo = ultimaAsignacion ? ultimaAsignacion.nivel : (c.nivelSecretario || c.nivelOperador || 1);
-                    if (c.estado === 'finalizada' && c.empleadoId === empId) {
+                    if (c.estado === 'finalizada' && c.empleadoAsignado === empId) {
                         if (statsNivel[nivelUltimo]) {
                             statsNivel[nivelUltimo].cumplidas += 1;
                             if (c.fechaAsignacion && c.fechaFinalizacion) {
@@ -765,7 +770,7 @@
                             </div>
                             <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
                                 <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${state.causas.filter(c => c.empleadoId === empId && c.estado === 'en_proceso').length}</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso').length}</div>
                             </div>
                             <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
                                 <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Nuevos</div>
@@ -883,7 +888,7 @@
             // ---------- RENDER MIS TAREAS (divide en dos tablas) ----------
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
-                let causasFiltradas = state.causas.filter(c => c.empleadoId === currentEmpleadoId);
+                let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === currentEmpleadoId);
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
@@ -1119,7 +1124,7 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 document.getElementById('modalHistorialExp').textContent = c.numero;
-                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
+                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
                 if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
                 else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }

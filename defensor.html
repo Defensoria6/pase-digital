@@ -474,15 +474,16 @@
             function fmtDateShort(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
             function calcDur(ini, fin) { if (!ini || !fin) return '-'; const m = Math.floor((new Date(fin) - new Date(ini)) / 60000); if (m < 60) return `${m}m`; if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60}m`; return `${Math.floor(m / 1440)}d`; }
 
+            // Cálculo de carga usando empleadoAsignado
             function calcularCargaReal(empId) {
-                const activos = state.causas.filter(c => c.empleadoId === empId && c.estado === 'en_proceso').reduce((sum, c) => sum + (c.puntos || 0), 0);
+                const activos = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso').reduce((sum, c) => sum + (c.puntos || 0), 0);
                 const hoy = new Date().toDateString();
-                const resueltosHoy = state.causas.filter(c => c.empleadoId === empId && c.estado === 'finalizada' && c.fechaFinalizacion && new Date(c.fechaFinalizacion).toDateString() === hoy).reduce((sum, c) => sum + (c.puntos || 0), 0);
+                const resueltosHoy = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'finalizada' && c.fechaFinalizacion && new Date(c.fechaFinalizacion).toDateString() === hoy).reduce((sum, c) => sum + (c.puntos || 0), 0);
                 return activos + (resueltosHoy * 0.4);
             }
 
             function calcularPuntajeRendimiento(empId) {
-                const resueltas = state.causas.filter(c => c.empleadoId === empId && (c.estado === 'finalizada' || c.estado === 'en_defensor') && c.fechaResolucionEmpleado);
+                const resueltas = state.causas.filter(c => c.empleadoAsignado === empId && (c.estado === 'finalizada' || c.estado === 'en_defensor') && c.fechaResolucionEmpleado);
                 let score = 0;
                 resueltas.forEach(c => {
                     const puntosBase = (CONFIG.nivelesPuntos[c.nivelSecretario] || 1) * 10;
@@ -502,7 +503,7 @@
 
             function tieneAtrasos(empId) {
                 const ahora = Date.now();
-                return state.causas.some(c => c.empleadoId === empId && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < ahora);
+                return state.causas.some(c => c.empleadoAsignado === empId && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < ahora);
             }
 
             function getFilteredCausas() {
@@ -561,6 +562,10 @@
                             // Ignorar configuración de secretario
                         } else {
                             if (!data.id) data.id = doc.id;
+                            // Asegurar empleadoAsignado para retrocompatibilidad
+                            if (!data.empleadoAsignado && data.empleadoId) {
+                                data.empleadoAsignado = data.empleadoId;
+                            }
                             causas.push(data);
                         }
                     });
@@ -693,13 +698,14 @@
             async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
-                if ((nuevoEstado === 'finalizada' || nuevoEstado === 'en_defensor') && c.empleadoId) {
+                if ((nuevoEstado === 'finalizada' || nuevoEstado === 'en_defensor') && c.empleadoAsignado) {
                     if (!c.fechaResolucionEmpleado) c.fechaResolucionEmpleado = new Date().toISOString();
                 }
                 c.estado = nuevoEstado;
                 if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
                 if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido' || nuevoEstado === 'rechazado') {
                     c.empleadoId = null;
+                    c.empleadoAsignado = null;
                     c.fechaAsignacion = null;
                     c.fechaLimite = null;
                     c.fechaResolucionEmpleado = null;
@@ -785,7 +791,7 @@
                 });
             }
 
-            // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas ----------
+            // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas (usando empleadoAsignado) ----------
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
@@ -795,7 +801,7 @@
                     }
                 }
                 for (const entry of causa.historial) {
-                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoId)) {
+                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoAsignado)) {
                         const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
                         if (sec) return sec.id;
                     }
@@ -871,10 +877,10 @@
                 }
 
                 let candidatos = CONFIG.empleados.map(e => {
-                    const activas = state.causas.filter(c => c.empleadoId === e.id && c.estado === 'en_proceso');
+                    const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
                     const cargaTotal = activas.reduce((sum, c) => sum + (c.puntos || 0), 0);
                     const countMismoNivel = activas.filter(c => c.nivelSecretario === parseInt(nivSec)).length;
-                    const atrasado = state.causas.some(c => c.empleadoId === e.id && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
+                    const atrasado = state.causas.some(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
                     return { id: e.id, cargaTotal, countMismoNivel, atrasado };
                 });
 
@@ -1092,7 +1098,7 @@
             function generarReporteEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
-                const causas = state.causas.filter(c => c.empleadoId === empId).sort((a,b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const causas = state.causas.filter(c => c.empleadoAsignado === empId).sort((a,b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 const total = causas.length;
                 const now = new Date();
                 const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1168,7 +1174,7 @@
                 const empleadosData = CONFIG.empleados.map(e => ({
                     nombre: e.nombre,
                     carga: calcularCargaReal(e.id),
-                    activas: state.causas.filter(c => c.empleadoId === e.id && c.estado === 'en_proceso').length,
+                    activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
                     moroso: tieneAtrasos(e.id),
                     puntaje: calcularPuntajeRendimiento(e.id)
                 }));
@@ -1228,7 +1234,7 @@
                 });
 
                 const empTableData = CONFIG.empleados.map(emp => {
-                    const causas = state.causas.filter(c => c.empleadoId === emp.id);
+                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
                     const total = causas.length;
                     const niveles = {1:0,2:0,3:0,4:0};
                     const secretarios = new Set();
@@ -1645,7 +1651,7 @@
                 if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN (Secretario)
+            // 2. DISTRIBUCIÓN (Secretario) - usando empleadoAsignado
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
                 const pend = getFilteredCausas().filter(c => c.estado === 'en_secretaria').sort((a, b) => b.nivelOperador - a.nivelOperador);
@@ -1657,6 +1663,7 @@
                 const pStateProc = paginationState.proceso;
                 const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(enProceso, pStateProc.page, pStateProc.perPage);
 
+                // Opciones de empleados usando carga real
                 const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)${tieneAtrasos(e.id)?' ⚠️':''}</option>`).join('');
 
                 let secStats = CONFIG.secretarios.map(sec => {
@@ -1664,8 +1671,9 @@
                     return { ...sec, asignadas };
                 });
 
+                // Tabla de empleados usando empleadoAsignado
                 const empTableData = CONFIG.empleados.map(emp => {
-                    const causas = state.causas.filter(c => c.empleadoId === emp.id);
+                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
                     const total = causas.length;
                     const niveles = {1:0,2:0,3:0,4:0};
                     const secretarios = new Set();
@@ -1684,8 +1692,8 @@
 
                 const empleadosConRetraso = new Set();
                 state.causas.forEach(c => {
-                    if (c.empleadoId && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now()) {
-                        empleadosConRetraso.add(c.empleadoId);
+                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now()) {
+                        empleadosConRetraso.add(c.empleadoAsignado);
                     }
                 });
 
@@ -1739,7 +1747,7 @@
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
                                             <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${getEmpName(c.empleadoId)}</td>
+                                            <td>${getEmpName(c.empleadoAsignado)}</td>
                                             <td>N${c.nivelSecretario || c.nivelOperador}</td>
                                             <td>${badgeTipo}</td>
                                             <td>${demora ? `<span class="crono azul">${demora}</span>` : '-'}</td>
@@ -2081,13 +2089,13 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 4. EMPLEADO (visualización) - ahora con dos tablas
+            // 4. EMPLEADO (visualización) - con empleadoAsignado
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let empSeleccionado = document.getElementById('simularEmpleado')?.value || CONFIG.empleados[0]?.id || '';
                 if (!empSeleccionado && CONFIG.empleados.length) empSeleccionado = CONFIG.empleados[0].id;
 
-                let mis = getFilteredCausas().filter(c => c.empleadoId === empSeleccionado);
+                let mis = getFilteredCausas().filter(c => c.empleadoAsignado === empSeleccionado);
                 // Filtros de mes y año
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
@@ -2288,7 +2296,7 @@
                 }
             }
 
-            // 5. GRÁFICOS (se mantiene igual)
+            // 5. GRÁFICOS (se mantiene igual, pero usando empleadoAsignado)
             function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
@@ -2304,7 +2312,7 @@
                 const empleadosData = CONFIG.empleados.map(e => ({
                     nombre: e.nombre,
                     carga: calcularCargaReal(e.id),
-                    activas: state.causas.filter(c => c.empleadoId === e.id && c.estado === 'en_proceso').length,
+                    activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
                     moroso: tieneAtrasos(e.id),
                     puntaje: calcularPuntajeRendimiento(e.id)
                 }));
@@ -2448,7 +2456,7 @@
                             <div class="table-wrap">
                                 <table class="table-modern table">
                                     <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Ver</th></tr></thead>
-                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoId)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}</tbody>
+                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoAsignado)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}</tbody>
                                 </table>
                             </div><div id="paginationAuditoria"></div>
                         ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros</div>`}
@@ -2468,7 +2476,7 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 document.getElementById('modalHistorialExp').textContent = c.numero;
-                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
+                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
                 if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
                 else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
