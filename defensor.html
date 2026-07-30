@@ -499,15 +499,16 @@
                 return activos + (resueltosHoy * 0.4);
             }
 
-            // CORRECCIÓN: función de puntaje mejorada
+            // ---------- FUNCIÓN MODIFICADA: PUNTAJE AUTOMÁTICO (ENTERO 1-10) ----------
             function calcularPuntajeRendimiento(empId) {
-                // Filtramos causas finalizadas o en defensor que tengan fecha de resolución o finalización
                 const resueltas = state.causas.filter(c => 
                     c.empleadoAsignado === empId && 
                     (c.estado === 'finalizada' || c.estado === 'en_defensor') && 
                     (c.fechaResolucionEmpleado || c.fechaFinalizacion) &&
                     c.fechaAsignacion
                 );
+                if (resueltas.length === 0) return 1; // mínimo 1
+
                 let score = 0;
                 resueltas.forEach(c => {
                     const fechaRes = c.fechaResolucionEmpleado || c.fechaFinalizacion;
@@ -521,10 +522,14 @@
                     else if (tiempoTomado > tiempoPermitido) multiplicador = 0.5;
                     score += (puntosBase * multiplicador);
                 });
+
                 let maxPosible = resueltas.length * 75;
-                if (maxPosible === 0) return 0;
-                let normalizado = Math.min(10, (score / maxPosible) * 10);
-                return Math.round(normalizado * 10) / 10;
+                let normalizado = (score / maxPosible) * 10;
+                // Redondear al entero más cercano y asegurar rango 1-10
+                let entero = Math.round(normalizado);
+                if (entero < 1) entero = 1;
+                if (entero > 10) entero = 10;
+                return entero;
             }
 
             function tieneAtrasos(empId) {
@@ -643,6 +648,65 @@
                 } catch (error) {
                     console.error('Error guardando configuración de empleados:', error);
                     showToast('Error al guardar configuración de ausencias', 'danger');
+                }
+            }
+
+            // ---------- GESTIÓN DE PUNTAJES MANUALES ----------
+            async function cargarPuntajesManuales() {
+                try {
+                    const docRef = db.collection('puntajes').doc('ranking');
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        return docSnap.data().puntajes || {};
+                    } else {
+                        return {};
+                    }
+                } catch (error) {
+                    console.error('Error cargando puntajes manuales:', error);
+                    return {};
+                }
+            }
+
+            async function guardarPuntajeManual(empId, puntaje, comentario) {
+                try {
+                    const docRef = db.collection('puntajes').doc('ranking');
+                    await db.runTransaction(async (transaction) => {
+                        const docSnap = await transaction.get(docRef);
+                        const data = docSnap.exists ? docSnap.data() : { puntajes: {}, comentarios: {} };
+                        if (!data.puntajes) data.puntajes = {};
+                        if (!data.comentarios) data.comentarios = {};
+                        data.puntajes[empId] = parseFloat(puntaje);
+                        data.comentarios[empId] = comentario || '';
+                        data.fechaActualizacion = new Date().toISOString();
+                        transaction.set(docRef, data);
+                    });
+                    showToast(`Puntaje guardado para ${getEmpName(empId)}`, 'success');
+                    return true;
+                } catch (error) {
+                    console.error('Error guardando puntaje manual:', error);
+                    showToast('Error al guardar puntaje', 'danger');
+                    return false;
+                }
+            }
+
+            async function guardarTodosPuntajes() {
+                const inputs = document.querySelectorAll('.puntaje-manual-input');
+                const comentarios = document.querySelectorAll('.puntaje-comentario-input');
+                let cambios = 0;
+                for (let i = 0; i < inputs.length; i++) {
+                    const empId = inputs[i].dataset.emp;
+                    const val = parseFloat(inputs[i].value);
+                    const com = comentarios[i] ? comentarios[i].value : '';
+                    if (!isNaN(val) && val >= 0 && val <= 10) {
+                        const ok = await guardarPuntajeManual(empId, val, com);
+                        if (ok) cambios++;
+                    }
+                }
+                if (cambios > 0) {
+                    showToast(`${cambios} puntajes actualizados`, 'success');
+                    renderGraficos();
+                } else {
+                    showToast('No se realizaron cambios (valores inválidos)', 'warning');
                 }
             }
 
@@ -1247,7 +1311,7 @@
                     carga: calcularCargaReal(e.id),
                     activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
                     moroso: tieneAtrasos(e.id),
-                    puntaje: calcularPuntajeRendimiento(e.id)
+                    puntaje: calcularPuntajeRendimiento(e.id) // ahora entero
                 }));
                 empleadosData.sort((a, b) => b.puntaje - a.puntaje);
 
@@ -1268,14 +1332,14 @@
                                     <th style="padding: 8px;">Empleado</th>
                                     <th style="padding: 8px;">Causas Activas</th>
                                     <th style="padding: 8px;">Carga (Pts)</th>
-                                    <th style="padding: 8px;">Puntaje (0-10)</th>
+                                    <th style="padding: 8px;">Puntaje (1-10)</th>
                                     <th style="padding: 8px;">Moroso</th>
                                 </tr>
                             </thead>
                             <tbody>${empleadosData.map((e, index) => {
                                 let pColor = '#c62828';
-                                if (e.puntaje >= 1 && e.puntaje < 4) pColor = '#e67e22';
-                                else if (e.puntaje >= 4 && e.puntaje < 10) pColor = '#1976d2';
+                                if (e.puntaje >= 4 && e.puntaje < 7) pColor = '#e67e22';
+                                else if (e.puntaje >= 7 && e.puntaje < 10) pColor = '#1976d2';
                                 else if (e.puntaje >= 10) pColor = '#2e7d32';
                                 
                                 return `
@@ -1284,7 +1348,7 @@
                                     <td style="padding: 8px;"><strong>${index === 0 && e.puntaje > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
                                     <td style="padding: 8px;">${e.activas}</td>
                                     <td style="padding: 8px;">${e.carga.toFixed(1)}</td>
-                                    <td style="padding: 8px;"><strong style="color: ${pColor}; font-size: 1.1rem;">${e.puntaje.toFixed(1)}</strong></td>
+                                    <td style="padding: 8px;"><strong style="color: ${pColor}; font-size: 1.1rem;">${e.puntaje}</strong></td>
                                     <td style="padding: 8px;">${e.moroso ? '⚠️ Sí' : '✓ No'}</td>
                                 </tr>
                             `}).join('')}</tbody>
@@ -2362,8 +2426,8 @@
                 }
             }
 
-            // 5. GRÁFICOS
-            function renderGraficos() {
+            // 5. GRÁFICOS (CON PUNTAJE AUTO ENTERO)
+            async function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
                 const enSec = state.causas.filter(c => c.estado === 'en_secretaria').length;
@@ -2376,15 +2440,51 @@
                 const saturados = CONFIG.empleados.filter(e => calcularCargaReal(e.id) >= 20 || tieneAtrasos(e.id)).length;
 
                 const empleadosData = CONFIG.empleados.map(e => ({
+                    id: e.id,
                     nombre: e.nombre,
                     carga: calcularCargaReal(e.id),
                     activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
                     moroso: tieneAtrasos(e.id),
-                    puntaje: calcularPuntajeRendimiento(e.id)
+                    puntaje: calcularPuntajeRendimiento(e.id) // entero 1-10
                 }));
                 empleadosData.sort((a, b) => b.puntaje - a.puntaje);
                 const niveles = [1,2,3,4];
                 const nivelCounts = niveles.map(n => state.causas.filter(c => c.nivelSecretario === n).length);
+
+                const puntajesManuales = await cargarPuntajesManuales();
+
+                let tablaRanking = empleadosData.map((e, index) => {
+                    let pColor = '#c62828';
+                    if (e.puntaje >= 4 && e.puntaje < 7) pColor = '#e67e22';
+                    else if (e.puntaje >= 7 && e.puntaje < 10) pColor = '#1976d2';
+                    else if (e.puntaje >= 10) pColor = '#2e7d32';
+
+                    const manual = puntajesManuales[e.id] !== undefined ? puntajesManuales[e.id] : '';
+                    const comentarioManual = puntajesManuales[e.id+'_com'] || '';
+
+                    return `
+                    <tr>
+                        <td><strong>${index === 0 && e.puntaje > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
+                        <td>${e.activas}</td>
+                        <td>${e.carga.toFixed(1)} pts</td>
+                        <td><strong style="color: ${pColor}; font-size: 1.05rem;">${e.puntaje}</strong></td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm puntaje-manual-input" data-emp="${e.id}" 
+                                   style="width:70px; display:inline-block;" step="1" min="1" max="10" 
+                                   value="${manual}" placeholder="1-10" />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm puntaje-comentario-input" data-emp="${e.id}" 
+                                   style="width:120px; display:inline-block;" placeholder="Observación" 
+                                   value="${comentarioManual}" />
+                        </td>
+                        <td>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-guardar-puntaje" data-emp="${e.id}">Guardar</button>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-auto-puntaje" data-emp="${e.id}" data-puntaje="${e.puntaje}">Auto</button>
+                        </td>
+                        <td>${e.moroso ? '<span class="badge bg-danger">⚠️</span>' : '<span class="badge bg-success">✓</span>'}</td>
+                    </tr>
+                `}).join('');
 
                 panel.innerHTML = `
                     <div class="kpi-grid">
@@ -2429,28 +2529,29 @@
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="card-title mb-0"><i class="bi bi-table"></i> Desempeño de Empleados (Ranking)</div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <small class="text-muted"><i class="bi bi-info-circle"></i> Puntaje 0-10</small>
+                                        <small class="text-muted"><i class="bi bi-info-circle"></i> Puntaje 1-10</small>
                                         <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnImprimirRanking"><i class="bi bi-printer"></i> Imprimir reporte</button>
+                                        <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnGuardarTodosPuntajes"><i class="bi bi-save"></i> Guardar todos</button>
+                                        <button class="btn btn-modern btn-modern-warning btn-modern-sm" id="btnAplicarAutoTodos"><i class="bi bi-arrow-repeat"></i> Aplicar puntaje auto a todos</button>
                                     </div>
                                 </div>
                                 <div class="table-wrap">
                                     <table class="table-modern table">
-                                        <thead><tr><th>Empleado</th><th>Activas</th><th>Carga</th><th>Puntaje</th><th>Moroso</th></tr></thead>
-                                        <tbody>${empleadosData.map((e, index) => {
-                                            let pColor = '#c62828';
-                                            if (e.puntaje >= 1 && e.puntaje < 4) pColor = '#e67e22';
-                                            else if (e.puntaje >= 4 && e.puntaje < 10) pColor = '#1976d2';
-                                            else if (e.puntaje >= 10) pColor = '#2e7d32';
-                                            
-                                            return `
+                                        <thead>
                                             <tr>
-                                                <td><strong>${index === 0 && e.puntaje > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
-                                                <td>${e.activas}</td>
-                                                <td>${e.carga.toFixed(1)} pts</td>
-                                                <td><strong style="color: ${pColor}; font-size: 1.05rem;">${e.puntaje.toFixed(1)}</strong></td>
-                                                <td>${e.moroso ? '<span class="badge bg-danger">⚠️</span>' : '<span class="badge bg-success">✓</span>'}</td>
+                                                <th>Empleado</th>
+                                                <th>Activas</th>
+                                                <th>Carga</th>
+                                                <th>Puntaje (auto)</th>
+                                                <th>Puntaje Manual</th>
+                                                <th>Comentario</th>
+                                                <th>Acción</th>
+                                                <th>Moroso</th>
                                             </tr>
-                                        `}).join('')}</tbody>
+                                        </thead>
+                                        <tbody>
+                                            ${tablaRanking}
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -2458,9 +2559,78 @@
                     </div>
                 `;
 
+                // Evento para botón "Auto" en cada fila
+                document.querySelectorAll('.btn-auto-puntaje').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empId = this.dataset.emp;
+                        const puntajeAuto = parseInt(this.dataset.puntaje);
+                        if (isNaN(puntajeAuto) || puntajeAuto < 1 || puntajeAuto > 10) {
+                            showToast('Puntaje automático no disponible', 'warning');
+                            return;
+                        }
+                        const input = document.querySelector(`.puntaje-manual-input[data-emp="${empId}"]`);
+                        if (input) {
+                            input.value = puntajeAuto;
+                            const coment = document.querySelector(`.puntaje-comentario-input[data-emp="${empId}"]`);
+                            const ok = await guardarPuntajeManual(empId, puntajeAuto, coment ? coment.value : '');
+                            if (ok) renderGraficos();
+                        }
+                    });
+                });
+
+                // Evento para botón "Aplicar puntaje auto a todos"
+                document.getElementById('btnAplicarAutoTodos').addEventListener('click', async function() {
+                    const inputs = document.querySelectorAll('.puntaje-manual-input');
+                    const comentarios = document.querySelectorAll('.puntaje-comentario-input');
+                    let cambios = 0;
+                    for (let i = 0; i < inputs.length; i++) {
+                        const empId = inputs[i].dataset.emp;
+                        const fila = inputs[i].closest('tr');
+                        const autoSpan = fila ? fila.querySelector('td:nth-child(4) strong') : null;
+                        if (autoSpan) {
+                            const autoVal = parseInt(autoSpan.textContent.trim());
+                            if (!isNaN(autoVal) && autoVal >= 1 && autoVal <= 10) {
+                                inputs[i].value = autoVal;
+                                const com = comentarios[i] ? comentarios[i].value : '';
+                                const ok = await guardarPuntajeManual(empId, autoVal, com);
+                                if (ok) cambios++;
+                            }
+                        }
+                    }
+                    if (cambios > 0) {
+                        showToast(`${cambios} puntajes actualizados con el valor automático`, 'success');
+                        renderGraficos();
+                    } else {
+                        showToast('No se pudieron aplicar puntajes automáticos', 'warning');
+                    }
+                });
+
+                // Eventos para botones de guardar individual
+                document.querySelectorAll('.btn-guardar-puntaje').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empId = this.dataset.emp;
+                        const input = document.querySelector(`.puntaje-manual-input[data-emp="${empId}"]`);
+                        const coment = document.querySelector(`.puntaje-comentario-input[data-emp="${empId}"]`);
+                        const val = parseInt(input.value);
+                        if (isNaN(val) || val < 1 || val > 10) {
+                            showToast('Ingrese un valor entre 1 y 10', 'warning');
+                            return;
+                        }
+                        await guardarPuntajeManual(empId, val, coment.value);
+                        renderGraficos();
+                    });
+                });
+
+                // Botón guardar todos
+                const btnGuardarTodos = document.getElementById('btnGuardarTodosPuntajes');
+                if (btnGuardarTodos) {
+                    btnGuardarTodos.addEventListener('click', guardarTodosPuntajes);
+                }
+
                 const btnRanking = document.getElementById('btnImprimirRanking');
                 if (btnRanking) { btnRanking.addEventListener('click', generarReporteRanking); }
 
+                // Gráficos
                 setTimeout(() => {
                     if (document.getElementById('chartCarga')) {
                         if (chartInstances.carga) chartInstances.carga.destroy();
@@ -2482,8 +2652,8 @@
                         if (chartInstances.rendimiento) chartInstances.rendimiento.destroy();
                         chartInstances.rendimiento = new Chart(document.getElementById('chartRendimiento'), {
                             type: 'bar',
-                            data: { labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), datasets: [{ label: 'Puntaje (0-10)', data: empleadosData.map(e => e.puntaje), backgroundColor: empleadosData.map(e => e.puntaje >= 8 ? '#2e7d32' : e.puntaje >= 5 ? '#e67e22' : '#c62828'), borderRadius: 6 }] },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 10 } } }
+                            data: { labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), datasets: [{ label: 'Puntaje (1-10)', data: empleadosData.map(e => e.puntaje), backgroundColor: empleadosData.map(e => e.puntaje >= 8 ? '#2e7d32' : e.puntaje >= 5 ? '#e67e22' : '#c62828'), borderRadius: 6 }] },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 10, ticks: { stepSize: 1 } } } }
                         });
                     }
                     if (document.getElementById('chartNivel')) {
