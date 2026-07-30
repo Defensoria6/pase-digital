@@ -94,8 +94,8 @@
         .badge-dev { background:#ffebee; color:#c62828; }
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-rech { background:#fce4ec; color:#c62828; }
-        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
-        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
+        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 8px; border-radius:20px; font-size:.6rem; }
+        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 8px; border-radius:20px; font-size:.6rem; }
         .badge-fuente { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.55rem; font-weight:700; background:#e3f2fd; color:#1976d2; margin-right:2px; }
         .badge-fuente.ambas { background:#e8f5e9; color:#2e7d32; }
         .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
@@ -160,6 +160,10 @@
         #logoutAlert .alert-actions .btn-confirm { background: #c62828; color: #fff; }
         #logoutAlert .alert-actions .btn-confirm:hover { background: #b71c1c; }
 
+        .row-ausente { background-color: #fce4ec !important; }
+        .row-ausente td { background-color: #fce4ec !important; }
+        .row-presente { background-color: #e8f5e9 !important; }
+        .row-presente td { background-color: #e8f5e9 !important; }
         .btn-ausente { background:#ffebee; color:#c62828; border:1px solid #ffcdd2; }
         .btn-ausente:hover { background:#ffcdd2; color:#b71c1c; }
         .btn-reintegrado { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
@@ -340,7 +344,7 @@
         </div>
     </div>
 
-    <!-- Modal Ausencias (Operador) -->
+    <!-- Modal Ausencias (Secretarios) -->
     <div class="modal fade modal-modern" id="modalAusencias" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -450,7 +454,11 @@
             };
 
             // ---------- ESTADO ----------
-            let state = { causas: [], ausencias: [] };
+            let state = { 
+                causas: [], 
+                ausencias: [],
+                empleados: []
+            };
             let currentRole = 'defensor';
             let searchTerm = '';
             let chartInstances = {};
@@ -474,7 +482,16 @@
             function fmtDateShort(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
             function calcDur(ini, fin) { if (!ini || !fin) return '-'; const m = Math.floor((new Date(fin) - new Date(ini)) / 60000); if (m < 60) return `${m}m`; if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60}m`; return `${Math.floor(m / 1440)}d`; }
 
-            // Cálculo de carga usando empleadoAsignado
+            function isAusente(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                return e ? e.ausente : false;
+            }
+
+            function getFechaReintegro(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                return e ? e.fechaReintegro : null;
+            }
+
             function calcularCargaReal(empId) {
                 const activos = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso').reduce((sum, c) => sum + (c.puntos || 0), 0);
                 const hoy = new Date().toDateString();
@@ -482,12 +499,21 @@
                 return activos + (resueltosHoy * 0.4);
             }
 
+            // CORRECCIÓN: función de puntaje mejorada
             function calcularPuntajeRendimiento(empId) {
-                const resueltas = state.causas.filter(c => c.empleadoAsignado === empId && (c.estado === 'finalizada' || c.estado === 'en_defensor') && c.fechaResolucionEmpleado);
+                // Filtramos causas finalizadas o en defensor que tengan fecha de resolución o finalización
+                const resueltas = state.causas.filter(c => 
+                    c.empleadoAsignado === empId && 
+                    (c.estado === 'finalizada' || c.estado === 'en_defensor') && 
+                    (c.fechaResolucionEmpleado || c.fechaFinalizacion) &&
+                    c.fechaAsignacion
+                );
                 let score = 0;
                 resueltas.forEach(c => {
+                    const fechaRes = c.fechaResolucionEmpleado || c.fechaFinalizacion;
+                    if (!fechaRes || !c.fechaAsignacion) return;
                     const puntosBase = (CONFIG.nivelesPuntos[c.nivelSecretario] || 1) * 10;
-                    const tiempoTomado = new Date(c.fechaResolucionEmpleado) - new Date(c.fechaAsignacion);
+                    const tiempoTomado = new Date(fechaRes) - new Date(c.fechaAsignacion);
                     const tiempoPermitido = (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000;
                     let multiplicador = 1.0;
                     if (tiempoTomado <= tiempoPermitido * 0.25) multiplicador = 1.5;
@@ -554,15 +580,15 @@
                     const snapshot = await db.collection('operador').get();
                     const causas = [];
                     let ausencias = [];
+                    let empleadosConfig = [];
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         if (doc.id === 'ausencias') {
                             ausencias = data.ausencias || [];
                         } else if (doc.id === 'secretario_config') {
-                            // Ignorar configuración de secretario
+                            empleadosConfig = data.empleados || CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                         } else {
                             if (!data.id) data.id = doc.id;
-                            // Asegurar empleadoAsignado para retrocompatibilidad
                             if (!data.empleadoAsignado && data.empleadoId) {
                                 data.empleadoAsignado = data.empleadoId;
                             }
@@ -571,11 +597,13 @@
                     });
                     state.causas = causas;
                     state.ausencias = ausencias;
+                    state.empleados = empleadosConfig.length ? empleadosConfig : CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                 } catch (error) {
                     console.error('Error cargando datos:', error);
                     showToast('Error al conectar con Firestore', 'danger');
                     state.causas = [];
                     state.ausencias = [];
+                    state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                 }
             }
 
@@ -609,7 +637,16 @@
                 }
             }
 
-            // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO (adaptadas) ----------
+            async function saveConfigToFirestore() {
+                try {
+                    await db.collection('operador').doc('secretario_config').set({ empleados: state.empleados });
+                } catch (error) {
+                    console.error('Error guardando configuración de empleados:', error);
+                    showToast('Error al guardar configuración de ausencias', 'danger');
+                }
+            }
+
+            // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO ----------
             async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
@@ -720,12 +757,11 @@
                     await updateCausaInFirestore(c);
                     showToast(`🔄 ${c.numero} actualizado: ${accion}`);
                 } catch (error) {
-                    // Revertir cambios locales en caso de error (recargar)
                     await loadStateFromFirestore();
                 }
             }
 
-            // ---------- FUNCIONES DE AUSENCIAS (adaptadas) ----------
+            // ---------- AUSENCIAS DE SECRETARIOS ----------
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
                 const f = new Date(fecha); f.setHours(0,0,0,0);
@@ -791,7 +827,7 @@
                 });
             }
 
-            // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas (usando empleadoAsignado) ----------
+            // ---------- ASIGNACIÓN CON VERIFICACIÓN DE AUSENCIA ----------
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
@@ -812,8 +848,11 @@
             async function asignarCausa(id, nivSec, empId, com = '', secId = null) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
+                if (isAusente(empId)) {
+                    showToast('El empleado está ausente, no se puede asignar', 'warning');
+                    return false;
+                }
 
-                // --- DETECCIÓN DE REINGRESO ---
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 let empleadoOriginal = null;
                 let tipoAsignacion = 'Nuevo Patrocinio';
@@ -865,37 +904,76 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return false;
 
-                // --- DETECCIÓN DE REINGRESO ---
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
                     const empId = existing[0].empleadoAsignado;
-                    if (empId) {
+                    if (empId && !isAusente(empId)) {
                         const result = await asignarCausa(id, nivSec, empId, comentario || 'Reasignación automática por reingreso');
                         return result;
+                    } else if (empId && isAusente(empId)) {
+                        showToast('El empleado original está ausente. Se asignará a otro.', 'warning');
                     }
                 }
 
-                let candidatos = CONFIG.empleados.map(e => {
+                let candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
+                if (candidatos.length === 0) {
+                    showToast('Todos los empleados están ausentes, no se puede asignar', 'danger');
+                    return false;
+                }
+
+                let candidatosConDatos = candidatos.map(e => {
                     const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
                     const cargaTotal = activas.reduce((sum, c) => sum + (c.puntos || 0), 0);
                     const countMismoNivel = activas.filter(c => c.nivelSecretario === parseInt(nivSec)).length;
                     const atrasado = state.causas.some(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
-                    return { id: e.id, cargaTotal, countMismoNivel, atrasado };
+                    const fechaReintegro = getFechaReintegro(e.id);
+                    return { id: e.id, cargaTotal, countMismoNivel, atrasado, fechaReintegro };
                 });
 
-                let elegibles = candidatos.filter(c => !c.atrasado);
-                if (elegibles.length === 0) elegibles = candidatos;
+                let elegibles = candidatosConDatos.filter(c => !c.atrasado);
+                if (elegibles.length === 0) elegibles = candidatosConDatos;
+
                 elegibles.sort((a, b) => {
+                    if (a.fechaReintegro && !b.fechaReintegro) return -1;
+                    if (!a.fechaReintegro && b.fechaReintegro) return 1;
+                    if (a.fechaReintegro && b.fechaReintegro) {
+                        return new Date(b.fechaReintegro) - new Date(a.fechaReintegro);
+                    }
                     if (a.countMismoNivel !== b.countMismoNivel) return a.countMismoNivel - b.countMismoNivel;
                     return a.cargaTotal - b.cargaTotal;
                 });
+
                 const mejorEmp = elegibles[0]?.id;
                 if (mejorEmp) {
                     return await asignarCausa(id, nivSec, mejorEmp, comentario || 'Asignación automática equitativa (Nivel ' + nivSec + ')');
                 }
                 showToast('No se pudo asignar automáticamente', 'danger');
                 return false;
+            }
+
+            // ---------- OTRAS FUNCIONES DE SECRETARIO ----------
+            async function marcarCumplido(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_proceso') { showToast('Solo se puede cumplir causas en proceso', 'warning'); return; }
+                if (confirm(`¿Autorizar cumplimiento de ${c.numero}?`)) {
+                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Secretario', 'Defensor', 'Cumplido autorizado');
+                    renderAll();
+                }
+            }
+
+            async function elevarDefensor(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
+                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
+                    return;
+                }
+                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
+                if (motivo === null) return;
+                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', motivo || 'Sin motivo');
+                renderAll();
             }
 
             async function devolverSIGED(id) {
@@ -923,30 +1001,7 @@
                 await cambiarEstado(id, 'rechazado', 'Rechazado', 'Defensor', motivo || 'Sin motivo');
             }
 
-            // ---------- FUNCIONES DE SECRETARIO (adicionales) adaptadas ----------
-            async function marcarCumplido(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                if (c.estado !== 'en_proceso') { showToast('Solo se puede cumplir causas en proceso', 'warning'); return; }
-                if (confirm(`¿Autorizar cumplimiento de ${c.numero}?`)) {
-                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Secretario', 'Defensor', 'Cumplido autorizado');
-                    renderAll();
-                }
-            }
-
-            async function elevarDefensor(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
-                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
-                    return;
-                }
-                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
-                if (motivo === null) return;
-                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', motivo || 'Sin motivo');
-                renderAll();
-            }
-
+            // ---------- CONSULTAS Y HISTORIAL ----------
             function verConsultas(id) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
@@ -1026,6 +1081,22 @@
                     body.innerHTML = html;
                 }
                 new bootstrap.Modal(document.getElementById('modalHistorialSecretario')).show();
+            }
+
+            // ---------- TOGGLE AUSENCIA EMPLEADO ----------
+            async function toggleAusencia(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                if (!e) return;
+                e.ausente = !e.ausente;
+                if (!e.ausente) {
+                    e.fechaReintegro = new Date().toISOString();
+                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
+                } else {
+                    e.fechaReintegro = null;
+                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
+                }
+                await saveConfigToFirestore();
+                renderAll();
             }
 
             // ---------- REPORTES ----------
@@ -1410,7 +1481,7 @@
             }
 
             // ---------- PANELES ----------
-            // 1. INGRESO (Operador)
+            // 1. INGRESO
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
                 let causasFiltradas = getFilteredCausas();
@@ -1426,7 +1497,6 @@
                 ];
                 const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
 
-                // Opciones para modo de intervención
                 const modoIntervencionOptions = [
                     'Defensor Oficial',
                     'Ministerio Principal',
@@ -1548,7 +1618,6 @@
 
                 if (total > 0) renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.ingreso.page = newPage; paginationState.ingreso.perPage = newPerPage; renderIngreso(); });
 
-                // Lógica de campos condicionales
                 const accionSelect = document.getElementById('inpAccion');
                 const camposAccionDiv = document.getElementById('camposAccion');
                 const campoDependencia = document.getElementById('campoDependenciaForm');
@@ -1568,7 +1637,6 @@
                 accionSelect.addEventListener('change', toggleCamposAccion);
                 toggleCamposAccion();
 
-                // Submit formulario
                 document.getElementById('formIngreso').addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const operador = document.getElementById('inpOperador').value;
@@ -1612,7 +1680,6 @@
                     }
                 });
 
-                // Botón gestionar ausencias
                 document.getElementById('btnGestionAusencias').addEventListener('click', function() {
                     const modal = new bootstrap.Modal(document.getElementById('modalAusencias'));
                     const select = document.getElementById('ausenciaSecretario');
@@ -1642,7 +1709,6 @@
                     }
                 });
 
-                // Eventos de acciones
                 document.querySelectorAll('.btn-devolver-siged').forEach(btn => { btn.addEventListener('click', async function() { await devolverSIGED(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-remitir').forEach(btn => { btn.addEventListener('click', async function() { await remitirDependencia(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-rechazar').forEach(btn => { btn.addEventListener('click', async function() { await rechazarCausa(this.dataset.id); renderAll(); }); });
@@ -1651,7 +1717,7 @@
                 if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN (Secretario) - usando empleadoAsignado
+            // 2. DISTRIBUCIÓN
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
                 const pend = getFilteredCausas().filter(c => c.estado === 'en_secretaria').sort((a, b) => b.nivelOperador - a.nivelOperador);
@@ -1663,15 +1729,23 @@
                 const pStateProc = paginationState.proceso;
                 const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(enProceso, pStateProc.page, pStateProc.perPage);
 
-                // Opciones de empleados usando carga real
-                const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)${tieneAtrasos(e.id)?' ⚠️':''}</option>`).join('');
+                const optsEmpleados = CONFIG.empleados
+                    .filter(e => !isAusente(e.id))
+                    .map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)${tieneAtrasos(e.id)?' ⚠️':''}</option>`)
+                    .join('');
 
                 let secStats = CONFIG.secretarios.map(sec => {
                     const asignadas = state.causas.filter(c => c.secretarioId === sec.id && c.estado !== 'en_secretaria').length;
                     return { ...sec, asignadas };
                 });
 
-                // Tabla de empleados usando empleadoAsignado
+                const empleadosConRetraso = new Set();
+                state.causas.forEach(c => {
+                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now()) {
+                        empleadosConRetraso.add(c.empleadoAsignado);
+                    }
+                });
+
                 const empTableData = CONFIG.empleados.map(emp => {
                     const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
                     const total = causas.length;
@@ -1682,19 +1756,15 @@
                         if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
                         if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
                     });
+                    const ausente = isAusente(emp.id);
                     return { 
                         nombre: emp.nombre, 
                         total, 
                         niveles, 
-                        secretarios: Array.from(secretarios).join(', ') 
+                        secretarios: Array.from(secretarios).join(', '),
+                        ausente: ausente,
+                        tieneRetraso: empleadosConRetraso.has(emp.id)
                     };
-                });
-
-                const empleadosConRetraso = new Set();
-                state.causas.forEach(c => {
-                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now()) {
-                        empleadosConRetraso.add(c.empleadoAsignado);
-                    }
                 });
 
                 panel.innerHTML = `
@@ -1788,7 +1858,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga actual por Empleado <span class="text-muted-light" style="font-weight:400; font-size:0.7rem;">(en rojo si tiene retraso)</span></h6>
+                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga actual por Empleado <span class="text-muted-light" style="font-weight:400; font-size:0.7rem;">(rojo ausente, verde presente, subrayado si retraso)</span></h6>
                                 <div class="table-wrap">
                                     <table class="table-modern table" style="min-width:0; width:100%;">
                                         <thead>
@@ -1805,10 +1875,11 @@
                                         </thead>
                                         <tbody>
                                             ${empTableData.map(e => {
-                                                const tieneRetraso = empleadosConRetraso.has(CONFIG.empleados.find(emp => emp.nombre === e.nombre)?.id);
+                                                let rowClass = e.ausente ? 'row-ausente' : 'row-presente';
+                                                if (e.tieneRetraso) rowClass += ' text-danger-bg';
                                                 return `
-                                                <tr class="${tieneRetraso ? 'text-danger-bg' : ''}">
-                                                    <td><strong class="${tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
+                                                <tr class="${rowClass}">
+                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
                                                     <td>${e.total}</td>
                                                     <td>${e.niveles[1]}</td>
                                                     <td>${e.niveles[2]}</td>
@@ -1816,8 +1887,8 @@
                                                     <td>${e.niveles[4]}</td>
                                                     <td>${e.secretarios || '-'}</td>
                                                     <td>
-                                                        <button class="btn btn-sm ${tieneRetraso ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
-                                                            ${tieneRetraso ? 'Marcar reintegro' : 'Marcar ausente'}
+                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
+                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -1833,7 +1904,6 @@
                 if (total > 0) renderPagination('paginationDistribucion', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.distribucion.page = newPage; paginationState.distribucion.perPage = newPerPage; renderDistribucion(); });
                 if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc.perPage, (newPage, newPerPage) => { paginationState.proceso.page = newPage; paginationState.proceso.perPage = newPerPage; renderDistribucion(); });
 
-                // Eventos (async)
                 document.querySelectorAll('.btn-asignar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const emp = document.getElementById(`em_${id}`).value; const niv = document.getElementById(`nv_${id}`).value; if (!emp) { showToast('Seleccione un empleado', 'warning'); return; } await asignarCausa(id, niv, emp); renderAll(); }); });
                 document.querySelectorAll('.btn-auto-asig').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const niv = document.getElementById(`nv_${id}`).value; await asignarAlMenosCargado(id, niv); renderAll(); }); });
                 document.querySelectorAll('.btn-elevar-def').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const com = prompt('Motivo de elevación a Defensor:'); if (com !== null) { await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', com || 'Sin motivo'); renderAll(); } }); });
@@ -1843,12 +1913,10 @@
                 document.querySelectorAll('.btn-ver-consultas').forEach(btn => { btn.addEventListener('click', function() { verConsultas(this.dataset.id); }); });
                 document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => { btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); }); });
                 document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const empNombre = this.dataset.emp;
                         const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
-                        if (emp) {
-                            showToast(`Cambio de estado de ${emp.nombre} (solo local)`, 'info');
-                        }
+                        if (emp) await toggleAusencia(emp.id);
                     });
                 });
 
@@ -1870,7 +1938,7 @@
                 if (btnEquidad) { btnEquidad.addEventListener('click', generarInformeEquidad); }
             }
 
-            // 3. DEFENSOR (propio)
+            // 3. DEFENSOR
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -1995,6 +2063,10 @@
                         const id = this.dataset.id;
                         const empId = document.getElementById(`def_em_${id}`).value;
                         if (!empId) { showToast('Seleccione un empleado', 'warning'); return; }
+                        if (isAusente(empId)) {
+                            showToast('El empleado está ausente, no se puede asignar', 'warning');
+                            return;
+                        }
                         const c = state.causas.find(x => x.id === id);
                         if (c) {
                             c.estado = 'en_proceso';
@@ -2089,14 +2161,13 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 4. EMPLEADO (visualización) - con empleadoAsignado
+            // 4. EMPLEADO
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let empSeleccionado = document.getElementById('simularEmpleado')?.value || CONFIG.empleados[0]?.id || '';
                 if (!empSeleccionado && CONFIG.empleados.length) empSeleccionado = CONFIG.empleados[0].id;
 
                 let mis = getFilteredCausas().filter(c => c.empleadoAsignado === empSeleccionado);
-                // Filtros de mes y año
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
                     const anio = parseInt(filtroAnio);
@@ -2121,10 +2192,8 @@
                     });
                 }
 
-                // Separar en Nuevos Patrocinios y Seguimientos
                 const nuevos = mis.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio');
                 const seguimientos = mis.filter(c => c.tipoAsignacion === 'Seguimiento');
-
                 nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
@@ -2202,7 +2271,6 @@
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneralEmp"><i class="bi bi-file-earmark-text"></i> Reporte de actividad</button>
                             </div>
                         </div>
-                        <!-- Filtros mes/año -->
                         <div class="filtros-container">
                             <label>Filtrar por:</label>
                             <select id="filtroMesEmpleado">
@@ -2226,7 +2294,6 @@
                     </div>
                 `;
 
-                // Eventos para acciones de empleado
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -2271,7 +2338,6 @@
                 const btnReporteGeneralEmp = document.getElementById('btnReporteGeneralEmp');
                 if (btnReporteGeneralEmp) { btnReporteGeneralEmp.addEventListener('click', generarReporteGeneral); }
 
-                // Filtros
                 const selectMes = document.getElementById('filtroMesEmpleado');
                 const selectAnio = document.getElementById('filtroAnioEmpleado');
                 if (selectMes) {
@@ -2296,7 +2362,7 @@
                 }
             }
 
-            // 5. GRÁFICOS (se mantiene igual, pero usando empleadoAsignado)
+            // 5. GRÁFICOS
             function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
@@ -2483,7 +2549,7 @@
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
 
-            // ---------- TIEMPO TRANSCURRIDO (para demora) ----------
+            // ---------- TIEMPO TRANSCURRIDO ----------
             function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
                 if (!fechaAsignacion) return null;
                 const inicio = new Date(fechaAsignacion);
