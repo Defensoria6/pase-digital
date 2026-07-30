@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistema Digital de Pases · Administrador</title>
+    <title>Sistema Digital de Pases · Administrador (Full)</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* ===== ESTILOS COMPLETOS (sin cambios) ===== */
+        /* ===== ESTILOS COMPLETOS ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -94,8 +94,8 @@
         .badge-dev { background:#ffebee; color:#c62828; }
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-rech { background:#fce4ec; color:#c62828; }
-        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
-        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
+        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 8px; border-radius:20px; font-size:.6rem; }
+        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 8px; border-radius:20px; font-size:.6rem; }
         .badge-fuente { display:inline-block; padding:1px 6px; border-radius:20px; font-size:.55rem; font-weight:700; background:#e3f2fd; color:#1976d2; margin-right:2px; }
         .badge-fuente.ambas { background:#e8f5e9; color:#2e7d32; }
         .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
@@ -160,6 +160,10 @@
         #logoutAlert .alert-actions .btn-confirm { background: #c62828; color: #fff; }
         #logoutAlert .alert-actions .btn-confirm:hover { background: #b71c1c; }
 
+        .row-ausente { background-color: #fce4ec !important; }
+        .row-ausente td { background-color: #fce4ec !important; }
+        .row-presente { background-color: #e8f5e9 !important; }
+        .row-presente td { background-color: #e8f5e9 !important; }
         .btn-ausente { background:#ffebee; color:#c62828; border:1px solid #ffcdd2; }
         .btn-ausente:hover { background:#ffcdd2; color:#b71c1c; }
         .btn-reintegrado { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
@@ -186,7 +190,6 @@
         .fw-600 { font-weight:600; }
         .cursor-pointer { cursor:pointer; }
 
-        /* Impresión para reportes modales */
         @media print {
             body * { visibility: hidden; }
             #modalReporte, #modalReporte *,
@@ -254,7 +257,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Administrador</span>
+                <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Administrador (Full)</span>
                 <div class="search-box">
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
@@ -272,14 +275,14 @@
         <div id="panelEmpleado" class="tab-panel"></div>
         <div id="panelGraficos" class="tab-panel"></div>
         <div id="panelAuditoria" class="tab-panel"></div>
-        <div id="panelAdmin" class="tab-panel"></div> <!-- NUEVA pestaña Administración -->
+        <div id="panelAdmin" class="tab-panel"></div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
             <i class="bi bi-cloud-check"></i> Datos en la nube · Sincronización automática · Todos los módulos integrados
         </footer>
     </div>
 
-    <!-- MODALES (sin cambios) -->
+    <!-- MODALES -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -341,7 +344,7 @@
         </div>
     </div>
 
-    <!-- Modal Ausencias (Operador) -->
+    <!-- Modal Ausencias (Secretarios) -->
     <div class="modal fade modal-modern" id="modalAusencias" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -431,7 +434,7 @@
 
             // ---------- CONFIG ----------
             const CONFIG = {
-                password: 'admin',   // <--- Cambio: contraseña de administrador
+                password: 'admin',
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
@@ -451,7 +454,11 @@
             };
 
             // ---------- ESTADO ----------
-            let state = { causas: [], ausencias: [] };
+            let state = { 
+                causas: [], 
+                ausencias: [],
+                empleados: []
+            };
             let currentRole = 'admin';
             let searchTerm = '';
             let chartInstances = {};
@@ -467,6 +474,7 @@
             };
             let filtroMes = '';
             let filtroAnio = '';
+            let puntajesManualesCache = {};
 
             // ---------- UTILS ----------
             function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
@@ -476,31 +484,60 @@
             function fmtDateShort(iso) { if (!iso) return '-'; const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; }
             function calcDur(ini, fin) { if (!ini || !fin) return '-'; const m = Math.floor((new Date(fin) - new Date(ini)) / 60000); if (m < 60) return `${m}m`; if (m < 1440) return `${Math.floor(m / 60)}h ${m % 60}m`; return `${Math.floor(m / 1440)}d`; }
 
-            // Cálculo de carga usando empleadoAsignado (igual que defensor)
-            function calcularCargaReal(empId) {
-                const activos = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso').reduce((sum, c) => sum + (c.puntos || 0), 0);
-                const hoy = new Date().toDateString();
-                const resueltosHoy = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'finalizada' && c.fechaFinalizacion && new Date(c.fechaFinalizacion).toDateString() === hoy).reduce((sum, c) => sum + (c.puntos || 0), 0);
-                return activos + (resueltosHoy * 0.4);
+            function isAusente(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                return e ? e.ausente : false;
             }
 
-            function calcularPuntajeRendimiento(empId) {
-                const resueltas = state.causas.filter(c => c.empleadoAsignado === empId && (c.estado === 'finalizada' || c.estado === 'en_defensor') && c.fechaResolucionEmpleado);
-                let score = 0;
+            function getFechaReintegro(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                return e ? e.fechaReintegro : null;
+            }
+
+            // ---------- PUNTAJE ----------
+            function calcularCargaTotal(empId) {
+                return state.causas.filter(c => c.empleadoAsignado === empId).length;
+            }
+
+            function calcularPuntajeAutomatico(empId) {
+                const causasAsignadas = state.causas.filter(c => c.empleadoAsignado === empId);
+                if (causasAsignadas.length === 0) return 0;
+                const resueltas = causasAsignadas.filter(c => 
+                    (c.estado === 'finalizada' || c.estado === 'en_defensor') && 
+                    (c.fechaResolucionEmpleado || c.fechaFinalizacion) &&
+                    c.fechaAsignacion
+                );
+                if (resueltas.length === 0) return 0;
+                let puntajeTotal = 0;
                 resueltas.forEach(c => {
-                    const puntosBase = (CONFIG.nivelesPuntos[c.nivelSecretario] || 1) * 10;
-                    const tiempoTomado = new Date(c.fechaResolucionEmpleado) - new Date(c.fechaAsignacion);
-                    const tiempoPermitido = (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000;
-                    let multiplicador = 1.0;
-                    if (tiempoTomado <= tiempoPermitido * 0.25) multiplicador = 1.5;
-                    else if (tiempoTomado <= tiempoPermitido * 0.50) multiplicador = 1.2;
-                    else if (tiempoTomado > tiempoPermitido) multiplicador = 0.5;
-                    score += (puntosBase * multiplicador);
+                    const nivel = c.nivelSecretario || c.nivelOperador || 1;
+                    let puntosBase = 0;
+                    if (nivel === 1) puntosBase = 1;
+                    else if (nivel === 2) puntosBase = 3;
+                    else if (nivel === 3) puntosBase = 6;
+                    else if (nivel === 4) puntosBase = 10;
+                    const fechaRes = c.fechaResolucionEmpleado || c.fechaFinalizacion;
+                    const tiempoTomado = new Date(fechaRes) - new Date(c.fechaAsignacion);
+                    const tiempoPermitido = (CONFIG.nivelesDias[nivel] || 3) * 86400000;
+                    let factorTiempo = 1;
+                    if (tiempoTomado <= tiempoPermitido * 0.5) factorTiempo = 1.5;
+                    else if (tiempoTomado > tiempoPermitido) factorTiempo = 0.5;
+                    puntajeTotal += puntosBase * factorTiempo;
                 });
-                let maxPosible = resueltas.length * 75;
-                if (maxPosible === 0) return 0;
-                let normalizado = Math.min(10, (score / maxPosible) * 10);
-                return Math.round(normalizado * 10) / 10;
+                const maxPosible = resueltas.length * 15;
+                let normalizado = (puntajeTotal / maxPosible) * 10;
+                let entero = Math.round(normalizado);
+                if (entero < 0) entero = 0;
+                if (entero > 10) entero = 10;
+                return entero;
+            }
+
+            function obtenerPuntajeFinal(empId) {
+                if (puntajesManualesCache[empId] !== undefined && puntajesManualesCache[empId] !== null && puntajesManualesCache[empId] !== '') {
+                    const val = parseFloat(puntajesManualesCache[empId]);
+                    if (!isNaN(val) && val >= 0 && val <= 10) return val;
+                }
+                return calcularPuntajeAutomatico(empId);
             }
 
             function tieneAtrasos(empId) {
@@ -550,21 +587,21 @@
                 setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
             }
 
-            // ---------- FIRESTORE OPERATIONS ----------
+            // ---------- FIRESTORE ----------
             async function loadStateFromFirestore() {
                 try {
                     const snapshot = await db.collection('operador').get();
                     const causas = [];
                     let ausencias = [];
+                    let empleadosConfig = [];
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         if (doc.id === 'ausencias') {
                             ausencias = data.ausencias || [];
                         } else if (doc.id === 'secretario_config') {
-                            // Ignorar configuración de secretario
+                            empleadosConfig = data.empleados || CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                         } else {
                             if (!data.id) data.id = doc.id;
-                            // Asegurar empleadoAsignado para retrocompatibilidad
                             if (!data.empleadoAsignado && data.empleadoId) {
                                 data.empleadoAsignado = data.empleadoId;
                             }
@@ -573,11 +610,14 @@
                     });
                     state.causas = causas;
                     state.ausencias = ausencias;
+                    state.empleados = empleadosConfig.length ? empleadosConfig : CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+                    await cargarPuntajesManuales();
                 } catch (error) {
                     console.error('Error cargando datos:', error);
                     showToast('Error al conectar con Firestore', 'danger');
                     state.causas = [];
                     state.ausencias = [];
+                    state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                 }
             }
 
@@ -611,24 +651,99 @@
                 }
             }
 
-            // ---------- FUNCIÓN ELIMINAR (la que se mantiene) ----------
+            async function saveConfigToFirestore() {
+                try {
+                    await db.collection('operador').doc('secretario_config').set({ empleados: state.empleados });
+                } catch (error) {
+                    console.error('Error guardando configuración de empleados:', error);
+                    showToast('Error al guardar configuración de ausencias', 'danger');
+                }
+            }
+
+            // ---------- PUNTAJES MANUALES ----------
+            async function cargarPuntajesManuales() {
+                try {
+                    const docRef = db.collection('puntajes').doc('ranking');
+                    const docSnap = await docRef.get();
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        puntajesManualesCache = data.puntajes || {};
+                        if (data.comentarios) {
+                            Object.keys(data.comentarios).forEach(key => {
+                                puntajesManualesCache[key + '_com'] = data.comentarios[key];
+                            });
+                        }
+                    } else {
+                        puntajesManualesCache = {};
+                    }
+                } catch (error) {
+                    console.error('Error cargando puntajes manuales:', error);
+                    puntajesManualesCache = {};
+                }
+            }
+
+            async function guardarPuntajeManual(empId, puntaje, comentario) {
+                try {
+                    const docRef = db.collection('puntajes').doc('ranking');
+                    await db.runTransaction(async (transaction) => {
+                        const docSnap = await transaction.get(docRef);
+                        const data = docSnap.exists ? docSnap.data() : { puntajes: {}, comentarios: {} };
+                        if (!data.puntajes) data.puntajes = {};
+                        if (!data.comentarios) data.comentarios = {};
+                        data.puntajes[empId] = parseFloat(puntaje);
+                        data.comentarios[empId] = comentario || '';
+                        data.fechaActualizacion = new Date().toISOString();
+                        transaction.set(docRef, data);
+                    });
+                    puntajesManualesCache[empId] = parseFloat(puntaje);
+                    puntajesManualesCache[empId + '_com'] = comentario || '';
+                    showToast(`Puntaje guardado para ${getEmpName(empId)}`, 'success');
+                    return true;
+                } catch (error) {
+                    console.error('Error guardando puntaje manual:', error);
+                    showToast('Error al guardar puntaje', 'danger');
+                    return false;
+                }
+            }
+
+            async function guardarTodosPuntajes() {
+                const inputs = document.querySelectorAll('.puntaje-manual-input');
+                const comentarios = document.querySelectorAll('.puntaje-comentario-input');
+                let cambios = 0;
+                for (let i = 0; i < inputs.length; i++) {
+                    const empId = inputs[i].dataset.emp;
+                    const val = parseFloat(inputs[i].value);
+                    const com = comentarios[i] ? comentarios[i].value : '';
+                    if (!isNaN(val) && val >= 0 && val <= 10) {
+                        const ok = await guardarPuntajeManual(empId, val, com);
+                        if (ok) cambios++;
+                    }
+                }
+                if (cambios > 0) {
+                    showToast(`${cambios} puntajes actualizados`, 'success');
+                    renderGraficos();
+                } else {
+                    showToast('No se realizaron cambios (valores inválidos)', 'warning');
+                }
+            }
+
+            // ---------- ELIMINAR (función exclusiva de admin) ----------
             async function eliminarCausa(id) {
                 const causa = state.causas.find(c => c.id === id);
                 if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
-                if (!confirm(`¿Eliminar permanentemente la causa ${causa.numero}? Esta acción no se puede deshacer.`)) return;
-
+                if (!confirm(`⚠️ ¿Eliminar permanentemente la causa ${causa.numero}? Esta acción no se puede deshacer.`)) return;
                 try {
                     await db.collection('operador').doc(id).delete();
                     state.causas = state.causas.filter(c => c.id !== id);
                     showToast(`✅ Causa ${causa.numero} eliminada correctamente`, 'success');
-                    renderAll(); // Refresca todas las vistas
+                    renderAll();
                 } catch (error) {
                     console.error('Error al eliminar:', error);
                     showToast('Error al eliminar en Firestore', 'danger');
                 }
             }
 
-            // ---------- FUNCIONES DE REGISTRO Y CAMBIO DE ESTADO (adaptadas de defensor) ----------
+            // ---------- REGISTRO Y CAMBIO DE ESTADO ----------
             async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
@@ -743,7 +858,7 @@
                 }
             }
 
-            // ---------- FUNCIONES DE AUSENCIAS (adaptadas) ----------
+            // ---------- AUSENCIAS DE SECRETARIOS ----------
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
                 const f = new Date(fecha); f.setHours(0,0,0,0);
@@ -809,7 +924,7 @@
                 });
             }
 
-            // ---------- FUNCIONES DE ASIGNACIÓN (Secretario) adaptadas de defensor ----------
+            // ---------- ASIGNACIÓN ----------
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
@@ -827,11 +942,24 @@
                 return null;
             }
 
+            function calcularCargaReal(empId) {
+                const activos = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso')
+                    .reduce((sum, c) => sum + (c.puntos || 0), 0);
+                const hoy = new Date().toDateString();
+                const resueltosHoy = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'finalizada' &&
+                    c.fechaFinalizacion && new Date(c.fechaFinalizacion).toDateString() === hoy)
+                    .reduce((sum, c) => sum + (c.puntos || 0), 0);
+                return activos + (resueltosHoy * 0.4);
+            }
+
             async function asignarCausa(id, nivSec, empId, com = '', secId = null) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
+                if (isAusente(empId)) {
+                    showToast('El empleado está ausente, no se puede asignar', 'warning');
+                    return false;
+                }
 
-                // Detección de reingreso (igual que defensor)
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 let empleadoOriginal = null;
                 let tipoAsignacion = 'Nuevo Patrocinio';
@@ -863,6 +991,7 @@
 
                 const userRoleName = getSecName(secId || c.secretarioId) || 'Administrador';
                 const accion = `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)} - ${tipoAsignacion}`;
+                if (!c.historial) c.historial = [];
                 c.historial.push({
                     fecha: new Date().toISOString(),
                     accion: accion,
@@ -879,41 +1008,86 @@
                 }
             }
 
-            async function asignarAlMenosCargado(id, nivSec, comentario = '') {
-                const c = state.causas.find(x => x.id === id);
+            async function asignarAlMenosCargado(causaId, nivSec, comentario = '') {
+                const c = state.causas.find(x => x.id === causaId);
                 if (!c) return false;
+                const operadorNombre = c.operador;
 
-                // Detección de reingreso
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
                     const empId = existing[0].empleadoAsignado;
-                    if (empId) {
-                        const result = await asignarCausa(id, nivSec, empId, comentario || 'Reasignación automática por reingreso');
+                    if (!isAusente(empId)) {
+                        const result = await asignarCausa(causaId, nivSec, empId, comentario || 'Reasignación automática por reingreso');
                         return result;
+                    } else {
+                        showToast('El empleado original está ausente. Se asignará a otro.', 'warning');
                     }
                 }
 
-                let candidatos = CONFIG.empleados.map(e => {
+                let candidatos = CONFIG.empleados.filter(e => !isAusente(e.id) && e.nombre !== operadorNombre);
+                if (candidatos.length === 0) {
+                    showToast('No hay empleados disponibles (todos ausentes o son el operador), se usará cualquiera', 'warning');
+                    candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
+                }
+                if (candidatos.length === 0) {
+                    showToast('Todos los empleados están ausentes, no se puede asignar', 'danger');
+                    return false;
+                }
+
+                let candidatosConDatos = candidatos.map(e => {
                     const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
                     const cargaTotal = activas.reduce((sum, c) => sum + (c.puntos || 0), 0);
                     const countMismoNivel = activas.filter(c => c.nivelSecretario === parseInt(nivSec)).length;
-                    const atrasado = state.causas.some(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
-                    return { id: e.id, cargaTotal, countMismoNivel, atrasado };
+                    const atrasado = state.causas.some(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso' &&
+                        c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now());
+                    const fechaReintegro = getFechaReintegro(e.id);
+                    return { id: e.id, cargaTotal, countMismoNivel, atrasado, fechaReintegro };
                 });
 
-                let elegibles = candidatos.filter(c => !c.atrasado);
-                if (elegibles.length === 0) elegibles = candidatos;
+                let elegibles = candidatosConDatos.filter(c => !c.atrasado);
+                if (elegibles.length === 0) elegibles = candidatosConDatos;
+
                 elegibles.sort((a, b) => {
+                    if (a.fechaReintegro && !b.fechaReintegro) return -1;
+                    if (!a.fechaReintegro && b.fechaReintegro) return 1;
+                    if (a.fechaReintegro && b.fechaReintegro) {
+                        return new Date(b.fechaReintegro) - new Date(a.fechaReintegro);
+                    }
                     if (a.countMismoNivel !== b.countMismoNivel) return a.countMismoNivel - b.countMismoNivel;
                     return a.cargaTotal - b.cargaTotal;
                 });
+
                 const mejorEmp = elegibles[0]?.id;
                 if (mejorEmp) {
-                    return await asignarCausa(id, nivSec, mejorEmp, comentario || 'Asignación automática equitativa (Nivel ' + nivSec + ')');
+                    return await asignarCausa(causaId, nivSec, mejorEmp, comentario || 'Asignación automática (equidad y prioridad por reintegro)');
                 }
                 showToast('No se pudo asignar automáticamente', 'danger');
                 return false;
+            }
+
+            // ---------- OTRAS FUNCIONES DE SECRETARIO ----------
+            async function marcarCumplido(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_proceso') { showToast('Solo se puede cumplir causas en proceso', 'warning'); return; }
+                if (confirm(`¿Autorizar cumplimiento de ${c.numero}?`)) {
+                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Administrador', 'Administrador', 'Cumplido autorizado');
+                    renderAll();
+                }
+            }
+
+            async function elevarDefensor(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
+                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
+                    return;
+                }
+                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
+                if (motivo === null) return;
+                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', motivo || 'Sin motivo');
+                renderAll();
             }
 
             async function devolverSIGED(id) {
@@ -941,30 +1115,7 @@
                 await cambiarEstado(id, 'rechazado', 'Rechazado', 'Administrador', motivo || 'Sin motivo');
             }
 
-            // ---------- FUNCIONES DE SECRETARIO (adicionales) adaptadas ----------
-            async function marcarCumplido(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                if (c.estado !== 'en_proceso') { showToast('Solo se puede cumplir causas en proceso', 'warning'); return; }
-                if (confirm(`¿Autorizar cumplimiento de ${c.numero}?`)) {
-                    await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Administrador', 'Administrador', 'Cumplido autorizado');
-                    renderAll();
-                }
-            }
-
-            async function elevarDefensor(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
-                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
-                    return;
-                }
-                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
-                if (motivo === null) return;
-                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', motivo || 'Sin motivo');
-                renderAll();
-            }
-
+            // ---------- CONSULTAS Y HISTORIAL ----------
             function verConsultas(id) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
@@ -1046,38 +1197,93 @@
                 new bootstrap.Modal(document.getElementById('modalHistorialSecretario')).show();
             }
 
-            // ---------- REPORTES (igual que defensor) ----------
+            // ---------- TOGGLE AUSENCIA EMPLEADO ----------
+            async function toggleAusencia(empId) {
+                const e = state.empleados.find(se => se.id === empId);
+                if (!e) return;
+                e.ausente = !e.ausente;
+                if (!e.ausente) {
+                    e.fechaReintegro = new Date().toISOString();
+                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
+                } else {
+                    e.fechaReintegro = null;
+                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
+                }
+                await saveConfigToFirestore();
+                renderAll();
+            }
+
+            // ---------- REPORTES ----------
             function generarReporteGeneral() {
-                const causas = state.causas;
-                const total = causas.length;
+                const body = document.getElementById('modalReporteBody');
                 const now = new Date();
-                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-                let html = `
-                    <div class="mb-3">
-                        <p><strong>Reporte General de Actividad</strong></p>
-                        <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
-                        <p><strong>Total de causas:</strong> ${total}</p>
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
+
+                let htmlFiltros = `
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:0.75rem;">Mes</label>
+                            <select id="reporteMes" class="form-select form-select-sm">
+                                ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${i+1===currentMonth?'selected':''}>${new Date(0,i).toLocaleString('es',{month:'long'})}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:0.75rem;">Año</label>
+                            <select id="reporteAnio" class="form-select form-select-sm">
+                                ${Array.from({length: 2040-2026+1}, (_,i) => {
+                                    const y = 2026 + i;
+                                    return `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnAplicarFiltroReporte">Aplicar filtro</button>
+                        </div>
                     </div>
                     <hr />
-                    <h6>Expedientes</h6>
-                    <div class="table-wrap">
-                        <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
-                            <tbody>${causas.slice().reverse().map(c => `
-                                <tr>
-                                    <td><strong>${c.numero}</strong></td>
-                                    <td>${c.dni || '-'}</td>
-                                    <td>${c.modoIntervencion || '-'}</td>
-                                    <td>${c.operador || '-'}</td>
-                                    <td>${getEstadoBadge(c.estado)}</td>
-                                    <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                </tr>
-                            `).join('')}</tbody>
-                        </table>
-                    </div>
-                    ${total === 0 ? '<div class="text-muted">No hay expedientes registrados.</div>' : ''}
+                    <div id="contenidoReporte"></div>
                 `;
-                document.getElementById('modalReporteBody').innerHTML = html;
+                body.innerHTML = htmlFiltros;
+
+                function renderReporte() {
+                    const mes = parseInt(document.getElementById('reporteMes').value);
+                    const anio = parseInt(document.getElementById('reporteAnio').value);
+                    const causasFiltradas = state.causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const d = new Date(c.fechaPaseSecretario);
+                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
+                    });
+                    const total = causasFiltradas.length;
+                    const fechaStr = `${String(anio)}-${String(mes).padStart(2, '0')}`;
+
+                    let contenido = `
+                        <div class="mb-2">
+                            <p><strong>Reporte General de Actividad</strong> · ${fechaStr}</p>
+                            <p><strong>Total de causas en el período:</strong> ${total}</p>
+                        </div>
+                        <hr />
+                        <h6>Expedientes</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead><tr><th>Expediente</th><th>Operador</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                                <tbody>${causasFiltradas.slice().reverse().map(c => `
+                                    <tr>
+                                        <td><strong>${c.numero}</strong></td>
+                                        <td>${c.operador || '-'}</td>
+                                        <td>${getEstadoBadge(c.estado)}</td>
+                                        <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                    </tr>
+                                `).join('')}</tbody>
+                            </table>
+                        </div>
+                        ${total === 0 ? '<div class="text-muted">No hay expedientes en este período.</div>' : ''}
+                    `;
+                    document.getElementById('contenidoReporte').innerHTML = contenido;
+                }
+
+                document.getElementById('btnAplicarFiltroReporte').addEventListener('click', renderReporte);
+                renderReporte();
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
@@ -1189,14 +1395,18 @@
             }
 
             function generarReporteRanking() {
-                const empleadosData = CONFIG.empleados.map(e => ({
-                    nombre: e.nombre,
-                    carga: calcularCargaReal(e.id),
-                    activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
-                    moroso: tieneAtrasos(e.id),
-                    puntaje: calcularPuntajeRendimiento(e.id)
-                }));
-                empleadosData.sort((a, b) => b.puntaje - a.puntaje);
+                const empleadosData = CONFIG.empleados.map(e => {
+                    const puntajeFinal = obtenerPuntajeFinal(e.id);
+                    return {
+                        nombre: e.nombre,
+                        carga: calcularCargaTotal(e.id),
+                        activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
+                        moroso: tieneAtrasos(e.id),
+                        puntajeAutomatico: calcularPuntajeAutomatico(e.id),
+                        puntajeFinal: puntajeFinal
+                    };
+                });
+                empleadosData.sort((a, b) => b.puntajeFinal - a.puntajeFinal);
 
                 const now = new Date();
                 const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1205,6 +1415,7 @@
                     <div class="mb-3">
                         <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Ranking de Desempeño de Empleados</h5>
                         <p style="color: #5f7f9f; font-size: 0.85rem;"><strong>Fecha de impresión:</strong> ${fechaStr}</p>
+                        <p style="color: #5f7f9f; font-size: 0.75rem;"><i class="bi bi-info-circle"></i> El puntaje mostrado es el <strong>manual</strong> si existe, de lo contrario el <strong>automático</strong>.</p>
                     </div>
                     <hr />
                     <div class="table-wrap">
@@ -1214,25 +1425,28 @@
                                     <th style="padding: 8px;">Pos.</th>
                                     <th style="padding: 8px;">Empleado</th>
                                     <th style="padding: 8px;">Causas Activas</th>
-                                    <th style="padding: 8px;">Carga (Pts)</th>
-                                    <th style="padding: 8px;">Puntaje (0-10)</th>
+                                    <th style="padding: 8px;">Carga (Total)</th>
+                                    <th style="padding: 8px;">Puntaje</th>
                                     <th style="padding: 8px;">Moroso</th>
+                                    <th style="padding: 8px;">Tipo</th>
                                 </tr>
                             </thead>
                             <tbody>${empleadosData.map((e, index) => {
                                 let pColor = '#c62828';
-                                if (e.puntaje >= 1 && e.puntaje < 4) pColor = '#e67e22';
-                                else if (e.puntaje >= 4 && e.puntaje < 10) pColor = '#1976d2';
-                                else if (e.puntaje >= 10) pColor = '#2e7d32';
-                                
+                                if (e.puntajeFinal >= 4 && e.puntajeFinal < 7) pColor = '#e67e22';
+                                else if (e.puntajeFinal >= 7 && e.puntajeFinal < 10) pColor = '#1976d2';
+                                else if (e.puntajeFinal >= 10) pColor = '#2e7d32';
+                                const esManual = (puntajesManualesCache[e.nombre] !== undefined && puntajesManualesCache[e.nombre] !== null && puntajesManualesCache[e.nombre] !== '');
+                                const tipoPuntaje = esManual ? 'Manual' : 'Auto';
                                 return `
                                 <tr style="border-bottom: 1px solid #eef2f7;">
                                     <td style="padding: 8px;">${index + 1}</td>
-                                    <td style="padding: 8px;"><strong>${index === 0 && e.puntaje > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
+                                    <td style="padding: 8px;"><strong>${index === 0 && e.puntajeFinal > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
                                     <td style="padding: 8px;">${e.activas}</td>
-                                    <td style="padding: 8px;">${e.carga.toFixed(1)}</td>
-                                    <td style="padding: 8px;"><strong style="color: ${pColor}; font-size: 1.1rem;">${e.puntaje.toFixed(1)}</strong></td>
+                                    <td style="padding: 8px;">${e.carga}</td>
+                                    <td style="padding: 8px;"><strong style="color: ${pColor}; font-size: 1.1rem;">${e.puntajeFinal}</strong></td>
                                     <td style="padding: 8px;">${e.moroso ? '⚠️ Sí' : '✓ No'}</td>
+                                    <td style="padding: 8px; font-size: 0.65rem;"><span class="badge ${esManual ? 'bg-primary' : 'bg-secondary'}">${tipoPuntaje}</span></td>
                                 </tr>
                             `}).join('')}</tbody>
                         </table>
@@ -1243,92 +1457,159 @@
             }
 
             function generarInformeEquidad() {
+                const body = document.getElementById('modalEquidadBody');
                 const now = new Date();
-                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
 
-                const secStats = CONFIG.secretarios.map(sec => {
-                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id && c.estado !== 'en_secretaria').length;
-                    return { ...sec, asignadas };
-                });
-
-                const empTableData = CONFIG.empleados.map(emp => {
-                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
-                    const total = causas.length;
-                    const niveles = {1:0,2:0,3:0,4:0};
-                    const secretarios = new Set();
-                    causas.forEach(c => {
-                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
-                        if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
-                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
-                    });
-                    return { 
-                        nombre: emp.nombre, 
-                        total, 
-                        niveles, 
-                        secretarios: Array.from(secretarios).join(', ') 
-                    };
-                });
-
-                document.getElementById('modalEquidadTitle').innerHTML = '<i class="bi bi-printer me-2"></i>Informe de Equidad';
-                document.getElementById('modalEquidadBody').innerHTML = `
-                    <div class="mb-3">
-                        <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Informe de Equidad</h5>
-                        <p style="color: #5f7f9f; font-size: 0.85rem;"><strong>Fecha de impresión:</strong> ${fechaStr}</p>
+                let htmlFiltros = `
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:0.75rem;">Mes</label>
+                            <select id="equidadMes" class="form-select form-select-sm">
+                                ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${i+1===currentMonth?'selected':''}>${new Date(0,i).toLocaleString('es',{month:'long'})}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:0.75rem;">Año</label>
+                            <select id="equidadAnio" class="form-select form-select-sm">
+                                ${Array.from({length: 2040-2026+1}, (_,i) => {
+                                    const y = 2026 + i;
+                                    return `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`;
+                                }).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnAplicarFiltroEquidad">Aplicar filtro</button>
+                        </div>
                     </div>
                     <hr />
-                    <h6>Asignaciones por Secretario</h6>
-                    <div class="equidad-grid">
-                        ${secStats.map(s => `
-                            <div class="equidad-item">
-                                <div class="eq-label">${s.nombre}</div>
-                                <div class="eq-value">${s.asignadas}</div>
+                    <div id="contenidoEquidad"></div>
+                `;
+                body.innerHTML = htmlFiltros;
+
+                function renderEquidad() {
+                    const mes = parseInt(document.getElementById('equidadMes').value);
+                    const anio = parseInt(document.getElementById('equidadAnio').value);
+                    const fechaStr = `${String(anio)}-${String(mes).padStart(2, '0')}`;
+
+                    const causasPeriodo = state.causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const d = new Date(c.fechaPaseSecretario);
+                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
+                    });
+
+                    const asignacionesPeriodo = causasPeriodo.filter(c => c.empleadoAsignado && (c.estado === 'en_proceso' ||
+                        c.estado === 'finalizada'));
+
+                    const secStats = CONFIG.secretarios.map(sec => {
+                        const count = asignacionesPeriodo.filter(a => a.secretarioId === sec.id).length;
+                        return { ...sec, asignadas: count };
+                    });
+
+                    const empStats = CONFIG.empleados.map(emp => {
+                        const asigns = asignacionesPeriodo.filter(a => a.empleadoAsignado === emp.id);
+                        const total = asigns.length;
+                        const niveles = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                        asigns.forEach(a => { if (a.nivelSecretario >= 1 && a.nivelSecretario <= 4) niveles[a.nivelSecretario]++; });
+                        const ausente = isAusente(emp.id);
+                        return { nombre: emp.nombre, total, niveles, ausente };
+                    });
+
+                    let historialSecretarios = CONFIG.secretarios.map(sec => {
+                        const asigs = asignacionesPeriodo.filter(a => a.secretarioId === sec.id);
+                        return {
+                            secretario: sec.nombre,
+                            asignaciones: asigs.map(a => ({
+                                empleado: getEmpName(a.empleadoAsignado),
+                                nivel: a.nivelSecretario || a.nivelOperador || 0,
+                                causa: a.numero || 'N/D'
+                            }))
+                        };
+                    });
+
+                    let contenido = `
+                        <div class="mb-3">
+                            <h5 style="margin:0; font-weight:700; color:#0a2a44;">Informe de Equidad · ${fechaStr}</h5>
+                            <p style="color:#5f7f9f; font-size:0.85rem;"><strong>Total de asignaciones en el período:</strong> ${asignacionesPeriodo.length}</p>
+                        </div>
+                        <hr />
+                        <h6>Asignaciones por Secretario</h6>
+                        <div class="equidad-grid">
+                            ${secStats.map(s => `
+                                <div class="equidad-item">
+                                    <div class="eq-label">${s.nombre}</div>
+                                    <div class="eq-value">${s.asignadas}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <hr />
+                        <h6>Niveles por Empleado</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="min-width:0; width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Empleado</th>
+                                        <th>Total</th>
+                                        <th>N1</th>
+                                        <th>N2</th>
+                                        <th>N3</th>
+                                        <th>N4</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${empStats.map(e => `
+                                        <tr class="${e.ausente ? 'row-ausente' : 'row-presente'}">
+                                            <td><strong>${e.nombre}</strong></td>
+                                            <td>${e.total}</td>
+                                            <td>${e.niveles[1]}</td>
+                                            <td>${e.niveles[2]}</td>
+                                            <td>${e.niveles[3]}</td>
+                                            <td>${e.niveles[4]}</td>
+                                            <td>${e.ausente ? '<span class="badge bg-danger">Ausente</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr />
+                        <h6>Historial de asignaciones por Secretario</h6>
+                        ${historialSecretarios.map(h => `
+                            <div class="mt-3">
+                                <strong style="color:#0a2a44;">${h.secretario}</strong>
+                                ${h.asignaciones.length ? `
+                                    <div class="table-wrap">
+                                        <table class="table-modern table" style="min-width:0; width:100%;">
+                                            <thead><tr><th>Empleado</th><th>Nivel</th><th>Causa</th></tr></thead>
+                                            <tbody>
+                                                ${h.asignaciones.map(a => `
+                                                    <tr><td>${a.empleado}</td><td>N${a.nivel}</td><td>${a.causa}</td></tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : `<div class="text-muted" style="font-size:0.8rem;">Sin asignaciones en este período</div>`}
                             </div>
                         `).join('')}
-                    </div>
-                    <hr />
-                    <h6>Carga actual por Empleado</h6>
-                    <div class="table-wrap">
-                        <table class="table-modern table" style="min-width:0; width:100%;">
-                            <thead>
-                                <tr>
-                                    <th>Empleado</th>
-                                    <th>Total Asignadas</th>
-                                    <th>N1</th>
-                                    <th>N2</th>
-                                    <th>N3</th>
-                                    <th>N4</th>
-                                    <th>Secretario(s)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${empTableData.map(e => `
-                                    <tr>
-                                        <td><strong>${e.nombre}</strong></td>
-                                        <td>${e.total}</td>
-                                        <td>${e.niveles[1]}</td>
-                                        <td>${e.niveles[2]}</td>
-                                        <td>${e.niveles[3]}</td>
-                                        <td>${e.niveles[4]}</td>
-                                        <td>${e.secretarios || '-'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                    `;
+                    document.getElementById('contenidoEquidad').innerHTML = contenido;
+                }
+
+                document.getElementById('btnAplicarFiltroEquidad').addEventListener('click', renderEquidad);
+                renderEquidad();
                 new bootstrap.Modal(document.getElementById('modalEquidad')).show();
             }
 
             function generarInformeGesell() {
-                const now = new Date();
-                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
                 const causasGesell = state.causas.filter(c => c.tipo && c.tipo.toLowerCase().includes('cámara gesell'));
                 const total = causasGesell.length;
                 const enDefensor = causasGesell.filter(c => c.estado === 'en_defensor').length;
                 const finalizadas = causasGesell.filter(c => c.estado === 'finalizada').length;
                 const conAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'asistio').length;
                 const sinAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio' || c.asistenciaGesell === 'pendiente').length;
+                const now = new Date();
+                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
                 document.getElementById('modalEquidadTitle').innerHTML = '<i class="bi bi-printer me-2"></i>Informe de Cámara Gesell';
                 document.getElementById('modalEquidadBody').innerHTML = `
@@ -1381,8 +1662,10 @@
 
             // ---------- PAGINACIÓN ----------
             function paginateData(data, page, perPage = 10) {
-                const total = data.length; const totalPages = Math.ceil(total / perPage) || 1;
-                const start = (page - 1) * perPage; const end = Math.min(start + perPage, total);
+                const total = data.length;
+                const totalPages = Math.ceil(total / perPage) || 1;
+                const start = (page - 1) * perPage;
+                const end = Math.min(start + perPage, total);
                 return { items: data.slice(start, end), total, totalPages, page, start, end };
             }
 
@@ -1411,8 +1694,11 @@
                 container.innerHTML = html;
                 container.querySelectorAll('.page-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
-                        const p = this.dataset.page; let newPage = page;
-                        if (p === 'prev') newPage = Math.max(1, page - 1); else if (p === 'next') newPage = Math.min(totalPages, page + 1); else newPage = parseInt(p);
+                        const p = this.dataset.page;
+                        let newPage = page;
+                        if (p === 'prev') newPage = Math.max(1, page - 1);
+                        else if (p === 'next') newPage = Math.min(totalPages, page + 1);
+                        else newPage = parseInt(p);
                         if (newPage !== page) callback(newPage, perPage);
                     });
                 });
@@ -1420,15 +1706,8 @@
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
             }
 
-            // ---------- ACTUALIZAR TODAS LAS BASES DE DATOS ----------
-            async function actualizarTodasLasBD() {
-                await loadStateFromFirestore();
-                renderAll();
-                showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
-            }
-
             // ---------- PANELES ----------
-            // 1. INGRESO (Operador) - igual que defensor, con DNI y modo intervención
+            // 1. INGRESO
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
                 let causasFiltradas = getFilteredCausas();
@@ -1566,7 +1845,6 @@
 
                 if (total > 0) renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.ingreso.page = newPage; paginationState.ingreso.perPage = newPerPage; renderIngreso(); });
 
-                // Lógica de campos condicionales
                 const accionSelect = document.getElementById('inpAccion');
                 const camposAccionDiv = document.getElementById('camposAccion');
                 const campoDependencia = document.getElementById('campoDependenciaForm');
@@ -1667,41 +1945,36 @@
                 if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN (Secretario) - igual que defensor
+            // 2. DISTRIBUCIÓN
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
-                const pend = getFilteredCausas().filter(c => c.estado === 'en_secretaria').sort((a, b) => b.nivelOperador - a.nivelOperador);
-                const pState = paginationState.distribucion;
-                const { items, total, totalPages, page, start, end } = paginateData(pend, pState.page, pState.perPage);
 
-                let enProceso = getFilteredCausas().filter(c => c.estado === 'en_proceso');
+                let pend = state.causas.filter(c => c.estado === 'en_secretaria');
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    pend = pend.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                pend.sort((a, b) => b.nivelOperador - a.nivelOperador);
+                const pState = paginationState.distribucion;
+                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(pend, pState.page, pState.perPage);
+
+                let enProceso = state.causas.filter(c => c.estado === 'en_proceso');
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    enProceso = enProceso.filter(c => c.numero.toLowerCase().includes(term));
+                }
                 enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 const pStateProc = paginationState.proceso;
                 const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(enProceso, pStateProc.page, pStateProc.perPage);
 
-                const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)${tieneAtrasos(e.id)?' ⚠️':''}</option>`).join('');
+                const optsEmpleados = CONFIG.empleados
+                    .filter(e => !isAusente(e.id))
+                    .map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)</option>`)
+                    .join('');
 
-                let secStats = CONFIG.secretarios.map(sec => {
-                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id && c.estado !== 'en_secretaria').length;
+                const secStats = CONFIG.secretarios.map(sec => {
+                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id).length;
                     return { ...sec, asignadas };
-                });
-
-                const empTableData = CONFIG.empleados.map(emp => {
-                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
-                    const total = causas.length;
-                    const niveles = {1:0,2:0,3:0,4:0};
-                    const secretarios = new Set();
-                    causas.forEach(c => {
-                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
-                        if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
-                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
-                    });
-                    return { 
-                        nombre: emp.nombre, 
-                        total, 
-                        niveles, 
-                        secretarios: Array.from(secretarios).join(', ') 
-                    };
                 });
 
                 const empleadosConRetraso = new Set();
@@ -1711,27 +1984,86 @@
                     }
                 });
 
-                panel.innerHTML = `
-                    <!-- SECCIÓN PENDIENTES -->
+                const empTableData = CONFIG.empleados.map(emp => {
+                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
+                    const total = causas.length;
+                    const niveles = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                    const secretarios = new Set();
+                    causas.forEach(c => {
+                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                        if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
+                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
+                    });
+                    const ausente = isAusente(emp.id);
+                    return {
+                        nombre: emp.nombre,
+                        total,
+                        niveles,
+                        secretarios: Array.from(secretarios).join(', '),
+                        tieneRetraso: empleadosConRetraso.has(emp.id),
+                        ausente: ausente
+                    };
+                });
+
+                const nuevosPorEmpleado = {};
+                CONFIG.empleados.forEach(emp => {
+                    const causasNuevas = state.causas.filter(c => c.empleadoAsignado === emp.id && c.tipoAsignacion === 'Nuevo Patrocinio' && (c.estado === 'en_proceso' || c.estado === 'finalizada'));
+                    if (causasNuevas.length > 0) {
+                        nuevosPorEmpleado[emp.nombre] = causasNuevas;
+                    }
+                });
+                const tieneNuevos = Object.keys(nuevosPorEmpleado).length > 0;
+
+                let html = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
                             <div>
-                                <span class="badge bg-primary me-2">${total} pendientes</span>
-                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneralDist"><i class="bi bi-file-earmark-text"></i> Reporte de actividad</button>
-                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático (Equitativo)</button>
+                                <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
+                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneral"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
                             </div>
                         </div>
-                        ${total ? `
+                        ${pendTotal ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel Op.</th><th>Revisión</th><th>Asignar a</th><th>Acciones</th></tr></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Tipo</th>
+                                            <th>Nivel Op.</th>
+                                            <th>Revisión</th>
+                                            <th>Asignar a</th>
+                                            <th>Observación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
-                                        ${items.map(c => `
+                                        ${pendItems.map(c => `
                                             <tr>
-                                                <td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.tipo}</td><td>N${c.nivelOperador}</td>
-                                                <td><select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;"><option value="1" ${c.nivelOperador===1?'selected':''}>N1</option><option value="2" ${c.nivelOperador===2?'selected':''}>N2</option><option value="3" ${c.nivelOperador===3?'selected':''}>N3</option><option value="4" ${c.nivelOperador===4?'selected':''}>N4</option></select></td>
-                                                <td><select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;"><option value="">Seleccionar...</option>${optsEmpleados}</select> <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button></td>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.modoIntervencion || '-'}</td>
+                                                <td>${c.tipo}</td>
+                                                <td>N${c.nivelOperador}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
+                                                        <option value="1" ${c.nivelOperador===1?'selected':''}>N1</option>
+                                                        <option value="2" ${c.nivelOperador===2?'selected':''}>N2</option>
+                                                        <option value="3" ${c.nivelOperador===3?'selected':''}>N3</option>
+                                                        <option value="4" ${c.nivelOperador===4?'selected':''}>N4</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${optsEmpleados}
+                                                    </select>
+                                                    <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button>
+                                                </td>
+                                                <td>
+                                                    <input type="text" id="obs_${c.id}" class="form-control form-control-sm" placeholder="Observación (opcional)" style="width:150px;" />
+                                                </td>
                                                 <td>
                                                     <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
                                                     <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i></button>
@@ -1742,51 +2074,60 @@
                                         `).join('')}
                                     </tbody>
                                 </table>
-                            </div><div id="paginationDistribucion"></div>
-                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-check-circle" style="font-size:2rem;display:block;margin-bottom:8px;color:#2e7d32;"></i>Bandeja vacía</div>`}
+                            </div>
+                            <div id="paginationDistribucion"></div>
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>Bandeja vacía</div>`}
                     </div>
 
-                    <!-- SECCIÓN CAUSAS EN PROCESO -->
                     <div class="card-modern">
-                        <div class="card-title"><i class="bi bi-people"></i> Causas en Proceso (Asignadas a Empleados)</div>
+                        <div class="card-title"><i class="bi bi-people"></i> Causas en Proceso</div>
                         ${procTotal ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Empleado</th><th>Nivel</th><th>Tipo Asignación</th><th>Demora</th><th>Acciones</th></tr></thead>
-                                    <tbody>${procItems.map(c => {
-                                        const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
-                                        const badgeTipo = c.tipoAsignacion === 'Nuevo Patrocinio' 
-                                            ? '<span class="badge badge-tipo-nuevo">Nuevo</span>' 
-                                            : (c.tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
-                                        return `<tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td>${c.dni || '-'}</td>
-                                            <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${getEmpName(c.empleadoAsignado)}</td>
-                                            <td>N${c.nivelSecretario || c.nivelOperador}</td>
-                                            <td>${badgeTipo}</td>
-                                            <td>${demora ? `<span class="crono azul">${demora}</span>` : '-'}</td>
-                                            <td>
-                                                <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
-                                                <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar a Defensor</button>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i> Consultas</button>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                            </td>
-                                        </tr>`;
-                                    }).join('')}</tbody>
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Empleado</th>
+                                            <th>Nivel</th>
+                                            <th>Tipo</th>
+                                            <th>Demora</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${procItems.map(c => {
+                                            const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
+                                            const tipoBadge = c.tipoAsignacion === 'Nuevo Patrocinio'
+                                                ? '<span class="badge-tipo-nuevo">Nuevo Patrocinio</span>'
+                                                : (c.tipoAsignacion === 'Seguimiento' ? '<span class="badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.modoIntervencion || '-'}</td>
+                                                <td>${getEmpName(c.empleadoAsignado)}</td>
+                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
+                                                <td>${tipoBadge}</td>
+                                                <td>${demora ? `<span style="font-family:monospace;font-size:0.7rem;background:#e9eef5;padding:2px 10px;border-radius:30px;">${demora}</span>` : '-'}</td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
+                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
                                 </table>
-                            </div><div id="paginationProceso"></div>
-                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>No hay causas en proceso actualmente.</div>`}
+                            </div>
+                            <div id="paginationProceso"></div>
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
                     </div>
 
-                    <!-- SECCIÓN EQUIDAD -->
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
                             <div class="card-title mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas de Equidad</div>
-                            <div>
-                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe de equidad</button>
-                            </div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button>
                         </div>
                         <div class="row g-4">
                             <div class="col-md-6">
@@ -1810,7 +2151,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Empleado</th>
-                                                <th>Total Asignadas</th>
+                                                <th>Total</th>
                                                 <th>N1</th>
                                                 <th>N2</th>
                                                 <th>N3</th>
@@ -1820,11 +2161,9 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            ${empTableData.map(e => {
-                                                const tieneRetraso = empleadosConRetraso.has(CONFIG.empleados.find(emp => emp.nombre === e.nombre)?.id);
-                                                return `
-                                                <tr class="${tieneRetraso ? 'text-danger-bg' : ''}">
-                                                    <td><strong class="${tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
+                                            ${empTableData.map(e => `
+                                                <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
+                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
                                                     <td>${e.total}</td>
                                                     <td>${e.niveles[1]}</td>
                                                     <td>${e.niveles[2]}</td>
@@ -1832,12 +2171,12 @@
                                                     <td>${e.niveles[4]}</td>
                                                     <td>${e.secretarios || '-'}</td>
                                                     <td>
-                                                        <button class="btn btn-sm ${tieneRetraso ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
-                                                            ${tieneRetraso ? 'Marcar reintegro' : 'Marcar ausente'}
+                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
+                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            `}).join('')}
+                                            `).join('')}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1846,26 +2185,103 @@
                     </div>
                 `;
 
-                if (total > 0) renderPagination('paginationDistribucion', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.distribucion.page = newPage; paginationState.distribucion.perPage = newPerPage; renderDistribucion(); });
-                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc.perPage, (newPage, newPerPage) => { paginationState.proceso.page = newPage; paginationState.proceso.perPage = newPerPage; renderDistribucion(); });
+                if (tieneNuevos) {
+                    html += `
+                        <div class="card-modern mt-4">
+                            <div class="card-title"><i class="bi bi-award"></i> Nuevos Patrocinios por Empleado</div>
+                            <div class="row">
+                                ${Object.entries(nuevosPorEmpleado).map(([nombre, causas]) => `
+                                    <div class="col-md-4 col-sm-6 mb-3">
+                                        <div class="card h-100" style="border-radius:16px;border:1px solid #e2edf7;">
+                                            <div class="card-header" style="background:#f9fcff;font-weight:700;font-size:0.85rem;">${nombre} (${causas.length})</div>
+                                            <ul class="list-group list-group-flush" style="max-height:150px;overflow-y:auto;border-radius:0 0 16px 16px;">
+                                                ${causas.map(c => `<li class="list-group-item py-1" style="font-size:0.75rem;">${c.numero} - ${c.tipo || 'Otro'}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
 
-                document.querySelectorAll('.btn-asignar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const emp = document.getElementById(`em_${id}`).value; const niv = document.getElementById(`nv_${id}`).value; if (!emp) { showToast('Seleccione un empleado', 'warning'); return; } await asignarCausa(id, niv, emp); renderAll(); }); });
-                document.querySelectorAll('.btn-auto-asig').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const niv = document.getElementById(`nv_${id}`).value; await asignarAlMenosCargado(id, niv); renderAll(); }); });
-                document.querySelectorAll('.btn-elevar-def').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; const com = prompt('Motivo de elevación a Defensor:'); if (com !== null) { await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', com || 'Sin motivo'); renderAll(); } }); });
-                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
-                document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
-                document.querySelectorAll('.btn-cumplido').forEach(btn => { btn.addEventListener('click', async function() { await marcarCumplido(this.dataset.id); }); });
-                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => { btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); }); });
-                document.querySelectorAll('.btn-ver-consultas').forEach(btn => { btn.addEventListener('click', function() { verConsultas(this.dataset.id); }); });
-                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => { btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); }); });
-                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const empNombre = this.dataset.emp;
-                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
-                        if (emp) {
-                            showToast(`Cambio de estado de ${emp.nombre} (solo local)`, 'info');
+                panel.innerHTML = html;
+
+                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState.perPage, (newPage, newPerPage) => {
+                    paginationState.distribucion.page = newPage;
+                    paginationState.distribucion.perPage = newPerPage;
+                    renderDistribucion();
+                });
+                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc.perPage, (newPage, newPerPage) => {
+                    paginationState.proceso.page = newPage;
+                    paginationState.proceso.perPage = newPerPage;
+                    renderDistribucion();
+                });
+
+                document.querySelectorAll('.btn-asignar').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const emp = document.getElementById(`em_${id}`).value;
+                        const niv = document.getElementById(`nv_${id}`).value;
+                        const obs = document.getElementById(`obs_${id}`).value.trim();
+                        if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
+                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar', 'warning'); return; }
+                        await asignarCausa(id, niv, emp, obs || 'Sin observación adicional');
+                        renderDistribucion();
+                    });
+                });
+
+                document.querySelectorAll('.btn-auto-asig').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const niv = document.getElementById(`nv_${id}`).value;
+                        const obs = document.getElementById(`obs_${id}`).value.trim();
+                        await asignarAlMenosCargado(id, niv, obs || '');
+                        renderDistribucion();
+                    });
+                });
+
+                document.querySelectorAll('.btn-elevar-def').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const com = prompt('Motivo de elevación a Defensor:');
+                        if (com !== null) {
+                            await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Administrador', com || 'Sin motivo');
+                            renderDistribucion();
                         }
                     });
+                });
+
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
+
+                document.querySelectorAll('.btn-cumplido').forEach(btn => {
+                    btn.addEventListener('click', async function() { await marcarCumplido(this.dataset.id); });
+                });
+
+                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
+                    btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
+                });
+
+                document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
+                    btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
+                });
+
+                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
+                    btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); });
+                });
+
+                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empNombre = this.dataset.emp;
+                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
+                        if (emp) await toggleAusencia(emp.id);
+                    });
+                });
+
+                document.querySelectorAll('.btn-eliminar').forEach(btn => {
+                    btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); });
                 });
 
                 const btnMasivo = document.getElementById('btnDistribuirMasivo');
@@ -1873,20 +2289,24 @@
                     btnMasivo.addEventListener('click', async function() {
                         const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
                         if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
+                        const comentarioGlobal = prompt('Ingrese un comentario para todas las asignaciones (opcional):');
+                        if (comentarioGlobal === null) return;
                         for (const c of pendientes) {
-                            await asignarAlMenosCargado(c.id, c.nivelOperador);
+                            await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
                         }
                         showToast(`✅ ${pendientes.length} causas distribuidas equitativamente`);
-                        renderAll();
+                        renderDistribucion();
                     });
                 }
-                const btnReporteDist = document.getElementById('btnReporteGeneralDist');
-                if (btnReporteDist) { btnReporteDist.addEventListener('click', generarReporteGeneral); }
+
+                const btnReporte = document.getElementById('btnReporteGeneral');
+                if (btnReporte) btnReporte.addEventListener('click', generarReporteGeneral);
+
                 const btnEquidad = document.getElementById('btnInformeEquidad');
-                if (btnEquidad) { btnEquidad.addEventListener('click', generarInformeEquidad); }
+                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
             }
 
-            // 3. DEFENSOR (propio) - igual que defensor
+            // 3. DEFENSOR
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -2013,6 +2433,10 @@
                         const id = this.dataset.id;
                         const empId = document.getElementById(`def_em_${id}`).value;
                         if (!empId) { showToast('Seleccione un empleado', 'warning'); return; }
+                        if (isAusente(empId)) {
+                            showToast('El empleado está ausente, no se puede asignar', 'warning');
+                            return;
+                        }
                         const c = state.causas.find(x => x.id === id);
                         if (c) {
                             c.estado = 'en_proceso';
@@ -2108,7 +2532,7 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 4. EMPLEADO (visualización) - igual que defensor
+            // 4. EMPLEADO
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let empSeleccionado = document.getElementById('simularEmpleado')?.value || CONFIG.empleados[0]?.id || '';
@@ -2141,7 +2565,6 @@
 
                 const nuevos = mis.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio');
                 const seguimientos = mis.filter(c => c.tipoAsignacion === 'Seguimiento');
-
                 nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
@@ -2310,8 +2733,8 @@
                 }
             }
 
-            // 5. GRÁFICOS (igual que defensor)
-            function renderGraficos() {
+            // 5. GRÁFICOS
+            async function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
                 const enSec = state.causas.filter(c => c.estado === 'en_secretaria').length;
@@ -2321,18 +2744,64 @@
                 const devueltos = state.causas.filter(c => c.estado === 'devuelto_siged').length;
                 const remitidos = state.causas.filter(c => c.estado === 'remitido').length;
                 const rechazados = state.causas.filter(c => c.estado === 'rechazado').length;
-                const saturados = CONFIG.empleados.filter(e => calcularCargaReal(e.id) >= 20 || tieneAtrasos(e.id)).length;
+                const saturados = CONFIG.empleados.filter(e => calcularCargaTotal(e.id) >= 20 || tieneAtrasos(e.id)).length;
 
-                const empleadosData = CONFIG.empleados.map(e => ({
-                    nombre: e.nombre,
-                    carga: calcularCargaReal(e.id),
-                    activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
-                    moroso: tieneAtrasos(e.id),
-                    puntaje: calcularPuntajeRendimiento(e.id)
-                }));
-                empleadosData.sort((a, b) => b.puntaje - a.puntaje);
+                await cargarPuntajesManuales();
+
+                const empleadosData = CONFIG.empleados.map(e => {
+                    const totalAsignados = calcularCargaTotal(e.id);
+                    const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length;
+                    const moroso = tieneAtrasos(e.id);
+                    const puntajeAuto = calcularPuntajeAutomatico(e.id);
+                    const puntajeFinal = obtenerPuntajeFinal(e.id);
+                    return {
+                        id: e.id,
+                        nombre: e.nombre,
+                        carga: totalAsignados,
+                        activas: activas,
+                        moroso: moroso,
+                        puntajeAutomatico: puntajeAuto,
+                        puntajeFinal: puntajeFinal
+                    };
+                });
+                empleadosData.sort((a, b) => b.puntajeFinal - a.puntajeFinal);
+
                 const niveles = [1,2,3,4];
                 const nivelCounts = niveles.map(n => state.causas.filter(c => c.nivelSecretario === n).length);
+
+                let tablaRanking = empleadosData.map((e, index) => {
+                    const pVal = e.puntajeFinal;
+                    let pColor = '#c62828';
+                    if (pVal >= 4 && pVal < 7) pColor = '#e67e22';
+                    else if (pVal >= 7 && pVal < 10) pColor = '#1976d2';
+                    else if (pVal >= 10) pColor = '#2e7d32';
+
+                    const manual = puntajesManualesCache[e.id] !== undefined ? puntajesManualesCache[e.id] : '';
+                    const comentarioManual = puntajesManualesCache[e.id+'_com'] || '';
+
+                    return `
+                    <tr>
+                        <td><strong>${index === 0 && pVal > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
+                        <td>${e.activas}</td>
+                        <td>${e.carga}</td>
+                        <td><strong style="color: ${pColor}; font-size: 1.05rem;">${pVal}</strong></td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm puntaje-manual-input" data-emp="${e.id}" 
+                                   style="width:70px; display:inline-block;" step="1" min="0" max="10" 
+                                   value="${manual}" placeholder="0-10" />
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm puntaje-comentario-input" data-emp="${e.id}" 
+                                   style="width:120px; display:inline-block;" placeholder="Observación" 
+                                   value="${comentarioManual}" />
+                        </td>
+                        <td>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-guardar-puntaje" data-emp="${e.id}">Guardar</button>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-auto-puntaje" data-emp="${e.id}" data-puntaje="${e.puntajeAutomatico}">Auto</button>
+                        </td>
+                        <td>${e.moroso ? '<span class="badge bg-danger">⚠️</span>' : '<span class="badge bg-success">✓</span>'}</td>
+                    </tr>
+                `}).join('');
 
                 panel.innerHTML = `
                     <div class="kpi-grid">
@@ -2348,7 +2817,7 @@
                     <div class="row g-4">
                         <div class="col-lg-4">
                             <div class="card-modern">
-                                <div class="card-title"><i class="bi bi-bar-chart-fill"></i> Carga por Empleado</div>
+                                <div class="card-title"><i class="bi bi-bar-chart-fill"></i> Carga por Empleado (Total)</div>
                                 <div class="chart-container"><canvas id="chartCarga"></canvas></div>
                             </div>
                         </div>
@@ -2360,7 +2829,7 @@
                         </div>
                         <div class="col-lg-4">
                             <div class="card-modern">
-                                <div class="card-title"><i class="bi bi-graph-up"></i> Rendimiento (0-10)</div>
+                                <div class="card-title"><i class="bi bi-graph-up"></i> Rendimiento (0-10) <span class="text-muted-light" style="font-size:0.7rem; font-weight:400;">(manual si existe)</span></div>
                                 <div class="chart-container"><canvas id="chartRendimiento"></canvas></div>
                             </div>
                         </div>
@@ -2379,32 +2848,97 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <small class="text-muted"><i class="bi bi-info-circle"></i> Puntaje 0-10</small>
                                         <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnImprimirRanking"><i class="bi bi-printer"></i> Imprimir reporte</button>
+                                        <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnGuardarTodosPuntajes"><i class="bi bi-save"></i> Guardar todos</button>
+                                        <button class="btn btn-modern btn-modern-warning btn-modern-sm" id="btnAplicarAutoTodos"><i class="bi bi-arrow-repeat"></i> Aplicar puntaje auto a todos</button>
                                     </div>
                                 </div>
                                 <div class="table-wrap">
                                     <table class="table-modern table">
-                                        <thead><tr><th>Empleado</th><th>Activas</th><th>Carga</th><th>Puntaje</th><th>Moroso</th></tr></thead>
-                                        <tbody>${empleadosData.map((e, index) => {
-                                            let pColor = '#c62828';
-                                            if (e.puntaje >= 1 && e.puntaje < 4) pColor = '#e67e22';
-                                            else if (e.puntaje >= 4 && e.puntaje < 10) pColor = '#1976d2';
-                                            else if (e.puntaje >= 10) pColor = '#2e7d32';
-                                            
-                                            return `
+                                        <thead>
                                             <tr>
-                                                <td><strong>${index === 0 && e.puntaje > 0 ? '🏆 ' : ''}${e.nombre}</strong></td>
-                                                <td>${e.activas}</td>
-                                                <td>${e.carga.toFixed(1)} pts</td>
-                                                <td><strong style="color: ${pColor}; font-size: 1.05rem;">${e.puntaje.toFixed(1)}</strong></td>
-                                                <td>${e.moroso ? '<span class="badge bg-danger">⚠️</span>' : '<span class="badge bg-success">✓</span>'}</td>
+                                                <th>Empleado</th>
+                                                <th>Activas</th>
+                                                <th>Carga (Total)</th>
+                                                <th>Puntaje</th>
+                                                <th>Puntaje Manual</th>
+                                                <th>Comentario</th>
+                                                <th>Acción</th>
+                                                <th>Moroso</th>
                                             </tr>
-                                        `}).join('')}</tbody>
+                                        </thead>
+                                        <tbody>
+                                            ${tablaRanking}
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
+
+                document.querySelectorAll('.btn-auto-puntaje').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empId = this.dataset.emp;
+                        const puntajeAuto = parseInt(this.dataset.puntaje);
+                        if (isNaN(puntajeAuto) || puntajeAuto < 0 || puntajeAuto > 10) {
+                            showToast('Puntaje automático no disponible', 'warning');
+                            return;
+                        }
+                        const input = document.querySelector(`.puntaje-manual-input[data-emp="${empId}"]`);
+                        if (input) {
+                            input.value = puntajeAuto;
+                            const coment = document.querySelector(`.puntaje-comentario-input[data-emp="${empId}"]`);
+                            const ok = await guardarPuntajeManual(empId, puntajeAuto, coment ? coment.value : '');
+                            if (ok) renderGraficos();
+                        }
+                    });
+                });
+
+                document.getElementById('btnAplicarAutoTodos').addEventListener('click', async function() {
+                    const inputs = document.querySelectorAll('.puntaje-manual-input');
+                    const comentarios = document.querySelectorAll('.puntaje-comentario-input');
+                    let cambios = 0;
+                    for (let i = 0; i < inputs.length; i++) {
+                        const empId = inputs[i].dataset.emp;
+                        const fila = inputs[i].closest('tr');
+                        const autoSpan = fila ? fila.querySelector('td:nth-child(4) strong') : null;
+                        if (autoSpan) {
+                            const autoVal = parseInt(autoSpan.textContent.trim());
+                            if (!isNaN(autoVal) && autoVal >= 0 && autoVal <= 10) {
+                                inputs[i].value = autoVal;
+                                const com = comentarios[i] ? comentarios[i].value : '';
+                                const ok = await guardarPuntajeManual(empId, autoVal, com);
+                                if (ok) cambios++;
+                            }
+                        }
+                    }
+                    if (cambios > 0) {
+                        showToast(`${cambios} puntajes actualizados con el valor automático`, 'success');
+                        renderGraficos();
+                    } else {
+                        showToast('No se pudieron aplicar puntajes automáticos', 'warning');
+                    }
+                });
+
+                document.querySelectorAll('.btn-guardar-puntaje').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empId = this.dataset.emp;
+                        const input = document.querySelector(`.puntaje-manual-input[data-emp="${empId}"]`);
+                        const coment = document.querySelector(`.puntaje-comentario-input[data-emp="${empId}"]`);
+                        const val = parseInt(input.value);
+                        if (isNaN(val) || val < 0 || val > 10) {
+                            showToast('Ingrese un valor entre 0 y 10', 'warning');
+                            return;
+                        }
+                        await guardarPuntajeManual(empId, val, coment.value);
+                        renderGraficos();
+                    });
+                });
+
+                const btnGuardarTodos = document.getElementById('btnGuardarTodosPuntajes');
+                if (btnGuardarTodos) {
+                    btnGuardarTodos.addEventListener('click', guardarTodosPuntajes);
+                }
 
                 const btnRanking = document.getElementById('btnImprimirRanking');
                 if (btnRanking) { btnRanking.addEventListener('click', generarReporteRanking); }
@@ -2414,8 +2948,20 @@
                         if (chartInstances.carga) chartInstances.carga.destroy();
                         chartInstances.carga = new Chart(document.getElementById('chartCarga'), {
                             type: 'bar',
-                            data: { labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), datasets: [{ label: 'Puntos de carga', data: empleadosData.map(e => e.carga), backgroundColor: empleadosData.map(e => e.carga >= 20 ? '#c62828' : e.carga > 15 ? '#e67e22' : '#1976d2'), borderRadius: 6 }] },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                            data: { 
+                                labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), 
+                                datasets: [{ 
+                                    label: 'Total expedientes', 
+                                    data: empleadosData.map(e => e.carga), 
+                                    backgroundColor: empleadosData.map(e => e.carga >= 20 ? '#c62828' : e.carga > 15 ? '#e67e22' : '#1976d2'), 
+                                    borderRadius: 6 
+                                }]
+                            },
+                            options: { 
+                                responsive: true, maintainAspectRatio: false, 
+                                plugins: { legend: { display: false } }, 
+                                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } 
+                            }
                         });
                     }
                     if (document.getElementById('chartEstado')) {
@@ -2430,8 +2976,25 @@
                         if (chartInstances.rendimiento) chartInstances.rendimiento.destroy();
                         chartInstances.rendimiento = new Chart(document.getElementById('chartRendimiento'), {
                             type: 'bar',
-                            data: { labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), datasets: [{ label: 'Puntaje (0-10)', data: empleadosData.map(e => e.puntaje), backgroundColor: empleadosData.map(e => e.puntaje >= 8 ? '#2e7d32' : e.puntaje >= 5 ? '#e67e22' : '#c62828'), borderRadius: 6 }] },
-                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 10 } } }
+                            data: { 
+                                labels: empleadosData.map(e => e.nombre.split(' ').slice(0,2).join(' ')), 
+                                datasets: [{ 
+                                    label: 'Puntaje (0-10)', 
+                                    data: empleadosData.map(e => e.puntajeFinal), 
+                                    backgroundColor: empleadosData.map(e => {
+                                        const p = e.puntajeFinal;
+                                        if (p >= 8) return '#2e7d32';
+                                        if (p >= 5) return '#e67e22';
+                                        return '#c62828';
+                                    }),
+                                    borderRadius: 6 
+                                }]
+                            },
+                            options: { 
+                                responsive: true, maintainAspectRatio: false, 
+                                plugins: { legend: { display: false } }, 
+                                scales: { y: { beginAtZero: true, max: 10, ticks: { stepSize: 1 } } } 
+                            }
                         });
                     }
                     if (document.getElementById('chartNivel')) {
@@ -2445,7 +3008,7 @@
                 }, 150);
             }
 
-            // 6. AUDITORIA (con botón eliminar)
+            // 6. AUDITORIA
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
@@ -2469,11 +3032,34 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Empleado</th><th>T. Resolución</th><th>Acciones</th></tr></thead>
-                                    <tbody>${items.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni || '-'}</td><td>${c.modoIntervencion || '-'}</td><td>${c.operador || '-'}</td><td>${getEstadoBadge(c.estado)}</td><td>${getEmpName(c.empleadoAsignado)}</td><td>${c.estado === 'finalizada' ? calcDur(c.fechaAsignacion, c.fechaFinalizacion) : '-'}</td><td>
-                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
-                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                    </td></tr>`).join('')}</tbody>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Operador</th><th>Estado</th><th>Empleado</th><th><strong>T. Resolución</strong></th><th>Acciones</th></tr></thead>
+                                    <tbody>${items.map(c => {
+                                        let tiempoStr = '-';
+                                        if (c.fechaAsignacion) {
+                                            const inicio = new Date(c.fechaAsignacion);
+                                            const fin = c.fechaFinalizacion ? new Date(c.fechaFinalizacion) : new Date();
+                                            const diffMs = fin - inicio;
+                                            if (diffMs > 0) {
+                                                const totalMin = Math.floor(diffMs / 60000);
+                                                const horas = Math.floor(totalMin / 60);
+                                                const mins = totalMin % 60;
+                                                tiempoStr = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+                                            }
+                                        }
+                                        return `<tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
+                                            <td>${c.operador || '-'}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td>${getEmpName(c.empleadoAsignado)}</td>
+                                            <td><strong>${tiempoStr}</strong></td>
+                                            <td>
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}</tbody>
                                 </table>
                             </div><div id="paginationAuditoria"></div>
                         ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros</div>`}
@@ -2489,7 +3075,7 @@
                 document.getElementById('btnReiniciarStorage').addEventListener('click', async function() { if (confirm('⚠️ ¿Eliminar todos los datos de Firestore? Esta acción es irreversible.')) { try { const snapshot = await db.collection('operador').get(); const batch = db.batch(); snapshot.forEach(doc => { batch.delete(doc.ref); }); await batch.commit(); state.causas = []; state.ausencias = []; showToast('Datos reiniciados', 'warning'); renderAll(); } catch (e) { showToast('Error al reiniciar', 'danger'); } } });
             }
 
-            // 7. ADMINISTRACIÓN (NUEVO PANEL PARA ELIMINAR REGISTROS)
+            // 7. ADMINISTRACIÓN (EXCLUSIVO PARA ELIMINAR REGISTROS)
             function renderAdmin() {
                 const panel = document.getElementById('panelAdmin');
                 const filterSelect = document.getElementById('adminFiltroOperador');
@@ -2582,7 +3168,7 @@
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
 
-            // ---------- TIEMPO TRANSCURRIDO (para demora) ----------
+            // ---------- TIEMPO TRANSCURRIDO ----------
             function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
                 if (!fechaAsignacion) return null;
                 const inicio = new Date(fechaAsignacion);
@@ -2625,6 +3211,13 @@
                 if (asignaciones.length === 0) return '-';
                 const ultima = asignaciones[asignaciones.length - 1];
                 return ultima.comentario || '-';
+            }
+
+            // ---------- ACTUALIZAR TODAS LAS BD ----------
+            async function actualizarTodasLasBD() {
+                await loadStateFromFirestore();
+                renderAll();
+                showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
             }
 
             // ---------- RENDER ALL ----------
@@ -2697,7 +3290,7 @@
                     document.getElementById('appWrapper').classList.add('visible');
                     await loadStateFromFirestore();
                     renderAll();
-                    showToast('Bienvenido/a Administrador', 'success');
+                    showToast('Bienvenido/a Administrador (Full Access)', 'success');
                     iniciarCronometros();
                 } else {
                     errorDiv.textContent = '❌ Clave incorrecta.';
