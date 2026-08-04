@@ -450,7 +450,22 @@
                     { id: 'sec2', nombre: 'Riveros Patricia' },
                     { id: 'sec3', nombre: 'Magnani Enzo' }
                 ],
-                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ]
+                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ],
+                // Opciones para tipo y modo de intervención (igual que en secretario)
+                tipos: [
+                    'Nuevo patrocinio', 'Amparo', 'Acción de protección de persona', 'Alimentos', 'Cuidado personal',
+                    'Desalojo', 'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
+                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                ],
+                modosIntervencion: [
+                    'Defensor Oficial', 'Ministerio Principal', 'Ministerio Complementario',
+                    'Patrocinante Actor', 'Patrocinante Demandado', 'Patrocinante Tercero',
+                    'Defensor de Ausente', 'Patrocinante presunto incapaz', 'Asistencia Letrada del incapaz',
+                    'Ministerio Público del incapaz', 'Ministerio Público en turno Abril',
+                    'Ministerio Público en turno Agosto', 'Ministerio Público en turno Diciembre',
+                    'Tutor Ad Litem', 'Defensor Oficial Art 329 CPCC', 'Defensor Oficial Art 626 CPCC'
+                ]
             };
 
             // ---------- ESTADO ----------
@@ -1008,27 +1023,29 @@
                 }
             }
 
-            async function asignarAlMenosCargado(causaId, nivSec, comentario = '') {
+            // Modificada para aceptar lista de empleados personalizada
+            async function asignarAlMenosCargado(causaId, nivSec, comentario = '', empleadosList = null) {
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) return false;
                 const operadorNombre = c.operador;
+                const lista = empleadosList || CONFIG.empleados;
 
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
                     const empId = existing[0].empleadoAsignado;
-                    if (!isAusente(empId)) {
+                    if (!isAusente(empId) && (empleadosList ? empleadosList.some(e => e.id === empId) : true)) {
                         const result = await asignarCausa(causaId, nivSec, empId, comentario || 'Reasignación automática por reingreso');
                         return result;
                     } else {
-                        showToast('El empleado original está ausente. Se asignará a otro.', 'warning');
+                        showToast('El empleado original está ausente o no está disponible. Se asignará a otro.', 'warning');
                     }
                 }
 
-                let candidatos = CONFIG.empleados.filter(e => !isAusente(e.id) && e.nombre !== operadorNombre);
+                let candidatos = lista.filter(e => !isAusente(e.id) && e.nombre !== operadorNombre);
                 if (candidatos.length === 0) {
                     showToast('No hay empleados disponibles (todos ausentes o son el operador), se usará cualquiera', 'warning');
-                    candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
+                    candidatos = lista.filter(e => !isAusente(e.id));
                 }
                 if (candidatos.length === 0) {
                     showToast('Todos los empleados están ausentes, no se puede asignar', 'danger');
@@ -1703,7 +1720,7 @@
             }
 
             // ================================================================
-            //  NUEVO PANEL INGRESO (basado en operador) – SIN CAMBIOS
+            //  PANEL INGRESO (basado en operador) – SIN CAMBIOS
             // ================================================================
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
@@ -2072,10 +2089,14 @@
             }
 
             // ================================================================
-            //  NUEVO PANEL DISTRIBUCIÓN (basado en secretario) – SIN CAMBIOS
+            //  PANEL DISTRIBUCIÓN (reemplazado por versión de secretario.html,
+            //  excluyendo a Boillat - emp2 - de todas las listas y tablas)
             // ================================================================
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
+
+                // Filtramos a Boillat (emp2) para esta solapa
+                const empleadosFiltrados = CONFIG.empleados.filter(e => e.id !== 'emp2');
 
                 const term = searchTerm.toLowerCase().trim();
                 const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
@@ -2084,21 +2105,25 @@
                 let pend = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
                 pend.sort((a, b) => b.nivelOperador - a.nivelOperador);
                 const pState = paginationState.distribucion;
-                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(pend, pState.page, pState.perPage);
+                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(
+                    pend, pState.page, pState.perPage);
 
                 // En proceso
                 let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
                 enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 const pStateProc = paginationState.proceso;
-                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(enProceso, pStateProc.page, pStateProc.perPage);
+                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(
+                    enProceso, pStateProc.page, pStateProc.perPage);
 
                 // Todos los pases a empleados
                 let todosPases = state.causas.filter(c => c.empleadoAsignado && c.estado !== 'en_secretaria').filter(filterFn);
                 todosPases.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
-                const optsEmpleados = CONFIG.empleados
+                const optsEmpleados = empleadosFiltrados
                     .filter(e => !isAusente(e.id))
-                    .map(e => `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)</option>`)
+                    .map(e =>
+                        `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)</option>`
+                        )
                     .join('');
 
                 const secStats = CONFIG.secretarios.map(sec => {
@@ -2108,12 +2133,13 @@
 
                 const empleadosConRetraso = new Set();
                 state.causas.forEach(c => {
-                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite).getTime() < Date.now()) {
+                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite)
+                        .getTime() < Date.now()) {
                         empleadosConRetraso.add(c.empleadoAsignado);
                     }
                 });
 
-                const empTableData = CONFIG.empleados.map(emp => {
+                const empTableData = empleadosFiltrados.map(emp => {
                     const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
                     const total = causas.length;
                     const niveles = { 1: 0, 2: 0, 3: 0, 4: 0 };
@@ -2135,12 +2161,16 @@
                 });
 
                 const eqState = paginationState.equidad;
-                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(empTableData, eqState.page, eqState.perPage);
+                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(
+                    empTableData, eqState.page, eqState.perPage
+                );
 
                 const pPases = paginationState.pases;
-                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(todosPases, pPases.page, pPases.perPage);
+                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
+                    todosPases, pPases.page, pPases.perPage
+                );
 
-                // ---- CONSTRUIR HTML ----
+                // ---- CONSTRUIR HTML (igual a secretario) ----
                 let html = `
                     <!-- PENDIENTES -->
                     <div class="card-modern">
@@ -2151,6 +2181,7 @@
                                 ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneral"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                                 <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
+                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" onclick="imprimirTabla('tablaPendientes','Pendientes en Secretaría')"><i class="bi bi-printer"></i> Imprimir</button>
                             </div>
                         </div>
                         ${pendTotal ? `
@@ -2175,13 +2206,13 @@
                                                 <td>
                                                     <select class="form-select form-select-sm modo-select" data-id="${c.id}" style="min-width:140px;">
                                                         <option value="">Seleccionar...</option>
-                                                        ${CONFIG.modosIntervencion ? CONFIG.modosIntervencion.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('') : ''}
+                                                        ${CONFIG.modosIntervencion.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('')}
                                                     </select>
                                                 </td>
                                                 <td>
                                                     <select class="form-select form-select-sm tipo-select" data-id="${c.id}" style="min-width:130px;">
                                                         <option value="">Seleccionar...</option>
-                                                        ${CONFIG.tipos ? CONFIG.tipos.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('') : ''}
+                                                        ${CONFIG.tipos.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
                                                     </select>
                                                 </td>
                                                 <td>N${c.nivelOperador}</td>
@@ -2331,8 +2362,10 @@
                             </div>
                         </div>
                     </div>
+                `;
 
-                    <!-- TABLA DETALLADA DE PASES A EMPLEADOS -->
+                // --- TABLA DETALLADA DE TODOS LOS PASES A EMPLEADOS ---
+                html += `
                     <div class="card-modern mt-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
@@ -2385,28 +2418,33 @@
                 panel.innerHTML = html;
 
                 // Paginación
-                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState.perPage, (newPage, newPerPage) => {
-                    paginationState.distribucion.page = newPage;
-                    paginationState.distribucion.perPage = newPerPage;
-                    renderDistribucion();
-                });
-                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc.perPage, (newPage, newPerPage) => {
-                    paginationState.proceso.page = newPage;
-                    paginationState.proceso.perPage = newPerPage;
-                    renderDistribucion();
-                });
-                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases.perPage, (newPage, newPerPage) => {
-                    paginationState.pases.page = newPage;
-                    paginationState.pases.perPage = newPerPage;
-                    renderDistribucion();
-                });
-                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (newPage, newPerPage) => {
-                    paginationState.equidad.page = newPage;
-                    paginationState.equidad.perPage = newPerPage;
-                    renderDistribucion();
-                });
+                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.distribucion.page = newPage;
+                        paginationState.distribucion.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.proceso.page = newPage;
+                        paginationState.proceso.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.pases.page = newPage;
+                        paginationState.pases.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (
+                    newPage, newPerPage) => {
+                        paginationState.equidad.page = newPage;
+                        paginationState.equidad.perPage = newPerPage;
+                        renderDistribucion();
+                    });
 
-                // ---- EVENTOS ----
+                // ---- EVENTOS (igual a secretario) ----
+                // Asignar
                 document.querySelectorAll('.btn-asignar').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -2414,22 +2452,25 @@
                         const niv = document.getElementById(`nv_${id}`).value;
                         const obs = document.getElementById(`obs_${id}`).value.trim();
                         if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
-                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar', 'warning'); return; }
+                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar',
+                            'warning'); return; }
                         await asignarCausa(id, niv, emp, obs || 'Sin observación adicional');
                         renderDistribucion();
                     });
                 });
 
+                // Auto (usa empleadosFiltrados)
                 document.querySelectorAll('.btn-auto-asig').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
                         const niv = document.getElementById(`nv_${id}`).value;
                         const obs = document.getElementById(`obs_${id}`).value.trim();
-                        await asignarAlMenosCargado(id, niv, obs || '');
+                        await asignarAlMenosCargado(id, niv, obs || '', empleadosFiltrados);
                         renderDistribucion();
                     });
                 });
 
+                // Elevar a defensor desde pendientes
                 document.querySelectorAll('.btn-elevar-def').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -2441,42 +2482,73 @@
                     });
                 });
 
+                // Ver historial
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => {
                     btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
                 });
 
+                // Cumplido
                 document.querySelectorAll('.btn-cumplido').forEach(btn => {
                     btn.addEventListener('click', async function() { await marcarCumplido(this.dataset.id); });
                 });
 
+                // Elevar a defensor desde proceso
                 document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
                     btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
                 });
 
+                // Ver consultas
                 document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
                     btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
                 });
 
+                // Historial por secretario
                 document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
                     btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); });
                 });
 
+                // Toggle ausencia
                 document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const empNombre = this.dataset.emp;
+                        // Buscar en la lista completa porque el toggle afecta a todos los paneles
                         const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
                         if (emp) await toggleAusencia(emp.id);
                     });
                 });
 
-                // Rechazar y Devolver (desde pendientes)
+                // Distribuir masivo (usa empleadosFiltrados)
+                const btnMasivo = document.getElementById('btnDistribuirMasivo');
+                if (btnMasivo) {
+                    btnMasivo.addEventListener('click', async function() {
+                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
+                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
+                        const comentarioGlobal = prompt(
+                            'Ingrese un comentario para todas las asignaciones (opcional):');
+                        if (comentarioGlobal === null) return;
+                        for (const c of pendientes) {
+                            await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '', empleadosFiltrados);
+                        }
+                        showToast(`✅ ${pendientes.length} causas distribuidas equitativamente`);
+                        renderDistribucion();
+                    });
+                }
+
+                // Reporte general
+                const btnReporte = document.getElementById('btnReporteGeneral');
+                if (btnReporte) btnReporte.addEventListener('click', generarReporteGeneral);
+
+                // Informe de equidad
+                const btnEquidad = document.getElementById('btnInformeEquidad');
+                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
+
+                // === NUEVOS EVENTOS: Rechazar y Devolver ===
                 document.querySelectorAll('.btn-rechazar-causa').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
                         const motivo = prompt('Ingrese el motivo del rechazo:');
                         if (motivo !== null) {
-                            await rechazarCausa(id);
-                            renderDistribucion();
+                            await rechazarCausaSecretario(id, motivo.trim() || 'Sin motivo');
                         }
                     });
                 });
@@ -2486,13 +2558,12 @@
                         const id = this.dataset.id;
                         const motivo = prompt('Ingrese el motivo de la devolución:');
                         if (motivo !== null) {
-                            await devolverSIGED(id);
-                            renderDistribucion();
+                            await devolverCausaSecretario(id, motivo.trim() || 'Sin motivo');
                         }
                     });
                 });
 
-                // Cambio de Tipo y Modo (actualización automática)
+                // === NUEVOS EVENTOS: Cambio de Tipo y Modo (actualización automática) ===
                 document.querySelectorAll('.tipo-select').forEach(sel => {
                     sel.addEventListener('change', function() {
                         const id = this.dataset.id;
@@ -2512,32 +2583,26 @@
                         }
                     });
                 });
-
-                // Botones de reporte e informe
-                const btnReporte = document.getElementById('btnReporteGeneral');
-                if (btnReporte) btnReporte.addEventListener('click', generarReporteGeneral);
-
-                const btnEquidad = document.getElementById('btnInformeEquidad');
-                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
-
-                // Distribuir masivo
-                const btnMasivo = document.getElementById('btnDistribuirMasivo');
-                if (btnMasivo) {
-                    btnMasivo.addEventListener('click', async function() {
-                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
-                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
-                        const comentarioGlobal = prompt('Ingrese un comentario para todas las asignaciones (opcional):');
-                        if (comentarioGlobal === null) return;
-                        for (const c of pendientes) {
-                            await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
-                        }
-                        showToast(`✅ ${pendientes.length} causas distribuidas equitativamente`);
-                        renderDistribucion();
-                    });
-                }
             }
 
-            // Funciones auxiliares para actualizar Tipo y Modo (necesarias para la distribución)
+            // Funciones auxiliares para rechazar/devolver desde distribución (igual a secretario)
+            async function rechazarCausaSecretario(id, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_secretaria') { showToast('Solo se puede rechazar causas en Secretaría', 'warning'); return; }
+                await cambiarEstado(id, 'rechazado', 'Rechazado por Secretario', 'Defensor', motivo || 'Sin motivo');
+                renderDistribucion();
+            }
+
+            async function devolverCausaSecretario(id, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_secretaria') { showToast('Solo se puede devolver causas en Secretaría', 'warning'); return; }
+                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED por Secretario', 'Defensor', motivo || 'Sin motivo');
+                renderDistribucion();
+            }
+
+            // Funciones para actualizar tipo/modo (igual a secretario)
             async function actualizarTipoCausa(id, nuevoTipo) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
@@ -2560,65 +2625,8 @@
                 } catch (e) { showToast('Error al actualizar modo', 'danger'); }
             }
 
-            // ---------- HISTORIAL ----------
-            function abrirHistorial(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                document.getElementById('modalHistorialExp').textContent = c.numero;
-                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar'})`;
-                const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
-                else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
-                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
-            }
-
-            // ---------- TIEMPO TRANSCURRIDO ----------
-            function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
-                if (!fechaAsignacion) return null;
-                const inicio = new Date(fechaAsignacion);
-                const fin = fechaCierre ? new Date(fechaCierre) : new Date();
-                const diffMs = fin - inicio;
-                if (diffMs < 0) return null;
-                const seg = Math.floor(diffMs / 1000);
-                const dias = Math.floor(seg / 86400);
-                const horas = Math.floor((seg % 86400) / 3600);
-                const mins = Math.floor((seg % 3600) / 60);
-                const secs = Math.floor(seg % 60);
-                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-            }
-
-            function getCronoHtml(causa) {
-                if (!causa.fechaAsignacion) return '<span class="crono azul">—</span>';
-                let fechaCierre = null;
-                if (causa.estado === 'finalizada' && causa.fechaFinalizacion) {
-                    fechaCierre = causa.fechaFinalizacion;
-                } else if (causa.estado === 'en_secretaria' && causa.fechaResolucionEmpleado) {
-                    fechaCierre = causa.fechaResolucionEmpleado;
-                } else if (causa.estado === 'en_defensor' && causa.fechaResolucionEmpleado) {
-                    fechaCierre = causa.fechaResolucionEmpleado;
-                } else if (causa.estado === 'devuelto_siged' || causa.estado === 'remitido') {
-                    fechaCierre = causa.fechaResolucionEmpleado || causa.fechaFinalizacion || null;
-                }
-                const tiempo = getTiempoTranscurrido(causa.fechaAsignacion, fechaCierre);
-                if (!tiempo) return '<span class="crono azul">—</span>';
-                let cls = 'crono azul';
-                if (fechaCierre) {
-                    cls = 'crono medio';
-                }
-                return `<span class="${cls}">${tiempo}</span>`;
-            }
-
-            function getComentarioAsignacion(causa) {
-                if (!causa.historial || !causa.historial.length) return '-';
-                const asignaciones = causa.historial.filter(h => h.accion && h.accion.includes('Asignado (Nivel'));
-                if (asignaciones.length === 0) return '-';
-                const ultima = asignaciones[asignaciones.length - 1];
-                return ultima.comentario || '-';
-            }
-
-            // ---------- FUNCIONES DE IMPRESIÓN ----------
-            function imprimirTabla(tableId, titulo) {
+            // Función de impresión de tablas (global)
+            window.imprimirTabla = function(tableId, titulo) {
                 const table = document.getElementById(tableId);
                 if (!table) { showToast('Tabla no encontrada', 'danger'); return; }
                 const clone = table.cloneNode(true);
@@ -2654,6 +2662,34 @@
                 `);
                 win.document.close();
                 setTimeout(() => { win.print(); }, 500);
+            };
+
+            // ---------- HISTORIAL ----------
+            function abrirHistorial(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                document.getElementById('modalHistorialExp').textContent = c.numero;
+                document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar'})`;
+                const body = document.getElementById('modalHistorialBody');
+                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; }
+                else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
+                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+            }
+
+            // ---------- TIEMPO TRANSCURRIDO ----------
+            function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
+                if (!fechaAsignacion) return null;
+                const inicio = new Date(fechaAsignacion);
+                const fin = fechaCierre ? new Date(fechaCierre) : new Date();
+                const diffMs = fin - inicio;
+                if (diffMs < 0) return null;
+                const seg = Math.floor(diffMs / 1000);
+                const dias = Math.floor(seg / 86400);
+                const horas = Math.floor((seg % 86400) / 3600);
+                const mins = Math.floor((seg % 3600) / 60);
+                const secs = Math.floor(seg % 60);
+                if (dias > 0) return `${dias}d ${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+                return `${String(horas).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
             }
 
             // ================================================================
