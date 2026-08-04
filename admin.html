@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* ===== ESTILOS COMPLETOS ===== */
+        /* ===== ESTILOS COMPLETOS (mismos que en defensor.html) ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -190,6 +190,7 @@
         .fw-600 { font-weight:600; }
         .cursor-pointer { cursor:pointer; }
 
+        /* Impresión para reportes modales */
         @media print {
             body * { visibility: hidden; }
             #modalReporte, #modalReporte *,
@@ -434,7 +435,7 @@
 
             // ---------- CONFIG ----------
             const CONFIG = {
-                password: 'admin',
+                password: 'admin',   // <--- contraseña de administrador
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
@@ -450,7 +451,21 @@
                     { id: 'sec2', nombre: 'Riveros Patricia' },
                     { id: 'sec3', nombre: 'Magnani Enzo' }
                 ],
-                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ]
+                operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ],
+                tipos: [
+                    'Nuevo patrocinio', 'Amparo','Acción de protección de persona', 'Alimentos', 'Cuidado personal',
+                    'Desalojo', 'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
+                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                ],
+                modosIntervencion: [
+                    'Defensor Oficial', 'Ministerio Principal', 'Ministerio Complementario',
+                    'Patrocinante Actor', 'Patrocinante Demandado', 'Patrocinante Tercero',
+                    'Defensor de Ausente', 'Patrocinante presunto incapaz', 'Asistencia Letrada del incapaz',
+                    'Ministerio Público del incapaz', 'Ministerio Público en turno Abril',
+                    'Ministerio Público en turno Agosto', 'Ministerio Público en turno Diciembre',
+                    'Tutor Ad Litem', 'Defensor Oficial Art 329 CPCC', 'Defensor Oficial Art 626 CPCC'
+                ]
             };
 
             // ---------- ESTADO ----------
@@ -465,8 +480,11 @@
             let cronoInterval = null;
             let paginationState = {
                 ingreso: { page: 1, perPage: 10 },
+                ingresoRechazados: { page: 1, perPage: 10 },
                 distribucion: { page: 1, perPage: 10 },
                 proceso: { page: 1, perPage: 10 },
+                pases: { page: 1, perPage: 10 },
+                equidad: { page: 1, perPage: 10 },
                 defensor: { page: 1, perPage: 10 },
                 empleado: { page: 1, perPage: 10 },
                 auditoria: { page: 1, perPage: 10 },
@@ -565,6 +583,19 @@
             }
 
             function getEstadoBadgePlain(estado) {
+                const map = {
+                    'en_secretaria': 'Secretaría',
+                    'en_proceso': 'En proceso',
+                    'finalizada': 'Finalizada',
+                    'en_defensor': 'Defensor',
+                    'devuelto_siged': 'Devuelto a SIGED',
+                    'remitido': 'Remitido',
+                    'rechazado': 'Rechazado'
+                };
+                return map[estado] || estado;
+            }
+
+            function getEstadoTexto(estado) {
                 const map = {
                     'en_secretaria': 'Secretaría',
                     'en_proceso': 'En proceso',
@@ -1094,7 +1125,10 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 if (c.estado === 'devuelto_siged') { showToast('Ya fue devuelto a SIGED', 'warning'); return; }
-                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', 'Administrador', 'Devolución por Administrador');
+                const motivo = prompt('Motivo de devolución a SIGED:');
+                if (motivo === null) return;
+                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', 'Administrador', motivo || 'Sin motivo');
+                renderAll();
             }
 
             async function remitirDependencia(id) {
@@ -1103,7 +1137,9 @@
                 if (c.estado === 'remitido') { showToast('Ya fue remitido', 'warning'); return; }
                 const dependencia = prompt('Ingrese la dependencia a la que se remite:');
                 if (dependencia === null || dependencia.trim() === '') { showToast('Remisión cancelada', 'info'); return; }
-                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, 'Administrador', `Dependencia: ${dependencia.trim()}`);
+                const motivo = prompt('Motivo de remisión:');
+                if (motivo === null) return;
+                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, 'Administrador', motivo || 'Sin motivo');
             }
 
             async function rechazarCausa(id) {
@@ -1436,7 +1472,7 @@
                                 if (e.puntajeFinal >= 4 && e.puntajeFinal < 7) pColor = '#e67e22';
                                 else if (e.puntajeFinal >= 7 && e.puntajeFinal < 10) pColor = '#1976d2';
                                 else if (e.puntajeFinal >= 10) pColor = '#2e7d32';
-                                const esManual = (puntajesManualesCache[e.nombre] !== undefined && puntajesManualesCache[e.nombre] !== null && puntajesManualesCache[e.nombre] !== '');
+                                const esManual = (puntajesManualesCache[e.id] !== undefined && puntajesManualesCache[e.id] !== null && puntajesManualesCache[e.id] !== '');
                                 const tipoPuntaje = esManual ? 'Manual' : 'Auto';
                                 return `
                                 <tr style="border-bottom: 1px solid #eef2f7;">
@@ -1603,61 +1639,49 @@
 
             function generarInformeGesell() {
                 const causasGesell = state.causas.filter(c => c.tipo && c.tipo.toLowerCase().includes('cámara gesell'));
-                const total = causasGesell.length;
-                const enDefensor = causasGesell.filter(c => c.estado === 'en_defensor').length;
-                const finalizadas = causasGesell.filter(c => c.estado === 'finalizada').length;
-                const conAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'asistio').length;
-                const sinAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio' || c.asistenciaGesell === 'pendiente').length;
+                const enDefensorGesell = causasGesell.filter(c => c.estado === 'en_defensor');
+                const finalizadasGesell = causasGesell.filter(c => c.estado === 'finalizada');
+                const conAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'asistio');
+                const sinAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio' || c.asistenciaGesell === 'pendiente');
+
                 const now = new Date();
                 const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-                document.getElementById('modalEquidadTitle').innerHTML = '<i class="bi bi-printer me-2"></i>Informe de Cámara Gesell';
-                document.getElementById('modalEquidadBody').innerHTML = `
-                    <div class="mb-3">
-                        <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Informe de Cámara Gesell</h5>
-                        <p style="color: #5f7f9f; font-size: 0.85rem;"><strong>Fecha de impresión:</strong> ${fechaStr}</p>
-                    </div>
-                    <hr />
-                    <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr);">
-                        <div class="kpi-item"><div class="label">Total</div><div class="value">${total}</div></div>
-                        <div class="kpi-item"><div class="label">En Defensor</div><div class="value warning">${enDefensor}</div></div>
-                        <div class="kpi-item"><div class="label">Finalizadas</div><div class="value success">${finalizadas}</div></div>
-                        <div class="kpi-item"><div class="label">Asistencia realizada</div><div class="value info">${conAsistencia}</div></div>
-                    </div>
-                    <hr />
-                    <h6>Detalle de causas</h6>
-                    ${total === 0 ? '<div class="text-muted">No hay causas de Cámara Gesell registradas.</div>' : `
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.5rem;">
+                            <h5 style="margin:0; font-weight:700; color:#0a2a44;">Informe de Cámara Gesell</h5>
+                            <div style="font-size:0.75rem; color:#5f7f9f;">${fechaStr}</div>
+                        </div>
+                        <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr);">
+                            <div class="kpi-item"><div class="label">Total</div><div class="value">${causasGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">En Defensor</div><div class="value warning">${enDefensorGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">Finalizadas</div><div class="value success">${finalizadasGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">Asistencia</div><div class="value info">${conAsistencia.length}</div></div>
+                        </div>
+                        <hr />
+                        <h6>Detalle</h6>
                         <div class="table-wrap">
-                            <table class="table-modern table" style="min-width:0; width:100%;">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>DNI</th>
-                                        <th>Modo Intervención</th>
-                                        <th>Tipo</th>
-                                        <th>Estado</th>
-                                        <th>Asistencia</th>
-                                        <th>Fecha/Hora Audiencia</th>
-                                    </tr>
-                                </thead>
+                            <table class="table-modern table">
+                                <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora</th></tr></thead>
                                 <tbody>
                                     ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.dni || '-'}</td>
                                             <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${c.tipo}</td>
                                             <td>${getEstadoBadgePlain(c.estado)}</td>
-                                            <td>${c.asistenciaGesell === 'asistio' ? '✅ Asistió' : c.asistenciaGesell === 'no_asistio' ? '❌ No asistió' : '⏳ Pendiente'}</td>
+                                            <td>${c.asistenciaGesell === 'asistio' ? 'Asistió' : c.asistenciaGesell === 'no_asistio' ? 'No asistió' : 'Pendiente'}</td>
                                             <td>${c.fechaHoraGesell ? fmtDt(c.fechaHoraGesell) : '-'}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
                             </table>
                         </div>
-                    `}
+                    </div>
                 `;
-                new bootstrap.Modal(document.getElementById('modalEquidad')).show();
+                document.getElementById('modalReporteBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
             // ---------- PAGINACIÓN ----------
@@ -1706,41 +1730,54 @@
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
             }
 
-            // ---------- PANELES ----------
-            // 1. INGRESO
+            // ============================
+            //  PANEL INGRESO (con mejoras)
+            // ============================
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
-                let causasFiltradas = getFilteredCausas();
-                const recientes = causasFiltradas.slice(-50).reverse();
+
+                const term = searchTerm.toLowerCase().trim();
+                const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
+
+                let recientes = state.causas.filter(filterFn);
+                if (filtroMes || filtroAnio) {
+                    recientes = recientes.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const d = new Date(c.fechaPaseSecretario);
+                        const mes = d.getMonth() + 1;
+                        const anio = d.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                recientes.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
+                let rechazados = state.causas.filter(c => (c.estado === 'rechazado' || c.estado === 'devuelto_siged')).filter(filterFn);
+                if (filtroMes || filtroAnio) {
+                    rechazados = rechazados.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const d = new Date(c.fechaPaseSecretario);
+                        const mes = d.getMonth() + 1;
+                        const anio = d.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
                 const pState = paginationState.ingreso;
-                const { items, total, totalPages, page, start, end } = paginateData(recientes, pState.page, pState.perPage);
+                const { items: itemsRec, total: totalRec, totalPages: totalPagesRec, page: pageRec } = paginateData(recientes, pState.page, pState.perPage);
 
-                let operadorOptions = CONFIG.operadores.map(op => `<option value="${op}">${op}</option>`).join('');
-                const tipos = [
-                    'Nuevo patrocinio', 'Amparo','Acción de protección de persona', 'Alimentos', 'Cuidado personal', 'Desalojo', 'Divorcio',
-                    'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño', 'Laboral', 'Penal (cámara gesell)',
-                    'Prescripción Adquisitiva', 'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
-                ];
-                const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+                const pStateRech = paginationState.ingresoRechazados;
+                const { items: itemsRech, total: totalRech, totalPages: totalPagesRech, page: pageRech } = paginateData(rechazados, pStateRech.page, pStateRech.perPage);
 
-                const modoIntervencionOptions = [
-                    'Defensor Oficial',
-                    'Ministerio Principal',
-                    'Ministerio Complementario',
-                    'Patrocinante Actor',
-                    'Patrocinante Demandado',
-                    'Patrocinante Tercero',
-                    'Defensor de Ausente',
-                    'Patrocinante presunto incapaz',
-                    'Asistencia Letrada del incapaz',
-                    'Ministerio Público del incapaz',
-                    'Ministerio Público en turno Abril',
-                    'Ministerio Público en turno Agosto',
-                    'Ministerio Público en turno Diciembre',
-                    'Tutor Ad Litem',
-                    'Defensor Oficial Art 329 CPCC',
-                    'Defensor Oficial Art 626 CPCC'
-                ].map(m => `<option value="${m}">${m}</option>`).join('');
+                const tipoOptions = CONFIG.tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+                const modoOptions = CONFIG.modosIntervencion.map(m => `<option value="${m}">${m}</option>`).join('');
+                const operadorOptions = CONFIG.operadores.map(op => `<option value="${op}">${op}</option>`).join('');
 
                 panel.innerHTML = `
                     <div class="row g-4">
@@ -1751,11 +1788,11 @@
                                     <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select">${operadorOptions}</select></div>
                                     <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
                                     <div class="mb-3">
-                                        <label class="form-label">DNI *</label>
-                                        <input type="text" id="inpDni" class="form-control" required autocomplete="off"
-                                               placeholder="Ingrese el DNI (8 dígitos)" maxlength="8"
-                                               pattern="[0-9]{7,8}" title="El DNI debe tener entre 7 y 8 dígitos numéricos"
+                                        <label class="form-label">DNI</label>
+                                        <input type="text" id="inpDni" class="form-control" autocomplete="off"
+                                               placeholder="Ingrese el DNI (opcional)" maxlength="8"
                                                oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                                        <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione...</option>${tipoOptions}</select></div>
@@ -1765,7 +1802,7 @@
                                         <label class="form-label">Modo de Intervención</label>
                                         <select id="inpModoIntervencion" class="form-select">
                                             <option value="">Seleccione...</option>
-                                            ${modoIntervencionOptions}
+                                            ${modoOptions}
                                         </select>
                                     </div>
                                     <div class="mb-2">
@@ -1807,44 +1844,153 @@
                             </div>
                         </div>
                         <div class="col-lg-7">
+                            <div class="filtros-container">
+                                <label>Filtrar por:</label>
+                                <select id="filtroMesSelect">
+                                    <option value="">Mes</option>
+                                    ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
+                                </select>
+                                <select id="filtroAnioSelect">
+                                    <option value="">Año</option>
+                                    ${Array.from({length: 2040-2026+1}, (_,i) => {
+                                        const y = 2026 + i;
+                                        return `<option value="${y}" ${filtroAnio==y?'selected':''}>${y}</option>`;
+                                    }).join('')}
+                                </select>
+                                <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
+                                ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${totalRec} registros</span>` : '' }
+                            </div>
                             <div class="bordered-container table-container">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                                     <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneralIngreso"><i class="bi bi-file-earmark-text"></i> Reporte de actividad</button>
                                 </div>
-                                ${total ? `
+                                ${totalRec ? `
                                     <div style="overflow:hidden; width:100%;">
                                         <table class="table-modern table table-sm" style="margin-bottom:0;">
-                                            <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Nivel</th><th>Pase</th><th>Estado</th><th style="width:120px;">Acciones</th></tr></thead>
-                                            <tbody>${items.map(c => `
-                                                <tr>
+                                            <thead><tr><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th><th>Estado</th><th>Fecha Pase</th><th>Motivo</th><th style="width:170px;">Acciones</th></tr></thead>
+                                            <tbody>${itemsRec.map(c => {
+                                                const fuentes = [];
+                                                if (c.fuenteSiged) fuentes.push('SIGED');
+                                                if (c.fuenteZimbra) fuentes.push('ZIMBRA');
+                                                const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
+                                                    fuentes.length === 2 ? '<span class="badge-fuente ambas">S/Z</span>' :
+                                                    `<span class="badge-fuente">${fuentes[0]}</span>`;
+                                                const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                                let accionesHtml = '';
+                                                if (c.estado !== 'devuelto_siged' && c.estado !== 'remitido' && c.estado !== 'rechazado' && c.estado !== 'finalizada') {
+                                                    accionesHtml = `
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-siged" data-id="${c.id}" title="Devolver a SIGED" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-arrow-return-left"></i></button>
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-remitir" data-id="${c.id}" title="Remitir a otra dependencia" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-send"></i></button>
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-rechazar" data-id="${c.id}" title="Rechazar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-x-circle"></i></button>
+                                                    `;
+                                                }
+                                                accionesHtml += `
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
+                                                `;
+                                                return `<tr>
                                                     <td><strong>${c.numero}</strong></td>
-                                                    <td>${c.dni || '-'}</td>
-                                                    <td>${c.modoIntervencion || '-'}</td>
+                                                    <td style="font-size:0.65rem;">${c.tipo}</td>
                                                     <td>N${c.nivelOperador}</td>
+                                                    <td>${fuenteHtml}</td>
+                                                    <td><strong>${getEstadoTexto(c.estado)}</strong></td>
                                                     <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                                    <td>${getEstadoBadge(c.estado)}</td>
-                                                    <td style="white-space:nowrap;">
-                                                        ${c.estado !== 'devuelto_siged' && c.estado !== 'remitido' && c.estado !== 'rechazado' ? `
-                                                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-siged" data-id="${c.id}" title="Devolver a SIGED" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-arrow-return-left"></i></button>
-                                                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-remitir" data-id="${c.id}" title="Remitir a otra dependencia" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-send"></i></button>
-                                                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-rechazar" data-id="${c.id}" title="Rechazar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-x-circle"></i></button>
-                                                            <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem; color:#c62828;"><i class="bi bi-trash"></i></button>
-                                                        ` : ''}
-                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-eye"></i></button>
-                                                    </td>
-                                                </tr>
-                                            `).join('')}</tbody>
+                                                    <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                                    <td style="white-space:nowrap;">${accionesHtml}</td>
+                                                </tr>`;
+                                            }).join('')}</tbody>
                                         </table>
-                                    </div><div id="paginationIngreso"></div>
+                                    </div>
+                                    <div id="paginationIngreso"></div>
                                 ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin registros recientes</div>`}
+                            </div>
+                            <hr class="my-3" />
+                            <div class="bordered-container table-container">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="card-title mb-0"><i class="bi bi-x-circle"></i> Rechazados / Devueltos por Secretario</div>
+                                    <span class="badge bg-secondary">${totalRech} expedientes</span>
+                                </div>
+                                ${totalRech ? `
+                                    <div style="overflow:hidden; width:100%;">
+                                        <table class="table-modern table table-sm" style="margin-bottom:0;">
+                                            <thead><tr><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Pase</th><th>Motivo</th><th style="width:60px;">Acciones</th></tr></thead>
+                                            <tbody>${itemsRech.map(c => {
+                                                const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                                return `<tr>
+                                                    <td><strong>${c.numero}</strong></td>
+                                                    <td style="font-size:0.65rem;">${c.tipo}</td>
+                                                    <td>N${c.nivelOperador}</td>
+                                                    <td>${getEstadoBadge(c.estado)}</td>
+                                                    <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                                    <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                                    <td>
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-eye"></i></button>
+                                                        <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
+                                                    </td>
+                                                </tr>`;
+                                            }).join('')}</tbody>
+                                        </table>
+                                    </div>
+                                    <div id="paginationIngresoRechazados"></div>
+                                ` : `<div class="text-center text-muted py-4"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>No hay expedientes rechazados o devueltos.</div>`}
                             </div>
                         </div>
                     </div>
                 `;
 
-                if (total > 0) renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.ingreso.page = newPage; paginationState.ingreso.perPage = newPerPage; renderIngreso(); });
+                if (totalRec > 0) renderPagination('paginationIngreso', totalRec, totalPagesRec, pageRec, pState.perPage, (newPage, newPerPage) => {
+                    paginationState.ingreso.page = newPage;
+                    paginationState.ingreso.perPage = newPerPage;
+                    renderIngreso();
+                });
+                if (totalRech > 0) renderPagination('paginationIngresoRechazados', totalRech, totalPagesRech, pageRech, pStateRech.perPage, (newPage, newPerPage) => {
+                    paginationState.ingresoRechazados.page = newPage;
+                    paginationState.ingresoRechazados.perPage = newPerPage;
+                    renderIngreso();
+                });
 
+                // Filtros
+                const mesSelect = document.getElementById('filtroMesSelect');
+                const anioSelect = document.getElementById('filtroAnioSelect');
+                const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+                if (mesSelect) {
+                    mesSelect.addEventListener('change', function() {
+                        filtroMes = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.ingresoRechazados.page = 1;
+                        renderIngreso();
+                    });
+                }
+                if (anioSelect) {
+                    anioSelect.addEventListener('change', function() {
+                        filtroAnio = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.ingresoRechazados.page = 1;
+                        renderIngreso();
+                    });
+                }
+                if (limpiarBtn) {
+                    limpiarBtn.addEventListener('click', function() {
+                        filtroMes = '';
+                        filtroAnio = '';
+                        paginationState.ingreso.page = 1;
+                        paginationState.ingresoRechazados.page = 1;
+                        renderIngreso();
+                    });
+                }
+
+                // Eventos de botones
+                document.querySelectorAll('.btn-devolver-siged').forEach(btn => { btn.addEventListener('click', async function() { await devolverSIGED(this.dataset.id); renderAll(); }); });
+                document.querySelectorAll('.btn-remitir').forEach(btn => { btn.addEventListener('click', async function() { await remitirDependencia(this.dataset.id); renderAll(); }); });
+                document.querySelectorAll('.btn-rechazar').forEach(btn => { btn.addEventListener('click', async function() { await rechazarCausa(this.dataset.id); renderAll(); }); });
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
+
+                const btnReporte = document.getElementById('btnReporteGeneralIngreso');
+                if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
+
+                // Formulario
                 const accionSelect = document.getElementById('inpAccion');
                 const camposAccionDiv = document.getElementById('camposAccion');
                 const campoDependencia = document.getElementById('campoDependenciaForm');
@@ -1879,16 +2025,14 @@
                     const dni = document.getElementById('inpDni').value.trim();
                     const modoIntervencion = document.getElementById('inpModoIntervencion').value;
 
-                    if (!dni || !/^\d{7,8}$/.test(dni)) {
-                        showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
+                    if (dni && !/^\d{7,8}$/.test(dni)) {
+                        showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
                         return;
                     }
-
                     if (accion !== 'asignar') {
                         if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
                     }
-
                     const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
@@ -1923,7 +2067,6 @@
                     renderAusenciasModal();
                     modal.show();
                 });
-
                 document.getElementById('btnAgregarAusencia').addEventListener('click', async function() {
                     const secretarioId = document.getElementById('ausenciaSecretario').value;
                     const fechaInicio = document.getElementById('ausenciaFechaInicio').value;
@@ -1935,37 +2078,29 @@
                         document.getElementById('ausenciaFechaFin').value = '';
                     }
                 });
-
-                document.querySelectorAll('.btn-devolver-siged').forEach(btn => { btn.addEventListener('click', async function() { await devolverSIGED(this.dataset.id); renderAll(); }); });
-                document.querySelectorAll('.btn-remitir').forEach(btn => { btn.addEventListener('click', async function() { await remitirDependencia(this.dataset.id); renderAll(); }); });
-                document.querySelectorAll('.btn-rechazar').forEach(btn => { btn.addEventListener('click', async function() { await rechazarCausa(this.dataset.id); renderAll(); }); });
-                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
-                document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
-                const btnReporte = document.getElementById('btnReporteGeneralIngreso');
-                if (btnReporte) { btnReporte.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 2. DISTRIBUCIÓN
+            // ============================
+            //  PANEL DISTRIBUCIÓN (con mejoras)
+            // ============================
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
 
-                let pend = state.causas.filter(c => c.estado === 'en_secretaria');
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    pend = pend.filter(c => c.numero.toLowerCase().includes(term));
-                }
+                const term = searchTerm.toLowerCase().trim();
+                const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
+
+                let pend = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
                 pend.sort((a, b) => b.nivelOperador - a.nivelOperador);
                 const pState = paginationState.distribucion;
                 const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(pend, pState.page, pState.perPage);
 
-                let enProceso = state.causas.filter(c => c.estado === 'en_proceso');
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    enProceso = enProceso.filter(c => c.numero.toLowerCase().includes(term));
-                }
+                let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
                 enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
                 const pStateProc = paginationState.proceso;
                 const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(enProceso, pStateProc.page, pStateProc.perPage);
+
+                let todosPases = state.causas.filter(c => c.empleadoAsignado && c.estado !== 'en_secretaria').filter(filterFn);
+                todosPases.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
                 const optsEmpleados = CONFIG.empleados
                     .filter(e => !isAusente(e.id))
@@ -2005,14 +2140,11 @@
                     };
                 });
 
-                const nuevosPorEmpleado = {};
-                CONFIG.empleados.forEach(emp => {
-                    const causasNuevas = state.causas.filter(c => c.empleadoAsignado === emp.id && c.tipoAsignacion === 'Nuevo Patrocinio' && (c.estado === 'en_proceso' || c.estado === 'finalizada'));
-                    if (causasNuevas.length > 0) {
-                        nuevosPorEmpleado[emp.nombre] = causasNuevas;
-                    }
-                });
-                const tieneNuevos = Object.keys(nuevosPorEmpleado).length > 0;
+                const eqState = paginationState.equidad;
+                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(empTableData, eqState.page, eqState.perPage);
+
+                const pPases = paginationState.pases;
+                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(todosPases, pPases.page, pPases.perPage);
 
                 let html = `
                     <div class="card-modern">
@@ -2020,13 +2152,14 @@
                             <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
                             <div>
                                 <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
+                                ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneral"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                                 <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
                             </div>
                         </div>
                         ${pendTotal ? `
                             <div class="table-wrap">
-                                <table class="table-modern table">
+                                <table class="table-modern table" id="tablaPendientes">
                                     <thead>
                                         <tr>
                                             <th>Expediente</th>
@@ -2043,8 +2176,18 @@
                                         ${pendItems.map(c => `
                                             <tr>
                                                 <td><strong>${c.numero}</strong></td>
-                                                <td>${c.modoIntervencion || '-'}</td>
-                                                <td>${c.tipo}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm modo-select" data-id="${c.id}" style="min-width:140px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${CONFIG.modosIntervencion ? CONFIG.modosIntervencion.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('') : ''}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm tipo-select" data-id="${c.id}" style="min-width:130px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${CONFIG.tipos ? CONFIG.tipos.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('') : ''}
+                                                    </select>
+                                                </td>
                                                 <td>N${c.nivelOperador}</td>
                                                 <td>
                                                     <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
@@ -2067,8 +2210,11 @@
                                                 <td>
                                                     <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
                                                     <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i></button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                     <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                    <br>
+                                                    <button class="btn btn-rechazar btn-modern-sm btn-rechazar-causa mt-1" data-id="${c.id}">Rechazar</button>
+                                                    <button class="btn btn-devolver btn-modern-sm btn-devolver-causa mt-1" data-id="${c.id}">Devolver</button>
+                                                    <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
                                                 </td>
                                             </tr>
                                         `).join('')}
@@ -2080,10 +2226,15 @@
                     </div>
 
                     <div class="card-modern">
-                        <div class="card-title"><i class="bi bi-people"></i> Causas en Proceso</div>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-people"></i> Causas en Proceso</div>
+                            <div>
+                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" onclick="imprimirTabla('tablaProceso','Causas en Proceso')"><i class="bi bi-printer"></i> Imprimir</button>
+                            </div>
+                        </div>
                         ${procTotal ? `
                             <div class="table-wrap">
-                                <table class="table-modern table">
+                                <table class="table-modern table" id="tablaProceso">
                                     <thead>
                                         <tr>
                                             <th>Expediente</th>
@@ -2112,8 +2263,8 @@
                                                     <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
                                                     <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
                                                     <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                     <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                    <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
                                                 </td>
                                             </tr>`;
                                         }).join('')}
@@ -2161,7 +2312,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            ${empTableData.map(e => `
+                                            ${eqItems.map(e => `
                                                 <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
                                                     <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
                                                     <td>${e.total}</td>
@@ -2180,33 +2331,63 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <div id="paginationEquidad"></div>
                             </div>
                         </div>
                     </div>
-                `;
 
-                if (tieneNuevos) {
-                    html += `
-                        <div class="card-modern mt-4">
-                            <div class="card-title"><i class="bi bi-award"></i> Nuevos Patrocinios por Empleado</div>
-                            <div class="row">
-                                ${Object.entries(nuevosPorEmpleado).map(([nombre, causas]) => `
-                                    <div class="col-md-4 col-sm-6 mb-3">
-                                        <div class="card h-100" style="border-radius:16px;border:1px solid #e2edf7;">
-                                            <div class="card-header" style="background:#f9fcff;font-weight:700;font-size:0.85rem;">${nombre} (${causas.length})</div>
-                                            <ul class="list-group list-group-flush" style="max-height:150px;overflow-y:auto;border-radius:0 0 16px 16px;">
-                                                ${causas.map(c => `<li class="list-group-item py-1" style="font-size:0.75rem;">${c.numero} - ${c.tipo || 'Otro'}</li>`).join('')}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
+                    <div class="card-modern mt-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" onclick="imprimirTabla('tablaPases','Todos los pases a empleados')"><i class="bi bi-printer"></i> Imprimir</button>
                         </div>
-                    `;
-                }
+                        ${pasesTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaPases">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Empleado</th>
+                                            <th>Secretario</th>
+                                            <th>Nivel</th>
+                                            <th>Fecha Asignación</th>
+                                            <th>Tipo de Pase</th>
+                                            <th>Observaciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pasesItems.map(c => {
+                                            let obs = '-';
+                                            if (c.historial && c.historial.length) {
+                                                const asignacion = c.historial.find(h => h.accion && h.accion.includes('Asignado'));
+                                                if (asignacion && asignacion.comentario) obs = asignacion.comentario;
+                                                else if (c.historial[c.historial.length-1] && c.historial[c.historial.length-1].comentario) obs = c.historial[c.historial.length-1].comentario;
+                                            }
+                                            const tipoPase = c.tipoAsignacion || 'N/D';
+                                            const tipoBadge = tipoPase === 'Nuevo Patrocinio'
+                                                ? '<span class="badge-tipo-nuevo">Nuevo Patrocinio</span>'
+                                                : (tipoPase === 'Seguimiento' ? '<span class="badge-tipo-seguimiento">Seguimiento</span>' : tipoPase);
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${getEmpName(c.empleadoAsignado)}</td>
+                                                <td>${getSecName(c.secretarioId)}</td>
+                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
+                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaAsignacion)}</td>
+                                                <td>${tipoBadge}</td>
+                                                <td style="font-size:0.75rem;">${obs}</td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationPases"></div>
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i>No hay pases a empleados registrados.</div>`}
+                    </div>
+                `;
 
                 panel.innerHTML = html;
 
+                // Paginación
                 if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState.perPage, (newPage, newPerPage) => {
                     paginationState.distribucion.page = newPage;
                     paginationState.distribucion.perPage = newPerPage;
@@ -2217,7 +2398,18 @@
                     paginationState.proceso.perPage = newPerPage;
                     renderDistribucion();
                 });
+                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases.perPage, (newPage, newPerPage) => {
+                    paginationState.pases.page = newPage;
+                    paginationState.pases.perPage = newPerPage;
+                    renderDistribucion();
+                });
+                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (newPage, newPerPage) => {
+                    paginationState.equidad.page = newPage;
+                    paginationState.equidad.perPage = newPerPage;
+                    renderDistribucion();
+                });
 
+                // Eventos
                 document.querySelectorAll('.btn-asignar').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -2280,9 +2472,52 @@
                     });
                 });
 
+                document.querySelectorAll('.btn-rechazar-causa').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const motivo = prompt('Ingrese el motivo del rechazo:');
+                        if (motivo !== null) {
+                            await rechazarCausa(id);
+                            renderDistribucion();
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.btn-devolver-causa').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const motivo = prompt('Ingrese el motivo de la devolución:');
+                        if (motivo !== null) {
+                            await devolverSIGED(id);
+                            renderDistribucion();
+                        }
+                    });
+                });
+
                 document.querySelectorAll('.btn-eliminar').forEach(btn => {
                     btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); });
                 });
+
+                document.querySelectorAll('.tipo-select').forEach(sel => {
+                    sel.addEventListener('change', function() {
+                        const id = this.dataset.id;
+                        const nuevoValor = this.value;
+                        if (nuevoValor) actualizarTipoCausa(id, nuevoValor);
+                    });
+                });
+                document.querySelectorAll('.modo-select').forEach(sel => {
+                    sel.addEventListener('change', function() {
+                        const id = this.dataset.id;
+                        const nuevoValor = this.value;
+                        if (nuevoValor) actualizarModoIntervencionCausa(id, nuevoValor);
+                    });
+                });
+
+                const btnReporte = document.getElementById('btnReporteGeneral');
+                if (btnReporte) btnReporte.addEventListener('click', generarReporteGeneral);
+
+                const btnEquidad = document.getElementById('btnInformeEquidad');
+                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
 
                 const btnMasivo = document.getElementById('btnDistribuirMasivo');
                 if (btnMasivo) {
@@ -2298,15 +2533,72 @@
                         renderDistribucion();
                     });
                 }
-
-                const btnReporte = document.getElementById('btnReporteGeneral');
-                if (btnReporte) btnReporte.addEventListener('click', generarReporteGeneral);
-
-                const btnEquidad = document.getElementById('btnInformeEquidad');
-                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
             }
 
-            // 3. DEFENSOR
+            async function actualizarTipoCausa(id, nuevoTipo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                if (c.estado !== 'en_secretaria') { showToast('Solo se puede modificar en Secretaría', 'warning'); return; }
+                c.tipo = nuevoTipo;
+                try {
+                    await updateCausaInFirestore(c);
+                    showToast(`Tipo actualizado a: ${nuevoTipo}`, 'info');
+                } catch (e) { showToast('Error al actualizar tipo', 'danger'); }
+            }
+
+            async function actualizarModoIntervencionCausa(id, nuevoModo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                if (c.estado !== 'en_secretaria') { showToast('Solo se puede modificar en Secretaría', 'warning'); return; }
+                c.modoIntervencion = nuevoModo;
+                try {
+                    await updateCausaInFirestore(c);
+                    showToast(`Modo de intervención actualizado a: ${nuevoModo}`, 'info');
+                } catch (e) { showToast('Error al actualizar modo', 'danger'); }
+            }
+
+            // ---------- FUNCIÓN IMPRIMIR TABLA ----------
+            function imprimirTabla(tableId, titulo) {
+                const table = document.getElementById(tableId);
+                if (!table) { showToast('Tabla no encontrada', 'danger'); return; }
+                const clone = table.cloneNode(true);
+                clone.querySelectorAll('select, input, button').forEach(el => el.remove());
+                const html = clone.outerHTML;
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(`
+                    <html><head><title>${titulo}</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        th { background: #f1f6fd; }
+                        .badge-estado { display: inline-block; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.6rem; }
+                        .badge-sec { background:#fff3e0; color:#e67e22; }
+                        .badge-proc { background:#e3f2fd; color:#1565c0; }
+                        .badge-fin { background:#e8f5e9; color:#2e7d32; }
+                        .badge-def { background:#f3e5f5; color:#7b1fa2; }
+                        .badge-dev { background:#ffebee; color:#c62828; }
+                        .badge-rem { background:#e8eaf6; color:#3949ab; }
+                        .badge-rech { background:#fce4ec; color:#c62828; }
+                        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
+                        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
+                        @media print { body { padding: 0; } }
+                        .text-center { text-align: center; }
+                        .mt-3 { margin-top: 15px; }
+                    </style>
+                    </head><body>
+                    <h3>${titulo}</h3>
+                    ${html}
+                    </body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            }
+
+            // ============================
+            //  PANEL DEFENSOR (con Cámara Gesell)
+            // ============================
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -2348,7 +2640,7 @@
                                             <td>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-guardar-gesell" data-id="${c.id}">Guardar</button>
                                                 ${c.estado === 'en_defensor' ? `<button class="btn btn-modern btn-modern-outline btn-modern-sm btn-finalizar-gesell" data-id="${c.id}">Finalizar</button>` : ''}
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
+                                                <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -2392,8 +2684,8 @@
                                             </td>
                                             <td>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-def-finalizar" data-id="${c.id}">Finalizar</button> 
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
                                     `).join('')}</tbody>
@@ -2463,8 +2755,8 @@
                 });
 
                 document.querySelectorAll('.btn-def-finalizar').forEach(btn => { btn.addEventListener('click', async function() { const id = this.dataset.id; if (confirm('¿Finalizar esta causa?')) { await cambiarEstado(id, 'finalizada', 'Finalizada por Administrador', 'Administrador'); renderAll(); } }); });
-                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
 
                 document.querySelectorAll('.btn-guardar-gesell').forEach(btn => {
                     btn.addEventListener('click', async function() {
@@ -2532,7 +2824,9 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // 4. EMPLEADO
+            // ============================
+            //  PANEL EMPLEADO (con filtros y separación)
+            // ============================
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let empSeleccionado = document.getElementById('simularEmpleado')?.value || CONFIG.empleados[0]?.id || '';
@@ -2733,7 +3027,9 @@
                 }
             }
 
-            // 5. GRÁFICOS
+            // ============================
+            //  PANEL GRÁFICOS (con puntajes manuales)
+            // ============================
             async function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
@@ -3008,7 +3304,9 @@
                 }, 150);
             }
 
-            // 6. AUDITORIA
+            // ============================
+            //  PANEL AUDITORIA (con T. Resolución)
+            // ============================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
@@ -3055,8 +3353,8 @@
                                             <td>${getEmpName(c.empleadoAsignado)}</td>
                                             <td><strong>${tiempoStr}</strong></td>
                                             <td>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="color:#c62828;"><i class="bi bi-trash"></i></button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-eliminar" data-id="${c.id}" title="Eliminar" style="padding:2px 6px; font-size:.6rem;"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>`;
                                     }).join('')}</tbody>
@@ -3070,12 +3368,14 @@
 
                 const filtro = document.getElementById('auditoriaFiltroOperador'); if (filtro) filtro.addEventListener('change', function() { paginationState.auditoria.page = 1; renderAuditoria(); });
                 const btnReporte = document.getElementById('btnReportePorOperador'); if (btnReporte) btnReporte.addEventListener('click', function() { const op = document.getElementById('auditoriaFiltroOperador').value; if (!op) { showToast('Seleccione un operador.', 'warning'); return; } generarReportePorOperador(op); });
-                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+                document.querySelectorAll('.btn-eliminar').forEach(btn => { btn.addEventListener('click', async function() { await eliminarCausa(this.dataset.id); renderAll(); }); });
                 document.getElementById('btnReiniciarStorage').addEventListener('click', async function() { if (confirm('⚠️ ¿Eliminar todos los datos de Firestore? Esta acción es irreversible.')) { try { const snapshot = await db.collection('operador').get(); const batch = db.batch(); snapshot.forEach(doc => { batch.delete(doc.ref); }); await batch.commit(); state.causas = []; state.ausencias = []; showToast('Datos reiniciados', 'warning'); renderAll(); } catch (e) { showToast('Error al reiniciar', 'danger'); } } });
             }
 
-            // 7. ADMINISTRACIÓN (EXCLUSIVO PARA ELIMINAR REGISTROS)
+            // ============================
+            //  PANEL ADMINISTRACIÓN (eliminación)
+            // ============================
             function renderAdmin() {
                 const panel = document.getElementById('panelAdmin');
                 const filterSelect = document.getElementById('adminFiltroOperador');
