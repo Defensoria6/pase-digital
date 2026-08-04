@@ -405,18 +405,17 @@
 
         /* ===== TABLA ===== */
         .table-wrap {
-            overflow-x: auto;
+            overflow-y: auto;  /* solo scroll vertical si es necesario */
             max-height: 65vh;
-            scrollbar-width: thin;
             border-radius: 16px;
         }
         .table-modern {
             margin: 0;
             font-size: 0.78rem;
-            min-width: 900px;
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
+            table-layout: auto; /* permite que las celdas se ajusten al contenido */
         }
         .table-modern thead th {
             background: #e9f0f8;
@@ -430,7 +429,7 @@
             position: sticky;
             top: 0;
             z-index: 5;
-            white-space: nowrap;
+            white-space: normal; /* permite que el texto del encabezado se envuelva */
         }
         .table-modern tbody td {
             padding: 8px 8px;
@@ -439,6 +438,8 @@
             color: #1a344a;
             font-size: 0.78rem;
             transition: background 0.15s;
+            white-space: normal; /* envolver texto */
+            word-break: break-word;
         }
         .table-modern tbody tr {
             transition: background 0.15s;
@@ -848,7 +849,10 @@
             }
             .table-modern {
                 font-size: 0.7rem;
-                min-width: 700px;
+            }
+            .table-modern thead th,
+            .table-modern tbody td {
+                padding: 6px 4px;
             }
             .modal-modern .modal-body {
                 padding: 1rem;
@@ -1227,7 +1231,10 @@
             let searchTerm = '';
             let cronoInterval = null;
             let refreshInterval = null;
-            let paginationState = { ingreso: { page: 1, perPage: 10 } };
+            let paginationState = {
+                ingreso: { page: 1, perPage: 10 },
+                rechazados: { page: 1, perPage: 10 }
+            };
             let formularioInicializado = false;
             let filtroMes = '';
             let filtroAnio = '';
@@ -1264,6 +1271,19 @@
                     'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>'
                 };
                 return map[estado] || `<span class="badge-estado">${estado}</span>`;
+            }
+
+            function getEstadoTexto(estado) {
+                const map = {
+                    'en_secretaria': 'En Secretaria',
+                    'en_proceso': 'En Proceso',
+                    'finalizada': 'Finalizada',
+                    'en_defensor': 'En Defensor',
+                    'devuelto_siged': 'Devuelto',
+                    'remitido': 'Remitido',
+                    'rechazado': 'Rechazado'
+                };
+                return map[estado] || estado;
             }
 
             function showToast(msg, type = 'success') {
@@ -1766,11 +1786,11 @@
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
                         <div class="mb-3">
-                            <label class="form-label">DNI *</label>
-                            <input type="text" id="inpDni" class="form-control" required autocomplete="off"
-                                   placeholder="Ingrese el DNI (8 dígitos)" maxlength="8"
-                                   pattern="[0-9]{7,8}" title="El DNI debe tener entre 7 y 8 dígitos numéricos"
+                            <label class="form-label">DNI</label>
+                            <input type="text" id="inpDni" class="form-control" autocomplete="off"
+                                   placeholder="Ingrese el DNI (opcional)" maxlength="8"
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                            <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
@@ -1856,8 +1876,8 @@
                     const dni = document.getElementById('inpDni').value.trim();
                     const modoIntervencion = document.getElementById('inpModoIntervencion').value;
 
-                    if (!dni || !/^\d{7,8}$/.test(dni)) {
-                        showToast('Debe ingresar un DNI válido de 7 u 8 dígitos', 'warning');
+                    if (dni && !/^\d{7,8}$/.test(dni)) {
+                        showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
                         return;
                     }
                     if (accion !== 'asignar') {
@@ -1923,6 +1943,7 @@
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
+                // ---- Tabla de Recientes ----
                 let datosMostrar = causasFiltradas;
                 if (!filtroMes && !filtroAnio) {
                     datosMostrar = datosMostrar.slice(0, 50);
@@ -1932,6 +1953,34 @@
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
                 .perPage);
 
+                // ---- Tabla de Rechazados / Devueltos ----
+                let causasRechazadas = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged')
+                );
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causasRechazadas = causasRechazadas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroMes || filtroAnio) {
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                causasRechazadas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                const pStateRech = paginationState.rechazados;
+                const { items: itemsRech, total: totalRech, totalPages: totalPagesRech, page: pageRech } = paginateData(
+                    causasRechazadas, pStateRech.page, pStateRech.perPage
+                );
+
+                // ---- Generar HTML ----
                 const añoOptions = [];
                 for (let y = 2026; y <= 2040; y++) {
                     añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
@@ -1945,6 +1994,7 @@
                 }
 
                 let html = `
+                    <!-- FILTROS -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
@@ -1966,15 +2016,15 @@
                     </div>
                 `;
 
+                // Tabla de Recientes (sin columna de acciones, estado en texto negrita)
                 if (total) {
                     html += `
-                        <div style="overflow-x:auto; width:100%; border-radius:16px;">
+                        <div style="width:100%; border-radius:16px;">
                             <table class="table-modern table table-sm" style="margin-bottom:0;">
                                 <thead>
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
                                         <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                        <th style="width:130px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1992,17 +2042,9 @@
                                             <td style="font-size:0.65rem;">${c.tipo}</td>
                                             <td>N${c.nivelOperador}</td>
                                             <td>${fuenteHtml}</td>
-                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td><strong>${getEstadoTexto(c.estado)}</strong></td>
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                            <td style="white-space:nowrap;">
-                                                ${c.estado === 'en_secretaria' || c.estado === 'en_proceso' || c.estado === 'en_defensor' ? `
-                                                    <button class="btn-accion-tabla primary" data-id="${c.id}" data-accion="devolver" title="Devolver a SIGED"><i class="bi bi-arrow-return-left"></i></button>
-                                                    <button class="btn-accion-tabla success" data-id="${c.id}" data-accion="remitir" title="Remitir a otra dependencia"><i class="bi bi-send"></i></button>
-                                                    <button class="btn-accion-tabla danger" data-id="${c.id}" data-accion="rechazar" title="Rechazar"><i class="bi bi-x-circle"></i></button>
-                                                ` : ''}
-                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
-                                            </td>
                                         </tr>
                                     `}).join('')}
                                 </tbody>
@@ -2014,39 +2056,96 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
+                // ---- Tabla de Rechazados / Devueltos ----
+                html += `
+                    <hr class="my-4" />
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                        <div class="card-title mb-0"><i class="bi bi-x-circle"></i> Rechazados / Devueltos por Secretario</div>
+                        <span class="badge bg-secondary">${totalRech} expedientes</span>
+                    </div>
+                `;
+                if (totalRech) {
+                    html += `
+                        <div style="width:100%; border-radius:16px;">
+                            <table class="table-modern table table-sm" style="margin-bottom:0;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Tipo</th><th>Nivel</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Pase</th>
+                                        <th>Motivo</th>
+                                        <th style="width:100px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsRech.map(c => {
+                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.65rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td style="white-space:nowrap;">
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="paginationRechazados"></div>
+                    `;
+                } else {
+                    html += `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>No hay expedientes rechazados o devueltos por el Secretario.</div>`;
+                }
+
                 container.innerHTML = html;
 
+                // ---- Paginación ----
                 if (total > 0) {
-                    renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage,
-                    newPerPage) => {
+                    renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
                         paginationState.ingreso.page = newPage;
                         paginationState.ingreso.perPage = newPerPage;
                         renderTabla();
                     });
                 }
+                if (totalRech > 0) {
+                    renderPagination('paginationRechazados', totalRech, totalPagesRech, pageRech, pStateRech.perPage, (
+                        newPage, newPerPage) => {
+                        paginationState.rechazados.page = newPage;
+                        paginationState.rechazados.perPage = newPerPage;
+                        renderTabla();
+                    });
+                }
 
-                // Filtros
+                // ---- Filtros ----
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
                 if (mesSelect) { mesSelect.addEventListener('change', function() { filtroMes = this.value;
                         paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
                         renderTabla(); }); }
                 if (anioSelect) { anioSelect.addEventListener('change', function() { filtroAnio = this.value;
                         paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
                         renderTabla(); }); }
                 if (limpiarBtn) { limpiarBtn.addEventListener('click', function() { filtroMes = '';
                         filtroAnio = '';
                         paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                // Acciones
+                // ---- Acciones solo para la tabla de rechazados (historial) ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
                         const accion = this.dataset.accion;
-                        if (accion === 'historial') { abrirHistorial(id); } else { abrirModalAccion(id,
-                            accion); }
+                        if (accion === 'historial') { abrirHistorial(id); }
                     });
                 });
                 const btnReporte = container.querySelector('#btnReporteOperador');
@@ -2170,6 +2269,7 @@
                 document.getElementById('globalSearch').addEventListener('input', function() {
                     searchTerm = this.value.trim();
                     paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
                     renderTabla();
                 });
 
