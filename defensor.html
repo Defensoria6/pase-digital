@@ -434,7 +434,7 @@
 
             // ---------- CONFIG ----------
             const CONFIG = {
-                password: 'def6',
+                password: 'ramos6',
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
                 empleados: [
@@ -1400,17 +1400,20 @@
             }
 
             function generarReporteRanking() {
-                const empleadosData = CONFIG.empleados.map(e => {
-                    const puntajeFinal = obtenerPuntajeFinal(e.id);
-                    return {
-                        nombre: e.nombre,
-                        carga: calcularCargaTotal(e.id),
-                        activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
-                        moroso: tieneAtrasos(e.id),
-                        puntajeAutomatico: calcularPuntajeAutomatico(e.id),
-                        puntajeFinal: puntajeFinal
-                    };
-                });
+                // Obtener datos de empleados excluyendo a Bolillat (emp2)
+                const empleadosData = CONFIG.empleados
+                    .filter(e => e.id !== 'emp2') // Excluir a Bolillat Cesar Enrique
+                    .map(e => {
+                        const puntajeFinal = obtenerPuntajeFinal(e.id);
+                        return {
+                            nombre: e.nombre,
+                            carga: calcularCargaTotal(e.id),
+                            activas: state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length,
+                            moroso: tieneAtrasos(e.id),
+                            puntajeAutomatico: calcularPuntajeAutomatico(e.id),
+                            puntajeFinal: puntajeFinal
+                        };
+                    });
                 empleadosData.sort((a, b) => b.puntajeFinal - a.puntajeFinal);
 
                 const now = new Date();
@@ -3098,22 +3101,25 @@
 
                 await cargarPuntajesManuales();
 
-                const empleadosData = CONFIG.empleados.map(e => {
-                    const totalAsignados = calcularCargaTotal(e.id);
-                    const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length;
-                    const moroso = tieneAtrasos(e.id);
-                    const puntajeAuto = calcularPuntajeAutomatico(e.id);
-                    const puntajeFinal = obtenerPuntajeFinal(e.id);
-                    return {
-                        id: e.id,
-                        nombre: e.nombre,
-                        carga: totalAsignados,
-                        activas: activas,
-                        moroso: moroso,
-                        puntajeAutomatico: puntajeAuto,
-                        puntajeFinal: puntajeFinal
-                    };
-                });
+                // EXCLUIR A BOLILLAT (emp2) DE LOS DATOS PARA GRÁFICOS Y RANKING
+                const empleadosData = CONFIG.empleados
+                    .filter(e => e.id !== 'emp2') // Excluir a Bolillat Cesar Enrique
+                    .map(e => {
+                        const totalAsignados = calcularCargaTotal(e.id);
+                        const activas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length;
+                        const moroso = tieneAtrasos(e.id);
+                        const puntajeAuto = calcularPuntajeAutomatico(e.id);
+                        const puntajeFinal = obtenerPuntajeFinal(e.id);
+                        return {
+                            id: e.id,
+                            nombre: e.nombre,
+                            carga: totalAsignados,
+                            activas: activas,
+                            moroso: moroso,
+                            puntajeAutomatico: puntajeAuto,
+                            puntajeFinal: puntajeFinal
+                        };
+                    });
                 empleadosData.sort((a, b) => b.puntajeFinal - a.puntajeFinal);
 
                 const niveles = [1,2,3,4];
