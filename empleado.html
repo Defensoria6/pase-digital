@@ -247,6 +247,41 @@
                 overflow: visible !important;
             }
         }
+
+        /* ===== CHAT ESTILO WHATSAPP ===== */
+        .chat-widget { position:fixed; bottom:24px; left:24px; z-index:9999; font-family:'Inter',sans-serif; }
+        .chat-toggle-btn { 
+            background:#25d366; color:#fff; border:none; border-radius:50%; 
+            width:60px; height:60px; font-size:1.8rem; 
+            box-shadow:0 4px 12px rgba(0,0,0,0.15); cursor:pointer; 
+            transition:transform 0.2s; display:flex; justify-content:center; align-items:center; position:relative; 
+        }
+        .chat-toggle-btn:hover { transform:scale(1.05); }
+        .chat-toggle-btn .badge-notif {
+            position:absolute; top:-5px; right:-5px; 
+            background:#dc3545; color:#fff; border-radius:50%; 
+            font-size:0.6rem; font-weight:700; 
+            padding:2px 6px; 
+            display:none; 
+            min-width:20px; text-align:center;
+            box-shadow:0 2px 4px rgba(0,0,0,0.2);
+        }
+        .chat-panel { position:absolute; bottom:80px; left:0; width:350px; height:450px; background:#e5ddd5; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden; transition:opacity 0.3s, transform 0.3s; transform-origin:bottom left; }
+        .chat-panel.hidden { opacity:0; transform:scale(0); pointer-events:none; }
+        .chat-header { background:#075e54; color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; font-weight:600; }
+        .chat-header h6 { margin:0; font-size:1rem; display:flex; align-items:center; gap:8px; }
+        .chat-header button { background:transparent; border:none; color:#fff; font-size:1.2rem; cursor:pointer; }
+        .chat-messages { flex:1; padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; scrollbar-width:thin; }
+        .chat-message { max-width:80%; padding:8px 12px; border-radius:8px; font-size:0.85rem; position:relative; box-shadow:0 1px 2px rgba(0,0,0,0.1); }
+        .chat-message .sender { font-size:0.7rem; font-weight:700; margin-bottom:2px; color:#075e54; }
+        .chat-message .time { font-size:0.65rem; color:#999; text-align:right; margin-top:4px; display:block; }
+        .chat-message.sent { background:#dcf8c6; align-self:flex-end; border-top-right-radius:0; }
+        .chat-message.received { background:#fff; align-self:flex-start; border-top-left-radius:0; }
+        .chat-input-area { background:#f0f0f0; padding:10px; display:flex; gap:10px; align-items:center; }
+        .chat-input-area input { flex:1; border:none; padding:10px 16px; border-radius:24px; font-size:0.9rem; outline:none; }
+        .chat-input-area button { background:#00897b; color:#fff; border:none; border-radius:50%; width:40px; height:40px; display:flex; justify-content:center; align-items:center; cursor:pointer; transition:0.2s; }
+        .chat-input-area button:hover { background:#00695c; }
+        @media (max-width:576px) { .chat-panel { width:calc(100vw - 48px); height:400px; } }
     </style>
 </head>
 <body>
@@ -365,6 +400,28 @@
     </div>
 
     <div id="toastContainer" style="position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
+
+    <!-- ===== WIDGET DE CHAT ===== -->
+    <div id="chatWidget" class="chat-widget" style="display: none;">
+        <button id="chatToggleBtn" class="chat-toggle-btn">
+            <i class="bi bi-chat-dots-fill"></i>
+            <span id="chatBadge" class="badge-notif">0</span>
+        </button>
+        
+        <div id="chatPanel" class="chat-panel hidden">
+            <div class="chat-header">
+                <h6><i class="bi bi-whatsapp"></i> Chat con Secretario</h6>
+                <button id="chatCloseBtn"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <!-- Los mensajes aparecerán aquí -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." autocomplete="off" />
+                <button id="chatSendBtn"><i class="bi bi-send-fill"></i></button>
+            </div>
+        </div>
+    </div>
 
     <script>
         (function() {
@@ -558,7 +615,7 @@
                 return null;
             }
 
-            // ---------- REPORTE DEL EMPLEADO (MODIFICADO: incluye tipoAsignacion y empleadoAsignado) ----------
+            // ---------- REPORTE DEL EMPLEADO ----------
             function generarReporteEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -662,7 +719,7 @@
                 new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
             }
 
-            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) MODIFICADO: incluye tipoAsignacion y empleadoAsignado ----------
+            // ---------- ESTADÍSTICAS (HISTORIAL DETALLADO) ----------
             function generarEstadisticas(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -1217,18 +1274,204 @@
                 showToast(`Bienvenido/a ${empNombre}`, 'success');
                 iniciarCronometros();
                 iniciarAutoActualizacion();
+
+                // INICIAR CHAT (con nuevo sistema individual por empleado)
+                inicializarChat(empNombre, empId);
             }
 
             function cerrarSesion() {
                 document.getElementById('logoutAlert').style.display = 'none';
                 if (cronoInterval) clearInterval(cronoInterval);
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+                // Cerrar chat
+                if (unsubscribeChat) { unsubscribeChat();
+                    unsubscribeChat = null; }
                 document.getElementById('appWrapper').classList.remove('visible');
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
                 document.getElementById('loginEmpleado').value = '';
                 currentEmpleadoId = '';
                 showToast('Sesión cerrada', 'warning');
+                // Ocultar chat
+                document.getElementById('chatWidget').style.display = 'none';
+            }
+
+            // ============================================================
+            //  LÓGICA DEL CHAT INDIVIDUAL CON NOTIFICACIONES DE NO LEÍDOS
+            // ============================================================
+            let chatUsuarioActual = "";
+            let unsubscribeChat = null;
+            let mensajesNoLeidos = 0;
+            let mensajesContados = new Set(); // IDs de mensajes ya contados
+
+            function inicializarChat(nombreUsuario, empleadoId) {
+                chatUsuarioActual = nombreUsuario;
+                const chatWidget = document.getElementById('chatWidget');
+                chatWidget.style.display = 'block';
+                
+                if (unsubscribeChat) unsubscribeChat();
+                
+                // Limpiar contador al iniciar
+                mensajesNoLeidos = 0;
+                mensajesContados.clear();
+                actualizarBadge();
+
+                // Suscripción filtrando por empleadoId
+                unsubscribeChat = db.collection('chat_interno')
+                    .where('empleadoId', '==', empleadoId)
+                    .onSnapshot((snapshot) => {
+                        const chatMessages = document.getElementById('chatMessages');
+                        chatMessages.innerHTML = '';
+                        const mensajes = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            data._id = doc.id; // guardamos el id
+                            mensajes.push(data);
+                        });
+                        // Ordenar por timestamp
+                        mensajes.sort((a, b) => {
+                            const ta = a.timestamp?.toMillis?.() || 0;
+                            const tb = b.timestamp?.toMillis?.() || 0;
+                            return ta - tb;
+                        });
+
+                        // Procesar notificaciones de no leídos SOLO si el panel está oculto
+                        const panel = document.getElementById('chatPanel');
+                        const panelOculto = panel.classList.contains('hidden');
+                        if (panelOculto) {
+                            // Contar mensajes que no son del usuario actual y que no han sido contados
+                            let nuevosNoLeidos = 0;
+                            mensajes.forEach(msg => {
+                                if (msg.remitente !== chatUsuarioActual && !mensajesContados.has(msg._id)) {
+                                    mensajesContados.add(msg._id);
+                                    nuevosNoLeidos++;
+                                }
+                            });
+                            if (nuevosNoLeidos > 0) {
+                                mensajesNoLeidos += nuevosNoLeidos;
+                                actualizarBadge();
+                                // Opcional: mostrar un toast de notificación
+                                showToast(`💬 ${nuevosNoLeidos} mensaje(s) nuevo(s) en el chat`, 'info');
+                            }
+                        } else {
+                            // Si el panel está visible, todos los mensajes se consideran leídos
+                            // (no incrementamos el contador, pero los marcamos como contados para futuros)
+                            mensajes.forEach(msg => {
+                                if (msg.remitente !== chatUsuarioActual) {
+                                    mensajesContados.add(msg._id);
+                                }
+                            });
+                            // Aseguramos que el contador se mantenga en 0 si estaba visible
+                            mensajesNoLeidos = 0;
+                            actualizarBadge();
+                        }
+
+                        // Renderizar todos los mensajes en el panel
+                        mensajes.forEach(data => renderizarMensaje(data));
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }, (error) => {
+                        console.error("Error cargando el chat:", error);
+                        showToast('Error al cargar mensajes: ' + error.message, 'danger');
+                    });
+            }
+
+            function renderizarMensaje(data) {
+                const chatMessages = document.getElementById('chatMessages');
+                const esMio = data.remitente === chatUsuarioActual;
+                const div = document.createElement('div');
+                div.className = `chat-message ${esMio ? 'sent' : 'received'}`;
+                
+                let horaStr = '';
+                if (data.timestamp) {
+                    const d = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                    horaStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                } else {
+                    const now = new Date();
+                    horaStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                }
+
+                div.innerHTML = `
+                    ${!esMio ? `<div class="sender">${data.remitente}</div>` : ''}
+                    <div class="text">${data.texto}</div>
+                    <span class="time">${horaStr}</span>
+                `;
+                chatMessages.appendChild(div);
+            }
+
+            function actualizarBadge() {
+                const badge = document.getElementById('chatBadge');
+                if (mensajesNoLeidos > 0) {
+                    badge.textContent = mensajesNoLeidos > 99 ? '99+' : mensajesNoLeidos;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            async function enviarMensaje() {
+                const input = document.getElementById('chatInput');
+                const texto = input.value.trim();
+                if (!texto) return;
+                if (!currentEmpleadoId) {
+                    showToast('No se ha identificado al empleado', 'warning');
+                    return;
+                }
+
+                input.value = '';
+                
+                // ** INSERCIÓN OPTIMISTA: mostrar el mensaje inmediatamente **
+                const mensajeOptimista = {
+                    remitente: chatUsuarioActual,
+                    texto: texto,
+                    timestamp: new Date(), // temporal
+                    empleadoId: currentEmpleadoId,
+                    _id: 'temp_' + Date.now()
+                };
+                renderizarMensaje(mensajeOptimista);
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                try {
+                    await db.collection('chat_interno').add({
+                        remitente: chatUsuarioActual,
+                        texto: texto,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        empleadoId: currentEmpleadoId
+                    });
+                    // El snapshot actualizará el timestamp y cualquier otro cambio
+                } catch (error) {
+                    console.error("Error al enviar mensaje:", error);
+                    showToast('Error al enviar mensaje', 'danger');
+                }
+            }
+
+            // Función para eliminar SOLO los mensajes de este empleado
+            async function eliminarChatPropio() {
+                if (!currentEmpleadoId) return;
+                try {
+                    const snapshot = await db.collection('chat_interno')
+                        .where('empleadoId', '==', currentEmpleadoId)
+                        .get();
+                    if (snapshot.empty) {
+                        showToast('No hay mensajes para eliminar', 'info');
+                        return;
+                    }
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    showToast('💬 Historial de chat eliminado', 'info');
+                    // Limpiar la vista
+                    document.getElementById('chatMessages').innerHTML = '';
+                    // Resetear contador
+                    mensajesNoLeidos = 0;
+                    mensajesContados.clear();
+                    actualizarBadge();
+                } catch (error) {
+                    console.error('Error al eliminar chat:', error);
+                    showToast('Error al eliminar el historial', 'danger');
+                }
             }
 
             // ---------- INICIALIZACIÓN ----------
@@ -1263,6 +1506,47 @@
                 });
 
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarManual);
+
+                // ---- Eventos del chat ----
+                const chatToggleBtn = document.getElementById('chatToggleBtn');
+                const chatPanel = document.getElementById('chatPanel');
+                const chatCloseBtn = document.getElementById('chatCloseBtn');
+                const chatSendBtn = document.getElementById('chatSendBtn');
+                const chatInput = document.getElementById('chatInput');
+
+                chatToggleBtn.addEventListener('click', () => {
+                    const isHidden = chatPanel.classList.contains('hidden');
+                    if (isHidden) {
+                        // Al abrir el panel, resetear contador de no leídos
+                        mensajesNoLeidos = 0;
+                        mensajesContados.clear();
+                        actualizarBadge();
+                        chatPanel.classList.remove('hidden');
+                        chatInput.focus();
+                        const chatMessages = document.getElementById('chatMessages');
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    } else {
+                        chatPanel.classList.add('hidden');
+                    }
+                });
+
+                // Botón cerrar (eliminar historial)
+                chatCloseBtn.addEventListener('click', () => {
+                    if (confirm('¿Deseas eliminar toda la conversación con el secretario?')) {
+                        eliminarChatPropio();
+                        chatPanel.classList.add('hidden');
+                    } else {
+                        chatPanel.classList.add('hidden');
+                    }
+                });
+
+                chatSendBtn.addEventListener('click', enviarMensaje);
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        enviarMensaje();
+                    }
+                });
             });
         })();
     </script>
