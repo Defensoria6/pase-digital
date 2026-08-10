@@ -812,11 +812,10 @@
                                     ${activas.map(c => {
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
-                                        const detalle = getDetalleAsignacion(c);
                                         return `<tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
                                             <td style="padding: 6px 8px;">${c.modoIntervencion || '-'}</td>
-                                            <td style="padding: 6px 8px; font-size:0.7rem; max-width:250px; word-break:break-word;">${detalle}</td>
+                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
                                             <td style="padding: 6px 8px;">${cronoHtml}</td>
                                             <td style="padding: 6px 8px;">N${c.nivelSecretario}</td>
                                             <td style="padding: 6px 8px; font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
@@ -1047,11 +1046,10 @@
                                     ${activas.map(c => {
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
-                                        const detalle = getDetalleAsignacion(c);
                                         return `<tr style="border-bottom:1px solid #eef2f7;">
                                             <td style="padding:6px 8px; font-weight:600;">${c.numero}</td>
                                             <td style="padding:6px 8px;">${c.modoIntervencion || '-'}</td>
-                                            <td style="padding:6px 8px; font-size:0.7rem; max-width:250px; word-break:break-word;">${detalle}</td>
+                                            <td style="padding:6px 8px;">${c.tipo || '-'}</td>
                                             <td style="padding:6px 8px;">${cronoHtml}</td>
                                             <td style="padding:6px 8px;">N${c.nivelSecretario}</td>
                                             <td style="padding:6px 8px; font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
@@ -1204,11 +1202,10 @@
                                     ${items.map(c => {
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
-                                        const detalle = getDetalleAsignacion(c);
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.modoIntervencion || '-'}</td>
-                                            <td style="font-size:0.7rem; max-width:250px; word-break:break-word;">${detalle}</td>
+                                            <td>${c.tipo || '-'}</td>
                                             <td>${cronoHtml}</td>
                                             <td>N${c.nivelSecretario}</td>
                                             <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
