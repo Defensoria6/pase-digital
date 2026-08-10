@@ -473,8 +473,8 @@
             let cronoInterval = null;
             let autoUpdateInterval = null;
             let paginationState = {
-                empleadoNuevos: { page: 1, perPage: 5 },
-                empleadoSeg: { page: 1, perPage: 5 }
+                activas: { page: 1, perPage: 5 },
+                historial: { page: 1, perPage: 5 }
             };
 
             // Filtros de mes/año
@@ -540,7 +540,6 @@
                         if (doc.id === 'secretario_config') return;
                         const data = doc.data();
                         if (!data.id) data.id = doc.id;
-                        // Asegurar empleadoAsignado para retrocompatibilidad
                         if (!data.empleadoAsignado && data.empleadoId) {
                             data.empleadoAsignado = data.empleadoId;
                         }
@@ -943,29 +942,30 @@
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
             }
 
-            // ---------- RENDER MIS TAREAS (divide en dos tablas) ----------
+            // ---------- RENDER PRINCIPAL (Bandeja Activa + Historial) ----------
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === currentEmpleadoId);
+
+                // Aplicar filtros de búsqueda y mes/año
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
                 }
-                // Filtro por mes y año (fechaAsignacion)
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
                     const anio = parseInt(filtroAnio);
                     causasFiltradas = causasFiltradas.filter(c => {
                         if (!c.fechaAsignacion) return false;
                         const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes-1 && d.getFullYear() === anio;
+                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
                     });
                 } else if (filtroMes) {
                     const mes = parseInt(filtroMes);
                     causasFiltradas = causasFiltradas.filter(c => {
                         if (!c.fechaAsignacion) return false;
                         const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes-1;
+                        return d.getMonth() === mes - 1;
                     });
                 } else if (filtroAnio) {
                     const anio = parseInt(filtroAnio);
@@ -976,24 +976,24 @@
                     });
                 }
 
-                // --- DIVISIÓN EN DOS LISTAS según tipoAsignacion ---
-                const nuevos = causasFiltradas.filter(c => c.tipoAsignacion === 'Nuevo Patrocinio');
-                const seguimientos = causasFiltradas.filter(c => c.tipoAsignacion === 'Seguimiento');
+                // Separar en activas (en_proceso) e historial (resto)
+                const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
+                const historial = causasFiltradas.filter(c => c.estado !== 'en_proceso');
 
                 // Ordenar por fecha de asignación (más reciente primero)
-                nuevos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                seguimientos.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                historial.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
-                // Paginación para cada tabla
-                const pStateNuevos = paginationState.empleadoNuevos || { page: 1, perPage: 5 };
-                const pStateSeg = paginationState.empleadoSeg || { page: 1, perPage: 5 };
+                // Paginación
+                const pStateActivas = paginationState.activas;
+                const pStateHistorial = paginationState.historial;
 
-                const { items: itemsN, total: totalN, totalPages: totalPagesN, page: pageN } = paginateData(nuevos, pStateNuevos.page, pStateNuevos.perPage);
-                const { items: itemsS, total: totalS, totalPages: totalPagesS, page: pageS } = paginateData(seguimientos, pStateSeg.page, pStateSeg.perPage);
+                const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
+                const { items: itemsHist, total: totalHist, totalPages: totalPagesHist, page: pageHist } = paginateData(historial, pStateHistorial.page, pStateHistorial.perPage);
 
-                // Función auxiliar para generar tabla
-                function generarTabla(items, tipo) {
-                    if (!items.length) return `<div class="text-muted py-3">Sin ${tipo.toLowerCase()}</div>`;
+                // Función auxiliar para generar tabla de activas (con botones)
+                function generarTablaActivas(items) {
+                    if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
                     return `
                         <div class="table-wrap">
                             <table class="table-modern table">
@@ -1002,7 +1002,6 @@
                                         <th>Expediente</th>
                                         <th>Modo Intervención</th>
                                         <th>Tipo</th>
-                                        <th>Asignación</th>
                                         <th>Tiempo</th>
                                         <th>Nivel</th>
                                         <th>Observación</th>
@@ -1011,7 +1010,6 @@
                                 </thead>
                                 <tbody>
                                     ${items.map(c => {
-                                        const done = c.estado === 'finalizada';
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
                                         const tipoAsignacion = c.tipoAsignacion || 'N/D';
@@ -1021,16 +1019,13 @@
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${c.tipo}</td>
                                             <td>${badgeAsignacion}</td>
                                             <td>${cronoHtml}</td>
                                             <td>N${c.nivelSecretario}</td>
                                             <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
                                             <td>
-                                                ${!done && c.estado === 'en_proceso' ? `
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
-                                                    <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
-                                                ` : (done ? `<i class="bi bi-check-circle-fill text-success"></i>` : `<span class="badge badge-estado badge-sec">En Secretaría</span>`)}
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                             </td>
                                         </tr>`;
@@ -1041,12 +1036,49 @@
                     `;
                 }
 
-                const anioOptions = [];
-                for (let y = 2026; y <= 2040; y++) {
-                    anioOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
+                // Función auxiliar para generar tabla de historial (solo lectura)
+                function generarTablaHistorial(items) {
+                    if (!items.length) return `<div class="text-muted py-3">No hay pases en el historial.</div>`;
+                    return `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Modo Intervención</th>
+                                        <th>Tipo</th>
+                                        <th>Tiempo</th>
+                                        <th>Nivel</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Fin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(c => {
+                                        const cronoHtml = getCronoHtml(c);
+                                        const tipoAsignacion = c.tipoAsignacion || 'N/D';
+                                        const badgeAsignacion = tipoAsignacion === 'Nuevo Patrocinio' 
+                                            ? '<span class="badge badge-tipo-nuevo">Nuevo</span>' 
+                                            : (tipoAsignacion === 'Seguimiento' ? '<span class="badge badge-tipo-seguimiento">Seguimiento</span>' : 'N/D');
+                                        const fechaFin = c.fechaFinalizacion || c.fechaResolucionEmpleado || '-';
+                                        return `<tr style="opacity:0.85;">
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.modoIntervencion || '-'}</td>
+                                            <td>${badgeAsignacion}</td>
+                                            <td>${cronoHtml}</td>
+                                            <td>N${c.nivelSecretario}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td>${fechaFin !== '-' ? fmtDateShort(fechaFin) : '-'}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
                 }
 
-                let html = `
+                // Construir el HTML del panel
+                const html = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
@@ -1067,20 +1099,27 @@
                                 <label style="font-size:0.75rem; font-weight:600;">Año:</label>
                                 <select id="filtroAnio" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
                                     <option value="">Todos</option>
-                                    ${anioOptions.join('')}
+                                    ${Array.from({length:15}, (_,i) => {
+                                        const y = 2026 + i;
+                                        return `<option value="${y}" ${filtroAnio==y?'selected':''}>${y}</option>`;
+                                    }).join('')}
                                 </select>
                             </div>
                             <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltros"><i class="bi bi-eraser"></i> Limpiar</button>
                         </div>
+
+                        <!-- BANDEJA ACTIVA -->
                         <div class="mb-4">
-                            <h6><i class="bi bi-star text-success"></i> Nuevos Patrocinios</h6>
-                            ${generarTabla(itemsN, 'Nuevos Patrocinios')}
-                            <div id="paginationNuevos"></div>
+                            <h6><i class="bi bi-inbox text-primary"></i> Bandeja Activa (En Proceso)</h6>
+                            ${generarTablaActivas(itemsAct)}
+                            <div id="paginationActivas"></div>
                         </div>
+
+                        <!-- HISTORIAL DE PASES -->
                         <div>
-                            <h6><i class="bi bi-arrow-repeat text-warning"></i> Seguimiento Posterior</h6>
-                            ${generarTabla(itemsS, 'Seguimiento')}
-                            <div id="paginationSeg"></div>
+                            <h6><i class="bi bi-clock-history text-secondary"></i> Historial de Pases</h6>
+                            ${generarTablaHistorial(itemsHist)}
+                            <div id="paginationHistorial"></div>
                         </div>
                     </div>
                 `;
@@ -1088,16 +1127,20 @@
                 panel.innerHTML = html;
 
                 // Renderizar paginación para cada tabla
-                if (totalN > 0) renderPagination('paginationNuevos', totalN, totalPagesN, pageN, pStateNuevos.perPage, (newPage, newPerPage) => {
-                    paginationState.empleadoNuevos = { page: newPage, perPage: newPerPage };
-                    renderEmpleado();
-                });
-                if (totalS > 0) renderPagination('paginationSeg', totalS, totalPagesS, pageS, pStateSeg.perPage, (newPage, newPerPage) => {
-                    paginationState.empleadoSeg = { page: newPage, perPage: newPerPage };
-                    renderEmpleado();
-                });
+                if (totalAct > 0) {
+                    renderPagination('paginationActivas', totalAct, totalPagesAct, pageAct, pStateActivas.perPage, (newPage, newPerPage) => {
+                        paginationState.activas = { page: newPage, perPage: newPerPage };
+                        renderEmpleado();
+                    });
+                }
+                if (totalHist > 0) {
+                    renderPagination('paginationHistorial', totalHist, totalPagesHist, pageHist, pStateHistorial.perPage, (newPage, newPerPage) => {
+                        paginationState.historial = { page: newPage, perPage: newPerPage };
+                        renderEmpleado();
+                    });
+                }
 
-                // Eventos de botones
+                // Eventos para botones de la tabla activa
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -1116,6 +1159,7 @@
                         }
                     });
                 });
+
                 document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -1134,34 +1178,42 @@
                         }
                     });
                 });
+
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => {
                     btn.addEventListener('click', function() {
                         abrirHistorial(this.dataset.id);
                     });
                 });
 
-                // Reporte y Estadísticas
+                // Reporte y Estadísticas (fuera de las tablas)
                 const btnReporte = document.getElementById('btnReporteEmpleado');
-                if (btnReporte) { btnReporte.addEventListener('click', function() { if (currentEmpleadoId) generarReporteEmpleado(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); }); }
-                const btnEst = document.getElementById('btnEstadisticas');
-                if (btnEst) { btnEst.addEventListener('click', function() { if (currentEmpleadoId) generarEstadisticas(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); }); }
+                if (btnReporte) btnReporte.addEventListener('click', function() {
+                    if (currentEmpleadoId) generarReporteEmpleado(currentEmpleadoId);
+                    else showToast('Seleccione un empleado', 'warning');
+                });
 
-                // Filtros
+                const btnEst = document.getElementById('btnEstadisticas');
+                if (btnEst) btnEst.addEventListener('click', function() {
+                    if (currentEmpleadoId) generarEstadisticas(currentEmpleadoId);
+                    else showToast('Seleccione un empleado', 'warning');
+                });
+
+                // Filtros de mes/año
                 const selectMes = document.getElementById('filtroMes');
                 const selectAnio = document.getElementById('filtroAnio');
                 if (selectMes) {
                     selectMes.addEventListener('change', function() {
                         filtroMes = this.value;
-                        paginationState.empleadoNuevos.page = 1;
-                        paginationState.empleadoSeg.page = 1;
+                        paginationState.activas.page = 1;
+                        paginationState.historial.page = 1;
                         renderEmpleado();
                     });
                 }
                 if (selectAnio) {
                     selectAnio.addEventListener('change', function() {
                         filtroAnio = this.value;
-                        paginationState.empleadoNuevos.page = 1;
-                        paginationState.empleadoSeg.page = 1;
+                        paginationState.activas.page = 1;
+                        paginationState.historial.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -1170,8 +1222,8 @@
                     btnLimpiar.addEventListener('click', function() {
                         filtroMes = '';
                         filtroAnio = '';
-                        paginationState.empleadoNuevos.page = 1;
-                        paginationState.empleadoSeg.page = 1;
+                        paginationState.activas.page = 1;
+                        paginationState.historial.page = 1;
                         renderEmpleado();
                     });
                 }
@@ -1283,16 +1335,13 @@
                 document.getElementById('logoutAlert').style.display = 'none';
                 if (cronoInterval) clearInterval(cronoInterval);
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
-                // Cerrar chat
-                if (unsubscribeChat) { unsubscribeChat();
-                    unsubscribeChat = null; }
+                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
                 document.getElementById('appWrapper').classList.remove('visible');
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
                 document.getElementById('loginEmpleado').value = '';
                 currentEmpleadoId = '';
                 showToast('Sesión cerrada', 'warning');
-                // Ocultar chat
                 document.getElementById('chatWidget').style.display = 'none';
             }
 
@@ -1302,7 +1351,7 @@
             let chatUsuarioActual = "";
             let unsubscribeChat = null;
             let mensajesNoLeidos = 0;
-            let mensajesContados = new Set(); // IDs de mensajes ya contados
+            let mensajesContados = new Set();
 
             function inicializarChat(nombreUsuario, empleadoId) {
                 chatUsuarioActual = nombreUsuario;
@@ -1311,12 +1360,10 @@
                 
                 if (unsubscribeChat) unsubscribeChat();
                 
-                // Limpiar contador al iniciar
                 mensajesNoLeidos = 0;
                 mensajesContados.clear();
                 actualizarBadge();
 
-                // Suscripción filtrando por empleadoId
                 unsubscribeChat = db.collection('chat_interno')
                     .where('empleadoId', '==', empleadoId)
                     .onSnapshot((snapshot) => {
@@ -1325,21 +1372,18 @@
                         const mensajes = [];
                         snapshot.forEach(doc => {
                             const data = doc.data();
-                            data._id = doc.id; // guardamos el id
+                            data._id = doc.id;
                             mensajes.push(data);
                         });
-                        // Ordenar por timestamp
                         mensajes.sort((a, b) => {
                             const ta = a.timestamp?.toMillis?.() || 0;
                             const tb = b.timestamp?.toMillis?.() || 0;
                             return ta - tb;
                         });
 
-                        // Procesar notificaciones de no leídos SOLO si el panel está oculto
                         const panel = document.getElementById('chatPanel');
                         const panelOculto = panel.classList.contains('hidden');
                         if (panelOculto) {
-                            // Contar mensajes que no son del usuario actual y que no han sido contados
                             let nuevosNoLeidos = 0;
                             mensajes.forEach(msg => {
                                 if (msg.remitente !== chatUsuarioActual && !mensajesContados.has(msg._id)) {
@@ -1350,23 +1394,18 @@
                             if (nuevosNoLeidos > 0) {
                                 mensajesNoLeidos += nuevosNoLeidos;
                                 actualizarBadge();
-                                // Opcional: mostrar un toast de notificación
                                 showToast(`💬 ${nuevosNoLeidos} mensaje(s) nuevo(s) en el chat`, 'info');
                             }
                         } else {
-                            // Si el panel está visible, todos los mensajes se consideran leídos
-                            // (no incrementamos el contador, pero los marcamos como contados para futuros)
                             mensajes.forEach(msg => {
                                 if (msg.remitente !== chatUsuarioActual) {
                                     mensajesContados.add(msg._id);
                                 }
                             });
-                            // Aseguramos que el contador se mantenga en 0 si estaba visible
                             mensajesNoLeidos = 0;
                             actualizarBadge();
                         }
 
-                        // Renderizar todos los mensajes en el panel
                         mensajes.forEach(data => renderizarMensaje(data));
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     }, (error) => {
@@ -1419,11 +1458,10 @@
 
                 input.value = '';
                 
-                // ** INSERCIÓN OPTIMISTA: mostrar el mensaje inmediatamente **
                 const mensajeOptimista = {
                     remitente: chatUsuarioActual,
                     texto: texto,
-                    timestamp: new Date(), // temporal
+                    timestamp: new Date(),
                     empleadoId: currentEmpleadoId,
                     _id: 'temp_' + Date.now()
                 };
@@ -1438,14 +1476,12 @@
                         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         empleadoId: currentEmpleadoId
                     });
-                    // El snapshot actualizará el timestamp y cualquier otro cambio
                 } catch (error) {
                     console.error("Error al enviar mensaje:", error);
                     showToast('Error al enviar mensaje', 'danger');
                 }
             }
 
-            // Función para eliminar SOLO los mensajes de este empleado
             async function eliminarChatPropio() {
                 if (!currentEmpleadoId) return;
                 try {
@@ -1462,9 +1498,7 @@
                     });
                     await batch.commit();
                     showToast('💬 Historial de chat eliminado', 'info');
-                    // Limpiar la vista
                     document.getElementById('chatMessages').innerHTML = '';
-                    // Resetear contador
                     mensajesNoLeidos = 0;
                     mensajesContados.clear();
                     actualizarBadge();
@@ -1486,8 +1520,8 @@
 
                 document.getElementById('globalSearch').addEventListener('input', function() {
                     searchTerm = this.value.trim();
-                    paginationState.empleadoNuevos.page = 1;
-                    paginationState.empleadoSeg.page = 1;
+                    paginationState.activas.page = 1;
+                    paginationState.historial.page = 1;
                     renderEmpleado();
                 });
 
@@ -1517,7 +1551,6 @@
                 chatToggleBtn.addEventListener('click', () => {
                     const isHidden = chatPanel.classList.contains('hidden');
                     if (isHidden) {
-                        // Al abrir el panel, resetear contador de no leídos
                         mensajesNoLeidos = 0;
                         mensajesContados.clear();
                         actualizarBadge();
@@ -1530,7 +1563,6 @@
                     }
                 });
 
-                // Botón cerrar (eliminar historial)
                 chatCloseBtn.addEventListener('click', () => {
                     if (confirm('¿Deseas eliminar toda la conversación con el secretario?')) {
                         eliminarChatPropio();
