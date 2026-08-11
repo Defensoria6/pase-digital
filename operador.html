@@ -405,7 +405,7 @@
 
         /* ===== TABLA ===== */
         .table-wrap {
-            overflow-y: auto;  /* solo scroll vertical si es necesario */
+            overflow-y: auto;
             max-height: 65vh;
             border-radius: 16px;
         }
@@ -415,7 +415,7 @@
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            table-layout: auto; /* permite que las celdas se ajusten al contenido */
+            table-layout: auto;
         }
         .table-modern thead th {
             background: #e9f0f8;
@@ -429,7 +429,7 @@
             position: sticky;
             top: 0;
             z-index: 5;
-            white-space: normal; /* permite que el texto del encabezado se envuelva */
+            white-space: normal;
         }
         .table-modern tbody td {
             padding: 8px 8px;
@@ -438,7 +438,7 @@
             color: #1a344a;
             font-size: 0.78rem;
             transition: background 0.15s;
-            white-space: normal; /* envolver texto */
+            white-space: normal;
             word-break: break-word;
         }
         .table-modern tbody tr {
@@ -1646,11 +1646,10 @@
             }
 
             // ============================================================
-            //  REPORTE
+            //  REPORTE (genérico)
             // ============================================================
-            function generarReporteOperador() {
-                const causasFiltradas = obtenerCausasFiltradas();
-                const total = causasFiltradas.length;
+            function generarReporte(causasArray, titulo) {
+                const total = causasArray.length;
                 const now = new Date();
                 const fechaStr =
                     `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1670,15 +1669,16 @@
                     <div class="mb-3">
                         <p><strong>Operador:</strong> ${currentOperator}</p>
                         <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
+                        <p><strong>Reporte:</strong> ${titulo}</p>
                         <p><strong>Registros encontrados:</strong> ${total}</p>
                         <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
                     </div>
                     <hr />
-                    <h6>Expedientes registrados</h6>
+                    <h6>Expedientes</h6>
                     <div class="table-wrap">
                         <table class="table-modern table">
                             <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
-                            <tbody>${causasFiltradas.map(c => `
+                            <tbody>${causasArray.map(c => `
                                 <tr><td><strong>${c.numero}</strong></td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td></tr>
                             `).join('')}</tbody>
                         </table>
@@ -1953,10 +1953,10 @@
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
                 .perPage);
 
-                // ---- Tabla de Rechazados / Devueltos ----
+                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 let causasRechazadas = state.causas.filter(c =>
                     c.operador === currentOperator &&
-                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged')
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
@@ -2016,7 +2016,7 @@
                     </div>
                 `;
 
-                // Tabla de Recientes (sin columna de acciones, estado en texto negrita)
+                // Tabla de Recientes (con columna de acciones)
                 if (total) {
                     html += `
                         <div style="width:100%; border-radius:16px;">
@@ -2025,6 +2025,7 @@
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
                                         <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th style="width:80px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2045,6 +2046,9 @@
                                             <td><strong>${getEstadoTexto(c.estado)}</strong></td>
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td>
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                            </td>
                                         </tr>
                                     `}).join('')}
                                 </tbody>
@@ -2056,12 +2060,15 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
-                // ---- Tabla de Rechazados / Devueltos ----
+                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 html += `
                     <hr class="my-4" />
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
-                        <div class="card-title mb-0"><i class="bi bi-x-circle"></i> Rechazados / Devueltos por Secretario</div>
-                        <span class="badge bg-secondary">${totalRech} expedientes</span>
+                        <div class="card-title mb-0"><i class="bi bi-x-circle"></i> Rechazados/Devueltos/Remitidos</div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-secondary">${totalRech} expedientes</span>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteRechazados"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                        </div>
                     </div>
                 `;
                 if (totalRech) {
@@ -2075,7 +2082,7 @@
                                         <th>Estado</th>
                                         <th>Fecha Pase</th>
                                         <th>Motivo</th>
-                                        <th style="width:100px;">Acciones</th>
+                                        <th style="width:80px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2089,7 +2096,7 @@
                                             <td>${getEstadoBadge(c.estado)}</td>
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                            <td style="white-space:nowrap;">
+                                            <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
                                             </td>
                                         </tr>
@@ -2100,7 +2107,7 @@
                         <div id="paginationRechazados"></div>
                     `;
                 } else {
-                    html += `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>No hay expedientes rechazados o devueltos por el Secretario.</div>`;
+                    html += `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>No hay expedientes rechazados, devueltos o remitidos.</div>`;
                 }
 
                 container.innerHTML = html;
@@ -2140,7 +2147,21 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                // ---- Acciones solo para la tabla de rechazados (historial) ----
+                // ---- Eventos de los botones de reporte ----
+                const btnReporteRecientes = container.querySelector('#btnReporteOperador');
+                if (btnReporteRecientes) {
+                    btnReporteRecientes.addEventListener('click', function() {
+                        generarReporte(causasFiltradas, 'Recientes');
+                    });
+                }
+                const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
+                if (btnReporteRechazados) {
+                    btnReporteRechazados.addEventListener('click', function() {
+                        generarReporte(causasRechazadas, 'Rechazados/Devueltos/Remitidos');
+                    });
+                }
+
+                // ---- Acciones de historial (para ambas tablas) ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
@@ -2148,8 +2169,6 @@
                         if (accion === 'historial') { abrirHistorial(id); }
                     });
                 });
-                const btnReporte = container.querySelector('#btnReporteOperador');
-                if (btnReporte) btnReporte.addEventListener('click', generarReporteOperador);
             }
 
             // ============================================================
