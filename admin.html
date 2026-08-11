@@ -947,6 +947,7 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente, empleado, secretario…" autocomplete="off" />
                 </div>
+                <button class="btn-header primary" id="btnReporte"><i class="bi bi-printer"></i> Reporte</button>
                 <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
                 </button>
@@ -2033,6 +2034,180 @@
             }
 
             // ============================================================
+            //  REPORTE (IMPRESIÓN)
+            // ============================================================
+            function generarReporte() {
+                // Obtener datos filtrados (igual que en la tabla)
+                let causasFiltradas = obtenerCausasFiltradas();
+
+                // Para la tabla de "Recientes" usamos todas las filtradas (sin límite de 50)
+                let datosMostrar = causasFiltradas;
+
+                // Para la tabla de "Rechazados/Devueltos/Remitidos"
+                let causasRechazadas = state.causas.filter(c =>
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                // Aplicar mismos filtros (excluyendo estado)
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase().trim();
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
+                        const secNombre = c.secretarioId ? getSecName(c.secretarioId).toLowerCase() : '';
+                        let historialTexto = '';
+                        if (c.historial && c.historial.length) {
+                            historialTexto = c.historial.map(h =>
+                                (h.accion || '') + ' ' + (h.comentario || '')
+                            ).join(' ').toLowerCase();
+                        }
+                        const textoDirecto =
+                            (c.numero || '').toLowerCase() +
+                            (c.dni || '').toLowerCase() +
+                            (c.tipo || '').toLowerCase() +
+                            (c.modoIntervencion || '').toLowerCase() +
+                            (c.operador || '').toLowerCase() +
+                            (c.observaciones || '').toLowerCase() +
+                            (c.motivoAccion || '').toLowerCase() +
+                            empNombre + secNombre;
+                        return textoDirecto.includes(term) || historialTexto.includes(term);
+                    });
+                }
+                if (filtroTipo) {
+                    causasRechazadas = causasRechazadas.filter(c => c.tipo === filtroTipo);
+                }
+                if (filtroFuente) {
+                    if (filtroFuente === 'siged') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
+                    } else if (filtroFuente === 'zimbra') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
+                    } else if (filtroFuente === 'ambas') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
+                    } else if (filtroFuente === 'ninguna') {
+                        causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    }
+                }
+                if (filtroFechaDesde) {
+                    const desde = new Date(filtroFechaDesde);
+                    desde.setHours(0, 0, 0, 0);
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        return fecha >= desde;
+                    });
+                }
+                if (filtroFechaHasta) {
+                    const hasta = new Date(filtroFechaHasta);
+                    hasta.setHours(23, 59, 59, 999);
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        return fecha <= hasta;
+                    });
+                }
+                causasRechazadas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
+                // Construir HTML para impresión
+                const now = new Date();
+                const fechaReporte = fmtDt(now.toISOString());
+
+                const buildTable = (titulo, data, includeEstado = true) => {
+                    if (!data || data.length === 0) {
+                        return `<h4>${titulo}</h4><p style="color:#999;">No hay registros para mostrar.</p>`;
+                    }
+                    let html = `<h4 style="margin-top:20px;">${titulo} (${data.length})</h4>`;
+                    html += `<table style="width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:20px;">
+                        <thead>
+                            <tr style="background:#f0f0f0;">
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Expediente</th>
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Tipo</th>
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Nivel</th>
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Fuente</th>
+                                ${includeEstado ? '<th style="border:1px solid #ccc; padding:6px; text-align:left;">Estado</th>' : ''}
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Fecha Pase</th>
+                                <th style="border:1px solid #ccc; padding:6px; text-align:left;">Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    data.forEach(c => {
+                        const fuentes = [];
+                        if (c.fuenteSiged) fuentes.push('SIGED');
+                        if (c.fuenteZimbra) fuentes.push('ZIMBRA');
+                        const fuenteHtml = fuentes.length === 0 ? '—' :
+                            fuentes.length === 2 ? 'S/Z' : fuentes[0];
+                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c
+                            .historial[c.historial.length - 1]?.comentario || '' : '');
+                        html += `<tr>
+                            <td style="border:1px solid #ccc; padding:6px;"><strong>${c.numero}</strong></td>
+                            <td style="border:1px solid #ccc; padding:6px;">${c.tipo}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">N${c.nivelOperador}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${fuenteHtml}</td>
+                            ${includeEstado ? `<td style="border:1px solid #ccc; padding:6px;">${getEstadoTexto(c.estado)}</td>` : ''}
+                            <td style="border:1px solid #ccc; padding:6px;">${fmtDt(c.fechaPaseSecretario)}</td>
+                            <td style="border:1px solid #ccc; padding:6px;">${motivoMostrar || '-'}</td>
+                        </tr>`;
+                    });
+                    html += `</tbody></table>`;
+                    return html;
+                };
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Reporte de Pases - Administrador</title>
+                        <style>
+                            body { font-family: 'Inter', sans-serif; padding: 20px; color: #0b1e33; }
+                            h1 { font-size: 1.4rem; margin-bottom: 4px; }
+                            .subtitle { color: #5f7f9f; font-size: 0.9rem; margin-bottom: 20px; }
+                            table { width: 100%; border-collapse: collapse; }
+                            th { background: #f0f4fc; }
+                            .footer { margin-top: 30px; font-size: 0.7rem; color: #8aa3bc; border-top: 1px solid #e2edf7; padding-top: 10px; }
+                            @media print {
+                                body { padding: 10px; }
+                                .no-print { display: none; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+                            <div style="background: linear-gradient(135deg, #0b4b7a, #1a6bb0); width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem;">
+                                <i class="bi bi-balance-scale"></i>
+                            </div>
+                            <div>
+                                <h1>Sistema Digital de Pases</h1>
+                                <div class="subtitle">Defensoría Oficial Civil y Comercial 6 · Reporte de Administrador</div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:12px; font-size:0.8rem; color:#1a3a5a;">
+                            Fecha de generación: ${fechaReporte} 
+                            ${searchTerm ? `· Búsqueda: "${searchTerm}"` : ''}
+                            ${filtroTipo ? `· Tipo: ${filtroTipo}` : ''}
+                            ${filtroFuente ? `· Fuente: ${filtroFuente}` : ''}
+                            ${filtroEstado ? `· Estado: ${filtroEstado}` : ''}
+                            ${filtroFechaDesde ? `· Desde: ${filtroFechaDesde}` : ''}
+                            ${filtroFechaHasta ? `· Hasta: ${filtroFechaHasta}` : ''}
+                        </div>
+                        ${buildTable('Recientes', datosMostrar, true)}
+                        <hr style="margin:30px 0; border:1px solid #ddd;" />
+                        ${buildTable('Rechazados / Devueltos / Remitidos', causasRechazadas, true)}
+                        <div class="footer">Este reporte incluye todos los registros que cumplen con los filtros aplicados.</div>
+                    </body>
+                    </html>
+                `;
+
+                // Abrir nueva ventana e imprimir
+                const win = window.open('', '_blank', 'width=1200,height=800');
+                if (win) {
+                    win.document.write(htmlContent);
+                    win.document.close();
+                    win.focus();
+                    win.print();
+                } else {
+                    showToast('Por favor, permita ventanas emergentes para imprimir.', 'warning');
+                }
+            }
+
+            // ============================================================
             //  INICIALIZACIÓN DE FILTROS (fijos)
             // ============================================================
             function initFiltros() {
@@ -2216,6 +2391,9 @@
                 });
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
+
+                // Botón Reporte
+                document.getElementById('btnReporte').addEventListener('click', generarReporte);
 
                 // Botón confirmar eliminación (modal)
                 document.getElementById('btnConfirmarEliminar').addEventListener('click', ejecutarEliminacion);
