@@ -568,16 +568,18 @@
             letter-spacing: 0.4px;
             margin-right: 2px;
         }
-        .filtros-container select {
+        .filtros-container select,
+        .filtros-container input[type="date"] {
             padding: 4px 10px;
             border-radius: 30px;
             border: 1px solid #dce5ec;
             background: rgba(255, 255, 255, 0.7);
             font-size: 0.72rem;
-            max-width: 110px;
+            max-width: 130px;
             transition: 0.15s;
         }
-        .filtros-container select:focus {
+        .filtros-container select:focus,
+        .filtros-container input[type="date"]:focus {
             border-color: #1a6bb0;
             outline: none;
         }
@@ -872,8 +874,9 @@
                 flex-wrap: wrap;
                 border-radius: 16px;
             }
-            .filtros-container select {
-                max-width: 80px;
+            .filtros-container select,
+            .filtros-container input[type="date"] {
+                max-width: 100px;
                 font-size: 0.65rem;
             }
         }
@@ -950,6 +953,9 @@
                 <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
+
+        <!-- FILTROS (fijos) -->
+        <div class="filtros-container" id="filtrosContainer"></div>
 
         <!-- CUERPO: Único panel Ingreso -->
         <div class="row g-4">
@@ -1114,8 +1120,13 @@
                 rechazados: { page: 1, perPage: 10 }
             };
             let formularioInicializado = false;
-            let filtroMes = '';
-            let filtroAnio = '';
+
+            // Variables para filtros adicionales
+            let filtroTipo = '';
+            let filtroFuente = '';
+            let filtroEstado = '';
+            let filtroFechaDesde = '';
+            let filtroFechaHasta = '';
 
             // Variable para almacenar el ID de la causa a eliminar (modal)
             let pendingDeleteId = null;
@@ -1472,47 +1483,84 @@
             }
 
             // ============================================================
-            //  FILTRADO (búsqueda avanzada)
+            //  FILTRADO (búsqueda avanzada + historial)
             // ============================================================
             function obtenerCausasFiltradas() {
-                let causas = state.causas; // admin ve todas
+                let causas = state.causas;
 
-                // Filtro por mes/año (si están activos)
-                if (filtroMes || filtroAnio) {
-                    causas = causas.filter(c => {
-                        if (!c.fechaPaseSecretario) return false;
-                        const fecha = new Date(c.fechaPaseSecretario);
-                        const mes = fecha.getMonth() + 1;
-                        const anio = fecha.getFullYear();
-                        let match = true;
-                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
-                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
-                        return match;
-                    });
-                }
-
-                // Filtro por búsqueda de texto (avanzado)
+                // --- Filtro de búsqueda global (texto) ---
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase().trim();
                     causas = causas.filter(c => {
-                        // Obtener nombres de empleado y secretario
+                        // Datos directos
                         const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
                         const secNombre = c.secretarioId ? getSecName(c.secretarioId).toLowerCase() : '';
-                        // Buscar en múltiples campos
-                        return (
-                            (c.numero && c.numero.toLowerCase().includes(term)) ||
-                            (c.dni && c.dni.toLowerCase().includes(term)) ||
-                            (c.tipo && c.tipo.toLowerCase().includes(term)) ||
-                            (c.modoIntervencion && c.modoIntervencion.toLowerCase().includes(term)) ||
-                            (c.operador && c.operador.toLowerCase().includes(term)) ||
-                            (c.observaciones && c.observaciones.toLowerCase().includes(term)) ||
-                            (c.motivoAccion && c.motivoAccion.toLowerCase().includes(term)) ||
-                            empNombre.includes(term) ||
-                            secNombre.includes(term)
-                        );
+                        const textoDirecto =
+                            (c.numero || '').toLowerCase() +
+                            (c.dni || '').toLowerCase() +
+                            (c.tipo || '').toLowerCase() +
+                            (c.modoIntervencion || '').toLowerCase() +
+                            (c.operador || '').toLowerCase() +
+                            (c.observaciones || '').toLowerCase() +
+                            (c.motivoAccion || '').toLowerCase() +
+                            empNombre + secNombre;
+
+                        // Historial completo (acción + comentario)
+                        let historialTexto = '';
+                        if (c.historial && c.historial.length) {
+                            historialTexto = c.historial.map(h =>
+                                (h.accion || '') + ' ' + (h.comentario || '')
+                            ).join(' ').toLowerCase();
+                        }
+
+                        return textoDirecto.includes(term) || historialTexto.includes(term);
                     });
                 }
 
+                // --- Filtro por Tipo ---
+                if (filtroTipo) {
+                    causas = causas.filter(c => c.tipo === filtroTipo);
+                }
+
+                // --- Filtro por Fuente ---
+                if (filtroFuente) {
+                    if (filtroFuente === 'siged') {
+                        causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
+                    } else if (filtroFuente === 'zimbra') {
+                        causas = causas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
+                    } else if (filtroFuente === 'ambas') {
+                        causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
+                    } else if (filtroFuente === 'ninguna') {
+                        causas = causas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    }
+                }
+
+                // --- Filtro por Estado ---
+                if (filtroEstado) {
+                    causas = causas.filter(c => c.estado === filtroEstado);
+                }
+
+                // --- Filtro por rango de fechas (fechaPaseSecretario) ---
+                if (filtroFechaDesde) {
+                    const desde = new Date(filtroFechaDesde);
+                    desde.setHours(0, 0, 0, 0);
+                    causas = causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        return fecha >= desde;
+                    });
+                }
+                if (filtroFechaHasta) {
+                    const hasta = new Date(filtroFechaHasta);
+                    hasta.setHours(23, 59, 59, 999);
+                    causas = causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        return fecha <= hasta;
+                    });
+                }
+
+                // Ordenar por fecha descendente
                 causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 return causas;
             }
@@ -1771,9 +1819,10 @@
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
-                // ---- Tabla de Recientes ----
+                // ---- Tabla de Recientes (todas las filtradas) ----
                 let datosMostrar = causasFiltradas;
-                if (!filtroMes && !filtroAnio) {
+                // Si no hay filtro de fechas, mostrar hasta 50 registros para no saturar
+                if (!filtroFechaDesde && !filtroFechaHasta) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
 
@@ -1785,34 +1834,60 @@
                 let causasRechazadas = state.causas.filter(c =>
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
+                // Aplicar los mismos filtros (excepto el de estado, porque ya estamos en esa sección)
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase().trim();
                     causasRechazadas = causasRechazadas.filter(c => {
                         const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
                         const secNombre = c.secretarioId ? getSecName(c.secretarioId).toLowerCase() : '';
-                        return (
-                            (c.numero && c.numero.toLowerCase().includes(term)) ||
-                            (c.dni && c.dni.toLowerCase().includes(term)) ||
-                            (c.tipo && c.tipo.toLowerCase().includes(term)) ||
-                            (c.modoIntervencion && c.modoIntervencion.toLowerCase().includes(term)) ||
-                            (c.operador && c.operador.toLowerCase().includes(term)) ||
-                            (c.observaciones && c.observaciones.toLowerCase().includes(term)) ||
-                            (c.motivoAccion && c.motivoAccion.toLowerCase().includes(term)) ||
-                            empNombre.includes(term) ||
-                            secNombre.includes(term)
-                        );
+                        let historialTexto = '';
+                        if (c.historial && c.historial.length) {
+                            historialTexto = c.historial.map(h =>
+                                (h.accion || '') + ' ' + (h.comentario || '')
+                            ).join(' ').toLowerCase();
+                        }
+                        const textoDirecto =
+                            (c.numero || '').toLowerCase() +
+                            (c.dni || '').toLowerCase() +
+                            (c.tipo || '').toLowerCase() +
+                            (c.modoIntervencion || '').toLowerCase() +
+                            (c.operador || '').toLowerCase() +
+                            (c.observaciones || '').toLowerCase() +
+                            (c.motivoAccion || '').toLowerCase() +
+                            empNombre + secNombre;
+                        return textoDirecto.includes(term) || historialTexto.includes(term);
                     });
                 }
-                if (filtroMes || filtroAnio) {
+                if (filtroTipo) {
+                    causasRechazadas = causasRechazadas.filter(c => c.tipo === filtroTipo);
+                }
+                if (filtroFuente) {
+                    if (filtroFuente === 'siged') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
+                    } else if (filtroFuente === 'zimbra') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
+                    } else if (filtroFuente === 'ambas') {
+                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
+                    } else if (filtroFuente === 'ninguna') {
+                        causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    }
+                }
+                if (filtroFechaDesde) {
+                    const desde = new Date(filtroFechaDesde);
+                    desde.setHours(0, 0, 0, 0);
                     causasRechazadas = causasRechazadas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
                         const fecha = new Date(c.fechaPaseSecretario);
-                        const mes = fecha.getMonth() + 1;
-                        const anio = fecha.getFullYear();
-                        let match = true;
-                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
-                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
-                        return match;
+                        return fecha >= desde;
+                    });
+                }
+                if (filtroFechaHasta) {
+                    const hasta = new Date(filtroFechaHasta);
+                    hasta.setHours(23, 59, 59, 999);
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        return fecha <= hasta;
                     });
                 }
                 causasRechazadas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -1822,35 +1897,10 @@
                 );
 
                 // ---- Generar HTML ----
-                const añoOptions = [];
-                for (let y = 2026; y <= 2040; y++) {
-                    añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
-                }
-                const mesOptions = [];
-                const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
-                    'Octubre', 'Noviembre', 'Diciembre'
-                ];
-                for (let m = 1; m <= 12; m++) {
-                    mesOptions.push(`<option value="${m}" ${filtroMes == m ? 'selected' : ''}>${mesesNombres[m-1]}</option>`);
-                }
-
                 let html = `
-                    <!-- FILTROS -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
-                    </div>
-                    <div class="filtros-container">
-                        <label>Filtrar por:</label>
-                        <select id="filtroMesSelect">
-                            <option value="">Mes</option>
-                            ${mesOptions}
-                        </select>
-                        <select id="filtroAnioSelect">
-                            <option value="">Año</option>
-                            ${añoOptions}
-                        </select>
-                        <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
-                        ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                        ${ (filtroFechaDesde || filtroFechaHasta || filtroTipo || filtroFuente || filtroEstado || searchTerm) ? `<span class="text-muted" style="font-size:0.7rem;">${total} registros filtrados</span>` : '' }
                     </div>
                 `;
 
@@ -1968,24 +2018,6 @@
                     });
                 }
 
-                // ---- Filtros ----
-                const mesSelect = document.getElementById('filtroMesSelect');
-                const anioSelect = document.getElementById('filtroAnioSelect');
-                const limpiarBtn = document.getElementById('btnLimpiarFiltros');
-                if (mesSelect) { mesSelect.addEventListener('change', function() { filtroMes = this.value;
-                        paginationState.ingreso.page = 1;
-                        paginationState.rechazados.page = 1;
-                        renderTabla(); }); }
-                if (anioSelect) { anioSelect.addEventListener('change', function() { filtroAnio = this.value;
-                        paginationState.ingreso.page = 1;
-                        paginationState.rechazados.page = 1;
-                        renderTabla(); }); }
-                if (limpiarBtn) { limpiarBtn.addEventListener('click', function() { filtroMes = '';
-                        filtroAnio = '';
-                        paginationState.ingreso.page = 1;
-                        paginationState.rechazados.page = 1;
-                        renderTabla(); }); }
-
                 // ---- Acciones: historial y eliminar (con modal) ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function(e) {
@@ -1997,6 +2029,103 @@
                             mostrarModalConfirmacion(id);
                         }
                     });
+                });
+            }
+
+            // ============================================================
+            //  INICIALIZACIÓN DE FILTROS (fijos)
+            // ============================================================
+            function initFiltros() {
+                const container = document.getElementById('filtrosContainer');
+                if (!container) return;
+
+                // Tipos (igual que en el formulario)
+                const tipos = [
+                    'Nuevo patrocinio', 'Amparo', 'Acción de protección de persona', 'Alimentos', 'Cuidado personal',
+                    'Desalojo',
+                    'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
+                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                ];
+                const tipoOptions = '<option value="">Todos</option>' + tipos.map(t =>
+                    `<option value="${t}">${t}</option>`
+                ).join('');
+
+                // Estados
+                const estados = [
+                    { value: 'en_secretaria', label: 'En Secretaría' },
+                    { value: 'en_proceso', label: 'En Proceso' },
+                    { value: 'finalizada', label: 'Finalizada' },
+                    { value: 'en_defensor', label: 'En Defensor' },
+                    { value: 'devuelto_siged', label: 'Devuelto SIGED' },
+                    { value: 'remitido', label: 'Remitido' },
+                    { value: 'rechazado', label: 'Rechazado' }
+                ];
+                const estadoOptions = '<option value="">Todos</option>' + estados.map(e =>
+                    `<option value="${e.value}">${e.label}</option>`
+                ).join('');
+
+                container.innerHTML = `
+                    <label>Filtrar por:</label>
+                    <select id="filtroTipoSelect">${tipoOptions}</select>
+                    <select id="filtroFuenteSelect">
+                        <option value="">Fuente</option>
+                        <option value="siged">SIGED</option>
+                        <option value="zimbra">ZIMBRA</option>
+                        <option value="ambas">Ambas</option>
+                        <option value="ninguna">Ninguna</option>
+                    </select>
+                    <select id="filtroEstadoSelect">${estadoOptions}</select>
+                    <input type="date" id="filtroFechaDesde" placeholder="Desde" />
+                    <input type="date" id="filtroFechaHasta" placeholder="Hasta" />
+                    <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
+                `;
+
+                // Asignar event listeners
+                document.getElementById('filtroTipoSelect').addEventListener('change', function() {
+                    filtroTipo = this.value;
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+                document.getElementById('filtroFuenteSelect').addEventListener('change', function() {
+                    filtroFuente = this.value;
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+                document.getElementById('filtroEstadoSelect').addEventListener('change', function() {
+                    filtroEstado = this.value;
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+                document.getElementById('filtroFechaDesde').addEventListener('change', function() {
+                    filtroFechaDesde = this.value;
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+                document.getElementById('filtroFechaHasta').addEventListener('change', function() {
+                    filtroFechaHasta = this.value;
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+                document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
+                    document.getElementById('filtroTipoSelect').value = '';
+                    document.getElementById('filtroFuenteSelect').value = '';
+                    document.getElementById('filtroEstadoSelect').value = '';
+                    document.getElementById('filtroFechaDesde').value = '';
+                    document.getElementById('filtroFechaHasta').value = '';
+                    filtroTipo = '';
+                    filtroFuente = '';
+                    filtroEstado = '';
+                    filtroFechaDesde = '';
+                    filtroFechaHasta = '';
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
                 });
             }
 
@@ -2028,6 +2157,7 @@
 
                 await loadState();
                 createFormulario();
+                initFiltros();
                 renderTabla();
                 showToast('Bienvenido Administrador', 'success');
                 iniciarCronometros();
@@ -2045,8 +2175,12 @@
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
                 formularioInicializado = false;
-                filtroMes = '';
-                filtroAnio = '';
+                // Resetear filtros
+                filtroTipo = '';
+                filtroFuente = '';
+                filtroEstado = '';
+                filtroFechaDesde = '';
+                filtroFechaHasta = '';
                 state.causas = [];
                 state.ausencias = [];
                 showToast('Sesión cerrada', 'warning');
