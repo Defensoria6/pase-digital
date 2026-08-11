@@ -230,6 +230,83 @@
             p, .text-muted { font-size: 0.7rem !important; margin: 0.2rem 0 !important; }
             hr { margin: 0.3rem 0 !important; }
         }
+
+        /* ===== ESTILOS ADICIONALES PARA DISTRIBUCIÓN (copiados de secretario) ===== */
+        .glass-card {
+            background: #fff;
+            border-radius: 24px;
+            border: 1px solid #e2edf7;
+            box-shadow: 0 2px 12px rgba(0,0,0,.03);
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow .2s;
+        }
+        .glass-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,.05);
+        }
+        .glass-card .card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0a2a44;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.2rem;
+            padding-bottom: .6rem;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .glass-card .card-title i {
+            color: #1976d2;
+        }
+        .btn-imprimir {
+            background: #e8f0fe;
+            color: #1a3a5a;
+            border: 1px solid #b8cce0;
+            border-radius: 40px;
+            padding: 4px 14px;
+            font-weight: 600;
+            font-size: .75rem;
+            transition: .2s;
+            cursor: pointer;
+        }
+        .btn-imprimir:hover {
+            background: #d2e0ed;
+        }
+        .text-danger-bg {
+            background-color: #ffebee !important;
+        }
+        .text-danger {
+            color: #c62828 !important;
+        }
+        .badge.bg-primary {
+            background-color: #1976d2 !important;
+        }
+        .badge.bg-info {
+            background-color: #17a2b8 !important;
+        }
+        .badge.bg-danger {
+            background-color: #c62828 !important;
+        }
+        .badge.bg-success {
+            background-color: #2e7d32 !important;
+        }
+        .form-select-sm {
+            font-size: .75rem;
+            padding: .2rem .5rem;
+        }
+        .btn-outline-secondary {
+            background: transparent;
+            border: 1px solid #6c757d;
+            color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+            background: #6c757d;
+            color: #fff;
+        }
+        .mt-1 { margin-top: .25rem; }
+        .mt-4 { margin-top: 1.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .me-2 { margin-right: .5rem; }
     </style>
 </head>
 <body>
@@ -291,7 +368,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalHistorialBody"><div class="text-muted">Cargando...</div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.imprimirHistorial()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
             </div>
         </div>
     </div>
@@ -400,7 +480,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalHistorialSecBody"><div class="text-muted">Cargando...</div></div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.imprimirHistorialSec()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
             </div>
         </div>
     </div>
@@ -467,6 +550,10 @@
                 ]
             };
 
+            // Variables globales para usar en la pestaña Distribución (igual que en secretario)
+            const TIPOS = CONFIG.tipos;
+            const MODOS_INTERVENCION = CONFIG.modosIntervencion;
+
             // ---------- ESTADO ----------
             let state = { 
                 causas: [], 
@@ -515,15 +602,12 @@
                 return state.causas.filter(c => c.empleadoAsignado === empId).length;
             }
 
-            // (Eliminamos la lógica automática de puntaje para el ranking)
-            // Solo usaremos puntajes manuales.
-
             function obtenerPuntajeFinal(empId) {
                 if (puntajesManualesCache[empId] !== undefined && puntajesManualesCache[empId] !== null && puntajesManualesCache[empId] !== '') {
                     const val = parseFloat(puntajesManualesCache[empId]);
                     if (!isNaN(val) && val >= 0 && val <= 10) return val;
                 }
-                return 0; // sin puntaje manual, 0
+                return 0;
             }
 
             function tieneAtrasos(empId) {
@@ -936,7 +1020,7 @@
                 return activos + (resueltosHoy * 0.4);
             }
 
-            // (Nueva función de asignación, compatible con la de secretario)
+            // Asignación con nueva lógica de nivel + alfabético
             async function asignarCausa(id, nivSec, empId, com = '', secId = null, tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
@@ -974,12 +1058,8 @@
                 c.fechaAsignacion = new Date().toISOString();
                 c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000).toISOString();
 
-                if (tipo !== null && tipo !== undefined) {
-                    c.tipo = tipo;
-                }
-                if (modoIntervencion !== null && modoIntervencion !== undefined) {
-                    c.modoIntervencion = modoIntervencion;
-                }
+                if (tipo !== null && tipo !== undefined) c.tipo = tipo;
+                if (modoIntervencion !== null && modoIntervencion !== undefined) c.modoIntervencion = modoIntervencion;
 
                 let userRoleName = getSecName(secId || c.secretarioId) || 'Defensor';
                 const tipoExp = c.tipo || 'N/D';
@@ -1001,7 +1081,7 @@
                 }
             }
 
-            // Función "auto" para distribuir al menos cargado
+            // Función "auto" con nueva lógica
             async function asignarAlMenosCargado(causaId, nivSec, comentario = '', tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) return false;
@@ -1012,8 +1092,7 @@
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
                     const empId = existing[0].empleadoAsignado;
                     if (!isAusente(empId)) {
-                        const result = await asignarCausa(causaId, nivSec, empId, comentario || 'Reasignación automática por reingreso', null, tipo, modoIntervencion);
-                        return result;
+                        return await asignarCausa(causaId, nivSec, empId, comentario || 'Reasignación automática por reingreso', null, tipo, modoIntervencion);
                     } else {
                         showToast('El empleado original está ausente. Se asignará a otro.', 'warning');
                     }
@@ -1029,27 +1108,38 @@
                     return false;
                 }
 
-                const candidatosConCarga = candidatos.map(e => {
-                    const carga = state.causas
-                        .filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso')
-                        .reduce((sum, c) => sum + (c.puntos || 0), 0);
-                    return { id: e.id, nombre: e.nombre, carga };
-                });
+                // Selección inteligente: prioridad por nivel + alfabético
+                function seleccionarEmpleadoPorNivel(nivel, empleadosDisponibles) {
+                    const sorted = [...empleadosDisponibles].sort((a, b) => a.nombre.localeCompare(b.nombre));
+                    const sinNivel = sorted.filter(emp => {
+                        return !state.causas.some(c => 
+                            c.empleadoAsignado === emp.id && 
+                            c.estado === 'en_proceso' && 
+                            (c.nivelSecretario === nivel || c.nivelOperador === nivel)
+                        );
+                    });
+                    if (sinNivel.length > 0) return sinNivel[0].id;
+                    const conteo = sorted.map(emp => {
+                        const count = state.causas.filter(c => 
+                            c.empleadoAsignado === emp.id && 
+                            c.estado === 'en_proceso' && 
+                            (c.nivelSecretario === nivel || c.nivelOperador === nivel)
+                        ).length;
+                        return { ...emp, count };
+                    });
+                    conteo.sort((a, b) => a.count - b.count || a.nombre.localeCompare(b.nombre));
+                    return conteo[0].id;
+                }
 
-                candidatosConCarga.sort((a, b) => {
-                    if (a.carga !== b.carga) return a.carga - b.carga;
-                    return a.nombre.localeCompare(b.nombre);
-                });
-
-                const mejorEmp = candidatosConCarga[0]?.id;
+                const mejorEmp = seleccionarEmpleadoPorNivel(parseInt(nivSec), candidatos);
                 if (mejorEmp) {
-                    return await asignarCausa(causaId, nivSec, mejorEmp, comentario || 'Asignación automática (menor carga + orden alfabético)', null, tipo, modoIntervencion);
+                    return await asignarCausa(causaId, nivSec, mejorEmp, comentario || 'Asignación automática (prioridad por nivel + alfabético)', null, tipo, modoIntervencion);
                 }
                 showToast('No se pudo asignar automáticamente', 'danger');
                 return false;
             }
 
-            // ---------- OTRAS FUNCIONES DE SECRETARIO ----------
+            // ---------- OTRAS FUNCIONES DE SECRETARIO (para la pestaña Distribución) ----------
             async function marcarCumplido(id) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
@@ -1201,7 +1291,7 @@
                 renderAll();
             }
 
-            // ---------- REPORTES ----------
+            // ---------- REPORTES (originales) ----------
             function generarReporteGeneral() {
                 const body = document.getElementById('modalReporteBody');
                 const now = new Date();
@@ -1383,7 +1473,6 @@
             }
 
             function generarReporteRanking() {
-                // Solo puntaje manual
                 const empleadosData = CONFIG.empleados
                     .map(e => {
                         const puntajeFinal = obtenerPuntajeFinal(e.id);
@@ -1440,6 +1529,10 @@
                 document.getElementById('modalReporteBody').innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
+
+            // ================================================================
+            //  NUEVAS FUNCIONES PARA LA PESTAÑA DISTRIBUCIÓN (copiadas de secretario)
+            // ================================================================
 
             function generarInformeEquidad() {
                 const body = document.getElementById('modalEquidadBody');
@@ -1584,56 +1677,307 @@
                 document.getElementById('btnAplicarFiltroEquidad').addEventListener('click', renderEquidad);
                 renderEquidad();
                 new bootstrap.Modal(document.getElementById('modalEquidad')).show();
+
+                const btnPrint = document.querySelector('#modalEquidad .btn-modern-primary');
+                if (btnPrint) {
+                    btnPrint.onclick = function(e) {
+                        e.preventDefault();
+                        imprimirInformeEquidad();
+                    };
+                }
             }
 
-            function generarInformeGesell() {
-                const causasGesell = state.causas.filter(c => c.tipo && c.tipo.toLowerCase().includes('cámara gesell'));
-                const enDefensorGesell = causasGesell.filter(c => c.estado === 'en_defensor');
-                const finalizadasGesell = causasGesell.filter(c => c.estado === 'finalizada');
-                const conAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'asistio');
-                const sinAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio' || c.asistenciaGesell === 'pendiente');
-
-                const now = new Date();
-                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
+            function abrirReporteCompleto() {
+                const body = document.getElementById('modalReporteBody');
+                const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
+                const enProceso = state.causas.filter(c => c.estado === 'en_proceso');
                 let html = `
-                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.5rem;">
-                            <h5 style="margin:0; font-weight:700; color:#0a2a44;">Informe de Cámara Gesell</h5>
-                            <div style="font-size:0.75rem; color:#5f7f9f;">${fechaStr}</div>
-                        </div>
-                        <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr);">
-                            <div class="kpi-item"><div class="label">Total</div><div class="value">${causasGesell.length}</div></div>
-                            <div class="kpi-item"><div class="label">En Defensor</div><div class="value warning">${enDefensorGesell.length}</div></div>
-                            <div class="kpi-item"><div class="label">Finalizadas</div><div class="value success">${finalizadasGesell.length}</div></div>
-                            <div class="kpi-item"><div class="label">Asistencia</div><div class="value info">${conAsistencia.length}</div></div>
-                        </div>
+                    <div class="print-table">
+                        <h5>Reporte de Pase Digital. Secretarios.</h5>
+                        <p><strong>Fecha y hora de impresión:</strong> ${new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                         <hr />
-                        <h6>Detalle</h6>
-                        <div class="table-wrap">
-                            <table class="table-modern table">
-                                <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora</th></tr></thead>
-                                <tbody>
-                                    ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
-                                        <tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td>${c.dni || '-'}</td>
-                                            <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${getEstadoBadgePlain(c.estado)}</td>
-                                            <td>${c.asistenciaGesell === 'asistio' ? 'Asistió' : c.asistenciaGesell === 'no_asistio' ? 'No asistió' : 'Pendiente'}</td>
-                                            <td>${c.fechaHoraGesell ? fmtDt(c.fechaHoraGesell) : '-'}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                        <h6>Pendientes en Secretaría (${pendientes.length})</h6>
+                        ${pendientes.length ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table">
+                                    <thead><tr><th>Expediente</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel Op.</th></tr></thead>
+                                    <tbody>
+                                        ${pendientes.map(c => `
+                                            <tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.modoIntervencion || '-'}</td>
+                                                <td>${c.tipo}</td>
+                                                <td>N${c.nivelOperador}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="text-muted">No hay pendientes.</div>'}
+                        <h6>Causas en Proceso (${enProceso.length})</h6>
+                        ${enProceso.length ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table">
+                                    <thead><tr><th>Expediente</th><th>Empleado</th><th>Nivel</th><th>Demora</th></tr></thead>
+                                    <tbody>
+                                        ${enProceso.map(c => `
+                                            <tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${getEmpName(c.empleadoAsignado)}</td>
+                                                <td>N${c.nivelSecretario || c.nivelOperador || 'N/D'}</td>
+                                                <td>${getTiempoTranscurrido(c.fechaAsignacion, null) || '-'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '<div class="text-muted">No hay causas en proceso.</div>'}
                     </div>
                 `;
-                document.getElementById('modalReporteBody').innerHTML = html;
+                body.innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
+
+                const btnPrint = document.querySelector('#modalReporte .btn-modern-primary');
+                if (btnPrint) {
+                    btnPrint.onclick = function(e) {
+                        e.preventDefault();
+                        imprimirReporteCompleto();
+                    };
+                }
             }
 
-            // ---------- PAGINACIÓN ----------
+            function imprimirReporteCompleto() {
+                const body = document.getElementById('modalReporteBody');
+                if (!body) return;
+                const contenido = body.innerHTML;
+                const titulo = 'Reporte de Pase Digital. Secretarios.';
+                const fecha = new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(`
+                    <html><head><title>${titulo}</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; margin: 0; background: #fff; }
+                        .print-table { max-width: 1000px; margin: 0 auto; }
+                        h5 { font-size: 1.2rem; font-weight: 700; }
+                        h6 { font-size: 1rem; font-weight: 600; margin-top: 1.5rem; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        th { background: #f1f6fd; }
+                        .text-muted { color: #666; }
+                        hr { margin: 1rem 0; }
+                        .table-wrap { overflow-x: auto; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>
+                    <div class="print-table">
+                        ${contenido}
+                    </div>
+                    </body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            }
+
+            function imprimirPasesCompleto() {
+                const term = searchTerm.toLowerCase().trim();
+                const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
+                const todos = state.causas.filter(c => c.secretarioId && filterFn(c));
+                todos.sort((a, b) => {
+                    const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
+                    const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
+                    return new Date(fechaB) - new Date(fechaA);
+                });
+                if (!todos.length) { showToast('No hay registros para imprimir', 'warning'); return; }
+                const now = new Date();
+                const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                let rows = '';
+                todos.forEach(c => {
+                    let obs = '-';
+                    if (c.historial && c.historial.length) {
+                        const pase = c.historial.find(h => h.accion && (h.accion.includes('Pase a Secretaría') || h.accion.includes('Enviado a Secretaría')));
+                        if (pase && pase.comentario) obs = pase.comentario;
+                        else {
+                            const ultimo = c.historial[c.historial.length - 1];
+                            if (ultimo && ultimo.comentario) obs = ultimo.comentario;
+                        }
+                    }
+                    let fechaAsig = 'Falta asignar';
+                    if (c.empleadoAsignado && c.fechaAsignacion) {
+                        fechaAsig = fmtDt(c.fechaAsignacion);
+                    } else if (c.empleadoAsignado) {
+                        fechaAsig = fmtDt(c.fechaAsignacion) || '-';
+                    }
+                    const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
+                    const empleado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
+                    rows += `
+                        <tr>
+                            <td><strong>${c.numero}</strong></td>
+                            <td>${empleado}</td>
+                            <td>${getSecName(c.secretarioId) || '-'}</td>
+                            <td>N${nivel}</td>
+                            <td style="font-size:0.75rem;">${fechaAsig}</td>
+                            <td>${c.tipo || 'N/D'}</td>
+                            <td>${getEstadoBadge(c.estado)}</td>
+                            <td style="font-size:0.75rem;">${obs}</td>
+                        </tr>
+                    `;
+                });
+                const html = `
+                    <html><head><title>Todos los pases a empleados</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; margin: 0; background: #fff; }
+                        h3 { font-size: 1.2rem; font-weight: 700; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        th { background: #f1f6fd; }
+                        .badge-estado { display: inline-block; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.6rem; }
+                        .badge-sec { background:#fff3e0; color:#e67e22; }
+                        .badge-proc { background:#e3f2fd; color:#1565c0; }
+                        .badge-fin { background:#e8f5e9; color:#2e7d32; }
+                        .badge-def { background:#f3e5f5; color:#7b1fa2; }
+                        .badge-dev { background:#ffebee; color:#c62828; }
+                        .badge-rem { background:#e8eaf6; color:#3949ab; }
+                        .badge-rech { background:#fce4ec; color:#c62828; }
+                        .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
+                        .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
+                        .impresion-info { margin-bottom: 15px; font-size: 0.9rem; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>
+                    <h3>Todos los pases a empleados</h3>
+                    <div class="impresion-info"><strong>Fecha de impresión:</strong> ${fecha} &nbsp; <strong>Hora:</strong> ${hora}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Expediente</th>
+                                <th>Empleado</th>
+                                <th>Secretario</th>
+                                <th>Nivel</th>
+                                <th>Fecha Asignación</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th>Observaciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                    </body></html>
+                `;
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(html);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            }
+
+            function imprimirInformeEquidad() {
+                const contenidoDiv = document.getElementById('contenidoEquidad');
+                if (!contenidoDiv) { showToast('No hay contenido para imprimir', 'warning'); return; }
+                const contenido = contenidoDiv.innerHTML;
+                const now = new Date();
+                const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(`
+                    <html><head><title>Informe de Equidad de Pases</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; margin: 0; background: #fff; }
+                        h2 { font-size: 1.4rem; font-weight: 700; }
+                        .impresion-info { margin-bottom: 15px; font-size: 0.9rem; }
+                        .equidad-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+                        .equidad-item { background: #f9fcff; border-radius: 10px; padding: 10px; border: 1px solid #e2edf7; text-align: center; }
+                        .eq-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #5f7f9f; }
+                        .eq-value { font-size: 1.2rem; font-weight: 800; color: #0a2a44; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 10px 0; }
+                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        th { background: #f1f6fd; }
+                        .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.6rem; }
+                        .badge.bg-danger { background: #dc3545; color: #fff; }
+                        .badge.bg-success { background: #28a745; color: #fff; }
+                        .row-ausente { background-color: #fce4ec; }
+                        .row-presente { background-color: #e8f5e9; }
+                        .text-danger-bg { background-color: #ffebee; }
+                        .text-danger { color: #c62828; }
+                        hr { margin: 15px 0; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>
+                    <h2>Informe de Equidad de Pases</h2>
+                    <div class="impresion-info"><strong>Fecha de impresión:</strong> ${fecha} &nbsp; <strong>Hora:</strong> ${hora}</div>
+                    <hr />
+                    ${contenido}
+                    </body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            }
+
+            window.imprimirHistorial = function() {
+                const body = document.getElementById('modalHistorialBody');
+                if (!body) return;
+                const content = body.innerHTML;
+                const exp = document.getElementById('modalHistorialExp').textContent;
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(`
+                    <html><head><title>Historial ${exp}</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; }
+                        .d-flex { display: flex; flex-wrap: wrap; gap: 8px; align-items: start; border-bottom: 1px solid #eee; padding: 8px 0; }
+                        .fw-600 { font-weight: 600; }
+                        .text-muted { color: #666; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>
+                    <h3>Historial - ${exp}</h3>
+                    ${content}
+                    </body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            };
+
+            window.imprimirHistorialSec = function() {
+                const body = document.getElementById('modalHistorialSecBody');
+                if (!body) return;
+                const content = body.innerHTML;
+                const nombre = document.getElementById('modalHistorialSecNombre').textContent;
+                const win = window.open('', '_blank');
+                if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+                win.document.write(`
+                    <html><head><title>Historial de ${nombre}</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+                        th { background: #f1f6fd; }
+                        .badge-estado { display: inline-block; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.6rem; }
+                        .badge-sec { background:#fff3e0; color:#e67e22; }
+                        .badge-proc { background:#e3f2fd; color:#1565c0; }
+                        .badge-fin { background:#e8f5e9; color:#2e7d32; }
+                        .badge-def { background:#f3e5f5; color:#7b1fa2; }
+                        .badge-dev { background:#ffebee; color:#c62828; }
+                        .badge-rem { background:#e8eaf6; color:#3949ab; }
+                        .badge-rech { background:#fce4ec; color:#c62828; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                    </head><body>
+                    <h3>Historial de Causas - ${nombre}</h3>
+                    ${content}
+                    </body></html>
+                `);
+                win.document.close();
+                setTimeout(() => { win.print(); }, 500);
+            };
+
+            // ================================================================
+            //  PAGINACIÓN
+            // ================================================================
             function paginateData(data, page, perPage = 10) {
                 const total = data.length;
                 const totalPages = Math.ceil(total / perPage) || 1;
@@ -1680,8 +2024,497 @@
             }
 
             // ================================================================
-            //  PANEL INGRESO (sin cambios)
+            //  RENDER DISTRIBUCIÓN (NUEVA, IDÉNTICA A SECRETARIO)
             // ================================================================
+            function renderDistribucion() {
+                const panel = document.getElementById('panelDistribucion');
+
+                const term = searchTerm.toLowerCase().trim();
+                const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
+
+                let pend = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
+                pend.sort((a, b) => b.nivelOperador - a.nivelOperador);
+                const pState = paginationState.distribucion;
+                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(
+                    pend, pState.page, pState.perPage);
+
+                let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
+                enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const pStateProc = paginationState.proceso;
+                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(
+                    enProceso, pStateProc.page, pStateProc.perPage);
+
+                let todosPases = state.causas.filter(c => c.secretarioId && filterFn(c));
+                todosPases.sort((a, b) => {
+                    const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
+                    const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
+                    return new Date(fechaB) - new Date(fechaA);
+                });
+
+                const optsEmpleados = CONFIG.empleados
+                    .filter(e => !isAusente(e.id))
+                    .map(e =>
+                        `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)</option>`
+                        )
+                    .join('');
+
+                const secStats = CONFIG.secretarios.map(sec => {
+                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id).length;
+                    return { ...sec, asignadas };
+                });
+
+                const empleadosConRetraso = new Set();
+                state.causas.forEach(c => {
+                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite)
+                        .getTime() < Date.now()) {
+                        empleadosConRetraso.add(c.empleadoAsignado);
+                    }
+                });
+
+                const empTableData = CONFIG.empleados.map(emp => {
+                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
+                    const total = causas.length;
+                    const niveles = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                    const secretarios = new Set();
+                    causas.forEach(c => {
+                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                        if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
+                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
+                    });
+                    const ausente = isAusente(emp.id);
+                    return {
+                        nombre: emp.nombre,
+                        total,
+                        niveles,
+                        secretarios: Array.from(secretarios).join(', '),
+                        tieneRetraso: empleadosConRetraso.has(emp.id),
+                        ausente: ausente
+                    };
+                });
+
+                const eqState = paginationState.equidad;
+                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(
+                    empTableData, eqState.page, eqState.perPage
+                );
+
+                const pPases = paginationState.pases;
+                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
+                    todosPases, pPases.page, pPases.perPage
+                );
+
+                let html = `
+                    <!-- PENDIENTES -->
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
+                            <div>
+                                <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
+                                ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
+                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
+                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                            </div>
+                        </div>
+                        ${pendTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaPendientes">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Tipo</th>
+                                            <th>Nivel Op.</th>
+                                            <th>Revisión</th>
+                                            <th>Asignar a</th>
+                                            <th>Observación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pendItems.map(c => {
+                                            const modoOpts = MODOS_INTERVENCION.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('');
+                                            const tipoOpts = TIPOS.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('');
+                                            return `
+                                            <tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="modo_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${modoOpts}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="tipo_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${tipoOpts}
+                                                    </select>
+                                                </td>
+                                                <td>N${c.nivelOperador}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
+                                                        <option value="1" ${c.nivelOperador===1?'selected':''}>N1</option>
+                                                        <option value="2" ${c.nivelOperador===2?'selected':''}>N2</option>
+                                                        <option value="3" ${c.nivelOperador===3?'selected':''}>N3</option>
+                                                        <option value="4" ${c.nivelOperador===4?'selected':''}>N4</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${optsEmpleados}
+                                                    </select>
+                                                    <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button>
+                                                </td>
+                                                <td>
+                                                    <input type="text" id="obs_${c.id}" class="form-control form-control-sm" placeholder="Observación (opcional)" style="width:150px;" />
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
+                                                    <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>
+                                        `}).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationDistribucion"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>Bandeja vacía</div>`}
+                    </div>
+
+                    <!-- EN PROCESO -->
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-people"></i> Causas en Proceso</div>
+                        </div>
+                        ${procTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaProceso">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Empleado</th>
+                                            <th>Nivel</th>
+                                            <th>Tipo</th>
+                                            <th>Demora</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${procItems.map(c => {
+                                            const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.modoIntervencion || '-'}</td>
+                                                <td>${getEmpName(c.empleadoAsignado)}</td>
+                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
+                                                <td>${c.tipo || '-'}</td>
+                                                <td>${demora ? `<span style="font-family:monospace;font-size:0.7rem;background:#e9eef5;padding:2px 10px;border-radius:30px;">${demora}</span>` : '-'}</td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
+                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationProceso"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
+                    </div>
+
+                    <!-- ESTADÍSTICAS DE EQUIDAD -->
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <div class="card-title mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas de Equidad</div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Asignaciones por Secretario</h6>
+                                <div class="equidad-grid">
+                                    ${secStats.map(s => `
+                                        <div class="equidad-item">
+                                            <div class="eq-label">${s.nombre}</div>
+                                            <div class="eq-value">${s.asignadas}</div>
+                                            <div class="eq-actions">
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-sec" data-sec="${s.id}">Ver historial</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga actual por Empleado <span class="text-muted-light" style="font-weight:400; font-size:0.7rem;">(en rojo si tiene retraso)</span></h6>
+                                <div class="table-wrap">
+                                    <table class="table-modern table" style="min-width:0; width:100%;">
+                                        <thead>
+                                            <tr>
+                                                <th>Empleado</th>
+                                                <th>Total</th>
+                                                <th>N1</th>
+                                                <th>N2</th>
+                                                <th>N3</th>
+                                                <th>N4</th>
+                                                <th>Secretario(s)</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${eqItems.map(e => `
+                                                <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
+                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
+                                                    <td>${e.total}</td>
+                                                    <td>${e.niveles[1]}</td>
+                                                    <td>${e.niveles[2]}</td>
+                                                    <td>${e.niveles[3]}</td>
+                                                    <td>${e.niveles[4]}</td>
+                                                    <td>${e.secretarios || '-'}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
+                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="paginationEquidad"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // TABLA DETALLADA DE TODOS LOS PASES
+                html += `
+                    <div class="glass-card mt-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
+                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirPases"><i class="bi bi-printer"></i> Imprimir</button>
+                        </div>
+                        ${pasesTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaPases">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Empleado</th>
+                                            <th>Secretario</th>
+                                            <th>Nivel</th>
+                                            <th>Fecha Asignación</th>
+                                            <th>Tipo</th>
+                                            <th>Estado</th>
+                                            <th>Observaciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pasesItems.map(c => {
+                                            let obs = '-';
+                                            if (c.historial && c.historial.length) {
+                                                const pase = c.historial.find(h => h.accion && (h.accion.includes('Pase a Secretaría') || h.accion.includes('Enviado a Secretaría')));
+                                                if (pase && pase.comentario) obs = pase.comentario;
+                                                else {
+                                                    const ultimo = c.historial[c.historial.length - 1];
+                                                    if (ultimo && ultimo.comentario) obs = ultimo.comentario;
+                                                }
+                                            }
+                                            let fechaAsig = 'Falta asignar';
+                                            if (c.empleadoAsignado && c.fechaAsignacion) {
+                                                fechaAsig = fmtDt(c.fechaAsignacion);
+                                            } else if (c.empleadoAsignado) {
+                                                fechaAsig = fmtDt(c.fechaAsignacion) || '-';
+                                            }
+                                            const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
+                                            const empleado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${empleado}</td>
+                                                <td>${getSecName(c.secretarioId) || '-'}</td>
+                                                <td>N${nivel}</td>
+                                                <td style="font-size:0.75rem;">${fechaAsig}</td>
+                                                <td>${c.tipo || 'N/D'}</td>
+                                                <td>${getEstadoBadge(c.estado)}</td>
+                                                <td style="font-size:0.75rem;">${obs}</td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationPases"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay registros de pases por Secretaría con empleado asignado.</div>`}
+                    </div>
+                `;
+
+                panel.innerHTML = html;
+
+                // Paginación
+                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.distribucion.page = newPage;
+                        paginationState.distribucion.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.proceso.page = newPage;
+                        paginationState.proceso.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.pases.page = newPage;
+                        paginationState.pases.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (
+                    newPage, newPerPage) => {
+                        paginationState.equidad.page = newPage;
+                        paginationState.equidad.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+
+                // ============================================================
+                //  EVENTOS DE LA PESTAÑA DISTRIBUCIÓN
+                // ============================================================
+
+                // Botón "Auto" (delegación de eventos en el panel)
+                panel.removeEventListener('click', panel._clickHandler);
+                panel._clickHandler = async function(e) {
+                    const target = e.target.closest('.btn-auto-asig');
+                    if (!target) return;
+                    const id = target.dataset.id;
+                    if (!id) return;
+                    try {
+                        const niv = document.getElementById(`nv_${id}`).value;
+                        const obs = document.getElementById(`obs_${id}`).value.trim();
+                        const modo = document.getElementById(`modo_${id}`).value;
+                        const tipo = document.getElementById(`tipo_${id}`).value;
+                        await asignarAlMenosCargado(id, niv, obs || '', tipo, modo);
+                        renderDistribucion();
+                    } catch (err) {
+                        console.error('Error en Auto:', err);
+                        showToast('Error en la asignación automática', 'danger');
+                    }
+                };
+                panel.addEventListener('click', panel._clickHandler);
+
+                // Botón Asignar
+                document.querySelectorAll('.btn-asignar').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const emp = document.getElementById(`em_${id}`).value;
+                        const niv = document.getElementById(`nv_${id}`).value;
+                        const obs = document.getElementById(`obs_${id}`).value.trim();
+                        const modo = document.getElementById(`modo_${id}`).value;
+                        const tipo = document.getElementById(`tipo_${id}`).value;
+                        if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
+                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar',
+                            'warning'); return; }
+                        await asignarCausa(id, niv, emp, obs || 'Sin observación adicional', null, tipo, modo);
+                        renderDistribucion();
+                    });
+                });
+
+                // Botón Elevar a Defensor (desde pendientes)
+                document.querySelectorAll('.btn-elevar-def').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const com = prompt('Motivo de elevación a Defensor:');
+                        if (com !== null) {
+                            await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Secretario', com || 'Sin motivo');
+                            renderDistribucion();
+                        }
+                    });
+                });
+
+                // Ver historial
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
+
+                // Cumplido (en proceso)
+                document.querySelectorAll('.btn-cumplido').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                        if (causa.estado !== 'en_proceso') {
+                            showToast('Solo se pueden finalizar causas en proceso', 'warning');
+                            return;
+                        }
+                        if (confirm(`¿Autorizar cumplimiento de ${causa.numero}?`)) {
+                            const comentario = prompt('Deje un comentario (opcional):', 'Cumplido autorizado');
+                            if (comentario === null) return;
+                            await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Secretario', 'Secretario', comentario || 'Cumplido autorizado');
+                            renderDistribucion();
+                        }
+                    });
+                });
+
+                // Elevar a Defensor (desde proceso)
+                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
+                    btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
+                });
+
+                // Ver consultas
+                document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
+                    btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
+                });
+
+                // Ver historial de secretario
+                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
+                    btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); });
+                });
+
+                // Toggle ausencia de empleado
+                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empNombre = this.dataset.emp;
+                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
+                        if (emp) await toggleAusencia(emp.id);
+                    });
+                });
+
+                // Distribuir masivo
+                const btnMasivo = document.getElementById('btnDistribuirMasivo');
+                if (btnMasivo) {
+                    btnMasivo.addEventListener('click', async function() {
+                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
+                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
+                        const comentarioGlobal = prompt(
+                            'Ingrese un comentario para todas las asignaciones (opcional):');
+                        if (comentarioGlobal === null) return;
+                        for (const c of pendientes) {
+                            await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
+                        }
+                        showToast(`✅ ${pendientes.length} causas distribuidas equitativamente`);
+                        renderDistribucion();
+                    });
+                }
+
+                // Reporte completo
+                const btnReporte = document.getElementById('btnReporteCompleto');
+                if (btnReporte) btnReporte.addEventListener('click', abrirReporteCompleto);
+
+                // Informe de equidad
+                const btnEquidad = document.getElementById('btnInformeEquidad');
+                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
+
+                // Imprimir tabla de pases
+                const btnImprimirPases = document.getElementById('btnImprimirPases');
+                if (btnImprimirPases) {
+                    btnImprimirPases.addEventListener('click', imprimirPasesCompleto);
+                }
+            }
+
+            // ================================================================
+            //  FUNCIONES DE LAS OTRAS PESTAÑAS (ORIGINALES)
+            // ================================================================
+
+            // PANEL INGRESO (original)
             function renderIngreso() {
                 const panel = document.getElementById('panelIngreso');
 
@@ -2032,607 +2865,7 @@
                 });
             }
 
-            // ================================================================
-            //  PANEL DISTRIBUCION (reemplazado con código de secretario.html)
-            // ================================================================
-            function renderDistribucion() {
-                const panel = document.getElementById('panelDistribucion');
-
-                const term = searchTerm.toLowerCase().trim();
-                const filterFn = (c) => term === '' || c.numero.toLowerCase().includes(term);
-
-                let pend = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
-                pend.sort((a, b) => b.nivelOperador - a.nivelOperador);
-                const pState = paginationState.distribucion;
-                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(
-                    pend, pState.page, pState.perPage);
-
-                let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
-                enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pStateProc = paginationState.proceso;
-                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(
-                    enProceso, pStateProc.page, pStateProc.perPage);
-
-                let todosPases = state.causas.filter(c => c.secretarioId && filterFn(c));
-                todosPases.sort((a, b) => {
-                    const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
-                    const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
-                    return new Date(fechaB) - new Date(fechaA);
-                });
-
-                const optsEmpleados = CONFIG.empleados
-                    .filter(e => !isAusente(e.id))
-                    .map(e =>
-                        `<option value="${e.id}">${e.nombre} (${calcularCargaReal(e.id).toFixed(1)} pts)</option>`
-                        )
-                    .join('');
-
-                const secStats = CONFIG.secretarios.map(sec => {
-                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id).length;
-                    return { ...sec, asignadas };
-                });
-
-                const empleadosConRetraso = new Set();
-                state.causas.forEach(c => {
-                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite)
-                        .getTime() < Date.now()) {
-                        empleadosConRetraso.add(c.empleadoAsignado);
-                    }
-                });
-
-                const empTableData = CONFIG.empleados.map(emp => {
-                    const causas = state.causas.filter(c => c.empleadoAsignado === emp.id);
-                    const total = causas.length;
-                    const niveles = { 1: 0, 2: 0, 3: 0, 4: 0 };
-                    const secretarios = new Set();
-                    causas.forEach(c => {
-                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
-                        if (nivel >= 1 && nivel <= 4) niveles[nivel]++;
-                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
-                    });
-                    const ausente = isAusente(emp.id);
-                    return {
-                        nombre: emp.nombre,
-                        total,
-                        niveles,
-                        secretarios: Array.from(secretarios).join(', '),
-                        tieneRetraso: empleadosConRetraso.has(emp.id),
-                        ausente: ausente
-                    };
-                });
-
-                const eqState = paginationState.equidad;
-                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(
-                    empTableData, eqState.page, eqState.perPage
-                );
-
-                const pPases = paginationState.pases;
-                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
-                    todosPases, pPases.page, pPases.perPage
-                );
-
-                const tipoOpts = CONFIG.tipos.map(t => `<option value="${t}">${t}</option>`).join('');
-                const modoOpts = CONFIG.modosIntervencion.map(m => `<option value="${m}">${m}</option>`).join('');
-
-                let html = `
-                    <div class="card-modern">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
-                            <div>
-                                <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
-                                ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
-                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
-                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
-                            </div>
-                        </div>
-                        ${pendTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaPendientes">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Modo Intervención</th>
-                                            <th>Tipo</th>
-                                            <th>Nivel Op.</th>
-                                            <th>Revisión</th>
-                                            <th>Asignar a</th>
-                                            <th>Observación</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${pendItems.map(c => `
-                                            <tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="modo_${c.id}" style="min-width:150px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${modoOpts}
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="tipo_${c.id}" style="min-width:150px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${tipoOpts}
-                                                    </select>
-                                                </td>
-                                                <td>N${c.nivelOperador}</td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
-                                                        <option value="1" ${c.nivelOperador===1?'selected':''}>N1</option>
-                                                        <option value="2" ${c.nivelOperador===2?'selected':''}>N2</option>
-                                                        <option value="3" ${c.nivelOperador===3?'selected':''}>N3</option>
-                                                        <option value="4" ${c.nivelOperador===4?'selected':''}>N4</option>
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="em_${c.id}" style="min-width:150px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${optsEmpleados}
-                                                    </select>
-                                                    <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button>
-                                                </td>
-                                                <td>
-                                                    <input type="text" id="obs_${c.id}" class="form-control form-control-sm" placeholder="Observación (opcional)" style="width:150px;" />
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
-                                                    <button class="btn btn-modern btn-modern-danger btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i></button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationDistribucion"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>Bandeja vacía</div>`}
-                    </div>
-
-                    <div class="card-modern">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-people"></i> Causas en Proceso</div>
-                        </div>
-                        ${procTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaProceso">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Modo Intervención</th>
-                                            <th>Empleado</th>
-                                            <th>Nivel</th>
-                                            <th>Tipo</th>
-                                            <th>Demora</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${procItems.map(c => {
-                                            const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
-                                            return `<tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${c.modoIntervencion || '-'}</td>
-                                                <td>${getEmpName(c.empleadoAsignado)}</td>
-                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
-                                                <td>${c.tipo || '-'}</td>
-                                                <td>${demora ? `<span style="font-family:monospace;font-size:0.7rem;background:#e9eef5;padding:2px 10px;border-radius:30px;">${demora}</span>` : '-'}</td>
-                                                <td>
-                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-cumplido" data-id="${c.id}">Cumplido</button>
-                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>`;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationProceso"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
-                    </div>
-
-                    <div class="card-modern">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                            <div class="card-title mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas de Equidad</div>
-                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button>
-                        </div>
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Asignaciones por Secretario</h6>
-                                <div class="equidad-grid">
-                                    ${secStats.map(s => `
-                                        <div class="equidad-item">
-                                            <div class="eq-label">${s.nombre}</div>
-                                            <div class="eq-value">${s.asignadas}</div>
-                                            <div class="eq-actions">
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-sec" data-sec="${s.id}">Ver historial</button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga actual por Empleado <span class="text-muted-light" style="font-weight:400; font-size:0.7rem;">(en rojo si tiene retraso)</span></h6>
-                                <div class="table-wrap">
-                                    <table class="table-modern table" style="min-width:0; width:100%;">
-                                        <thead>
-                                            <tr>
-                                                <th>Empleado</th>
-                                                <th>Total</th>
-                                                <th>N1</th>
-                                                <th>N2</th>
-                                                <th>N3</th>
-                                                <th>N4</th>
-                                                <th>Secretario(s)</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${eqItems.map(e => `
-                                                <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
-                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
-                                                    <td>${e.total}</td>
-                                                    <td>${e.niveles[1]}</td>
-                                                    <td>${e.niveles[2]}</td>
-                                                    <td>${e.niveles[3]}</td>
-                                                    <td>${e.niveles[4]}</td>
-                                                    <td>${e.secretarios || '-'}</td>
-                                                    <td>
-                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
-                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div id="paginationEquidad"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                html += `
-                    <div class="card-modern mt-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
-                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirPases"><i class="bi bi-printer"></i> Imprimir</button>
-                        </div>
-                        ${pasesTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaPases">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Empleado</th>
-                                            <th>Secretario</th>
-                                            <th>Nivel</th>
-                                            <th>Fecha Asignación</th>
-                                            <th>Tipo</th>
-                                            <th>Estado</th>
-                                            <th>Observaciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${pasesItems.map(c => {
-                                            let obs = '-';
-                                            if (c.historial && c.historial.length) {
-                                                const pase = c.historial.find(h => h.accion && (h.accion.includes('Pase a Secretaría') || h.accion.includes('Enviado a Secretaría')));
-                                                if (pase && pase.comentario) obs = pase.comentario;
-                                                else {
-                                                    const ultimo = c.historial[c.historial.length - 1];
-                                                    if (ultimo && ultimo.comentario) obs = ultimo.comentario;
-                                                }
-                                            }
-                                            let fechaAsig = 'Falta asignar';
-                                            if (c.empleadoAsignado && c.fechaAsignacion) {
-                                                fechaAsig = fmtDt(c.fechaAsignacion);
-                                            } else if (c.empleadoAsignado) {
-                                                fechaAsig = fmtDt(c.fechaAsignacion) || '-';
-                                            }
-                                            const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
-                                            const empleado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
-                                            return `<tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${empleado}</td>
-                                                <td>${getSecName(c.secretarioId) || '-'}</td>
-                                                <td>N${nivel}</td>
-                                                <td style="font-size:0.75rem;">${fechaAsig}</td>
-                                                <td>${c.tipo || 'N/D'}</td>
-                                                <td>${getEstadoBadge(c.estado)}</td>
-                                                <td style="font-size:0.75rem;">${obs}</td>
-                                            </tr>`;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationPases"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay registros de pases por Secretaría con empleado asignado.</div>`}
-                    </div>
-                `;
-
-                panel.innerHTML = html;
-
-                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.distribucion.page = newPage;
-                        paginationState.distribucion.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.proceso.page = newPage;
-                        paginationState.proceso.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.pases.page = newPage;
-                        paginationState.pases.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (
-                    newPage, newPerPage) => {
-                        paginationState.equidad.page = newPage;
-                        paginationState.equidad.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-
-                document.querySelectorAll('.btn-asignar').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const emp = document.getElementById(`em_${id}`).value;
-                        const niv = document.getElementById(`nv_${id}`).value;
-                        const obs = document.getElementById(`obs_${id}`).value.trim();
-                        const modo = document.getElementById(`modo_${id}`).value;
-                        const tipo = document.getElementById(`tipo_${id}`).value;
-                        if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
-                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar',
-                            'warning'); return; }
-                        await asignarCausa(id, niv, emp, obs || 'Sin observación adicional', null, tipo, modo);
-                        renderDistribucion();
-                    });
-                });
-
-                document.querySelectorAll('.btn-auto-asig').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const niv = document.getElementById(`nv_${id}`).value;
-                        const obs = document.getElementById(`obs_${id}`).value.trim();
-                        const modo = document.getElementById(`modo_${id}`).value;
-                        const tipo = document.getElementById(`tipo_${id}`).value;
-                        await asignarAlMenosCargado(id, niv, obs || '', tipo, modo);
-                        renderDistribucion();
-                    });
-                });
-
-                document.querySelectorAll('.btn-elevar-def').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const com = prompt('Motivo de elevación a Defensor:');
-                        if (com !== null) {
-                            await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Defensor', com || 'Sin motivo');
-                            renderDistribucion();
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
-                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
-                });
-
-                document.querySelectorAll('.btn-cumplido').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const causa = state.causas.find(c => c.id === id);
-                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
-                        if (causa.estado !== 'en_proceso') {
-                            showToast('Solo se pueden finalizar causas en proceso', 'warning');
-                            return;
-                        }
-                        if (confirm(`¿Autorizar cumplimiento de ${causa.numero}?`)) {
-                            const comentario = prompt('Deje un comentario (opcional):', 'Cumplido autorizado');
-                            if (comentario === null) return;
-                            await cambiarEstado(id, 'finalizada', 'Cumplido autorizado por Defensor', 'Defensor', comentario || 'Cumplido autorizado');
-                            renderDistribucion();
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
-                    btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
-                });
-
-                document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
-                    btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
-                });
-
-                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
-                    btn.addEventListener('click', function() { verHistorialSecretario(this.dataset.sec); });
-                });
-
-                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const empNombre = this.dataset.emp;
-                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
-                        if (emp) await toggleAusencia(emp.id);
-                    });
-                });
-
-                const btnMasivo = document.getElementById('btnDistribuirMasivo');
-                if (btnMasivo) {
-                    btnMasivo.addEventListener('click', async function() {
-                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
-                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
-                        const comentarioGlobal = prompt(
-                            'Ingrese un comentario para todas las asignaciones (opcional):');
-                        if (comentarioGlobal === null) return;
-                        for (const c of pendientes) {
-                            await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
-                        }
-                        showToast(`✅ ${pendientes.length} causas distribuidas equitativamente`);
-                        renderDistribucion();
-                    });
-                }
-
-                const btnReporte = document.getElementById('btnReporteCompleto');
-                if (btnReporte) btnReporte.addEventListener('click', function() {
-                    const body = document.getElementById('modalReporteBody');
-                    const pendientes = state.causas.filter(c => c.estado === 'en_secretaria');
-                    const enProceso = state.causas.filter(c => c.estado === 'en_proceso');
-                    let html = `
-                        <div class="print-table">
-                            <h5>Reporte de Pase Digital. Secretarios.</h5>
-                            <p><strong>Fecha y hora de impresión:</strong> ${new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                            <hr />
-                            <h6>Pendientes en Secretaría (${pendientes.length})</h6>
-                            ${pendientes.length ? `
-                                <div class="table-wrap">
-                                    <table class="table-modern table">
-                                        <thead><tr><th>Expediente</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel Op.</th></tr></thead>
-                                        <tbody>
-                                            ${pendientes.map(c => `
-                                                <tr>
-                                                    <td><strong>${c.numero}</strong></td>
-                                                    <td>${c.modoIntervencion || '-'}</td>
-                                                    <td>${c.tipo}</td>
-                                                    <td>N${c.nivelOperador}</td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ` : '<div class="text-muted">No hay pendientes.</div>'}
-
-                            <h6>Causas en Proceso (${enProceso.length})</h6>
-                            ${enProceso.length ? `
-                                <div class="table-wrap">
-                                    <table class="table-modern table">
-                                        <thead><tr><th>Expediente</th><th>Empleado</th><th>Nivel</th><th>Demora</th></tr></thead>
-                                        <tbody>
-                                            ${enProceso.map(c => `
-                                                <tr>
-                                                    <td><strong>${c.numero}</strong></td>
-                                                    <td>${getEmpName(c.empleadoAsignado)}</td>
-                                                    <td>N${c.nivelSecretario || c.nivelOperador || 'N/D'}</td>
-                                                    <td>${getTiempoTranscurrido(c.fechaAsignacion, null) || '-'}</td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ` : '<div class="text-muted">No hay causas en proceso.</div>'}
-                        </div>
-                    `;
-                    body.innerHTML = html;
-                    new bootstrap.Modal(document.getElementById('modalReporte')).show();
-                });
-
-                const btnEquidad = document.getElementById('btnInformeEquidad');
-                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
-
-                const btnImprimirPases = document.getElementById('btnImprimirPases');
-                if (btnImprimirPases) {
-                    btnImprimirPases.addEventListener('click', function() {
-                        const todos = state.causas.filter(c => c.secretarioId);
-                        todos.sort((a, b) => {
-                            const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
-                            const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
-                            return new Date(fechaB) - new Date(fechaA);
-                        });
-                        if (!todos.length) { showToast('No hay registros para imprimir', 'warning'); return; }
-                        const now = new Date();
-                        const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        const hora = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-                        let rows = '';
-                        todos.forEach(c => {
-                            let obs = '-';
-                            if (c.historial && c.historial.length) {
-                                const pase = c.historial.find(h => h.accion && (h.accion.includes('Pase a Secretaría') || h.accion.includes('Enviado a Secretaría')));
-                                if (pase && pase.comentario) obs = pase.comentario;
-                                else {
-                                    const ultimo = c.historial[c.historial.length - 1];
-                                    if (ultimo && ultimo.comentario) obs = ultimo.comentario;
-                                }
-                            }
-                            let fechaAsig = 'Falta asignar';
-                            if (c.empleadoAsignado && c.fechaAsignacion) {
-                                fechaAsig = fmtDt(c.fechaAsignacion);
-                            } else if (c.empleadoAsignado) {
-                                fechaAsig = fmtDt(c.fechaAsignacion) || '-';
-                            }
-                            const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
-                            const empleado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
-                            rows += `
-                                <tr>
-                                    <td><strong>${c.numero}</strong></td>
-                                    <td>${empleado}</td>
-                                    <td>${getSecName(c.secretarioId) || '-'}</td>
-                                    <td>N${nivel}</td>
-                                    <td style="font-size:0.75rem;">${fechaAsig}</td>
-                                    <td>${c.tipo || 'N/D'}</td>
-                                    <td>${getEstadoBadge(c.estado)}</td>
-                                    <td style="font-size:0.75rem;">${obs}</td>
-                                </tr>
-                            `;
-                        });
-                        const html = `
-                            <html><head><title>Todos los pases a empleados</title>
-                            <style>
-                                body { font-family: 'Inter', sans-serif; padding: 20px; margin: 0; background: #fff; }
-                                h3 { font-size: 1.2rem; font-weight: 700; }
-                                table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                                th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-                                th { background: #f1f6fd; }
-                                .badge-estado { display: inline-block; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.6rem; }
-                                .badge-sec { background:#fff3e0; color:#e67e22; }
-                                .badge-proc { background:#e3f2fd; color:#1565c0; }
-                                .badge-fin { background:#e8f5e9; color:#2e7d32; }
-                                .badge-def { background:#f3e5f5; color:#7b1fa2; }
-                                .badge-dev { background:#ffebee; color:#c62828; }
-                                .badge-rem { background:#e8eaf6; color:#3949ab; }
-                                .badge-rech { background:#fce4ec; color:#c62828; }
-                                .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
-                                .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 8px; border-radius:20px; font-size:0.6rem; }
-                                .impresion-info { margin-bottom: 15px; font-size: 0.9rem; }
-                                @media print { body { padding: 0; } }
-                            </style>
-                            </head><body>
-                            <h3>Todos los pases a empleados</h3>
-                            <div class="impresion-info"><strong>Fecha de impresión:</strong> ${fecha} &nbsp; <strong>Hora:</strong> ${hora}</div>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>Empleado</th>
-                                        <th>Secretario</th>
-                                        <th>Nivel</th>
-                                        <th>Fecha Asignación</th>
-                                        <th>Tipo</th>
-                                        <th>Estado</th>
-                                        <th>Observaciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows}
-                                </tbody>
-                            </table>
-                            </body></html>
-                        `;
-                        const win = window.open('', '_blank');
-                        if (!win) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
-                        win.document.write(html);
-                        win.document.close();
-                        setTimeout(() => { win.print(); }, 500);
-                    });
-                }
-            }
-
-            // ================================================================
-            //  PANEL DEFENSOR (sin cambios)
-            // ================================================================
+            // PANEL DEFENSOR (original)
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
                 const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
@@ -2855,15 +3088,11 @@
                 if (btnReporteDef) { btnReporteDef.addEventListener('click', generarReporteGeneral); }
             }
 
-            // ================================================================
-            //  PANEL EMPLEADO (reemplazado con código de empleado.html)
-            // ================================================================
+            // PANEL EMPLEADO (original)
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
-                // Selector de empleado
                 const selectorId = 'selectorEmpleadoDefensor';
                 let empSeleccionado = document.getElementById(selectorId)?.value || CONFIG.empleados[0]?.id || '';
-                // Guardar el empleado seleccionado en una variable global para usarlo en otras funciones
                 window._empSeleccionado = empSeleccionado;
 
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empSeleccionado);
@@ -2971,7 +3200,6 @@
                     `;
                 }
 
-                // Historial
                 function obtenerHistorialPasesEmpleado() {
                     if (!empSeleccionado) return [];
                     return state.causas.filter(c => {
@@ -3038,7 +3266,6 @@
                     });
                 }
 
-                // Renderizar historial
                 const histContainer = document.getElementById('tablaHistorialEmpleadoContainer');
                 if (histContainer) {
                     if (historial.length === 0) {
@@ -3091,7 +3318,6 @@
                     }
                 }
 
-                // Eventos
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -3132,12 +3358,10 @@
                     btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
                 });
 
-                // Selector de empleado
                 document.getElementById(selectorId).addEventListener('change', function() {
                     renderEmpleado();
                 });
 
-                // Filtros
                 const selectMes = document.getElementById('filtroMesEmpleado');
                 const selectAnio = document.getElementById('filtroAnioEmpleado');
                 if (selectMes) {
@@ -3164,7 +3388,6 @@
                     });
                 }
 
-                // Reporte y estadísticas
                 const btnReporte = document.getElementById('btnReporteEmpleado');
                 if (btnReporte) {
                     btnReporte.addEventListener('click', function() {
@@ -3183,7 +3406,6 @@
                 }
             }
 
-            // Función auxiliar para estadísticas (igual a la de empleado.html)
             function generarEstadisticasEmpleado(empId) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
@@ -3259,6 +3481,9 @@
                 const ahora = new Date();
                 const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
 
+                // Usamos un modal que debe existir en el HTML (se agregó al final)
+                // Como no existe, lo creamos dinámicamente o usamos el modalReporteBody.
+                // Para simplificar, usamos el modalReporteBody.
                 let html = `
                     <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
@@ -3402,14 +3627,11 @@
                     </div>
                 `;
 
-                document.getElementById('modalEstadisticasBody').innerHTML = html;
-                document.getElementById('modalEstadisticasNombre').textContent = emp.nombre;
-                new bootstrap.Modal(document.getElementById('modalEstadisticas')).show();
+                document.getElementById('modalReporteBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
-            // ================================================================
-            //  PANEL GRAFICOS (corregido: solo puntaje manual)
-            // ================================================================
+            // PANEL GRAFICOS (original)
             async function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
@@ -3424,7 +3646,6 @@
 
                 await cargarPuntajesManuales();
 
-                // Datos para ranking y gráficos (solo puntaje manual)
                 const empleadosData = CONFIG.empleados
                     .map(e => {
                         const totalAsignados = calcularCargaTotal(e.id);
@@ -3550,7 +3771,6 @@
                     </div>
                 `;
 
-                // Eventos para guardar individual
                 document.querySelectorAll('.btn-guardar-puntaje').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const empId = this.dataset.emp;
@@ -3574,9 +3794,7 @@
                 const btnRanking = document.getElementById('btnImprimirRanking');
                 if (btnRanking) { btnRanking.addEventListener('click', generarReporteRanking); }
 
-                // Gráficos
                 setTimeout(() => {
-                    // Carga por empleado (total)
                     if (document.getElementById('chartCarga')) {
                         if (chartInstances.carga) chartInstances.carga.destroy();
                         chartInstances.carga = new Chart(document.getElementById('chartCarga'), {
@@ -3597,7 +3815,6 @@
                             }
                         });
                     }
-                    // Estado global
                     if (document.getElementById('chartEstado')) {
                         if (chartInstances.estado) chartInstances.estado.destroy();
                         chartInstances.estado = new Chart(document.getElementById('chartEstado'), {
@@ -3606,7 +3823,6 @@
                             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
                         });
                     }
-                    // Rendimiento (solo puntaje manual)
                     if (document.getElementById('chartRendimiento')) {
                         if (chartInstances.rendimiento) chartInstances.rendimiento.destroy();
                         chartInstances.rendimiento = new Chart(document.getElementById('chartRendimiento'), {
@@ -3632,7 +3848,6 @@
                             }
                         });
                     }
-                    // Distribución por nivel
                     if (document.getElementById('chartNivel')) {
                         if (chartInstances.nivel) chartInstances.nivel.destroy();
                         chartInstances.nivel = new Chart(document.getElementById('chartNivel'), {
@@ -3644,9 +3859,7 @@
                 }, 150);
             }
 
-            // ================================================================
-            //  PANEL AUDITORIA (sin cambios)
-            // ================================================================
+            // PANEL AUDITORIA (original)
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
@@ -3709,14 +3922,60 @@
                 document.getElementById('btnReiniciarStorage').addEventListener('click', async function() { if (confirm('⚠️ ¿Eliminar todos los datos de Firestore? Esta acción es irreversible.')) { try { const snapshot = await db.collection('operador').get(); const batch = db.batch(); snapshot.forEach(doc => { batch.delete(doc.ref); }); await batch.commit(); state.causas = []; state.ausencias = []; showToast('Datos reiniciados', 'warning'); renderAll(); } catch (e) { showToast('Error al reiniciar', 'danger'); } } });
             }
 
-            // ---------- FUNCIÓN ACTUALIZAR TODAS LAS BD ----------
-            async function actualizarTodasLasBD() {
-                await loadStateFromFirestore();
-                renderAll();
-                showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
+            // ================================================================
+            //  FUNCIONES ADICIONALES
+            // ================================================================
+
+            function generarInformeGesell() {
+                const causasGesell = state.causas.filter(c => c.tipo && c.tipo.toLowerCase().includes('cámara gesell'));
+                const enDefensorGesell = causasGesell.filter(c => c.estado === 'en_defensor');
+                const finalizadasGesell = causasGesell.filter(c => c.estado === 'finalizada');
+                const conAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'asistio');
+                const sinAsistencia = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio' || c.asistenciaGesell === 'pendiente');
+
+                const now = new Date();
+                const fechaStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.5rem;">
+                            <h5 style="margin:0; font-weight:700; color:#0a2a44;">Informe de Cámara Gesell</h5>
+                            <div style="font-size:0.75rem; color:#5f7f9f;">${fechaStr}</div>
+                        </div>
+                        <div class="kpi-grid" style="grid-template-columns: repeat(4,1fr);">
+                            <div class="kpi-item"><div class="label">Total</div><div class="value">${causasGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">En Defensor</div><div class="value warning">${enDefensorGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">Finalizadas</div><div class="value success">${finalizadasGesell.length}</div></div>
+                            <div class="kpi-item"><div class="label">Asistencia</div><div class="value info">${conAsistencia.length}</div></div>
+                        </div>
+                        <hr />
+                        <h6>Detalle</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Estado</th><th>Asistencia</th><th>Fecha/Hora</th></tr></thead>
+                                <tbody>
+                                    ${causasGesell.sort((a,b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario)).map(c => `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.dni || '-'}</td>
+                                            <td>${c.modoIntervencion || '-'}</td>
+                                            <td>${getEstadoBadgePlain(c.estado)}</td>
+                                            <td>${c.asistenciaGesell === 'asistio' ? 'Asistió' : c.asistenciaGesell === 'no_asistio' ? 'No asistió' : 'Pendiente'}</td>
+                                            <td>${c.fechaHoraGesell ? fmtDt(c.fechaHoraGesell) : '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modalReporteBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
-            // ---------- RENDER ALL ----------
+            // ================================================================
+            //  RENDER ALL
+            // ================================================================
             function renderAll() {
                 renderTabs();
                 const activeTab = document.querySelector('.tab-btn.active');
@@ -3843,7 +4102,11 @@
                 document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').style.display = 'none');
                 document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
                 document.addEventListener('click', function(e) { const a = document.getElementById('logoutAlert'); if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion') a.style.display = 'none'; });
-                document.getElementById('btnActualizarBD').addEventListener('click', actualizarTodasLasBD);
+                document.getElementById('btnActualizarBD').addEventListener('click', async function() {
+                    await loadStateFromFirestore();
+                    renderAll();
+                    showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
+                });
                 if (document.getElementById('loginOverlay').classList.contains('hidden')) {
                     loadStateFromFirestore().then(() => renderAll());
                 }
