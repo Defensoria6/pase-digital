@@ -1065,10 +1065,12 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span> <small class="ms-2 text-light-emphasis" id="modalHistorialEmpleado"></small></h5>
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalHistorialBody"><div class="text-muted">Cargando…</div></div>
+                <div class="modal-body" id="modalHistorialBody">
+                    <!-- Se llena dinámicamente: incluirá el empleado actual y el historial -->
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
@@ -1696,14 +1698,26 @@
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
                 document.getElementById('modalHistorialExp').textContent = c.numero;
-                document.getElementById('modalHistorialEmpleado').textContent =
-                    `(Empleado: ${c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar'})`;
+
+                // Mostrar empleado actual en el cuerpo
                 const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } else {
-                    body.innerHTML = c.historial.slice().reverse().map(m =>
-                        `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`
+                const empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                let html = `<div class="mb-3"><strong>Empleado actual:</strong> ${empleadoActual}</div>`;
+                html += `<hr /><h6>Movimientos</h6>`;
+
+                if (!c.historial || !c.historial.length) {
+                    html += '<div class="text-muted">Sin movimientos registrados.</div>';
+                } else {
+                    html += c.historial.slice().reverse().map(m =>
+                        `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2">
+                            <span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span>
+                            <span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span>
+                            <span style="flex:1;">${m.accion}</span>
+                            <span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span>
+                        </div>`
                     ).join('');
                 }
+                body.innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
 
