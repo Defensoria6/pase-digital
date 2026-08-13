@@ -326,7 +326,7 @@
         <div id="panelEmpleado" class="tab-panel active"></div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.7rem; border-top:1px solid #e2edf7; padding-top:1rem;">
-            <i class="bi bi-cloud-check"></i> Datos en la nube · Sincronización automática cada 5 min
+            <i class="bi bi-cloud-check"></i> Datos en la nube · Sincronización automática cada 15 min (solo si la pestaña está activa)
         </footer>
     </div>
 
@@ -1455,14 +1455,19 @@
                 cronoInterval = setInterval(() => { renderEmpleado(); }, 10000);
             }
 
+            // --- MODIFICACIÓN: intervalo de recarga automática cada 15 minutos y solo si la pestaña está visible ---
             function iniciarAutoActualizacion() {
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
                 autoUpdateInterval = setInterval(async () => {
-                    await loadStateFromFirestore();
-                    renderEmpleado();
-                    showToast('🔄 Base de datos actualizada automáticamente', 'info');
-                }, 5 * 60 * 1000);
+                    // Solo actualizar si la pestaña está visible
+                    if (!document.hidden) {
+                        await loadStateFromFirestore();
+                        renderEmpleado();
+                        showToast('🔄 Base de datos actualizada automáticamente', 'info');
+                    }
+                }, 15 * 60 * 1000); // 15 minutos
             }
+            // ----------------------------------------------------------------------------------------------------
 
             async function actualizarManual() {
                 await loadStateFromFirestore();

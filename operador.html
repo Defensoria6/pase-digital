@@ -1697,55 +1697,47 @@
             //  HISTORIAL
             // ============================================================
             function abrirHistorial(id) {
-    const c = state.causas.find(x => x.id === id);
-    if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-    document.getElementById('modalHistorialExp').textContent = c.numero;
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                document.getElementById('modalHistorialExp').textContent = c.numero;
 
-    // Mostrar empleado actual en el cuerpo
-    const body = document.getElementById('modalHistorialBody');
-    
-    let empleadoActual = 'Sin asignar';
+                const body = document.getElementById('modalHistorialBody');
 
-    // Condición estricta: Si está en proceso, extraemos el nombre directamente del historial
-    if (c.estado === 'en_proceso' && c.historial && c.historial.length > 0) {
-        // Buscamos el último movimiento que contenga la palabra "Asignado"
-        const logAsignacion = c.historial.slice().reverse().find(m => m.accion && m.accion.toLowerCase().includes('asignado'));
-        
-        if (logAsignacion) {
-            // Expresión regular para extraer todo el texto entre "a " y " -" 
-            // Ej: "Asignado (Nivel 2) a Palacios Ana Gabriela - Alimentos" -> "Palacios Ana Gabriela"
-            const match = logAsignacion.accion.match(/Asignado.*?a\s+(.*?)(?:\s+-|$)/i);
-            if (match && match[1]) {
-                empleadoActual = match[1].trim();
-            } else {
-                empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                let empleadoActual = 'Sin asignar';
+                if (c.estado === 'en_proceso' && c.historial && c.historial.length > 0) {
+                    const logAsignacion = c.historial.slice().reverse().find(m => m.accion && m.accion.toLowerCase().includes('asignado'));
+                    if (logAsignacion) {
+                        const match = logAsignacion.accion.match(/Asignado.*?a\s+(.*?)(?:\s+-|$)/i);
+                        if (match && match[1]) {
+                            empleadoActual = match[1].trim();
+                        } else {
+                            empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                        }
+                    } else {
+                        empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                    }
+                } else {
+                    empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                }
+
+                let html = `<div class="mb-3"><strong>Empleado actual:</strong> ${empleadoActual}</div>`;
+                html += `<hr /><h6>Movimientos</h6>`;
+
+                if (!c.historial || !c.historial.length) {
+                    html += '<div class="text-muted">Sin movimientos registrados.</div>';
+                } else {
+                    html += c.historial.slice().reverse().map(m =>
+                        `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2">
+                            <span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span>
+                            <span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span>
+                            <span style="flex:1;">${m.accion}</span>
+                            <span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span>
+                        </div>`
+                    ).join('');
+                }
+                body.innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
-        } else {
-            empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
-        }
-    } else {
-        // Comportamiento normal para los demás estados
-        empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
-    }
-
-    let html = `<div class="mb-3"><strong>Empleado actual:</strong> ${empleadoActual}</div>`;
-    html += `<hr /><h6>Movimientos</h6>`;
-
-    if (!c.historial || !c.historial.length) {
-        html += '<div class="text-muted">Sin movimientos registrados.</div>';
-    } else {
-        html += c.historial.slice().reverse().map(m =>
-            `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2">
-                <span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span>
-                <span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span>
-                <span style="flex:1;">${m.accion}</span>
-                <span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span>
-            </div>`
-        ).join('');
-    }
-    body.innerHTML = html;
-    new bootstrap.Modal(document.getElementById('modalHistorial')).show();
-}
 
             // ============================================================
             //  PAGINACIÓN
@@ -2346,8 +2338,14 @@
                 showToast(`Bienvenido/a ${operador}`, 'success');
                 iniciarCronometros();
 
+                // --- MODIFICACIÓN: intervalo de recarga cada 15 minutos y solo si la pestaña está visible ---
                 if (refreshInterval) clearInterval(refreshInterval);
-                refreshInterval = setInterval(recargarDatos, 300000);
+                refreshInterval = setInterval(() => {
+                    if (!document.hidden) {
+                        recargarDatos();
+                    }
+                }, 15 * 60 * 1000); // 15 minutos
+                // ------------------------------------------------------------------------------------
             }
 
             function cerrarSesion() {
