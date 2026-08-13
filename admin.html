@@ -294,6 +294,33 @@
             border-color: #ef9a9a;
         }
 
+        /* ===== BOTONES NUEVOS ===== */
+        .btn-header.btn-eliminacion-masiva {
+            background: #c62828;
+            color: #fff;
+            font-weight: 700;
+            border: 2px solid #ff8c00;
+            box-shadow: 0 0 12px rgba(255, 140, 0, 0.5);
+            transition: 0.2s;
+        }
+        .btn-header.btn-eliminacion-masiva:hover {
+            background: #b71c1c;
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.8);
+        }
+
+        .btn-header.btn-respaldo {
+            background: #2e7d32;
+            color: #fff;
+            font-weight: 700;
+            border: none;
+        }
+        .btn-header.btn-respaldo:hover {
+            background: #1b5e20;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+        }
+
         /* ===== CARDS ===== */
         .glass-card {
             background: rgba(255, 255, 255, 0.78);
@@ -947,6 +974,9 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente, empleado, secretario…" autocomplete="off" />
                 </div>
+                <!-- NUEVOS BOTONES -->
+                <button class="btn-header btn-respaldo" id="btnRespaldo"><i class="bi bi-cloud-arrow-up"></i> Sistema de Respaldo</button>
+                <button class="btn-header btn-eliminacion-masiva" id="btnEliminacionMasiva"><i class="bi bi-trash"></i> Eliminación Masiva</button>
                 <button class="btn-header primary" id="btnReporte"><i class="bi bi-printer"></i> Reporte</button>
                 <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
@@ -1028,7 +1058,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR (en rojo) -->
+    <!-- MODAL DE CONFIRMACIÓN PARA ELIMINAR (individual, en rojo) -->
     <div class="modal fade modal-modern modal-danger" id="modalConfirmarEliminar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
@@ -1043,6 +1073,33 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-confirm-danger" id="btnConfirmarEliminar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN PARA ELIMINACIÓN MASIVA (rojo) -->
+    <div class="modal fade modal-modern modal-danger" id="modalEliminacionMasiva" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>¡ELIMINACIÓN MASIVA!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fw-600" style="color:#c62828; font-size:1.1rem;">¿Está seguro de eliminar TODOS los registros de la base de datos?</p>
+                    <p><strong>Esta acción es irreversible.</strong> Se eliminarán todos los expedientes (excepto la configuración de ausencias).</p>
+                    <p class="text-muted" style="font-size:0.85rem;">Se eliminarán aproximadamente <span id="totalRegistrosAEliminar">0</span> registros.</p>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="confirmMassiveDelete" />
+                        <label class="form-check-label" for="confirmMassiveDelete" style="font-weight:600; color:#c62828;">
+                            Comprendo que esta acción es irreversible y deseo continuar.
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-confirm-danger" id="btnConfirmarEliminacionMasiva" disabled>Eliminar todo</button>
                 </div>
             </div>
         </div>
@@ -1129,7 +1186,7 @@
             let filtroFechaDesde = '';
             let filtroFechaHasta = '';
 
-            // Variable para almacenar el ID de la causa a eliminar (modal)
+            // Variable para almacenar el ID de la causa a eliminar (modal individual)
             let pendingDeleteId = null;
 
             // ============================================================
@@ -1259,7 +1316,49 @@
             }
 
             // ============================================================
-            //  ELIMINAR (con confirmación vía modal)
+            //  ELIMINACIÓN MASIVA
+            // ============================================================
+            async function eliminarTodosLosRegistros() {
+                try {
+                    // Obtener todos los documentos de la colección 'operador'
+                    const snapshot = await db.collection('operador').get();
+                    const batchSize = 500;
+                    let deletedCount = 0;
+                    const docsToDelete = [];
+                    snapshot.forEach(doc => {
+                        if (doc.id !== 'ausencias') {
+                            docsToDelete.push(doc.ref);
+                        }
+                    });
+
+                    if (docsToDelete.length === 0) {
+                        showToast('No hay registros para eliminar (excepto ausencias).', 'info');
+                        return;
+                    }
+
+                    // Eliminar en lotes de 500
+                    for (let i = 0; i < docsToDelete.length; i += batchSize) {
+                        const batch = db.batch();
+                        const chunk = docsToDelete.slice(i, i + batchSize);
+                        chunk.forEach(ref => batch.delete(ref));
+                        await batch.commit();
+                        deletedCount += chunk.length;
+                        // Mostrar progreso (opcional)
+                        showToast(`Eliminados ${deletedCount} de ${docsToDelete.length} registros...`, 'info');
+                    }
+
+                    // Actualizar estado local (vaciar causas)
+                    state.causas = [];
+                    renderTabla();
+                    showToast(`✅ Eliminación masiva completada: ${deletedCount} registros eliminados.`, 'success');
+                } catch (error) {
+                    console.error('Error en eliminación masiva:', error);
+                    showToast('Error al eliminar los registros. Intente nuevamente.', 'danger');
+                }
+            }
+
+            // ============================================================
+            //  ELIMINAR INDIVIDUAL (con confirmación vía modal)
             // ============================================================
             function mostrarModalConfirmacion(id) {
                 const causa = state.causas.find(c => c.id === id);
@@ -2544,8 +2643,56 @@
                 // Botón Reporte
                 document.getElementById('btnReporte').addEventListener('click', generarReporte);
 
-                // Botón confirmar eliminación (modal)
+                // Botón confirmar eliminación (individual)
                 document.getElementById('btnConfirmarEliminar').addEventListener('click', ejecutarEliminacion);
+
+                // ---- NUEVOS BOTONES ----
+                // Sistema de Respaldo
+                document.getElementById('btnRespaldo').addEventListener('click', function() {
+                    window.open('https://defensoria6.github.io/pase-digital/exportar', '_blank');
+                });
+
+                // Eliminación Masiva
+                const btnEliminacionMasiva = document.getElementById('btnEliminacionMasiva');
+                const modalEliminacionMasiva = new bootstrap.Modal(document.getElementById(
+                'modalEliminacionMasiva'));
+                const confirmCheckbox = document.getElementById('confirmMassiveDelete');
+                const btnConfirmarEliminacionMasiva = document.getElementById('btnConfirmarEliminacionMasiva');
+
+                btnEliminacionMasiva.addEventListener('click', function() {
+                    // Actualizar contador de registros
+                    const total = state.causas.length;
+                    document.getElementById('totalRegistrosAEliminar').textContent = total;
+                    confirmCheckbox.checked = false;
+                    btnConfirmarEliminacionMasiva.disabled = true;
+                    modalEliminacionMasiva.show();
+                });
+
+                confirmCheckbox.addEventListener('change', function() {
+                    btnConfirmarEliminacionMasiva.disabled = !this.checked;
+                });
+
+                btnConfirmarEliminacionMasiva.addEventListener('click', async function() {
+                    if (!confirmCheckbox.checked) return;
+                    // Deshabilitar botón y checkbox para evitar doble clic
+                    this.disabled = true;
+                    confirmCheckbox.disabled = true;
+                    // Cerrar modal
+                    modalEliminacionMasiva.hide();
+                    // Ejecutar eliminación
+                    await eliminarTodosLosRegistros();
+                    // Habilitar nuevamente (por si se vuelve a abrir)
+                    confirmCheckbox.disabled = false;
+                    this.disabled = false;
+                });
+
+                // Limpiar estado del checkbox cuando se cierra el modal
+                document.getElementById('modalEliminacionMasiva').addEventListener('hidden.bs.modal', function() {
+                    confirmCheckbox.checked = false;
+                    btnConfirmarEliminacionMasiva.disabled = true;
+                    confirmCheckbox.disabled = false;
+                });
+
             });
 
         })();
