@@ -1124,7 +1124,7 @@
 
             // Variables para filtros adicionales
             let filtroTipo = '';
-            let filtroFuente = '';
+            let filtroFuente = ''; // puede ser: '', 'siged', 'zimbra', 'deut', 'siged+zimbra', 'siged+deut', 'zimbra+deut', 'todas', 'ninguna'
             let filtroEstado = '';
             let filtroFechaDesde = '';
             let filtroFechaHasta = '';
@@ -1382,10 +1382,14 @@
             }
 
             // ============================================================
-            //  REGISTRO DE CAUSA
+            //  REGISTRO DE CAUSA (actualizado con nuevos campos)
             // ============================================================
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia,
-                dni, modoIntervencion) {
+            async function registrarCausa(
+                num, tipo, obs, nivel, op,
+                fuenteSiged, fuenteZimbra, fuenteDeut,
+                accion, motivo, dependencia, dni, modoIntervencion,
+                datosParte, asisteDefensoria
+            ) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -1425,6 +1429,8 @@
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
                     dni: dni.trim() || '',
+                    datosParte: datosParte || '',
+                    asisteDefensoria: asisteDefensoria || '',
                     tipo: tipo || 'Otro',
                     nivelOperador: parseInt(nivel) || 2,
                     nivelSecretario: null,
@@ -1448,6 +1454,7 @@
                     fechaHoraGesell: null,
                     fuenteSiged: fuenteSiged || false,
                     fuenteZimbra: fuenteZimbra || false,
+                    fuenteDeut: fuenteDeut || false,
                     motivoAccion: motivoGuardado,
                     dependenciaRemision: dependenciaGuardada,
                     modoIntervencion: modoIntervencion || '',
@@ -1484,7 +1491,7 @@
             }
 
             // ============================================================
-            //  FILTRADO (búsqueda avanzada + historial)
+            //  FILTRADO (búsqueda avanzada + historial + fuente mejorada)
             // ============================================================
             function obtenerCausasFiltradas() {
                 let causas = state.causas;
@@ -1504,6 +1511,8 @@
                             (c.operador || '').toLowerCase() +
                             (c.observaciones || '').toLowerCase() +
                             (c.motivoAccion || '').toLowerCase() +
+                            (c.datosParte || '').toLowerCase() +
+                            (c.asisteDefensoria || '').toLowerCase() +
                             empNombre + secNombre;
 
                         // Historial completo (acción + comentario)
@@ -1523,16 +1532,35 @@
                     causas = causas.filter(c => c.tipo === filtroTipo);
                 }
 
-                // --- Filtro por Fuente ---
+                // --- Filtro por Fuente (mejorado con DEUT) ---
                 if (filtroFuente) {
-                    if (filtroFuente === 'siged') {
-                        causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
-                    } else if (filtroFuente === 'zimbra') {
-                        causas = causas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
-                    } else if (filtroFuente === 'ambas') {
-                        causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
-                    } else if (filtroFuente === 'ninguna') {
-                        causas = causas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    switch (filtroFuente) {
+                        case 'siged':
+                            causas = causas.filter(c => c.fuenteSiged === true && !c.fuenteZimbra && !c.fuenteDeut);
+                            break;
+                        case 'zimbra':
+                            causas = causas.filter(c => c.fuenteZimbra === true && !c.fuenteSiged && !c.fuenteDeut);
+                            break;
+                        case 'deut':
+                            causas = causas.filter(c => c.fuenteDeut === true && !c.fuenteSiged && !c.fuenteZimbra);
+                            break;
+                        case 'siged+zimbra':
+                            causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true && !c.fuenteDeut);
+                            break;
+                        case 'siged+deut':
+                            causas = causas.filter(c => c.fuenteSiged === true && c.fuenteDeut === true && !c.fuenteZimbra);
+                            break;
+                        case 'zimbra+deut':
+                            causas = causas.filter(c => c.fuenteZimbra === true && c.fuenteDeut === true && !c.fuenteSiged);
+                            break;
+                        case 'todas':
+                            causas = causas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true && c.fuenteDeut === true);
+                            break;
+                        case 'ninguna':
+                            causas = causas.filter(c => !c.fuenteSiged && !c.fuenteZimbra && !c.fuenteDeut);
+                            break;
+                        default:
+                            break;
                     }
                 }
 
@@ -1634,18 +1662,31 @@
             }
 
             // ============================================================
-            //  CREAR FORMULARIO (similar a operador)
+            //  CREAR FORMULARIO (actualizado con nuevos campos y tipos)
             // ============================================================
             function createFormulario() {
                 if (formularioInicializado) return;
                 const container = document.getElementById('formularioContainer');
                 const operadorOptions = CONFIG.operadores.map(op => `<option value="${op}">${op}</option>`).join('');
+                // Tipos igual que en operador
                 const tipos = [
-                    'Nuevo patrocinio', 'Amparo', 'Acción de protección de persona', 'Alimentos', 'Cuidado personal',
+                    'Nuevo patrocinio',
+                    'Nuevo patrocinio Violencia Familiar',
+                    'Amparo',
+                    'Acción de protección de persona',
+                    'Alimentos',
+                    'Cuidado personal',
                     'Desalojo',
-                    'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
-                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
-                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                    'Divorcio',
+                    'Evaluación Art 42 C.C.C.N.',
+                    'Filiación',
+                    'Filiación y Daño',
+                    'Laboral',
+                    'Penal (cámara gesell)',
+                    'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto',
+                    'Violencia Familiar',
+                    'Otro'
                 ];
                 const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
                 const modoIntervencionOptions = [
@@ -1662,6 +1703,13 @@
                     <form id="formIngreso" class="form-modern">
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select">${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
+
+                        <!-- Datos Parte -->
+                        <div class="mb-3">
+                            <label class="form-label">Datos de la Parte/Cliente</label>
+                            <input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">DNI</label>
                             <input type="text" id="inpDni" class="form-control" autocomplete="off"
@@ -1669,6 +1717,17 @@
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
                             <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
                         </div>
+
+                        <!-- Asiste Defensoría -->
+                        <div class="mb-3">
+                            <label class="form-label">Asiste a la Defensoría</label>
+                            <select id="inpAsisteDefensoria" class="form-select">
+                                <option value="">Seleccione…</option>
+                                <option value="Por citación">Por citación</option>
+                                <option value="Sin citación">Sin citación</option>
+                            </select>
+                        </div>
+
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
@@ -1682,9 +1741,10 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Fuente</label>
-                            <div class="d-flex gap-3">
+                            <div class="d-flex gap-3 flex-wrap">
                                 <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteSiged" /><label class="form-check-label" for="fuenteSiged">SIGED</label></div>
                                 <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteZimbra" /><label class="form-check-label" for="fuenteZimbra">ZIMBRA</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteDeut" /><label class="form-check-label" for="fuenteDeut">DEUT</label></div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -1747,11 +1807,14 @@
                     const obs = document.getElementById('inpObs').value;
                     const fuenteSiged = document.getElementById('fuenteSiged').checked;
                     const fuenteZimbra = document.getElementById('fuenteZimbra').checked;
+                    const fuenteDeut = document.getElementById('fuenteDeut').checked;
                     const accion = document.getElementById('inpAccion').value;
                     const motivo = document.getElementById('inpMotivo').value.trim();
                     const dependencia = document.getElementById('inpDependencia').value.trim();
                     const dni = document.getElementById('inpDni').value.trim();
                     const modoIntervencion = document.getElementById('inpModoIntervencion').value;
+                    const datosParte = document.getElementById('inpDatosParte').value.trim();
+                    const asisteDefensoria = document.getElementById('inpAsisteDefensoria').value;
 
                     if (dni && !/^\d{7,8}$/.test(dni)) {
                         showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
@@ -1762,8 +1825,12 @@
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino',
                                 'warning'); return; }
                     }
-                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion,
-                        motivo, dependencia, dni, modoIntervencion);
+                    const ok = await registrarCausa(
+                        num, tipo, obs, nivel, operador,
+                        fuenteSiged, fuenteZimbra, fuenteDeut,
+                        accion, motivo, dependencia, dni, modoIntervencion,
+                        datosParte, asisteDefensoria
+                    );
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -1771,12 +1838,15 @@
                         document.getElementById('inpObs').value = '';
                         document.getElementById('fuenteSiged').checked = false;
                         document.getElementById('fuenteZimbra').checked = false;
+                        document.getElementById('fuenteDeut').checked = false;
                         document.getElementById('inpAccion').value = 'asignar';
                         document.getElementById('camposAccion').style.display = 'none';
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
                         document.getElementById('inpDni').value = '';
                         document.getElementById('inpModoIntervencion').value = '';
+                        document.getElementById('inpDatosParte').value = '';
+                        document.getElementById('inpAsisteDefensoria').value = '';
                         renderTabla();
                     }
                 });
@@ -1855,6 +1925,8 @@
                             (c.operador || '').toLowerCase() +
                             (c.observaciones || '').toLowerCase() +
                             (c.motivoAccion || '').toLowerCase() +
+                            (c.datosParte || '').toLowerCase() +
+                            (c.asisteDefensoria || '').toLowerCase() +
                             empNombre + secNombre;
                         return textoDirecto.includes(term) || historialTexto.includes(term);
                     });
@@ -1863,14 +1935,41 @@
                     causasRechazadas = causasRechazadas.filter(c => c.tipo === filtroTipo);
                 }
                 if (filtroFuente) {
-                    if (filtroFuente === 'siged') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
-                    } else if (filtroFuente === 'zimbra') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
-                    } else if (filtroFuente === 'ambas') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
-                    } else if (filtroFuente === 'ninguna') {
-                        causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    switch (filtroFuente) {
+                        case 'siged':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && !c.fuenteZimbra && !c
+                                .fuenteDeut);
+                            break;
+                        case 'zimbra':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && !c.fuenteSiged && !c
+                                .fuenteDeut);
+                            break;
+                        case 'deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteDeut === true && !c.fuenteSiged && !c
+                                .fuenteZimbra);
+                            break;
+                        case 'siged+zimbra':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra ===
+                                true && !c.fuenteDeut);
+                            break;
+                        case 'siged+deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteDeut === true &&
+                                !c.fuenteZimbra);
+                            break;
+                        case 'zimbra+deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteDeut === true &&
+                                !c.fuenteSiged);
+                            break;
+                        case 'todas':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra ===
+                                true && c.fuenteDeut === true);
+                            break;
+                        case 'ninguna':
+                            causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra && !c
+                            .fuenteDeut);
+                            break;
+                        default:
+                            break;
                     }
                 }
                 if (filtroFechaDesde) {
@@ -1922,8 +2021,9 @@
                                         const fuentes = [];
                                         if (c.fuenteSiged) fuentes.push('SIGED');
                                         if (c.fuenteZimbra) fuentes.push('ZIMBRA');
+                                        if (c.fuenteDeut) fuentes.push('DEUT');
                                         const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
-                                            fuentes.length === 2 ? '<span class="badge-fuente ambas">S/Z</span>' :
+                                            fuentes.length > 1 ? '<span class="badge-fuente ambas">' + fuentes.join('/') + '</span>' :
                                             `<span class="badge-fuente">${fuentes[0]}</span>`;
                                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
                                         return `
@@ -2034,7 +2134,7 @@
             }
 
             // ============================================================
-            //  REPORTE (IMPRESIÓN)
+            //  REPORTE (IMPRESIÓN) - actualizado con DEUT
             // ============================================================
             function generarReporte() {
                 // Obtener datos filtrados (igual que en la tabla)
@@ -2067,6 +2167,8 @@
                             (c.operador || '').toLowerCase() +
                             (c.observaciones || '').toLowerCase() +
                             (c.motivoAccion || '').toLowerCase() +
+                            (c.datosParte || '').toLowerCase() +
+                            (c.asisteDefensoria || '').toLowerCase() +
                             empNombre + secNombre;
                         return textoDirecto.includes(term) || historialTexto.includes(term);
                     });
@@ -2075,14 +2177,41 @@
                     causasRechazadas = causasRechazadas.filter(c => c.tipo === filtroTipo);
                 }
                 if (filtroFuente) {
-                    if (filtroFuente === 'siged') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra !== true);
-                    } else if (filtroFuente === 'zimbra') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteSiged !== true);
-                    } else if (filtroFuente === 'ambas') {
-                        causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra === true);
-                    } else if (filtroFuente === 'ninguna') {
-                        causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra);
+                    switch (filtroFuente) {
+                        case 'siged':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && !c.fuenteZimbra && !c
+                                .fuenteDeut);
+                            break;
+                        case 'zimbra':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && !c.fuenteSiged && !c
+                                .fuenteDeut);
+                            break;
+                        case 'deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteDeut === true && !c.fuenteSiged && !c
+                                .fuenteZimbra);
+                            break;
+                        case 'siged+zimbra':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra ===
+                                true && !c.fuenteDeut);
+                            break;
+                        case 'siged+deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteDeut === true &&
+                                !c.fuenteZimbra);
+                            break;
+                        case 'zimbra+deut':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteZimbra === true && c.fuenteDeut === true &&
+                                !c.fuenteSiged);
+                            break;
+                        case 'todas':
+                            causasRechazadas = causasRechazadas.filter(c => c.fuenteSiged === true && c.fuenteZimbra ===
+                                true && c.fuenteDeut === true);
+                            break;
+                        case 'ninguna':
+                            causasRechazadas = causasRechazadas.filter(c => !c.fuenteSiged && !c.fuenteZimbra && !c
+                            .fuenteDeut);
+                            break;
+                        default:
+                            break;
                     }
                 }
                 if (filtroFechaDesde) {
@@ -2131,8 +2260,9 @@
                         const fuentes = [];
                         if (c.fuenteSiged) fuentes.push('SIGED');
                         if (c.fuenteZimbra) fuentes.push('ZIMBRA');
+                        if (c.fuenteDeut) fuentes.push('DEUT');
                         const fuenteHtml = fuentes.length === 0 ? '—' :
-                            fuentes.length === 2 ? 'S/Z' : fuentes[0];
+                            fuentes.length > 1 ? fuentes.join('/') : fuentes[0];
                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c
                             .historial[c.historial.length - 1]?.comentario || '' : '');
                         html += `<tr>
@@ -2208,7 +2338,7 @@
             }
 
             // ============================================================
-            //  INICIALIZACIÓN DE FILTROS (fijos)
+            //  INICIALIZACIÓN DE FILTROS (fijos) - actualizado con DEUT y tipos
             // ============================================================
             function initFiltros() {
                 const container = document.getElementById('filtrosContainer');
@@ -2216,11 +2346,23 @@
 
                 // Tipos (igual que en el formulario)
                 const tipos = [
-                    'Nuevo patrocinio', 'Amparo', 'Acción de protección de persona', 'Alimentos', 'Cuidado personal',
+                    'Nuevo patrocinio',
+                    'Nuevo patrocinio Violencia Familiar',
+                    'Amparo',
+                    'Acción de protección de persona',
+                    'Alimentos',
+                    'Cuidado personal',
                     'Desalojo',
-                    'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
-                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
-                    'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
+                    'Divorcio',
+                    'Evaluación Art 42 C.C.C.N.',
+                    'Filiación',
+                    'Filiación y Daño',
+                    'Laboral',
+                    'Penal (cámara gesell)',
+                    'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto',
+                    'Violencia Familiar',
+                    'Otro'
                 ];
                 const tipoOptions = '<option value="">Todos</option>' + tipos.map(t =>
                     `<option value="${t}">${t}</option>`
@@ -2240,16 +2382,23 @@
                     `<option value="${e.value}">${e.label}</option>`
                 ).join('');
 
+                // Fuente mejorada con DEUT
+                const fuenteOptions = `
+                    <option value="">Todas</option>
+                    <option value="siged">SIGED</option>
+                    <option value="zimbra">ZIMBRA</option>
+                    <option value="deut">DEUT</option>
+                    <option value="siged+zimbra">SIGED + ZIMBRA</option>
+                    <option value="siged+deut">SIGED + DEUT</option>
+                    <option value="zimbra+deut">ZIMBRA + DEUT</option>
+                    <option value="todas">SIGED + ZIMBRA + DEUT</option>
+                    <option value="ninguna">Ninguna</option>
+                `;
+
                 container.innerHTML = `
                     <label>Filtrar por:</label>
                     <select id="filtroTipoSelect">${tipoOptions}</select>
-                    <select id="filtroFuenteSelect">
-                        <option value="">Fuente</option>
-                        <option value="siged">SIGED</option>
-                        <option value="zimbra">ZIMBRA</option>
-                        <option value="ambas">Ambas</option>
-                        <option value="ninguna">Ninguna</option>
-                    </select>
+                    <select id="filtroFuenteSelect">${fuenteOptions}</select>
                     <select id="filtroEstadoSelect">${estadoOptions}</select>
                     <input type="date" id="filtroFechaDesde" placeholder="Desde" />
                     <input type="date" id="filtroFechaHasta" placeholder="Hasta" />
