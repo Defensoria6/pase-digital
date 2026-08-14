@@ -83,10 +83,10 @@
         .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
         .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
         .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
-        .crono.vencido { background:#ffebee; color:#c62828 !important; box-shadow:0 0 0 1px #ffcdd2; }
-        .crono.critico { background:#fff3e0; color:#e67e22 !important; box-shadow:0 0 0 1px #ffe0b2; }
-        .crono.medio { background:#e8f5e9; color:#2e7d32 !important; box-shadow:0 0 0 1px #c8e6c9; }
-        .crono.azul { background:#e3f2fd; color:#1976d2 !important; }
+        .crono.vencido { background:#ffebee; color:#c62828 !important; border:2px solid #c62828; }
+        .crono.critico { background:#f3e5f5; color:#7b1fa2 !important; border:2px solid #7b1fa2; }
+        .crono.medio { background:#e8f5e9; color:#2e7d32 !important; border:2px solid #a5d6a7; }
+        .crono.azul { background:#e3f2fd; color:#1976d2 !important; border:2px solid #90caf9; }
         .exp-vencido { color:#c62828 !important; font-weight:700; }
         .exp-critico { color:#e67e22 !important; font-weight:600; }
         .toast-custom { position:fixed; bottom:24px; right:24px; z-index:3000; background:#1e293b; color:#fff; padding:14px 24px; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); font-size:.9rem; display:flex; align-items:center; gap:12px; animation:slideUp .35s ease; max-width:420px; pointer-events:auto; }
@@ -378,6 +378,29 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para justificar demora individual -->
+    <div class="modal fade modal-modern" id="modalJustificar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Justificar demora</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Expediente:</strong> <span id="justificarExpediente"></span></p>
+                    <div class="mb-3">
+                        <label for="motivoJustificacion" class="form-label">Motivo de la demora</label>
+                        <textarea class="form-control" id="motivoJustificacion" rows="3" placeholder="Ingrese el motivo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarJustificar">Justificar</button>
                 </div>
             </div>
         </div>
@@ -1143,6 +1166,61 @@
                 if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
             }
 
+            // ============================================================
+            //  FUNCIONES PARA JUSTIFICAR DEMORA INDIVIDUAL (NUEVO)
+            // ============================================================
+            let justificarCausaId = null;
+
+            function abrirModalJustificar(causaId) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                justificarCausaId = causaId;
+                document.getElementById('justificarExpediente').textContent = causa.numero;
+                document.getElementById('motivoJustificacion').value = '';
+                new bootstrap.Modal(document.getElementById('modalJustificar')).show();
+            }
+
+            async function confirmarJustificar() {
+                if (!justificarCausaId) { showToast('No hay causa seleccionada', 'warning'); return; }
+                const motivo = document.getElementById('motivoJustificacion').value.trim();
+                if (!motivo) {
+                    showToast('Debe ingresar un motivo', 'warning');
+                    return;
+                }
+                const causa = state.causas.find(c => c.id === justificarCausaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+
+                // Registrar justificación en el historial de la causa
+                if (!causa.historial) causa.historial = [];
+                causa.historial.push({
+                    fecha: new Date().toISOString(),
+                    accion: 'Justificación de atraso',
+                    usuario: getEmpName(currentEmpleadoId),
+                    comentario: motivo
+                });
+                try {
+                    await updateCausaInFirestore(causa);
+                    showToast(`✅ Justificación registrada para ${causa.numero}`, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
+                    renderEmpleado();
+
+                    // Notificar al secretario por chat
+                    try {
+                        await db.collection('chat_interno').add({
+                            empleadoId: currentEmpleadoId,
+                            remitente: getEmpName(currentEmpleadoId),
+                            texto: `📢 He justificado mi demora en el expediente ${causa.numero} por el siguiente motivo: "${motivo}"`,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } catch (e) {
+                        console.warn('No se pudo notificar por chat', e);
+                    }
+                } catch (error) {
+                    console.error('Error al justificar:', error);
+                    showToast('Error al guardar la justificación', 'danger');
+                }
+            }
+
             // ---------- RENDER PRINCIPAL (Bandeja Activa + Historial) ----------
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
@@ -1202,6 +1280,7 @@
                                     ${items.map(c => {
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
+                                        const estaVencida = c.fechaLimite && new Date(c.fechaLimite) < new Date();
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.modoIntervencion || '-'}</td>
@@ -1210,9 +1289,10 @@
                                             <td>N${c.nivelSecretario}</td>
                                             <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
                                             <td>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
-                                                <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
+                                                <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-activa" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                ${estaVencida ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
                                             </td>
                                         </tr>`;
                                     }).join('')}
@@ -1289,6 +1369,10 @@
                     btn.removeEventListener('click', handleVerHistorial);
                     btn.addEventListener('click', handleVerHistorial);
                 });
+                panel.querySelectorAll('.btn-justificar-individual').forEach(btn => {
+                    btn.removeEventListener('click', handleJustificarIndividual);
+                    btn.addEventListener('click', handleJustificarIndividual);
+                });
 
                 const histContainer = document.getElementById('tablaHistorialEmpleadoContainer');
                 if (histContainer) {
@@ -1312,6 +1396,12 @@
                     const btn = e.currentTarget;
                     const id = btn.dataset.id;
                     abrirHistorial(id);
+                }
+
+                function handleJustificarIndividual(e) {
+                    const btn = e.currentTarget;
+                    const id = btn.dataset.id;
+                    abrirModalJustificar(id);
                 }
 
                 function handleHistorialClick(e) {
@@ -1446,6 +1536,17 @@
                 let cls = 'crono azul';
                 if (fechaCierre) {
                     cls = 'crono medio';
+                } else {
+                    // Evaluar estado de vencimiento si está en proceso
+                    if (causa.fechaLimite) {
+                        const ahora = new Date();
+                        const diffDias = (new Date(causa.fechaLimite) - ahora) / (1000 * 60 * 60 * 24);
+                        if (diffDias < 0) {
+                            cls = 'crono vencido';
+                        } else if (diffDias <= 2) {
+                            cls = 'crono critico';
+                        }
+                    }
                 }
                 return `<span class="${cls}">${tiempo}</span>`;
             }
@@ -1455,19 +1556,16 @@
                 cronoInterval = setInterval(() => { renderEmpleado(); }, 10000);
             }
 
-            // --- MODIFICACIÓN: intervalo de recarga automática cada 15 minutos y solo si la pestaña está visible ---
             function iniciarAutoActualizacion() {
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
                 autoUpdateInterval = setInterval(async () => {
-                    // Solo actualizar si la pestaña está visible
                     if (!document.hidden) {
                         await loadStateFromFirestore();
                         renderEmpleado();
                         showToast('🔄 Base de datos actualizada automáticamente', 'info');
                     }
-                }, 15 * 60 * 1000); // 15 minutos
+                }, 15 * 60 * 1000);
             }
-            // ----------------------------------------------------------------------------------------------------
 
             async function actualizarManual() {
                 await loadStateFromFirestore();
@@ -1755,6 +1853,13 @@
                         e.preventDefault();
                         enviarMensaje();
                     }
+                });
+
+                // ---- Evento para el modal de justificación ----
+                document.getElementById('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
+                document.getElementById('modalJustificar').addEventListener('hidden.bs.modal', function() {
+                    justificarCausaId = null;
+                    document.getElementById('motivoJustificacion').value = '';
                 });
             });
         })();
