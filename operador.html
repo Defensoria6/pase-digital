@@ -1222,13 +1222,19 @@
                     { id: 'sec2', nombre: 'Riveros Patricia' },
                     { id: 'sec3', nombre: 'Magnani Enzo' }
                 ],
-                operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Patricia', 'Gonzalez Misael']
+                operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Patricia', 'Gonzalez Misael'],
+                // NUEVO: orden de asignación (round-robin) para los secretarios
+                ordenSecretarios: ['sec1', 'sec3', 'sec2'] // Corrales → Magnani → Riveros
             };
 
             // ============================================================
             //  ESTADO
             // ============================================================
-            let state = { causas: [], ausencias: [] };
+            let state = {
+                causas: [],
+                ausencias: [],
+                lastIndex: 0 // índice del último secretario asignado en el orden definido
+            };
             let currentOperator = '';
             let searchTerm = '';
             let cronoInterval = null;
@@ -1308,10 +1314,13 @@
                     const snapshot = await db.collection('operador').get();
                     const causas = [];
                     let ausencias = [];
+                    let config = { lastIndex: 0 };
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         if (doc.id === 'ausencias') {
                             ausencias = data.ausencias || [];
+                        } else if (doc.id === 'config') {
+                            config = data;
                         } else {
                             if (!data.id) data.id = doc.id;
                             causas.push(data);
@@ -1319,11 +1328,13 @@
                     });
                     state.causas = causas;
                     state.ausencias = ausencias;
+                    state.lastIndex = config.lastIndex || 0;
                 } catch (error) {
                     console.error('Error cargando datos:', error);
                     showToast('Error al conectar con Firestore', 'danger');
                     state.causas = [];
                     state.ausencias = [];
+                    state.lastIndex = 0;
                 }
             }
 
@@ -1364,6 +1375,17 @@
                     console.error('Error al actualizar ausencias:', error);
                     showToast('Error al guardar ausencias', 'danger');
                     throw error;
+                }
+            }
+
+            // ============================================================
+            //  CONFIGURACIÓN DE ROTACIÓN (guardar último índice)
+            // ============================================================
+            async function guardarConfiguracion(lastIndex) {
+                try {
+                    await db.collection('operador').doc('config').set({ lastIndex }, { merge: true });
+                } catch (error) {
+                    console.error('Error al guardar configuración:', error);
                 }
             }
 
@@ -1438,23 +1460,55 @@
             }
 
             // ============================================================
-            //  ASIGNACIÓN AUTOMÁTICA
+            //  ASIGNACIÓN AUTOMÁTICA (ROTATIVA EN ORDEN DEFINIDO)
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
+                // 1. Filtrar secretarios disponibles (no ausentes)
                 const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
                         'danger');
                     return null;
                 }
-                const conCarga = disponibles.map(s => {
-                    const carga = state.causas.filter(c => c.secretarioId === s.id && (c.estado === 'en_secretaria' ||
-                        c.estado === 'en_proceso')).length;
-                    return { ...s, carga };
-                });
-                conCarga.sort((a, b) => a.carga - b.carga);
-                return conCarga[0];
+
+                // 2. Obtener el orden de asignación (definido en CONFIG.ordenSecretarios)
+                const orden = CONFIG.ordenSecretarios; // ['sec1','sec3','sec2']
+
+                // 3. Filtrar el orden para quedarnos solo con los disponibles (manteniendo el orden)
+                const disponiblesEnOrden = orden.filter(id => disponibles.some(s => s.id === id));
+
+                if (disponiblesEnOrden.length === 0) {
+                    // Esto no debería pasar porque ya filtramos disponibles, pero por seguridad:
+                    showToast('No hay secretarios disponibles en el orden definido.', 'danger');
+                    return null;
+                }
+
+                // 4. Calcular el próximo índice en el orden circular
+                let lastIdx = state.lastIndex || 0;
+                // Buscar el índice actual en el orden filtrado (disponiblesEnOrden)
+                // Si el último índice apunta a un secretario que no está disponible, avanzamos.
+                let startIdx = disponiblesEnOrden.findIndex(id => id === orden[lastIdx]);
+                if (startIdx === -1) {
+                    // Si el último no está disponible, empezamos desde el principio de los disponibles
+                    startIdx = 0;
+                }
+
+                // Avanzar al siguiente disponible (circular)
+                let nextIdx = (startIdx + 1) % disponiblesEnOrden.length;
+                // Si el siguiente es el mismo que el actual (porque solo hay uno), se asigna ese.
+                const elegidoId = disponiblesEnOrden[nextIdx];
+
+                // 5. Actualizar el índice global (en el orden original)
+                const nuevoIndex = orden.indexOf(elegidoId);
+                state.lastIndex = nuevoIndex;
+
+                // 6. Guardar la configuración en Firestore (asíncrono, no esperamos para no bloquear)
+                guardarConfiguracion(nuevoIndex);
+
+                // 7. Retornar el secretario elegido
+                const secretario = CONFIG.secretarios.find(s => s.id === elegidoId);
+                return secretario;
             }
 
             // ============================================================
@@ -1810,6 +1864,8 @@
                     'Evaluación Art 42 C.C.C.N.',
                     'Filiación',
                     'Filiación y Daño',
+                    'Guarda',
+                    'Homologación Acuerdo CEJUME',
                     'Laboral',
                     'Medida autosatisfactiva',
                     'Medida de protección integral',
@@ -2338,14 +2394,12 @@
                 showToast(`Bienvenido/a ${operador}`, 'success');
                 iniciarCronometros();
 
-                // --- MODIFICACIÓN: intervalo de recarga cada 15 minutos y solo si la pestaña está visible ---
                 if (refreshInterval) clearInterval(refreshInterval);
                 refreshInterval = setInterval(() => {
                     if (!document.hidden) {
                         recargarDatos();
                     }
-                }, 15 * 60 * 1000); // 15 minutos
-                // ------------------------------------------------------------------------------------
+                }, 15 * 60 * 1000);
             }
 
             function cerrarSesion() {
@@ -2363,6 +2417,7 @@
                 filtroAnio = '';
                 state.causas = [];
                 state.ausencias = [];
+                state.lastIndex = 0;
                 showToast('Sesión cerrada', 'warning');
             }
 
