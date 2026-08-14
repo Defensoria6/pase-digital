@@ -1438,23 +1438,21 @@
             }
 
             // ============================================================
-            //  ASIGNACIÓN AUTOMÁTICA
+            //  ASIGNACIÓN AUTOMÁTICA (MODIFICADA: ORDEN ALFABÉTICO)
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
+                // 1. Filtrar secretarios no ausentes
                 const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
                         'danger');
                     return null;
                 }
-                const conCarga = disponibles.map(s => {
-                    const carga = state.causas.filter(c => c.secretarioId === s.id && (c.estado === 'en_secretaria' ||
-                        c.estado === 'en_proceso')).length;
-                    return { ...s, carga };
-                });
-                conCarga.sort((a, b) => a.carga - b.carga);
-                return conCarga[0];
+                // 2. Ordenar alfabéticamente por nombre
+                disponibles.sort((a, b) => a.nombre.localeCompare(b.nombre));
+                // 3. Devolver el primero (alfabéticamente menor)
+                return disponibles[0];
             }
 
             // ============================================================
