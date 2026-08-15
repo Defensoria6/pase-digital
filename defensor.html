@@ -200,18 +200,13 @@
 
         /* ===== ESTILOS DE IMPRESIÓN MEJORADOS ===== */
         @media print {
-            /* Ocultar todo por defecto */
             body * { visibility: hidden; }
-            
-            /* Mostrar solo el modal de búsqueda y sus hijos */
             #modalBusqueda, #modalBusqueda *,
             #modalReporte, #modalReporte *,
             #modalReporteEmpleado, #modalReporteEmpleado *,
             #modalEquidad, #modalEquidad * {
                 visibility: visible !important;
             }
-            
-            /* Configurar el modal para ocupar toda la página */
             #modalBusqueda {
                 position: absolute !important;
                 left: 0 !important;
@@ -227,8 +222,6 @@
                 box-shadow: none !important;
                 border-radius: 0 !important;
             }
-            
-            /* Forzar que el diálogo ocupe todo el espacio */
             #modalBusqueda .modal-dialog {
                 max-width: 100% !important;
                 margin: 0 !important;
@@ -236,7 +229,6 @@
                 width: 100% !important;
                 height: 100% !important;
             }
-            
             #modalBusqueda .modal-content {
                 border-radius: 0 !important;
                 box-shadow: none !important;
@@ -245,8 +237,6 @@
                 height: 100% !important;
                 overflow: visible !important;
             }
-            
-            /* Ocultar el header y footer del modal (botones, cierre) */
             #modalBusqueda .modal-header,
             #modalBusqueda .modal-footer,
             #modalBusqueda .btn-close,
@@ -254,28 +244,22 @@
             #modalBusqueda .btn-secondary {
                 display: none !important;
             }
-            
-            /* Mostrar el cuerpo completo sin scroll */
             #modalBusqueda .modal-body {
                 padding: 12px !important;
                 overflow: visible !important;
                 max-height: none !important;
                 background: #fff !important;
             }
-            
-            /* Ajustar tablas para que se vean completas */
             .table-wrap {
                 overflow: visible !important;
                 max-height: none !important;
             }
-            
             .table-modern {
                 min-width: 0 !important;
                 width: 100% !important;
                 font-size: 0.6rem !important;
                 border-collapse: collapse !important;
             }
-            
             .table-modern th,
             .table-modern td {
                 padding: 2px 4px !important;
@@ -283,7 +267,6 @@
                 word-break: break-word !important;
                 border: 1px solid #ccc !important;
             }
-            
             .table-modern thead th {
                 background: #f1f6fd !important;
                 font-size: 0.55rem !important;
@@ -291,8 +274,6 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            
-            /* Detalles del expediente en impresión */
             .modal-detalle-exp .detalle-item {
                 display: flex !important;
                 justify-content: space-between !important;
@@ -307,8 +288,6 @@
                 font-size: 0.7rem !important;
                 text-align: right !important;
             }
-            
-            /* Historial en impresión */
             .historial-lista {
                 max-height: none !important;
                 overflow: visible !important;
@@ -324,8 +303,6 @@
             .historial-fecha { min-width: 100px !important; }
             .historial-usuario { min-width: 80px !important; }
             .historial-comentario { padding-left: 0 !important; width: 100% !important; }
-            
-            /* Título y fecha en impresión */
             .print-header {
                 display: block !important;
                 text-align: center;
@@ -344,8 +321,6 @@
                 color: #5f7f9f;
                 margin-top: 2px;
             }
-            
-            /* Badges en impresión */
             .badge-estado {
                 display: inline-block !important;
                 padding: 1px 6px !important;
@@ -362,7 +337,6 @@
             .badge-dev { background: #ffebee !important; color: #c62828 !important; }
             .badge-rem { background: #e8eaf6 !important; color: #3949ab !important; }
             .badge-rech { background: #fce4ec !important; color: #c62828 !important; }
-            
             .solapa-badge {
                 background: #1976d2 !important;
                 color: #fff !important;
@@ -373,7 +347,6 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            
             .crono {
                 font-family: monospace !important;
                 padding: 1px 6px !important;
@@ -387,13 +360,9 @@
             .crono.medio { background: #e8f5e9 !important; color: #2e7d32 !important; }
             .crono.critico { background: #fff3e0 !important; color: #e67e22 !important; }
             .crono.vencido { background: #ffebee !important; color: #c62828 !important; }
-            
-            /* Ocultar botones de acción dentro del contenido */
             .btn, .btn-modern, .btn-modern-sm, .btn-buscar, .btn-refresh, .btn-logout, .btn-close {
                 display: none !important;
             }
-            
-            /* Evitar saltos de página innecesarios */
             .modal-detalle-exp, .historial-lista {
                 page-break-inside: avoid;
             }
@@ -488,7 +457,6 @@
         .btn-chat-toggle:hover { transform:scale(1.05); }
         #chatSendBtn:hover { background:#0f5bab; }
         #chatInput:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.12); }
-        /* Ocultar chat hasta login */
         #chatWidget { display: none; }
         #chatWidget.visible { display: block; }
 
@@ -644,6 +612,39 @@
                 text-align: left;
                 width: 100%;
             }
+        }
+
+        /* ===== NUEVOS ESTILOS PARA TAREA DE SECRETARIOS Y EMPLEADOS EN AUDITORÍA ===== */
+        .destacados-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .destacado-item {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid #e2edf7;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .destacado-item .dest-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #5f7f9f;
+            letter-spacing: 0.3px;
+        }
+        .destacado-item .dest-nombre {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0a2a44;
+            margin-top: 0.1rem;
+        }
+        .destacado-item .dest-nombre.text-danger { color: #c62828; }
+        .destacado-item .dest-detalle {
+            font-size: 0.8rem;
+            color: #5f7f9f;
         }
     </style>
 </head>
@@ -2321,21 +2322,133 @@
             }
 
             // ============================================================
-            //  PANEL AUDITORIA (sin filtro de búsqueda)
+            //  PANEL AUDITORIA (con contenedores de Secretarios y Empleados + botón imprimir)
             // ============================================================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
-                const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
+
+                // ========== CALCULAR KPIS PARA SECRETARIOS ==========
+                // Total Sin Asignar: causas en en_secretaria que NO son consultas de empleados
+                const totalSinAsignar = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
+                        return false;
+                    }
+                    return true;
+                }).length;
+
+                const enProcesoTotal = state.causas.filter(c => c.estado === 'en_proceso').length;
+
+                // Para Finalizar: causas en en_secretaria que SÍ son consultas de empleados
+                const paraFinalizar = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (!c.fechaPaseSecretario) return false;
+                    if (!c.historial || !c.historial.length) return false;
+                    return c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'));
+                }).length;
+
+                const enDefensor = state.causas.filter(c => c.estado === 'en_defensor').length;
+                const finalizados = state.causas.filter(c => c.estado === 'finalizada').length;
+
+                // ========== DESTACADOS DE EMPLEADOS ==========
+                // Mejor Cumplimiento: empleado con más causas finalizadas
+                let mejorCumplimiento = { id: null, nombre: 'N/A', count: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const count = state.causas.filter(c => c.estado === 'finalizada' && (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)).length;
+                    if (count > mejorCumplimiento.count) {
+                        mejorCumplimiento = { id: emp.id, nombre: emp.nombre, count };
+                    }
+                });
+
+                // Mayor Carga: empleado con más causas en total (histórico)
+                let mayorCarga = { id: null, nombre: 'N/A', count: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const count = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id).length;
+                    if (count > mayorCarga.count) {
+                        mayorCarga = { id: emp.id, nombre: emp.nombre, count };
+                    }
+                });
+
+                // Mayor Demora: empleado con mayor suma de días de retraso en causas activas
+                let mayorDemora = { id: null, nombre: 'N/A', dias: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const dias = calcularDiasRetraso(emp.id);
+                    if (dias > mayorDemora.dias) {
+                        mayorDemora = { id: emp.id, nombre: emp.nombre, dias };
+                    }
+                });
+
+                // ========== TABLA DE OPERADORES (trazabilidad) ==========
+                const filterSelect = document.getElementById('auditoriaFiltroOperador'); 
+                let operadorFiltro = filterSelect ? filterSelect.value : '';
                 let causasFiltradas = state.causas; // sin filtro de búsqueda
                 if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
-                const list = causasFiltradas.slice(-50).reverse(); const pState = paginationState.auditoria; const { items, total, totalPages, page } = paginateData(list, pState.page, pState.perPage);
+                const list = causasFiltradas.slice(-50).reverse(); 
+                const pState = paginationState.auditoria; 
+                const { items, total, totalPages, page } = paginateData(list, pState.page, pState.perPage);
 
                 const opciones = CONFIG.operadores.map(op => `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`).join('');
-                
+
+                // ========== ARMADO DEL HTML ==========
                 panel.innerHTML = `
+                    <!-- Contenedor: Tarea de Secretarios -->
+                    <div class="card-modern" style="padding-bottom:0.8rem;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="card-title mb-0"><i class="bi bi-person-lock"></i> Tarea de Secretarios</div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnImprimirKPIs">
+                                <i class="bi bi-printer"></i> Imprimir KPIs de Secretario y Empleado
+                            </button>
+                        </div>
+                        <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                            <div class="kpi-item">
+                                <div class="label">Total Sin Asignar</div>
+                                <div class="value">${totalSinAsignar}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">En Proceso</div>
+                                <div class="value warning">${enProcesoTotal}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">Para Finalizar</div>
+                                <div class="value success">${paraFinalizar}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">En Defensor</div>
+                                <div class="value info">${enDefensor}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">Finalizados</div>
+                                <div class="value" style="color:#2e7d32;">${finalizados}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor: Tarea de Empleados con destacados -->
+                    <div class="card-modern" style="padding-top:0.2rem; padding-bottom:0.8rem;">
+                        <div class="card-title mb-2"><i class="bi bi-people-fill"></i> Tarea de Empleados</div>
+                        <div class="destacados-grid">
+                            <div class="destacado-item">
+                                <div class="dest-label">🏆 Mejor Cumplimiento</div>
+                                <div class="dest-nombre">${mejorCumplimiento.nombre}</div>
+                                <div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div>
+                            </div>
+                            <div class="destacado-item">
+                                <div class="dest-label">📊 Mayor Carga</div>
+                                <div class="dest-nombre">${mayorCarga.nombre}</div>
+                                <div class="dest-detalle">${mayorCarga.count} expedientes en total</div>
+                            </div>
+                            <div class="destacado-item">
+                                <div class="dest-label">⏳ Mayor Demora</div>
+                                <div class="dest-nombre text-danger">${mayorDemora.nombre}</div>
+                                <div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días de retraso' : 'Sin retrasos'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla Tarea de Operador (antes Trazabilidad) -->
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-clipboard-data"></i> Trazabilidad</div>
+                            <div class="card-title mb-0"><i class="bi bi-clipboard-data"></i> Tarea de Operador</div>
                             <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteAuditoria"><i class="bi bi-printer"></i> Reporte</button>
                         </div>
                         <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -2381,12 +2494,191 @@
 
                 if (total > 0) renderPagination('paginationAuditoria', total, totalPages, page, pState.perPage, (newPage, newPerPage) => { paginationState.auditoria.page = newPage; paginationState.auditoria.perPage = newPerPage; renderAuditoria(); });
 
-                const filtro = document.getElementById('auditoriaFiltroOperador'); if (filtro) filtro.addEventListener('change', function() { paginationState.auditoria.page = 1; renderAuditoria(); });
-                const btnReporte = document.getElementById('btnReportePorOperador'); if (btnReporte) btnReporte.addEventListener('click', function() { const op = document.getElementById('auditoriaFiltroOperador').value; if (!op) { showToast('Seleccione un operador.', 'warning'); return; } generarReportePorOperador(op); });
-                document.querySelectorAll('.btn-ver-hist').forEach(btn => { btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); }); });
+                // Eventos de filtro y reportes
+                const filtro = document.getElementById('auditoriaFiltroOperador'); 
+                if (filtro) filtro.addEventListener('change', function() { paginationState.auditoria.page = 1; renderAuditoria(); });
+
+                const btnReporte = document.getElementById('btnReportePorOperador'); 
+                if (btnReporte) btnReporte.addEventListener('click', function() { 
+                    const op = document.getElementById('auditoriaFiltroOperador').value; 
+                    if (!op) { showToast('Seleccione un operador.', 'warning'); return; } 
+                    generarReportePorOperador(op); 
+                });
+
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
 
                 const btnReporteAud = document.getElementById('btnReporteAuditoria');
                 if (btnReporteAud) btnReporteAud.addEventListener('click', generarReporteAuditoria);
+
+                // ========== BOTÓN IMPRIMIR KPIs ==========
+                document.getElementById('btnImprimirKPIs').addEventListener('click', function() {
+                    imprimirKPIsSecretarioEmpleado();
+                });
+            }
+
+            // ========== FUNCIÓN PARA IMPRIMIR KPIs ==========
+            function imprimirKPIsSecretarioEmpleado() {
+                // Obtener los contenedores actualizados del DOM
+                const contenedorSecretarios = document.querySelector('#panelAuditoria .card-modern:first-child');
+                const contenedorEmpleados = document.querySelector('#panelAuditoria .card-modern:nth-child(2)');
+
+                if (!contenedorSecretarios || !contenedorEmpleados) {
+                    showToast('No se encontraron los contenedores para imprimir', 'warning');
+                    return;
+                }
+
+                // Clonar los contenedores para no afectar la vista
+                const clonSecretarios = contenedorSecretarios.cloneNode(true);
+                const clonEmpleados = contenedorEmpleados.cloneNode(true);
+
+                // Eliminar el botón de imprimir del clon (para que no aparezca en la impresión)
+                const btnImprimir = clonSecretarios.querySelector('#btnImprimirKPIs');
+                if (btnImprimir) btnImprimir.remove();
+
+                // Preparar el contenido para imprimir
+                const now = new Date();
+                const fechaHora = fmtDt(now.toISOString());
+
+                const printContent = `
+                    <div class="print-header">
+                        <h3>KPIs de Secretario y Empleado</h3>
+                        <div class="print-date">Fecha de impresión: ${fechaHora}</div>
+                    </div>
+                    ${clonSecretarios.outerHTML}
+                    ${clonEmpleados.outerHTML}
+                `;
+
+                // Abrir ventana de impresión
+                const win = window.open('', '_blank', 'width=800,height=600');
+                if (!win) {
+                    showToast('Permita ventanas emergentes para imprimir', 'warning');
+                    return;
+                }
+
+                win.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>KPIs de Secretario y Empleado</title>
+                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+                        <style>
+                            body { font-family: 'Inter', sans-serif; padding: 20px; background: #fff; }
+                            .card-modern {
+                                background: #fff;
+                                border-radius: 24px;
+                                border: 1px solid #e2edf7;
+                                box-shadow: 0 2px 12px rgba(0,0,0,.03);
+                                padding: 1.5rem 1.8rem;
+                                margin-bottom: 1.5rem;
+                            }
+                            .card-title {
+                                font-weight: 700;
+                                font-size: 1rem;
+                                color: #0a2a44;
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                margin-bottom: 1.2rem;
+                                padding-bottom: .6rem;
+                                border-bottom: 1px solid #eef2f7;
+                            }
+                            .card-title i { color: #1976d2; }
+                            .kpi-grid {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                                gap: 1rem;
+                                margin-bottom: 1.5rem;
+                            }
+                            .kpi-item {
+                                background: #fff;
+                                border-radius: 20px;
+                                padding: 1rem 1.2rem;
+                                border: 1px solid #e2edf7;
+                                text-align: center;
+                            }
+                            .kpi-item .label {
+                                font-size: .7rem;
+                                font-weight: 700;
+                                text-transform: uppercase;
+                                color: #5f7f9f;
+                                letter-spacing: .4px;
+                            }
+                            .kpi-item .value {
+                                font-size: 1.8rem;
+                                font-weight: 800;
+                                color: #0a2a44;
+                                line-height: 1.2;
+                            }
+                            .kpi-item .value.danger { color: #c62828; }
+                            .kpi-item .value.warning { color: #e67e22; }
+                            .kpi-item .value.success { color: #2e7d32; }
+                            .kpi-item .value.info { color: #1976d2; }
+                            .destacados-grid {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                                gap: 1rem;
+                                margin-bottom: 1.5rem;
+                            }
+                            .destacado-item {
+                                background: #ffffff;
+                                border-radius: 20px;
+                                padding: 0.8rem 1.2rem;
+                                border: 1px solid #e2edf7;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                            }
+                            .destacado-item .dest-label {
+                                font-size: 0.7rem;
+                                font-weight: 700;
+                                text-transform: uppercase;
+                                color: #5f7f9f;
+                                letter-spacing: 0.3px;
+                            }
+                            .destacado-item .dest-nombre {
+                                font-size: 1.1rem;
+                                font-weight: 700;
+                                color: #0a2a44;
+                                margin-top: 0.1rem;
+                            }
+                            .destacado-item .dest-nombre.text-danger { color: #c62828; }
+                            .destacado-item .dest-detalle {
+                                font-size: 0.8rem;
+                                color: #5f7f9f;
+                            }
+                            .print-header {
+                                text-align: center;
+                                margin-bottom: 20px;
+                                border-bottom: 2px solid #0a2a44;
+                                padding-bottom: 10px;
+                            }
+                            .print-header h3 {
+                                margin: 0;
+                                color: #0a2a44;
+                                font-weight: 700;
+                            }
+                            .print-header .print-date {
+                                font-size: 0.8rem;
+                                color: #5f7f9f;
+                            }
+                            @media print {
+                                body { padding: 0; }
+                                .btn, .btn-modern, .btn-modern-sm, .btn-buscar, .btn-refresh, .btn-logout, .btn-close {
+                                    display: none !important;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${printContent}
+                    </body>
+                    </html>
+                `);
+                win.document.close();
+                setTimeout(() => {
+                    win.print();
+                }, 500);
             }
 
             // ---------- GRÁFICOS ----------
@@ -3213,11 +3505,9 @@
             //  FUNCIÓN DE IMPRESIÓN PARA EL MODAL DE BÚSQUEDA
             // ============================================================
             function imprimirDetalleBusqueda() {
-                // Añadir un encabezado de impresión al contenido actual del modal
                 const modalBody = document.getElementById('modalBusquedaBody');
                 const contenidoActual = modalBody.innerHTML;
 
-                // Obtener fecha y hora actual en formato DD/MM/AAAA HH:mm
                 const ahora = new Date();
                 const dia = String(ahora.getDate()).padStart(2, '0');
                 const mes = String(ahora.getMonth() + 1).padStart(2, '0');
@@ -3226,14 +3516,12 @@
                 const minutos = String(ahora.getMinutes()).padStart(2, '0');
                 const fechaHora = `${dia}/${mes}/${anio} ${horas}:${minutos}`;
 
-                // Obtener el título del expediente (si existe)
                 const tituloElem = document.getElementById('modalBusquedaTitulo');
                 let titulo = 'Detalle del expediente';
                 if (tituloElem) {
                     titulo = tituloElem.textContent.trim() || titulo;
                 }
 
-                // Construir el contenido a imprimir con encabezado
                 const printContent = `
                     <div class="print-header">
                         <h3>${titulo}</h3>
@@ -3242,28 +3530,12 @@
                     ${contenidoActual}
                 `;
 
-                // Reemplazar temporalmente el contenido del modal para la impresión
                 modalBody.innerHTML = printContent;
-
-                // Llamar a la función de impresión del navegador
                 window.print();
-
-                // Restaurar el contenido original después de imprimir
-                // (usamos setTimeout para dar tiempo a que se imprima)
                 setTimeout(() => {
-                    // El contenido original se pierde, pero podemos reconstruirlo
-                    // Para no perder el detalle, volvemos a buscar el expediente si es posible
-                    // O simplemente recargamos el contenido desde el estado actual
-                    // Como no tenemos el término de búsqueda almacenado, mejor recargamos el modal con el mismo detalle
-                    // Pero como la función mostrarDetalleConHistorial ya genera el contenido, 
-                    // podemos simplemente re-ejecutarla si tenemos el ID o el objeto.
-                    // Para simplificar, cerramos y reabrimos el modal (pero eso es brusco)
-                    // Mejor: guardamos el estado actual y lo restauramos.
-                    // Como no tenemos forma fácil de recuperar el objeto, usamos una variable global.
                     if (window._ultimoDetalleCausa) {
                         mostrarDetalleConHistorial(window._ultimoDetalleCausa);
                     } else {
-                        // Si no hay, recargamos la página del modal con un mensaje
                         modalBody.innerHTML = `
                             <div class="text-muted">Contenido restaurado. Cierre y vuelva a buscar para ver el detalle.</div>
                         `;
@@ -3275,7 +3547,6 @@
             //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO
             // ============================================================
             function mostrarDetalleConHistorial(causa, volverCallback) {
-                // Guardar la causa para posible restauración en impresión
                 window._ultimoDetalleCausa = causa;
 
                 const modalBody = document.getElementById('modalBusquedaBody');
@@ -3283,7 +3554,6 @@
 
                 titulo.innerHTML = `<i class="bi bi-file-text me-2"></i>Detalle completo de ${causa.numero}`;
 
-                // Datos básicos
                 const ubicacionStr = (() => {
                     if (causa.estado === 'en_proceso' && causa.empleadoAsignado) {
                         return `En poder de: ${getEmpName(causa.empleadoAsignado)}`;
@@ -3299,7 +3569,6 @@
                 const fechaFin = causa.fechaFinalizacion ? fmtDt(causa.fechaFinalizacion) : 'No finalizada';
                 const cronoHtml = getCronoHtml(causa);
 
-                // Construir historial
                 let historialHtml = '';
                 if (causa.historial && causa.historial.length > 0) {
                     historialHtml = `<div class="historial-lista">`;
@@ -3318,7 +3587,6 @@
                     historialHtml = `<div class="text-muted">Sin movimientos registrados.</div>`;
                 }
 
-                // Botón volver si hay callback
                 let volverBtn = '';
                 if (typeof volverCallback === 'function') {
                     volverBtn = `<button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnVolverLista">← Volver a resultados</button>`;
@@ -3386,14 +3654,12 @@
                     </div>
                 `;
 
-                // Evento volver
                 if (volverBtn) {
                     document.getElementById('btnVolverLista').addEventListener('click', function() {
                         volverCallback();
                     });
                 }
 
-                // Evento ir a solapa
                 document.getElementById('btnIrASolapaBusqueda').addEventListener('click', function() {
                     const panelId = this.dataset.panel;
                     const numero = this.dataset.numero;
@@ -3415,7 +3681,6 @@
 
                 const terminoLower = termino.toLowerCase();
                 
-                // Filtrar coincidencias en el array global state.causas
                 const resultados = state.causas.filter(c => 
                     (c.numero && c.numero.toLowerCase().includes(terminoLower)) || 
                     (c.dni && c.dni.toLowerCase().includes(terminoLower))
@@ -3425,7 +3690,6 @@
                 const titulo = document.getElementById('modalBusquedaTitulo');
                 const modalElement = document.getElementById('modalBusqueda');
 
-                // Limpiar clases especiales
                 modalElement.classList.remove('modal-verde', 'modal-buscando');
 
                 if (resultados.length === 0) {
@@ -3436,10 +3700,8 @@
                             No se encontraron expedientes que coincidan con la búsqueda.
                         </div>`;
                 } else if (resultados.length === 1) {
-                    // Un solo resultado: mostrar detalle con historial completo
                     mostrarDetalleConHistorial(resultados[0]);
                 } else {
-                    // Múltiples resultados: listar
                     titulo.innerHTML = `<i class="bi bi-list-ul me-2"></i>${resultados.length} resultados para "${termino}"`;
 
                     let listHtml = `<div class="list-group">`;
@@ -3482,15 +3744,12 @@
                     listHtml += `</div>`;
                     modalBody.innerHTML = listHtml;
 
-                    // Eventos para ver detalle de cada resultado
                     modalBody.querySelectorAll('.btn-ver-detalle-busqueda').forEach(btn => {
                         btn.addEventListener('click', function() {
                             const id = this.dataset.id;
                             const causa = state.causas.find(c => c.id === id);
                             if (causa) {
-                                // Mostrar detalle con historial y botón volver
                                 mostrarDetalleConHistorial(causa, function() {
-                                    // Volver a la lista de resultados
                                     realizarBusquedaGlobal(termino);
                                 });
                             }
@@ -3498,11 +3757,8 @@
                     });
                 }
 
-                // Mostrar modal
                 const modalInstance = new bootstrap.Modal(modalElement);
                 modalInstance.show();
-
-                // Limpiar input
                 document.getElementById('globalSearch').value = '';
             }
 
@@ -3512,7 +3768,6 @@
                 const searchBtn = document.getElementById('btnBuscarGlobal');
 
                 if (searchInput) {
-                    // Eliminar listeners previos (clonación simple)
                     const newInput = searchInput.cloneNode(true);
                     searchInput.parentNode.replaceChild(newInput, searchInput);
                     
@@ -3535,7 +3790,6 @@
                     console.log('Botón Buscar inicializado.');
                 }
 
-                // Botón Imprimir del modal de búsqueda
                 const imprimirBtn = document.getElementById('btnImprimirBusqueda');
                 if (imprimirBtn) {
                     const newImprimirBtn = imprimirBtn.cloneNode(true);
@@ -3660,7 +3914,7 @@
                     await loadStateFromFirestore();
                     renderAll();
                     iniciarChatDespuesLogin();
-                    inicializarBuscadorGlobal(); // Inicializar búsqueda global aquí
+                    inicializarBuscadorGlobal();
                     
                     showToast('Bienvenido/a Defensor (Full Access)', 'success');
                     iniciarCronometros();
@@ -3680,7 +3934,6 @@
                 document.getElementById('loginPassword').value = '';
                 Object.values(chartInstances).forEach(ch => { try { ch.destroy(); } catch (_) {} }); chartInstances = {};
                 document.getElementById('chatWidget').classList.remove('visible');
-                // Resetear buscador
                 const searchInput = document.getElementById('globalSearch');
                 if (searchInput) searchInput.value = '';
                 showToast('Sesión cerrada', 'warning');
