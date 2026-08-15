@@ -177,6 +177,9 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             transition: box-shadow 0.15s;
             cursor: default;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .kpi-item:hover {
             box-shadow: 0 6px 20px rgba(0,0,0,0.04);
@@ -199,6 +202,12 @@
         .kpi-item .kpi-value.text-warning { color: #e67e22; }
         .kpi-item .kpi-value.text-danger { color: #c62828; }
         .kpi-item .kpi-value.text-info { color: #0d6efd; }
+        .kpi-item .ver-historial-btn {
+            margin-top: 8px;
+            font-size: 0.7rem;
+            padding: 2px 12px;
+            border-radius: 30px;
+        }
 
         .destacados-grid {
             display: grid;
@@ -388,6 +397,171 @@
             to { opacity:0; transform:translateY(20px) scale(0.94); }
         }
 
+        /* Estilos para el modal de historial */
+        #historialModal .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #historialModal .table th {
+            background: #f0f4fa;
+        }
+        #historialModal .expediente-link {
+            color: #0d6efd;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        #historialModal .expediente-link:hover {
+            text-decoration: underline;
+        }
+        .tipo-negrita-azul {
+            font-weight: 700;
+            color: #0d6efd;
+        }
+
+        /* Estilos para tabla de empleados con filtros */
+        .tabla-empleados-container {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid #e2edf7;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .tabla-empleados-container .table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .tabla-empleados-container .table th {
+            background: #f0f4fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .tabla-empleados-container .btn-print-tabla {
+            float: right;
+            margin-bottom: 0.5rem;
+        }
+        .demora-si { font-weight: 700; color: #c62828; }
+        .demora-no { font-weight: 700; color: #2e7d32; }
+
+        .filtros-empleados {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+        }
+        .filtros-empleados label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #0a2a44;
+            margin-bottom: 0;
+        }
+        .filtros-empleados select {
+            border-radius: 30px;
+            padding: 4px 12px;
+            border: 1px solid #dce5ec;
+            font-size: 0.8rem;
+            background: #fff;
+            min-width: 120px;
+        }
+        .filtros-empleados .btn-limpiar {
+            padding: 4px 16px;
+            border-radius: 30px;
+            background: #f0f4f9;
+            border: 1px solid #dce5ec;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: .15s;
+        }
+        .filtros-empleados .btn-limpiar:hover {
+            background: #dce5ec;
+        }
+
+        .pagination-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.5rem;
+            border-top: 1px solid #eef2f7;
+            margin-top: 0.5rem;
+        }
+        .pagination-bar .info {
+            font-size: 0.75rem;
+            color: #5f7f9f;
+        }
+        .pagination-bar .page-btn {
+            background: #f0f4f9;
+            border: none;
+            border-radius: 30px;
+            padding: 2px 10px;
+            font-weight: 600;
+            color: #1a4c74;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: .15s;
+            font-size: 0.75rem;
+        }
+        .pagination-bar .page-btn.active {
+            background: #1976d2;
+            color: #fff;
+        }
+        .pagination-bar .page-btn:disabled {
+            opacity: .4;
+            pointer-events: none;
+        }
+        .pagination-bar .page-btn:hover:not(:disabled) {
+            background: #d0e0f0;
+        }
+        .pagination-bar .page-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+        }
+        .pagination-bar .page-selector select {
+            padding: 2px 6px;
+            border-radius: 30px;
+            border: 1px solid #dce5ec;
+            background: #fff;
+            font-size: 0.75rem;
+        }
+
+        .total-filtro-kpi {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            background: #f8faff;
+            border-radius: 16px;
+            border: 1px solid #e2edf7;
+            margin-bottom: 0.75rem;
+        }
+        .total-filtro-kpi .total-kpi {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0a2a44;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .total-filtro-kpi .total-kpi .cantidad {
+            color: #1976d2;
+            font-size: 1.6rem;
+        }
+        .total-filtro-kpi .filtro-activo {
+            font-size: 0.9rem;
+            color: #2c5a7a;
+            font-weight: 600;
+            padding: 4px 16px;
+            background: #e3effa;
+            border-radius: 40px;
+            border: 1px solid #b8d4f0;
+        }
+
         @media (max-width: 768px) {
             .sidebar { width: 100%; min-width: unset; height: auto; border-right: none; border-bottom: 1px solid #e2edf7; flex-direction: row; flex-wrap: wrap; padding: 0.5rem; }
             .sidebar .brand { display: none; }
@@ -398,6 +572,11 @@
             .main-content { height: calc(100vh - 60px); padding: 1rem; }
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
             .secretarios-container { grid-template-columns: 1fr; }
+            .tabla-empleados-container .table-wrapper { max-height: 300px; }
+            .filtros-empleados { flex-direction: column; align-items: stretch; }
+            .filtros-empleados select { width: 100%; }
+            .total-filtro-kpi { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+            .total-filtro-kpi .filtro-activo { text-align: center; }
         }
         @media (max-width: 480px) {
             .kpi-grid { grid-template-columns: 1fr; }
@@ -447,6 +626,9 @@
     <!-- Área oculta para impresión -->
     <div id="printArea" style="display:none;"></div>
 
+    <!-- Bootstrap JS (necesario para modales) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         (function() {
             'use strict';
@@ -495,6 +677,15 @@
             let filtroMes = '';
             let filtroAnio = '';
             let empleadoNombreActual = '';
+
+            // Estado para filtros y paginación del módulo empleado
+            let filtrosEmpleado = {
+                empleado: 'todos',
+                tipo: 'todos',
+                secretario: 'todos',
+                estado: 'todos'
+            };
+            let paginacionEmpleado = { page: 1, perPage: 10 };
 
             // ---------- UTILS ----------
             function getEmpName(id) {
@@ -885,13 +1076,187 @@
                 }, 100);
             }
 
-            // ---------- EMPLEADO (CON GRÁFICO DE BARRAS DE KPIs Y CLICK EN BARRA) ----------
+            // ---------- FUNCIONES DE PAGINACIÓN ----------
+            function paginateData(data, page, perPage = 10) {
+                const total = data.length;
+                const totalPages = Math.ceil(total / perPage) || 1;
+                const start = (page - 1) * perPage;
+                const end = Math.min(start + perPage, total);
+                return { items: data.slice(start, end), total, totalPages, page, start, end };
+            }
+
+            function renderPagination(targetId, total, totalPages, page, perPage, callback) {
+                const container = document.getElementById(targetId);
+                if (!container) return;
+                let html = `<div class="pagination-bar">
+                    <div class="info">Mostrando ${total ? Math.min((page-1)*perPage + 1, total) : 0} - ${Math.min(page*perPage, total)} de ${total}</div>
+                    <div>
+                        <button class="page-btn" data-page="prev" ${page<=1?'disabled':''}>Anterior</button>
+                        ${Array.from({length: Math.min(totalPages, 10)}, (_, i) => {
+                            let p = i + 1;
+                            if (totalPages > 10) { if (p < page - 4 || p > page + 4) { if (p === 1 || p === totalPages) return `<button class="page-btn" data-page="${p}">${p}</button>`; if (p === page - 5 || p === page + 5) return `<span>…</span>`; return ''; } }
+                            return `<button class="page-btn ${p===page?'active':''}" data-page="${p}">${p}</button>`;
+                        }).join('')}
+                        <button class="page-btn" data-page="next" ${page>=totalPages?'disabled':''}>Siguiente</button>
+                    </div>
+                    <div class="page-selector">
+                        <label>Ver:</label>
+                        <select class="form-select form-select-sm" style="width:70px;" id="perPageSelect">
+                            <option value="5" ${perPage===5?'selected':''}>5</option>
+                            <option value="10" ${perPage===10?'selected':''}>10</option>
+                            <option value="25" ${perPage===25?'selected':''}>25</option>
+                            <option value="50" ${perPage===50?'selected':''}>50</option>
+                        </select>
+                    </div>
+                </div>`;
+                container.innerHTML = html;
+                container.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const p = this.dataset.page;
+                        let newPage = page;
+                        if (p === 'prev') newPage = Math.max(1, page - 1);
+                        else if (p === 'next') newPage = Math.min(totalPages, page + 1);
+                        else newPage = parseInt(p);
+                        if (newPage !== page) callback(newPage, perPage);
+                    });
+                });
+                const perPageSelect = document.getElementById('perPageSelect');
+                if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this.value)); }); }
+            }
+
+            // ---------- EMPLEADO (CON TABLA FILTRADA, PAGINADA Y KPI DE TOTAL) ----------
             function renderEmpleado(container) {
+                // Obtener todos los expedientes asignados a empleados
+                let filas = [];
+                CONFIG.empleados.forEach(emp => {
+                    const causasEmp = causas.filter(c => {
+                        const esSuPase = (
+                            (c.empleadoId && (c.empleadoId === emp.id || c.empleadoId === emp.nombre)) ||
+                            (c.empleadoAsignado && (c.empleadoAsignado === emp.id || c.empleadoAsignado === emp
+                                .nombre)) ||
+                            (c.empleadoOriginal && c.empleadoOriginal === emp.id)
+                        );
+                        return esSuPase;
+                    });
+                    causasEmp.forEach(c => {
+                        let tieneDemora = false;
+                        if (c.estado === 'en_proceso' && c.empleadoAsignado === emp.id && c.fechaLimite) {
+                            if (new Date(c.fechaLimite) < new Date()) {
+                                tieneDemora = true;
+                            }
+                        }
+                        filas.push({
+                            empleado: emp.nombre,
+                            empleadoId: emp.id,
+                            expediente: c.numero || c.expediente || c.id, // priorizar numero
+                            tipo: c.tipo || c.motivo || c.tipoPase || 'Pase',
+                            secretario: getSecName(c.secretarioId) || '-',
+                            secretarioId: c.secretarioId || 'sin',
+                            estado: c.estado || 'Sin estado',
+                            tieneDemora: tieneDemora,
+                            id: c.id
+                        });
+                    });
+                });
+
+                // Obtener valores únicos para filtros
+                const tiposUnicos = [...new Set(filas.map(f => f.tipo))].sort();
+                const estadosUnicos = [...new Set(filas.map(f => f.estado))].sort();
+                const secretariosUnicos = [...new Set(filas.map(f => f.secretario))].filter(s => s !== '-');
+
+                // Aplicar filtros
+                let filtrados = filas;
+                if (filtrosEmpleado.empleado !== 'todos') {
+                    filtrados = filtrados.filter(f => f.empleadoId === filtrosEmpleado.empleado);
+                }
+                if (filtrosEmpleado.tipo !== 'todos') {
+                    filtrados = filtrados.filter(f => f.tipo === filtrosEmpleado.tipo);
+                }
+                if (filtrosEmpleado.secretario !== 'todos') {
+                    filtrados = filtrados.filter(f => f.secretario === filtrosEmpleado.secretario);
+                }
+                if (filtrosEmpleado.estado !== 'todos') {
+                    filtrados = filtrados.filter(f => f.estado === filtrosEmpleado.estado);
+                }
+
+                // Paginación
+                const pState = paginacionEmpleado;
+                const { items, total, totalPages, page } = paginateData(filtrados, pState.page, pState.perPage);
+
+                // --- Construir texto de filtro activo ---
+                let filtroActivoTexto = 'Todos';
+                const partes = [];
+                if (filtrosEmpleado.empleado !== 'todos') {
+                    const emp = CONFIG.empleados.find(e => e.id === filtrosEmpleado.empleado);
+                    if (emp) partes.push(`Empleado: ${emp.nombre}`);
+                }
+                if (filtrosEmpleado.tipo !== 'todos') {
+                    partes.push(`Tipo: ${filtrosEmpleado.tipo}`);
+                }
+                if (filtrosEmpleado.secretario !== 'todos') {
+                    partes.push(`Secretario: ${filtrosEmpleado.secretario}`);
+                }
+                if (filtrosEmpleado.estado !== 'todos') {
+                    partes.push(`Estado: ${filtrosEmpleado.estado}`);
+                }
+                if (partes.length > 0) {
+                    filtroActivoTexto = partes.join(' · ');
+                }
+
+                // Construir tabla
+                let tablaHTML = '';
+                if (items.length === 0) {
+                    tablaHTML = `<p class="text-muted">No hay expedientes que coincidan con los filtros.</p>`;
+                } else {
+                    tablaHTML = `
+                        <div class="table-wrapper">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Empleado</th>
+                                        <th>Expediente Asignado</th>
+                                        <th>Tipo</th>
+                                        <th>Secretario</th>
+                                        <th>Estado Actual</th>
+                                        <th>Tiene demora</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    items.forEach(f => {
+                        const demoraHTML = f.tieneDemora ?
+                            `<span class="demora-si">Sí</span>` :
+                            `<span class="demora-no">No</span>`;
+                        tablaHTML += `
+                            <tr>
+                                <td>${f.empleado}</td>
+                                <td><a href="#" class="expediente-link">${f.expediente}</a></td>
+                                <td><span class="tipo-negrita-azul">${f.tipo}</span></td>
+                                <td>${f.secretario}</td>
+                                <td>${f.estado}</td>
+                                <td>${demoraHTML}</td>
+                            </tr>
+                        `;
+                    });
+                    tablaHTML += `</tbody></table></div>`;
+                }
+
+                // --- Construir el resto del módulo (selector, gráfico y KPIs) ---
+                // Sincronizar empleadoSeleccionado con el filtro de empleado de la tabla
                 let empId = empleadoSeleccionado;
+                if (filtrosEmpleado.empleado !== 'todos') {
+                    empId = filtrosEmpleado.empleado;
+                } else {
+                    // Si no hay filtro de empleado, mantener el último seleccionado (o el primero)
+                    empId = empleadoSeleccionado || CONFIG.empleados[0]?.id || '';
+                }
+                // Actualizar la variable global para que coincida con el filtro
+                empleadoSeleccionado = empId;
+
                 let empObj = CONFIG.empleados.find(e => e.id === empId);
                 let nombreEmpleado = empObj ? empObj.nombre : 'Seleccione un empleado';
 
-                // Función para calcular KPIs de un empleado
+                // Función para calcular KPIs de un empleado (sin cambios)
                 function calcularKPIs(empId, empObj) {
                     let total = 0,
                         enProceso = 0,
@@ -953,58 +1318,126 @@
                     return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora, nombre: empObj ? empObj.nombre : '' };
                 }
 
-                // Selector de empleado
+                // Selector de empleado para el gráfico y KPIs
                 let opts = CONFIG.empleados.map(e =>
-                    `<option value="${e.id}" ${e.id === empleadoSeleccionado ? 'selected' : ''}>${e.nombre}</option>`
+                    `<option value="${e.id}" ${e.id === empId ? 'selected' : ''}>${e.nombre}</option>`
                 ).join('');
 
-                // Obtener KPIs actuales
                 let kpis = calcularKPIs(empId, empObj);
                 empleadoNombreActual = kpis.nombre;
 
-                // Construir HTML
+                // HTML completo
                 container.innerHTML = `
+                    <!-- Tabla general con filtros y paginación -->
+                    <div class="tabla-empleados-container">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+                            <h5 class="mb-0">Expedientes asignados a empleados</h5>
+                            <button class="btn btn-outline-primary btn-sm btn-print-tabla" id="btnImprimirTablaEmpleados">
+                                <i class="bi bi-printer"></i> Imprimir tabla
+                            </button>
+                        </div>
+
+                        <!-- KPIs de total y filtro activo -->
+                        <div class="total-filtro-kpi">
+                            <div class="total-kpi">
+                                <i class="bi bi-files"></i>
+                                <span class="cantidad">${total}</span>
+                                <span style="font-weight:400; color:#5f7f9f; font-size:0.9rem;">expediente${total !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div class="filtro-activo">
+                                <i class="bi bi-funnel"></i> ${filtroActivoTexto}
+                            </div>
+                        </div>
+
+                        <div class="filtros-empleados">
+                            <div>
+                                <label>Empleado</label>
+                                <select id="filtroEmpleado">
+                                    <option value="todos" ${filtrosEmpleado.empleado === 'todos' ? 'selected' : ''}>Todos</option>
+                                    ${CONFIG.empleados.map(e => `<option value="${e.id}" ${filtrosEmpleado.empleado === e.id ? 'selected' : ''}>${e.nombre}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label>Tipo</label>
+                                <select id="filtroTipo">
+                                    <option value="todos" ${filtrosEmpleado.tipo === 'todos' ? 'selected' : ''}>Todos</option>
+                                    ${tiposUnicos.map(t => `<option value="${t}" ${filtrosEmpleado.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label>Secretario</label>
+                                <select id="filtroSecretario">
+                                    <option value="todos" ${filtrosEmpleado.secretario === 'todos' ? 'selected' : ''}>Todos</option>
+                                    ${secretariosUnicos.map(s => `<option value="${s}" ${filtrosEmpleado.secretario === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label>Estado</label>
+                                <select id="filtroEstado">
+                                    <option value="todos" ${filtrosEmpleado.estado === 'todos' ? 'selected' : ''}>Todos</option>
+                                    ${estadosUnicos.map(e => `<option value="${e}" ${filtrosEmpleado.estado === e ? 'selected' : ''}>${e}</option>`).join('')}
+                                </select>
+                            </div>
+                            <button class="btn-limpiar" id="btnLimpiarFiltrosEmp">Limpiar filtros</button>
+                        </div>
+                        ${tablaHTML}
+                        <div id="paginationEmpleado"></div>
+                    </div>
+
+                    <!-- Selector y KPIs para empleado individual -->
                     <div class="empleado-selector">
-                        <label for="selectEmpleado">Seleccionar empleado:</label>
+                        <label for="selectEmpleado">Seleccionar empleado para KPIs:</label>
                         <select id="selectEmpleado" class="form-select" style="width:auto;min-width:200px;">${opts}</select>
                     </div>
 
-                    <!-- Nombre del empleado en negrita azul -->
                     <div id="empleadoNombreDestacado" class="empleado-nombre-destacado">
                         ${empleadoNombreActual || 'Seleccione un empleado'}
                     </div>
 
-                    <!-- Gráfico de barras (KPIs del empleado seleccionado) -->
                     <div class="chart-container"><canvas id="chartKPIsEmpleado"></canvas></div>
 
-                    <!-- KPIs del empleado seleccionado -->
                     <div id="kpisEmpleadoContainer" class="kpi-grid">
                         <div class="kpi-item" data-kpi="total">
                             <div class="kpi-label">Total</div>
                             <div class="kpi-value">${kpis.total}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="total">Ver Historial</button>
                         </div>
                         <div class="kpi-item" data-kpi="enProceso">
                             <div class="kpi-label">En Proceso</div>
                             <div class="kpi-value text-primary">${kpis.enProceso}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="enProceso">Ver Historial</button>
                         </div>
                         <div class="kpi-item" data-kpi="enSecretaria">
                             <div class="kpi-label">En Secretaría</div>
                             <div class="kpi-value text-warning">${kpis.enSecretaria}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="enSecretaria">Ver Historial</button>
                         </div>
                         <div class="kpi-item" data-kpi="enDefensor">
                             <div class="kpi-label">En Defensor</div>
                             <div class="kpi-value text-info">${kpis.enDefensor}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="enDefensor">Ver Historial</button>
                         </div>
                         <div class="kpi-item" data-kpi="finalizados">
                             <div class="kpi-label">Finalizados</div>
                             <div class="kpi-value text-success">${kpis.finalizados}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="finalizados">Ver Historial</button>
                         </div>
                         <div class="kpi-item" data-kpi="conDemora">
                             <div class="kpi-label">Con Demora</div>
                             <div class="kpi-value text-danger">${kpis.conDemora}</div>
+                            <button class="btn btn-outline-primary btn-sm ver-historial-btn mt-2" data-kpi="conDemora">Ver Historial</button>
                         </div>
                     </div>
                 `;
+
+                // Renderizar paginación
+                if (total > 0) {
+                    renderPagination('paginationEmpleado', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
+                        paginacionEmpleado.page = newPage;
+                        paginacionEmpleado.perPage = newPerPage;
+                        renderEmpleado(container);
+                    });
+                }
 
                 // Renderizar gráfico de barras con los KPIs
                 setTimeout(() => {
@@ -1048,7 +1481,6 @@
                                         const index = elements[0].index;
                                         const labels = ['total', 'enProceso', 'enSecretaria', 'enDefensor', 'finalizados', 'conDemora'];
                                         const kpiKey = labels[index];
-                                        // Actualizar KPIs destacando el seleccionado
                                         actualizarKPIsDestacado(kpiKey);
                                     }
                                 }
@@ -1057,24 +1489,120 @@
                     }
                 }, 100);
 
-                // Evento de cambio de empleado
+                // --- EVENTOS DE FILTROS ---
+                // Filtro empleado: además de actualizar la tabla, sincroniza el selector de KPIs
+                document.getElementById('filtroEmpleado').addEventListener('change', function() {
+                    const valor = this.value;
+                    filtrosEmpleado.empleado = valor;
+                    // Sincronizar el selector de KPIs con el filtro de empleado
+                    empleadoSeleccionado = valor === 'todos' ? CONFIG.empleados[0]?.id || '' : valor;
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+
+                document.getElementById('filtroTipo').addEventListener('change', function() {
+                    filtrosEmpleado.tipo = this.value;
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+                document.getElementById('filtroSecretario').addEventListener('change', function() {
+                    filtrosEmpleado.secretario = this.value;
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+                document.getElementById('filtroEstado').addEventListener('change', function() {
+                    filtrosEmpleado.estado = this.value;
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+                document.getElementById('btnLimpiarFiltrosEmp').addEventListener('click', function() {
+                    filtrosEmpleado = { empleado: 'todos', tipo: 'todos', secretario: 'todos', estado: 'todos' };
+                    empleadoSeleccionado = CONFIG.empleados[0]?.id || '';
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+
+                // Evento de cambio de empleado para KPIs (cuando se cambia manualmente)
                 document.getElementById('selectEmpleado').addEventListener('change', function() {
                     empleadoSeleccionado = this.value;
-                    renderModulo('empleado');
+                    // También actualizar el filtro de empleado de la tabla para mantener sincronía
+                    filtrosEmpleado.empleado = empleadoSeleccionado;
+                    // Forzar la actualización del selector de la tabla
+                    const filtroEmp = document.getElementById('filtroEmpleado');
+                    if (filtroEmp) filtroEmp.value = empleadoSeleccionado;
+                    paginacionEmpleado.page = 1;
+                    renderEmpleado(container);
+                });
+
+                // Asignar eventos a los botones "Ver Historial"
+                asignarEventosHistorial(container);
+
+                // Botón imprimir tabla general
+                document.getElementById('btnImprimirTablaEmpleados').addEventListener('click', function() {
+                    imprimirTablaEmpleados();
                 });
             }
 
-            // Función para actualizar KPIs destacando el seleccionado
+            // Función para imprimir la tabla general de empleados (con filtros actuales)
+            function imprimirTablaEmpleados() {
+                const container = document.querySelector('.tabla-empleados-container');
+                if (!container) return;
+                const tabla = container.querySelector('table');
+                if (!tabla) {
+                    showToast('No hay tabla para imprimir', 'warning');
+                    return;
+                }
+                const clon = tabla.cloneNode(true);
+                clon.querySelectorAll('a').forEach(a => {
+                    const text = a.textContent;
+                    const span = document.createElement('span');
+                    span.textContent = text;
+                    a.parentNode.replaceChild(span, a);
+                });
+                const html = `
+                    <html>
+                        <head>
+                            <title>Expedientes asignados a empleados</title>
+                            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+                            <style>
+                                body { padding: 20px; font-family: 'Inter', sans-serif; }
+                                .table { width: 100%; border-collapse: collapse; }
+                                .table th, .table td { border: 1px solid #dee2e6; padding: 8px; }
+                                .table th { background: #f0f4fa; }
+                                .demora-si { font-weight: 700; color: #c62828; }
+                                .demora-no { font-weight: 700; color: #2e7d32; }
+                                .tipo-negrita-azul { font-weight: 700; color: #0d6efd; }
+                                h4 { margin-bottom: 20px; }
+                            </style>
+                        </head>
+                        <body>
+                            <h4>Expedientes asignados a empleados</h4>
+                            ${clon.outerHTML}
+                            <p style="margin-top:20px; color:#6c757d; font-size:0.8rem;">Impreso el ${getFechaHoraImpresion()}</p>
+                            <script>
+                                window.onload = function() { window.print(); window.close(); }
+                            <\/script>
+                        </body>
+                    </html>
+                `;
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    showToast('No se pudo abrir la ventana de impresión. Permita ventanas emergentes.', 'warning');
+                    return;
+                }
+                printWindow.document.write(html);
+                printWindow.document.close();
+            }
+
+            // Función para actualizar KPIs destacando el seleccionado (sin cambios)
             function actualizarKPIsDestacado(kpiKey) {
                 const container = document.getElementById('kpisEmpleadoContainer');
                 if (!container) return;
 
-                // Obtener el empleado actual
                 let empId = empleadoSeleccionado;
                 let empObj = CONFIG.empleados.find(e => e.id === empId);
                 if (!empObj) return;
 
-                // Recalcular KPIs
                 const todas = causas.filter(c => {
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empObj.nombre)) ||
@@ -1118,17 +1646,6 @@
                     }).length
                 };
 
-                // Mapeo de etiquetas
-                const labels = {
-                    total: 'Total',
-                    enProceso: 'En Proceso',
-                    enSecretaria: 'En Secretaría',
-                    enDefensor: 'En Defensor',
-                    finalizados: 'Finalizados',
-                    conDemora: 'Con Demora'
-                };
-
-                // Actualizar cada KPI
                 const items = container.querySelectorAll('.kpi-item');
                 items.forEach(item => {
                     const key = item.dataset.kpi;
@@ -1136,30 +1653,227 @@
                     if (key && valueSpan) {
                         const val = kpis[key] !== undefined ? kpis[key] : 0;
                         valueSpan.textContent = val;
-                        // Resaltar el seleccionado
                         item.style.border = (key === kpiKey) ? '3px solid #0d6efd' : '1px solid #e2edf7';
                         item.style.background = (key === kpiKey) ? '#e8f4ff' : '#fff';
                     }
                 });
 
-                // Actualizar el gráfico con los nuevos datos
                 const ctx = document.getElementById('chartKPIsEmpleado');
                 if (ctx && chartInstances.kpisEmpleado) {
                     chartInstances.kpisEmpleado.data.datasets[0].data = [kpis.total, kpis.enProceso, kpis.enSecretaria, kpis.enDefensor, kpis.finalizados, kpis.conDemora];
                     chartInstances.kpisEmpleado.update();
                 }
-
-                // Mostrar el nombre del empleado en el título del gráfico
                 if (chartInstances.kpisEmpleado) {
                     chartInstances.kpisEmpleado.data.datasets[0].label = empObj.nombre;
                     chartInstances.kpisEmpleado.update();
                 }
-
-                // Actualizar el nombre destacado
                 const nombreDiv = document.getElementById('empleadoNombreDestacado');
                 if (nombreDiv) {
                     nombreDiv.textContent = empObj.nombre;
                 }
+            }
+
+            // ---------- FUNCIONES PARA EL MODAL DE HISTORIAL ----------
+            let historialModalInstance = null;
+
+            function crearModalHistorial() {
+                if (document.getElementById('historialModal')) return;
+
+                const modalHTML = `
+                    <div class="modal fade" id="historialModal" tabindex="-1" aria-labelledby="historialModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="historialModalLabel">Historial de expedientes</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body" id="historialModalBody">
+                                    <div id="historialTablaContainer"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-primary" id="imprimirHistorialBtn">Imprimir tabla</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+                const modalEl = document.getElementById('historialModal');
+                historialModalInstance = new bootstrap.Modal(modalEl);
+
+                document.getElementById('imprimirHistorialBtn').addEventListener('click', function() {
+                    imprimirTablaHistorial();
+                });
+            }
+
+            function asignarEventosHistorial(container) {
+                const botones = container.querySelectorAll('.ver-historial-btn');
+                botones.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const kpiKey = this.dataset.kpi;
+                        const empId = empleadoSeleccionado;
+                        verHistorial(kpiKey, empId);
+                    });
+                });
+            }
+
+            function verHistorial(kpiKey, empId) {
+                const empObj = CONFIG.empleados.find(e => e.id === empId);
+                if (!empObj) {
+                    showToast('Empleado no encontrado', 'danger');
+                    return;
+                }
+
+                const todas = causas.filter(c => {
+                    const esSuPase = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empObj.nombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empObj.nombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    return esSuPase;
+                });
+
+                let filtradas = [];
+                let labelKPI = '';
+
+                switch (kpiKey) {
+                    case 'total':
+                        filtradas = todas;
+                        labelKPI = 'Total';
+                        break;
+                    case 'enProceso':
+                        filtradas = todas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId);
+                        labelKPI = 'En Proceso';
+                        break;
+                    case 'enSecretaria':
+                        filtradas = todas.filter(c => {
+                            if (c.estado !== 'en_secretaria') return false;
+                            if (!c.historial) return false;
+                            return c.historial.some(h => {
+                                const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
+                                const esUsuario = h.usuario && (h.usuario === empObj.nombre || h.usuario === empId);
+                                return esAccion && esUsuario;
+                            });
+                        });
+                        labelKPI = 'En Secretaría';
+                        break;
+                    case 'enDefensor':
+                        filtradas = todas.filter(c => {
+                            if (c.estado !== 'en_defensor') return false;
+                            const tieneRelacion = (
+                                (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empObj.nombre)) ||
+                                (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empObj.nombre)) ||
+                                (c.empleadoOriginal && c.empleadoOriginal === empId)
+                            );
+                            if (tieneRelacion) return true;
+                            if (c.historial) {
+                                return c.historial.some(h => h.usuario === empObj.nombre || h.usuario === empId);
+                            }
+                            return false;
+                        });
+                        labelKPI = 'En Defensor';
+                        break;
+                    case 'finalizados':
+                        filtradas = todas.filter(c => c.estado === 'finalizada');
+                        labelKPI = 'Finalizados';
+                        break;
+                    case 'conDemora':
+                        filtradas = todas.filter(c => {
+                            if (c.estado !== 'en_proceso') return false;
+                            if (c.empleadoAsignado !== empId) return false;
+                            if (!c.fechaLimite) return false;
+                            return new Date(c.fechaLimite) < new Date();
+                        });
+                        labelKPI = 'Con Demora';
+                        break;
+                    default:
+                        filtradas = [];
+                        labelKPI = '';
+                }
+
+                let tablaHTML = '';
+                if (filtradas.length === 0) {
+                    tablaHTML = `<p class="text-muted">No hay expedientes para este KPI.</p>`;
+                } else {
+                    tablaHTML = `
+                        <table class="table table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Expediente</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th>Secretario</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    filtradas.forEach(c => {
+                        const expediente = c.numero || c.expediente || c.id; // priorizar numero
+                        const tipo = c.tipo || c.motivo || c.tipoPase || 'Pase';
+                        const estado = c.estado || 'Sin estado';
+                        const secretario = getSecName(c.secretarioId) || '-';
+                        tablaHTML += `
+                            <tr>
+                                <td><a href="#" class="expediente-link">${expediente}</a></td>
+                                <td><span class="tipo-negrita-azul">${tipo}</span></td>
+                                <td>${estado}</td>
+                                <td>${secretario}</td>
+                            </tr>
+                        `;
+                    });
+                    tablaHTML += `</tbody></table>`;
+                }
+
+                crearModalHistorial();
+                const modalEl = document.getElementById('historialModal');
+                const titleEl = document.getElementById('historialModalLabel');
+                const bodyContainer = document.getElementById('historialTablaContainer');
+
+                titleEl.textContent = `Historial - ${empObj.nombre} (${labelKPI})`;
+                bodyContainer.innerHTML = tablaHTML;
+
+                historialModalInstance.show();
+            }
+
+            function imprimirTablaHistorial() {
+                const container = document.getElementById('historialTablaContainer');
+                if (!container) return;
+
+                const contenido = container.innerHTML;
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    showToast('No se pudo abrir la ventana de impresión. Permita ventanas emergentes.', 'warning');
+                    return;
+                }
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Historial - Impresión</title>
+                            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+                            <style>
+                                body { padding: 20px; font-family: 'Inter', sans-serif; }
+                                .table { width: 100%; border-collapse: collapse; }
+                                .table th, .table td { border: 1px solid #dee2e6; padding: 8px; }
+                                .table th { background: #f0f4fa; }
+                                .expediente-link { color: #0d6efd; font-weight: 600; text-decoration: none; }
+                                .tipo-negrita-azul { font-weight: 700; color: #0d6efd; }
+                                h4 { margin-bottom: 20px; }
+                            </style>
+                        </head>
+                        <body>
+                            <h4>Historial de expedientes</h4>
+                            ${contenido}
+                            <p style="margin-top:20px; color:#6c757d; font-size:0.8rem;">Impreso el ${getFechaHoraImpresion()}</p>
+                            <script>
+                                window.onload = function() { window.print(); window.close(); }
+                            <\/script>
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
             }
 
             // ---------- DEFENSOR ----------
@@ -1270,6 +1984,8 @@
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarDatos);
 
                 initNavigation();
+
+                crearModalHistorial();
 
                 loadCausas().then(() => {
                     renderModulo('resumen');
