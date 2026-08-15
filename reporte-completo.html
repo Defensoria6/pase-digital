@@ -1148,7 +1148,7 @@
                         filas.push({
                             empleado: emp.nombre,
                             empleadoId: emp.id,
-                            expediente: c.numero || c.expediente || c.id, // priorizar numero
+                            expediente: c.numero || c.expediente || c.id,
                             tipo: c.tipo || c.motivo || c.tipoPase || 'Pase',
                             secretario: getSecName(c.secretarioId) || '-',
                             secretarioId: c.secretarioId || 'sin',
@@ -1158,6 +1158,33 @@
                         });
                     });
                 });
+
+                // --- MODIFICACIÓN: Agregar causas en defensor sin empleado asignado ---
+                const idsEnFilas = new Set(filas.map(f => f.id));
+                causas.forEach(c => {
+                    if (c.estado === 'en_defensor' && !idsEnFilas.has(c.id)) {
+                        // Verificar que realmente no tenga un empleado asignado (por si acaso)
+                        const tieneEmpleado = CONFIG.empleados.some(emp => {
+                            return (c.empleadoId && (c.empleadoId === emp.id || c.empleadoId === emp.nombre)) ||
+                                   (c.empleadoAsignado && (c.empleadoAsignado === emp.id || c.empleadoAsignado === emp.nombre)) ||
+                                   (c.empleadoOriginal && c.empleadoOriginal === emp.id);
+                        });
+                        if (!tieneEmpleado) {
+                            filas.push({
+                                empleado: 'Sin asignar',
+                                empleadoId: 'sin_asignar',
+                                expediente: c.numero || c.expediente || c.id,
+                                tipo: c.tipo || c.motivo || c.tipoPase || 'Pase',
+                                secretario: getSecName(c.secretarioId) || '-',
+                                secretarioId: c.secretarioId || 'sin',
+                                estado: c.estado || 'Sin estado',
+                                tieneDemora: false,
+                                id: c.id
+                            });
+                        }
+                    }
+                });
+                // --- Fin modificación ---
 
                 // Obtener valores únicos para filtros
                 const tiposUnicos = [...new Set(filas.map(f => f.tipo))].sort();
