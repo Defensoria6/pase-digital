@@ -43,10 +43,13 @@
         .btn-logout:hover { background:#c62828; color:#fff; border-color:#c62828; }
         .btn-refresh { background:#e3f0ff; border:1px solid #1976d2; color:#1976d2; padding:6px 18px; border-radius:40px; font-weight:600; font-size:.8rem; transition:.2s; }
         .btn-refresh:hover { background:#1976d2; color:#fff; border-color:#1976d2; }
-        .search-box { position:relative; flex:1; min-width:200px; max-width:340px; }
+        .search-wrapper { display:flex; gap:8px; flex:1; min-width:200px; max-width:400px; align-items:center; }
+        .search-box { position:relative; flex:1; }
         .search-box i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#8aa3bc; }
         .search-box input { width:100%; padding:8px 14px 8px 38px; border-radius:40px; border:1px solid #dce5ec; background:#f9fcff; font-size:.85rem; transition:.2s; }
         .search-box input:focus { border-color:#1976d2; box-shadow:0 0 0 3px rgba(25,118,210,.12); outline:none; background:#fff; }
+        .btn-buscar { padding:6px 16px; border-radius:40px; font-size:.85rem; white-space:nowrap; background:#1976d2; color:#fff; border:none; font-weight:600; transition:.2s; }
+        .btn-buscar:hover { background:#0f5bab; color:#fff; }
         .nav-tabs-custom { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:1.5rem; background:#fff; padding:6px 12px; border-radius:60px; border:1px solid #e2edf7; box-shadow:0 2px 8px rgba(0,0,0,.02); }
         .nav-tabs-custom .tab-btn { padding:8px 20px; border-radius:40px; border:none; background:transparent; font-weight:600; font-size:.82rem; color:#5f7f9f; transition:.2s; cursor:pointer; white-space:nowrap; }
         .nav-tabs-custom .tab-btn:hover { background:#eef5ff; color:#1976d2; }
@@ -188,52 +191,212 @@
             font-weight: 700;
         }
 
-        @media (max-width:768px) { .app-header { flex-direction:column; align-items:stretch; padding:1rem; } .search-box { max-width:100%; } .nav-tabs-custom { border-radius:20px; padding:6px 10px; gap:4px; overflow-x:auto; flex-wrap:nowrap; } .nav-tabs-custom .tab-btn { padding:6px 14px; font-size:.75rem; } .card-modern { padding:1rem; } .kpi-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; } .kpi-item .value { font-size:1.4rem; } .pagination-bar { flex-direction:column; align-items:stretch; text-align:center; } }
+        @media (max-width:768px) { .app-header { flex-direction:column; align-items:stretch; padding:1rem; } .search-wrapper { max-width:100%; } .nav-tabs-custom { border-radius:20px; padding:6px 10px; gap:4px; overflow-x:auto; flex-wrap:nowrap; } .nav-tabs-custom .tab-btn { padding:6px 14px; font-size:.75rem; } .card-modern { padding:1rem; } .kpi-grid { grid-template-columns:repeat(2,1fr); gap:.75rem; } .kpi-item .value { font-size:1.4rem; } .pagination-bar { flex-direction:column; align-items:stretch; text-align:center; } }
         @media (max-width:480px) { .kpi-grid { grid-template-columns:1fr 1fr; } .login-card { padding:1.5rem 1.2rem; } }
         .text-muted-light { color:#8aa3bc; }
         .gap-2 { gap:.5rem; }
         .fw-600 { font-weight:600; }
         .cursor-pointer { cursor:pointer; }
 
-        /* Impresión para reportes modales */
+        /* ===== ESTILOS DE IMPRESIÓN MEJORADOS ===== */
         @media print {
+            /* Ocultar todo por defecto */
             body * { visibility: hidden; }
+            
+            /* Mostrar solo el modal de búsqueda y sus hijos */
+            #modalBusqueda, #modalBusqueda *,
             #modalReporte, #modalReporte *,
             #modalReporteEmpleado, #modalReporteEmpleado *,
             #modalEquidad, #modalEquidad * {
                 visibility: visible !important;
             }
-            #modalReporte, #modalReporteEmpleado, #modalEquidad {
+            
+            /* Configurar el modal para ocupar toda la página */
+            #modalBusqueda {
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
+                height: 100% !important;
                 background: #fff !important;
                 padding: 15px !important;
                 z-index: 9999 !important;
                 overflow: visible !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
             }
-            .modal-dialog { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-            .modal-content { border-radius: 0 !important; box-shadow: none !important; border: none !important; background: transparent !important; }
-            .modal-header { background: #0a2a44 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 8px 16px !important; border-radius: 0 !important; }
-            .modal-body { padding: 12px !important; overflow: visible !important; max-height: none !important; }
-            .modal-footer, .btn-close, .btn-modern, .btn-secondary { display: none !important; }
-            .table-wrap { overflow: visible !important; max-height: none !important; }
-            .table-modern { min-width: 0 !important; width: 100% !important; font-size: 0.6rem !important; border-collapse: collapse !important; }
-            .table-modern th, .table-modern td { padding: 2px 4px !important; white-space: normal !important; word-break: break-word !important; border: 1px solid #ccc !important; }
-            .table-modern thead th { background: #f1f6fd !important; font-size: 0.55rem !important; padding: 3px 4px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .equidad-grid { display: flex !important; flex-wrap: wrap !important; gap: 0.3rem !important; margin-top: 0.3rem !important; }
-            .equidad-item { flex: 1 1 auto !important; min-width: 80px !important; padding: 0.2rem 0.5rem !important; border: 1px solid #ddd !important; background: #f9fcff !important; border-radius: 4px !important; text-align: center !important; }
-            .equidad-item .eq-label { font-size: 0.5rem !important; }
-            .equidad-item .eq-value { font-size: 0.8rem !important; }
-            .kpi-grid { display: flex !important; flex-wrap: wrap !important; gap: 0.3rem !important; }
-            .kpi-item { flex: 1 1 auto !important; min-width: 60px !important; padding: 0.2rem 0.5rem !important; border: 1px solid #ddd !important; background: #fff !important; border-radius: 4px !important; text-align: center !important; }
-            .kpi-item .label { font-size: 0.5rem !important; }
-            .kpi-item .value { font-size: 0.9rem !important; }
-            .chart-container, canvas { display: none !important; }
-            h5, h6 { font-size: 0.9rem !important; margin: 0.3rem 0 !important; }
-            p, .text-muted { font-size: 0.7rem !important; margin: 0.2rem 0 !important; }
-            hr { margin: 0.3rem 0 !important; }
+            
+            /* Forzar que el diálogo ocupe todo el espacio */
+            #modalBusqueda .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            
+            #modalBusqueda .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+                height: 100% !important;
+                overflow: visible !important;
+            }
+            
+            /* Ocultar el header y footer del modal (botones, cierre) */
+            #modalBusqueda .modal-header,
+            #modalBusqueda .modal-footer,
+            #modalBusqueda .btn-close,
+            #modalBusqueda .btn-modern,
+            #modalBusqueda .btn-secondary {
+                display: none !important;
+            }
+            
+            /* Mostrar el cuerpo completo sin scroll */
+            #modalBusqueda .modal-body {
+                padding: 12px !important;
+                overflow: visible !important;
+                max-height: none !important;
+                background: #fff !important;
+            }
+            
+            /* Ajustar tablas para que se vean completas */
+            .table-wrap {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            
+            .table-modern {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 0.6rem !important;
+                border-collapse: collapse !important;
+            }
+            
+            .table-modern th,
+            .table-modern td {
+                padding: 2px 4px !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                border: 1px solid #ccc !important;
+            }
+            
+            .table-modern thead th {
+                background: #f1f6fd !important;
+                font-size: 0.55rem !important;
+                padding: 3px 4px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Detalles del expediente en impresión */
+            .modal-detalle-exp .detalle-item {
+                display: flex !important;
+                justify-content: space-between !important;
+                padding: 4px 0 !important;
+                border-bottom: 1px solid #eee !important;
+            }
+            .modal-detalle-exp .detalle-label {
+                font-weight: 600 !important;
+                font-size: 0.7rem !important;
+            }
+            .modal-detalle-exp .detalle-valor {
+                font-size: 0.7rem !important;
+                text-align: right !important;
+            }
+            
+            /* Historial en impresión */
+            .historial-lista {
+                max-height: none !important;
+                overflow: visible !important;
+                border: 1px solid #ddd !important;
+            }
+            .historial-item {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                padding: 3px 0 !important;
+                border-bottom: 1px solid #eee !important;
+                font-size: 0.6rem !important;
+            }
+            .historial-fecha { min-width: 100px !important; }
+            .historial-usuario { min-width: 80px !important; }
+            .historial-comentario { padding-left: 0 !important; width: 100% !important; }
+            
+            /* Título y fecha en impresión */
+            .print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #0a2a44;
+                padding-bottom: 6px;
+            }
+            .print-header h3 {
+                margin: 0;
+                color: #0a2a44;
+                font-size: 1.2rem;
+                font-weight: 700;
+            }
+            .print-header .print-date {
+                font-size: 0.7rem;
+                color: #5f7f9f;
+                margin-top: 2px;
+            }
+            
+            /* Badges en impresión */
+            .badge-estado {
+                display: inline-block !important;
+                padding: 1px 6px !important;
+                border-radius: 20px !important;
+                font-weight: 700 !important;
+                font-size: 0.5rem !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .badge-sec { background: #fff3e0 !important; color: #e67e22 !important; }
+            .badge-proc { background: #e3f2fd !important; color: #1976d2 !important; }
+            .badge-fin { background: #e8f5e9 !important; color: #2e7d32 !important; }
+            .badge-def { background: #f3e5f5 !important; color: #7b1fa2 !important; }
+            .badge-dev { background: #ffebee !important; color: #c62828 !important; }
+            .badge-rem { background: #e8eaf6 !important; color: #3949ab !important; }
+            .badge-rech { background: #fce4ec !important; color: #c62828 !important; }
+            
+            .solapa-badge {
+                background: #1976d2 !important;
+                color: #fff !important;
+                padding: 2px 10px !important;
+                border-radius: 30px !important;
+                font-weight: 600 !important;
+                font-size: 0.6rem !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .crono {
+                font-family: monospace !important;
+                padding: 1px 6px !important;
+                border-radius: 20px !important;
+                font-weight: 600 !important;
+                font-size: 0.55rem !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .crono.azul { background: #e3f2fd !important; color: #1976d2 !important; }
+            .crono.medio { background: #e8f5e9 !important; color: #2e7d32 !important; }
+            .crono.critico { background: #fff3e0 !important; color: #e67e22 !important; }
+            .crono.vencido { background: #ffebee !important; color: #c62828 !important; }
+            
+            /* Ocultar botones de acción dentro del contenido */
+            .btn, .btn-modern, .btn-modern-sm, .btn-buscar, .btn-refresh, .btn-logout, .btn-close {
+                display: none !important;
+            }
+            
+            /* Evitar saltos de página innecesarios */
+            .modal-detalle-exp, .historial-lista {
+                page-break-inside: avoid;
+            }
         }
 
         /* ===== ESTILOS ADICIONALES PARA DISTRIBUCIÓN (copiados de secretario) ===== */
@@ -341,6 +504,147 @@
         .modal-justificar .modal-header .btn-close {
             filter: brightness(0) invert(1);
         }
+
+        /* ===== ESTILOS PARA EL MODAL DE BÚSQUEDA ===== */
+        .modal-busqueda .modal-content {
+            border-radius: 24px;
+        }
+        .modal-busqueda .modal-header {
+            background: linear-gradient(135deg, #0b3b5f, #0a2a44);
+            color: #fff;
+            border-radius: 24px 24px 0 0;
+        }
+        .modal-busqueda .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        .modal-busqueda .list-group-item {
+            border: none;
+            border-bottom: 1px solid #eef2f7;
+            padding: 12px 16px;
+        }
+        .modal-busqueda .list-group-item:last-child {
+            border-bottom: none;
+        }
+        .modal-busqueda .badge-ubicacion {
+            background: #e3f0ff;
+            color: #1976d2;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+        }
+
+        /* ===== ESTILO PARA MODAL CON BORDE VERDE ===== */
+        .modal-verde .modal-content {
+            border: 4px solid #2e7d32 !important;
+            border-radius: 28px;
+            box-shadow: 0 0 20px rgba(46, 125, 50, 0.3);
+        }
+        .modal-verde .modal-header {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32) !important;
+        }
+        .modal-detalle-exp {
+            background: #f9fcff;
+            border-radius: 16px;
+            padding: 1rem;
+            border: 1px solid #e2edf7;
+        }
+        .modal-detalle-exp .detalle-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .modal-detalle-exp .detalle-item:last-child {
+            border-bottom: none;
+        }
+        .modal-detalle-exp .detalle-label {
+            font-weight: 600;
+            color: #0a2a44;
+        }
+        .modal-detalle-exp .detalle-valor {
+            color: #1f384f;
+            text-align: right;
+        }
+        .solapa-badge {
+            background: #1976d2;
+            color: #fff;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+
+        /* ===== ESTILO PARA MODAL DE BÚSQUEDA EN PROCESO ===== */
+        .modal-buscando .modal-content {
+            border: 3px solid #1976d2;
+            border-radius: 28px;
+        }
+        .modal-buscando .modal-header {
+            background: linear-gradient(135deg, #0b3b5f, #1976d2) !important;
+        }
+        .spinner-buscar {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* Estilos para el historial dentro del modal de búsqueda */
+        .historial-lista {
+            background: #f9fcff;
+            border-radius: 12px;
+            padding: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2edf7;
+        }
+        .historial-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 6px 0;
+            border-bottom: 1px solid #eef2f7;
+            font-size: 0.8rem;
+        }
+        .historial-item:last-child { border-bottom: none; }
+        .historial-fecha { color: #5f7f9f; min-width: 140px; }
+        .historial-usuario { font-weight: 600; min-width: 100px; }
+        .historial-accion { flex:1; }
+        .historial-comentario { width:100%; color:#5f7f9f; padding-left: 140px; }
+        @media (max-width: 576px) {
+            .historial-fecha { min-width: 100px; }
+            .historial-usuario { min-width: 80px; }
+            .historial-comentario { padding-left: 0; }
+        }
+
+        /* Responsive del modal de búsqueda */
+        .modal-busqueda .modal-body {
+            padding: 1rem;
+        }
+        @media (max-width: 576px) {
+            .modal-busqueda .modal-dialog {
+                margin: 0.5rem;
+            }
+            .modal-busqueda .modal-body {
+                padding: 0.75rem;
+            }
+            .modal-busqueda .list-group-item {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            .modal-busqueda .badge-ubicacion {
+                font-size: 0.6rem;
+                padding: 2px 8px;
+            }
+            .modal-detalle-exp .detalle-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .modal-detalle-exp .detalle-valor {
+                text-align: left;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -370,9 +674,12 @@
             </div>
             <div class="header-actions">
                 <span class="badge-role" id="lblRolActivo"><i class="bi bi-person-badge"></i> Defensor (Full)</span>
-                <div class="search-box">
-                    <i class="bi bi-search"></i>
-                    <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
+                <div class="search-wrapper">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="globalSearch" placeholder="Buscar expediente..." autocomplete="off" />
+                    </div>
+                    <button class="btn-buscar" id="btnBuscarGlobal"><i class="bi bi-search"></i> Buscar</button>
                 </div>
                 <button class="btn-refresh" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar todas las BD</button>
                 <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
@@ -476,6 +783,27 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarJustificar">Justificar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL DE BÚSQUEDA (se reutilizará para mostrar el detalle) ===== -->
+    <div class="modal fade modal-busqueda" id="modalBusqueda" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-search me-2" id="modalBusquedaTitulo">Detalle del expediente</i></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBusquedaBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary btn-imprimir-busqueda" id="btnImprimirBusqueda">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
                 </div>
             </div>
         </div>
@@ -603,7 +931,7 @@
                 ausencias: [],
                 empleados: []
             };
-            let searchTerm = '';
+            let searchTerm = ''; // Ya no se usa para filtrar, solo para el modal
             let chartInstances = {};
             let cronoInterval = null;
             let paginationState = {
@@ -717,10 +1045,9 @@
                 return { puntosHistoricos, cantidadHistorica, activos };
             }
 
+            // Ya no se usa para filtrar, pero se mantiene por si acaso
             function getFilteredCausas() {
-                if (!searchTerm) return state.causas;
-                const term = searchTerm.toLowerCase();
-                return state.causas.filter(c => c.numero.toLowerCase().includes(term));
+                return state.causas; // Sin filtro
             }
 
             function getEstadoBadge(estado) {
@@ -760,7 +1087,7 @@
             }
 
             // ============================================================
-            //  LÓGICA DE ASIGNACIÓN (IA)
+            //  LÓGICA DE ASIGNACIÓN (IA) - sin cambios
             // ============================================================
             function getFactorTipo(tipo) {
                 const factores = {
@@ -950,7 +1277,7 @@
             }
 
             // ============================================================
-            //  FIRESTORE OPERATIONS
+            //  FIRESTORE OPERATIONS - sin cambios
             // ============================================================
             async function loadStateFromFirestore() {
                 try {
@@ -1070,7 +1397,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE CAMBIO DE ESTADO Y ASIGNACIÓN
+            //  FUNCIONES DE CAMBIO DE ESTADO Y ASIGNACIÓN - sin cambios
             // ============================================================
             async function cambiarEstado(id, nuevoEstado, accion, usuario, com, secretarioId) {
                 const c = state.causas.find(x => x.id === id);
@@ -1309,11 +1636,12 @@
             }
 
             // ============================================================
-            //  RENDER DE PANELES
+            //  RENDER DE PANELES (sin filtro de búsqueda en las tablas)
             // ============================================================
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
-                const lista = getFilteredCausas().filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                // Sin filtro, mostramos todas las causas en_defensor
+                const lista = state.causas.filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 const pState = paginationState.defensor;
                 const { items, total, totalPages, page } = paginateData(lista, pState.page, pState.perPage);
 
@@ -1561,7 +1889,7 @@
             }
 
             // ============================================================
-            //  PANEL EMPLEADO (replicado fielmente de empleado.html)
+            //  PANEL EMPLEADO (sin filtro de búsqueda)
             // ============================================================
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
@@ -1569,14 +1897,9 @@
                 let empSeleccionado = document.getElementById(selectorId)?.value || CONFIG.empleados[0]?.id || '';
                 window._empSeleccionado = empSeleccionado;
 
-                // Obtener causas del empleado
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empSeleccionado);
 
-                // Filtros de búsqueda
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
-                }
+                // Ya no se aplica filtro por searchTerm
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
                     const anio = parseInt(filtroAnio);
@@ -1607,7 +1930,6 @@
                 const pStateActivas = paginationState.empleado;
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
 
-                // Función para generar tabla de activas (como en empleado.html)
                 function generarTablaActivas(items) {
                     if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
                     return `
@@ -1650,10 +1972,8 @@
                     `;
                 }
 
-                // Historial (usando la función global)
                 const historial = obtenerHistorialPasesEmpleado(empSeleccionado);
 
-                // Selector de empleados
                 const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}" ${e.id===empSeleccionado?'selected':''}>${e.nombre}</option>`).join('');
 
                 const anioOptions = [];
@@ -1704,7 +2024,6 @@
                     });
                 }
 
-                // Renderizar tabla de historial
                 const histContainer = document.getElementById('tablaHistorialEmpleadoContainer');
                 if (histContainer) {
                     if (historial.length === 0) {
@@ -1758,7 +2077,6 @@
                 }
 
                 // ----- EVENTOS -----
-                // Devolver
                 document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -1778,7 +2096,6 @@
                     });
                 });
 
-                // Enviar a Secretario
                 document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
                     btn.addEventListener('click', async function() {
                         const id = this.dataset.id;
@@ -1798,12 +2115,10 @@
                     });
                 });
 
-                // Ver historial (activas e historial)
                 document.querySelectorAll('.btn-ver-hist-activa, .btn-ver-hist-historial').forEach(btn => {
                     btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
                 });
 
-                // Justificar demora individual
                 document.querySelectorAll('.btn-justificar-individual').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
@@ -1811,12 +2126,10 @@
                     });
                 });
 
-                // Cambio de empleado
                 document.getElementById(selectorId).addEventListener('change', function() {
                     renderEmpleado();
                 });
 
-                // Filtros
                 const selectMes = document.getElementById('filtroMesEmpleado');
                 const selectAnio = document.getElementById('filtroAnioEmpleado');
                 if (selectMes) {
@@ -1843,7 +2156,6 @@
                     });
                 }
 
-                // Botón reporte
                 const btnReporte = document.getElementById('btnReporteEmpleado');
                 if (btnReporte) {
                     btnReporte.addEventListener('click', function() {
@@ -1893,7 +2205,7 @@
             });
 
             // ============================================================
-            //  PANEL PASES FINALIZADOS (con empleado correcto y botón Ver Historial)
+            //  PANEL PASES FINALIZADOS (sin filtro)
             // ============================================================
             function renderPasesFinalizados() {
                 const panel = document.getElementById('panelPasesFinalizados');
@@ -1932,7 +2244,6 @@
                                             let empleadoNombre = 'No determinado';
                                             let secretarioNombre = '-';
 
-                                            // 1. Obtener empleado desde el campo directo o desde el historial
                                             if (c.empleadoAsignado) {
                                                 empleadoNombre = getEmpName(c.empleadoAsignado);
                                             } else if (c.historial && c.historial.length) {
@@ -1949,12 +2260,10 @@
                                                     }
                                                 }
                                             }
-                                            // Si aún no se obtuvo, intentar con empleadoOriginal
                                             if (empleadoNombre === 'No determinado' && c.empleadoOriginal) {
                                                 empleadoNombre = getEmpName(c.empleadoOriginal);
                                             }
 
-                                            // Secretario
                                             if (secretarioNombre === '-' && c.historial) {
                                                 for (const entry of c.historial) {
                                                     if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== 'Defensor') {
@@ -2003,23 +2312,22 @@
                     });
                 }
 
-                // Botón reporte
                 const btnReporte = document.getElementById('btnReportePasesFinalizados');
                 if (btnReporte) btnReporte.addEventListener('click', generarReportePasesFinalizados);
 
-                // Eventos "Ver Historial"
                 document.querySelectorAll('.btn-ver-hist').forEach(btn => {
                     btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
                 });
             }
 
             // ============================================================
-            //  PANEL AUDITORIA (muestra empleado asignado correctamente)
+            //  PANEL AUDITORIA (sin filtro de búsqueda)
             // ============================================================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); let operadorFiltro = filterSelect ? filterSelect.value : '';
-                let causasFiltradas = getFilteredCausas(); if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
+                let causasFiltradas = state.causas; // sin filtro de búsqueda
+                if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
                 const list = causasFiltradas.slice(-50).reverse(); const pState = paginationState.auditoria; const { items, total, totalPages, page } = paginateData(list, pState.page, pState.perPage);
 
                 const opciones = CONFIG.operadores.map(op => `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`).join('');
@@ -2081,7 +2389,7 @@
                 if (btnReporteAud) btnReporteAud.addEventListener('click', generarReporteAuditoria);
             }
 
-            // ---------- GRÁFICOS (sin cambios) ----------
+            // ---------- GRÁFICOS ----------
             async function renderGraficos() {
                 const panel = document.getElementById('panelGraficos');
                 const total = state.causas.length;
@@ -2901,6 +3209,344 @@
                 new bootstrap.Modal(document.getElementById('modalHistorial')).show();
             }
 
+            // ============================================================
+            //  FUNCIÓN DE IMPRESIÓN PARA EL MODAL DE BÚSQUEDA
+            // ============================================================
+            function imprimirDetalleBusqueda() {
+                // Añadir un encabezado de impresión al contenido actual del modal
+                const modalBody = document.getElementById('modalBusquedaBody');
+                const contenidoActual = modalBody.innerHTML;
+
+                // Obtener fecha y hora actual en formato DD/MM/AAAA HH:mm
+                const ahora = new Date();
+                const dia = String(ahora.getDate()).padStart(2, '0');
+                const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+                const anio = ahora.getFullYear();
+                const horas = String(ahora.getHours()).padStart(2, '0');
+                const minutos = String(ahora.getMinutes()).padStart(2, '0');
+                const fechaHora = `${dia}/${mes}/${anio} ${horas}:${minutos}`;
+
+                // Obtener el título del expediente (si existe)
+                const tituloElem = document.getElementById('modalBusquedaTitulo');
+                let titulo = 'Detalle del expediente';
+                if (tituloElem) {
+                    titulo = tituloElem.textContent.trim() || titulo;
+                }
+
+                // Construir el contenido a imprimir con encabezado
+                const printContent = `
+                    <div class="print-header">
+                        <h3>${titulo}</h3>
+                        <div class="print-date">Fecha de impresión: ${fechaHora}</div>
+                    </div>
+                    ${contenidoActual}
+                `;
+
+                // Reemplazar temporalmente el contenido del modal para la impresión
+                modalBody.innerHTML = printContent;
+
+                // Llamar a la función de impresión del navegador
+                window.print();
+
+                // Restaurar el contenido original después de imprimir
+                // (usamos setTimeout para dar tiempo a que se imprima)
+                setTimeout(() => {
+                    // El contenido original se pierde, pero podemos reconstruirlo
+                    // Para no perder el detalle, volvemos a buscar el expediente si es posible
+                    // O simplemente recargamos el contenido desde el estado actual
+                    // Como no tenemos el término de búsqueda almacenado, mejor recargamos el modal con el mismo detalle
+                    // Pero como la función mostrarDetalleConHistorial ya genera el contenido, 
+                    // podemos simplemente re-ejecutarla si tenemos el ID o el objeto.
+                    // Para simplificar, cerramos y reabrimos el modal (pero eso es brusco)
+                    // Mejor: guardamos el estado actual y lo restauramos.
+                    // Como no tenemos forma fácil de recuperar el objeto, usamos una variable global.
+                    if (window._ultimoDetalleCausa) {
+                        mostrarDetalleConHistorial(window._ultimoDetalleCausa);
+                    } else {
+                        // Si no hay, recargamos la página del modal con un mensaje
+                        modalBody.innerHTML = `
+                            <div class="text-muted">Contenido restaurado. Cierre y vuelva a buscar para ver el detalle.</div>
+                        `;
+                    }
+                }, 500);
+            }
+
+            // ============================================================
+            //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO
+            // ============================================================
+            function mostrarDetalleConHistorial(causa, volverCallback) {
+                // Guardar la causa para posible restauración en impresión
+                window._ultimoDetalleCausa = causa;
+
+                const modalBody = document.getElementById('modalBusquedaBody');
+                const titulo = document.getElementById('modalBusquedaTitulo');
+
+                titulo.innerHTML = `<i class="bi bi-file-text me-2"></i>Detalle completo de ${causa.numero}`;
+
+                // Datos básicos
+                const ubicacionStr = (() => {
+                    if (causa.estado === 'en_proceso' && causa.empleadoAsignado) {
+                        return `En poder de: ${getEmpName(causa.empleadoAsignado)}`;
+                    } else if (causa.estado === 'en_defensor') {
+                        return 'En Defensoría';
+                    } else if (causa.estado === 'en_secretaria') {
+                        return 'En Secretaría';
+                    }
+                    return getEstadoBadgePlain(causa.estado);
+                })();
+
+                const fechaAsig = getFechaAsignacion(causa);
+                const fechaFin = causa.fechaFinalizacion ? fmtDt(causa.fechaFinalizacion) : 'No finalizada';
+                const cronoHtml = getCronoHtml(causa);
+
+                // Construir historial
+                let historialHtml = '';
+                if (causa.historial && causa.historial.length > 0) {
+                    historialHtml = `<div class="historial-lista">`;
+                    causa.historial.slice().reverse().forEach(m => {
+                        historialHtml += `
+                            <div class="historial-item">
+                                <span class="historial-fecha">${fmtDt(m.fecha)}</span>
+                                <span class="historial-usuario">${m.usuario || 'Sistema'}</span>
+                                <span class="historial-accion">${m.accion}</span>
+                                <span class="historial-comentario">${m.comentario || '-'}</span>
+                            </div>
+                        `;
+                    });
+                    historialHtml += `</div>`;
+                } else {
+                    historialHtml = `<div class="text-muted">Sin movimientos registrados.</div>`;
+                }
+
+                // Botón volver si hay callback
+                let volverBtn = '';
+                if (typeof volverCallback === 'function') {
+                    volverBtn = `<button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnVolverLista">← Volver a resultados</button>`;
+                }
+
+                modalBody.innerHTML = `
+                    <div class="modal-detalle-exp">
+                        <div class="detalle-item">
+                            <span class="detalle-label">Expediente</span>
+                            <span class="detalle-valor"><strong>${causa.numero}</strong></span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">DNI</span>
+                            <span class="detalle-valor">${causa.dni || '-'}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Modo Intervención</span>
+                            <span class="detalle-valor">${causa.modoIntervencion || '-'}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Tipo</span>
+                            <span class="detalle-valor">${causa.tipo || '-'}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Estado</span>
+                            <span class="detalle-valor">${getEstadoBadge(causa.estado)}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Nivel</span>
+                            <span class="detalle-valor">N${causa.nivelSecretario || causa.nivelOperador || 1}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Empleado Asignado</span>
+                            <span class="detalle-valor"><strong>${causa.empleadoAsignado ? getEmpName(causa.empleadoAsignado) : 'Sin asignar'}</strong></span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Fecha Asignación</span>
+                            <span class="detalle-valor">${fechaAsig}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Fecha Finalización</span>
+                            <span class="detalle-valor">${fechaFin}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Tiempo transcurrido</span>
+                            <span class="detalle-valor">${cronoHtml}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Observación</span>
+                            <span class="detalle-valor">${getComentarioAsignacion(causa)}</span>
+                        </div>
+                        <div class="detalle-item">
+                            <span class="detalle-label">Ubicación</span>
+                            <span class="detalle-valor"><span class="solapa-badge">${ubicacionStr}</span></span>
+                        </div>
+                    </div>
+                    <hr />
+                    <h6><i class="bi bi-clock-history"></i> Historial completo</h6>
+                    ${historialHtml}
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        ${volverBtn}
+                        <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnIrASolapaBusqueda" data-panel="${causa.estado === 'en_defensor' ? 'panelDefensor' : causa.estado === 'en_proceso' ? 'panelEmpleado' : causa.estado === 'finalizada' ? 'panelPasesFinalizados' : 'panelAuditoria'}" data-numero="${causa.numero}">
+                            <i class="bi bi-eye"></i> Ir a la solapa
+                        </button>
+                    </div>
+                `;
+
+                // Evento volver
+                if (volverBtn) {
+                    document.getElementById('btnVolverLista').addEventListener('click', function() {
+                        volverCallback();
+                    });
+                }
+
+                // Evento ir a solapa
+                document.getElementById('btnIrASolapaBusqueda').addEventListener('click', function() {
+                    const panelId = this.dataset.panel;
+                    const numero = this.dataset.numero;
+                    const tabBtn = document.querySelector(`.tab-btn[data-target="${panelId}"]`);
+                    if (tabBtn) {
+                        tabBtn.click();
+                        showToast(`Expediente ${numero} - Solapa ${panelId.replace('panel','')}`, 'info');
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusqueda'));
+                        if (modal) modal.hide();
+                    }
+                });
+            }
+
+            function realizarBusquedaGlobal(termino) {
+                if (!termino) {
+                    showToast('Ingrese un número de expediente o DNI para buscar.', 'warning');
+                    return;
+                }
+
+                const terminoLower = termino.toLowerCase();
+                
+                // Filtrar coincidencias en el array global state.causas
+                const resultados = state.causas.filter(c => 
+                    (c.numero && c.numero.toLowerCase().includes(terminoLower)) || 
+                    (c.dni && c.dni.toLowerCase().includes(terminoLower))
+                );
+
+                const modalBody = document.getElementById('modalBusquedaBody');
+                const titulo = document.getElementById('modalBusquedaTitulo');
+                const modalElement = document.getElementById('modalBusqueda');
+
+                // Limpiar clases especiales
+                modalElement.classList.remove('modal-verde', 'modal-buscando');
+
+                if (resultados.length === 0) {
+                    titulo.innerHTML = `Resultados para: "${termino}"`;
+                    modalBody.innerHTML = `
+                        <div class="alert alert-warning m-0 text-center">
+                            <i class="bi bi-search" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+                            No se encontraron expedientes que coincidan con la búsqueda.
+                        </div>`;
+                } else if (resultados.length === 1) {
+                    // Un solo resultado: mostrar detalle con historial completo
+                    mostrarDetalleConHistorial(resultados[0]);
+                } else {
+                    // Múltiples resultados: listar
+                    titulo.innerHTML = `<i class="bi bi-list-ul me-2"></i>${resultados.length} resultados para "${termino}"`;
+
+                    let listHtml = `<div class="list-group">`;
+                    resultados.forEach(c => {
+                        let ubicacionStr = getEstadoBadgePlain(c.estado);
+                        if (c.estado === 'en_proceso' && c.empleadoAsignado) {
+                            ubicacionStr = `En poder de: ${getEmpName(c.empleadoAsignado)}`;
+                        } else if (c.estado === 'en_defensor') {
+                            ubicacionStr = 'En Defensoría';
+                        } else if (c.estado === 'en_secretaria') {
+                            ubicacionStr = 'En Secretaría';
+                        }
+
+                        const fechaAsig = c.fechaAsignacion ? fmtDt(c.fechaAsignacion) : 'No asignado';
+                        listHtml += `
+                            <div class="list-group-item d-flex flex-column gap-2" style="border: 1px solid #eef2f7; margin-bottom: 8px; border-radius: 16px;">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                    <div>
+                                        <strong style="font-size: 1.1rem; color: #0a2a44;">${c.numero}</strong> 
+                                        <span class="badge bg-secondary ms-2" style="font-size: 0.7rem;">${c.tipo || 'N/A'}</span>
+                                    </div>
+                                    <span class="badge-ubicacion"><i class="bi bi-geo-alt-fill"></i> ${ubicacionStr}</span>
+                                </div>
+                                
+                                <div style="font-size: 0.85rem; color: #5f7f9f; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                                    <div><strong>Intervención:</strong> ${c.modoIntervencion || '-'}</div>
+                                    <div><strong>Estado Actual:</strong> ${getEstadoBadge(c.estado)}</div>
+                                    <div><strong>DNI:</strong> ${c.dni || '-'}</div>
+                                    <div><strong>Fecha Asignación:</strong> ${fechaAsig}</div>
+                                </div>
+
+                                <div class="mt-2 text-end">
+                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-ver-detalle-busqueda" data-id="${c.id}">
+                                        <i class="bi bi-eye"></i> Ver detalle e historial
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listHtml += `</div>`;
+                    modalBody.innerHTML = listHtml;
+
+                    // Eventos para ver detalle de cada resultado
+                    modalBody.querySelectorAll('.btn-ver-detalle-busqueda').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const id = this.dataset.id;
+                            const causa = state.causas.find(c => c.id === id);
+                            if (causa) {
+                                // Mostrar detalle con historial y botón volver
+                                mostrarDetalleConHistorial(causa, function() {
+                                    // Volver a la lista de resultados
+                                    realizarBusquedaGlobal(termino);
+                                });
+                            }
+                        });
+                    });
+                }
+
+                // Mostrar modal
+                const modalInstance = new bootstrap.Modal(modalElement);
+                modalInstance.show();
+
+                // Limpiar input
+                document.getElementById('globalSearch').value = '';
+            }
+
+            // ---------- INICIALIZACIÓN DE BÚSQUEDA ----------
+            function inicializarBuscadorGlobal() {
+                const searchInput = document.getElementById('globalSearch');
+                const searchBtn = document.getElementById('btnBuscarGlobal');
+
+                if (searchInput) {
+                    // Eliminar listeners previos (clonación simple)
+                    const newInput = searchInput.cloneNode(true);
+                    searchInput.parentNode.replaceChild(newInput, searchInput);
+                    
+                    newInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            realizarBusquedaGlobal(this.value.trim());
+                        }
+                    });
+                    console.log('Buscador global inicializado (Enter).');
+                }
+
+                if (searchBtn) {
+                    const newBtn = searchBtn.cloneNode(true);
+                    searchBtn.parentNode.replaceChild(newBtn, searchBtn);
+                    newBtn.addEventListener('click', function() {
+                        const input = document.getElementById('globalSearch');
+                        realizarBusquedaGlobal(input.value.trim());
+                    });
+                    console.log('Botón Buscar inicializado.');
+                }
+
+                // Botón Imprimir del modal de búsqueda
+                const imprimirBtn = document.getElementById('btnImprimirBusqueda');
+                if (imprimirBtn) {
+                    const newImprimirBtn = imprimirBtn.cloneNode(true);
+                    imprimirBtn.parentNode.replaceChild(newImprimirBtn, imprimirBtn);
+                    newImprimirBtn.addEventListener('click', function() {
+                        imprimirDetalleBusqueda();
+                    });
+                    console.log('Botón Imprimir del modal de búsqueda inicializado.');
+                }
+            }
+
             // ===================================================================
             // ========== CHAT DEFENSOR ↔ SECRETARIO (solo después del login) =====
             // ===================================================================
@@ -3014,6 +3660,7 @@
                     await loadStateFromFirestore();
                     renderAll();
                     iniciarChatDespuesLogin();
+                    inicializarBuscadorGlobal(); // Inicializar búsqueda global aquí
                     
                     showToast('Bienvenido/a Defensor (Full Access)', 'success');
                     iniciarCronometros();
@@ -3033,16 +3680,14 @@
                 document.getElementById('loginPassword').value = '';
                 Object.values(chartInstances).forEach(ch => { try { ch.destroy(); } catch (_) {} }); chartInstances = {};
                 document.getElementById('chatWidget').classList.remove('visible');
+                // Resetear buscador
+                const searchInput = document.getElementById('globalSearch');
+                if (searchInput) searchInput.value = '';
                 showToast('Sesión cerrada', 'warning');
             }
 
             // ---------- INICIALIZACIÓN ----------
             document.addEventListener('DOMContentLoaded', function() {
-                document.getElementById('globalSearch').addEventListener('input', function() { 
-                    searchTerm = this.value.trim(); 
-                    Object.keys(paginationState).forEach(k => paginationState[k].page = 1); 
-                    renderAll(); 
-                });
                 document.getElementById('btnLogin').addEventListener('click', handleLogin);
                 document.getElementById('loginPassword').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
                 document.getElementById('btnCerrarSesion').addEventListener('click', function(e) { e.preventDefault(); document.getElementById('logoutAlert').style.display = 'flex'; });
