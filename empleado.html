@@ -244,6 +244,69 @@
                 padding: 5px !important;
                 overflow: visible !important;
             }
+            /* Estilos para los modales de detalle */
+            #modalEnSecretaria, #modalEnSecretaria * {
+                visibility: visible !important;
+            }
+            #modalEnSecretaria {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #modalEnSecretaria .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            #modalEnSecretaria .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+            #modalEnSecretaria .modal-header, #modalEnSecretaria .modal-footer {
+                display: none !important;
+            }
+            #modalEnSecretaria .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+            }
+            #modalEnDefensor, #modalEnDefensor * {
+                visibility: visible !important;
+            }
+            #modalEnDefensor {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: #fff !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            #modalEnDefensor .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+            }
+            #modalEnDefensor .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+            #modalEnDefensor .modal-header, #modalEnDefensor .modal-footer {
+                display: none !important;
+            }
+            #modalEnDefensor .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+            }
         }
 
         /* ===== CHAT ESTILO WHATSAPP ===== */
@@ -280,6 +343,68 @@
         .chat-input-area button { background:#00897b; color:#fff; border:none; border-radius:50%; width:40px; height:40px; display:flex; justify-content:center; align-items:center; cursor:pointer; transition:0.2s; }
         .chat-input-area button:hover { background:#00695c; }
         @media (max-width:576px) { .chat-panel { width:calc(100vw - 48px); height:400px; } }
+
+        /* Estilos para los KPIs agregados */
+        .kpi-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .kpi-item {
+            flex: 1 1 150px;
+            min-width: 120px;
+            background: #f9fcff;
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            border: 1px solid #e2edf7;
+            text-align: center;
+            transition: box-shadow 0.2s;
+            position: relative;
+        }
+        .kpi-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .kpi-item .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5f7f9f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        .kpi-item .label .btn-ver-detalle {
+            background: none;
+            border: none;
+            color: #1976d2;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: transform 0.2s;
+        }
+        .kpi-item .label .btn-ver-detalle:hover {
+            transform: scale(1.2);
+        }
+        .kpi-item .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0a2a44;
+            line-height: 1.2;
+        }
+        .kpi-item .value.total { color: #0a2a44; }
+        .kpi-item .value.proceso { color: #1976d2; }
+        .kpi-item .value.secretaria { color: #e67e22; }
+        .kpi-item .value.defensor { color: #7b1fa2; }
+        .kpi-item .value.finalizado { color: #2e7d32; }
+        .kpi-item .value.demora { color: #c62828; }
+        .kpi-item .sub {
+            font-size: 0.65rem;
+            color: #8aa3bc;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -330,6 +455,7 @@
         </footer>
     </div>
 
+    <!-- Modales existentes -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -401,6 +527,43 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarJustificar">Justificar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuevos modales para detalle de En Secretaría y En Defensor -->
+    <div class="modal fade modal-modern" id="modalEnSecretaria" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-inbox me-2"></i>Expedientes en Secretaría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalEnSecretariaBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modal-modern" id="modalEnDefensor" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-gavel me-2"></i>Expedientes en Defensor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalEnDefensorBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
                 </div>
             </div>
         </div>
@@ -678,6 +841,170 @@
                     const fB = new Date(b.fechaFinalizacion || b.fechaPaseSecretario || 0);
                     return fB - fA;
                 });
+            }
+
+            // ============================================================
+            //  FUNCIONES PARA OBTENER LISTAS DE EN SECRETARÍA Y EN DEFENSOR
+            // ============================================================
+            function obtenerEnSecretaria() {
+                if (!currentEmpleadoObj) return [];
+                const empId = currentEmpleadoObj.id;
+                const empNombre = currentEmpleadoObj.nombre;
+
+                return state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    // Debe tener al menos un registro de envío a secretaría por parte del empleado
+                    if (!c.historial) return false;
+                    return c.historial.some(h => {
+                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
+                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
+                        return esAccion && esUsuario;
+                    });
+                }).sort((a, b) => {
+                    // Ordenar por fecha de envío más reciente (tomar la última acción de envío)
+                    const getLastSendDate = (c) => {
+                        if (!c.historial) return 0;
+                        const sends = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
+                        if (sends.length === 0) return 0;
+                        return new Date(sends[sends.length - 1].fecha).getTime();
+                    };
+                    return getLastSendDate(b) - getLastSendDate(a);
+                });
+            }
+
+            function obtenerEnDefensor() {
+                if (!currentEmpleadoObj) return [];
+                const empId = currentEmpleadoObj.id;
+                const empNombre = currentEmpleadoObj.nombre;
+
+                return state.causas.filter(c => {
+                    if (c.estado !== 'en_defensor') return false;
+                    // Debe tener relación con el empleado: haber sido asignado a él o tener historial de él
+                    const esSuPase = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    if (esSuPase) return true;
+                    // O que tenga historial con el empleado
+                    if (c.historial) {
+                        return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
+                    }
+                    return false;
+                }).sort((a, b) => {
+                    // Ordenar por fecha de asignación a defensor más reciente (si existe)
+                    const getLastDefensorDate = (c) => {
+                        if (!c.historial) return 0;
+                        const defs = c.historial.filter(h => h.accion && h.accion.includes('Defensor'));
+                        if (defs.length === 0) return 0;
+                        return new Date(defs[defs.length - 1].fecha).getTime();
+                    };
+                    return getLastDefensorDate(b) - getLastDefensorDate(a);
+                });
+            }
+
+            // ============================================================
+            //  FUNCIONES PARA ABRIR MODALES DE DETALLE
+            // ============================================================
+            function abrirModalEnSecretaria() {
+                const lista = obtenerEnSecretaria();
+                const body = document.getElementById('modalEnSecretariaBody');
+
+                if (lista.length === 0) {
+                    body.innerHTML = '<div class="text-muted">No hay expedientes en Secretaría enviados por este empleado.</div>';
+                } else {
+                    let html = `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Fecha envío</th>
+                                        <th>Motivo</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    lista.forEach(c => {
+                        // Obtener la última acción de envío a secretaría
+                        let ultimoEnvio = null;
+                        if (c.historial) {
+                            const envios = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
+                            if (envios.length > 0) {
+                                ultimoEnvio = envios[envios.length - 1];
+                            }
+                        }
+                        const fecha = ultimoEnvio ? fmtDt(ultimoEnvio.fecha) : '-';
+                        const motivo = ultimoEnvio ? (ultimoEnvio.comentario || '-') : '-';
+                        const accion = ultimoEnvio ? ultimoEnvio.accion : '-';
+                        html += `
+                            <tr>
+                                <td><strong>${c.numero}</strong></td>
+                                <td>${fecha}</td>
+                                <td style="font-size:0.75rem; max-width:200px; word-break:break-word;">${motivo}</td>
+                                <td>${accion}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    body.innerHTML = html;
+                }
+
+                new bootstrap.Modal(document.getElementById('modalEnSecretaria')).show();
+            }
+
+            function abrirModalEnDefensor() {
+                const lista = obtenerEnDefensor();
+                const body = document.getElementById('modalEnDefensorBody');
+
+                if (lista.length === 0) {
+                    body.innerHTML = '<div class="text-muted">No hay expedientes en Defensor relacionados con este empleado.</div>';
+                } else {
+                    let html = `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Fecha asignación a Defensor</th>
+                                        <th>Nivel</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    lista.forEach(c => {
+                        // Obtener la fecha de asignación a defensor (del historial)
+                        let fechaDef = '-';
+                        if (c.historial) {
+                            const defs = c.historial.filter(h => h.accion && h.accion.includes('Defensor'));
+                            if (defs.length > 0) {
+                                fechaDef = fmtDt(defs[defs.length - 1].fecha);
+                            }
+                        }
+                        html += `
+                            <tr>
+                                <td><strong>${c.numero}</strong></td>
+                                <td>${fechaDef}</td>
+                                <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                                <td>${c.tipo || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    body.innerHTML = html;
+                }
+
+                new bootstrap.Modal(document.getElementById('modalEnDefensor')).show();
             }
 
             // ============================================================
@@ -1221,6 +1548,73 @@
                 }
             }
 
+            // ============================================================
+            //  FUNCIÓN PARA CALCULAR KPIs (GLOBALES) - TOTAL = SUMA DE TODOS
+            // ============================================================
+            function calcularKPIs() {
+                if (!currentEmpleadoObj) {
+                    return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
+                }
+
+                const empId = currentEmpleadoObj.id;
+                const empNombre = currentEmpleadoObj.nombre;
+
+                // Todas las causas que han pasado por este empleado
+                const todasCausas = state.causas.filter(c => {
+                    const esSuPase = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    return esSuPase;
+                });
+
+                // En proceso
+                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId).length;
+
+                // Finalizados
+                const finalizados = obtenerHistorialPasesEmpleado().length;
+
+                // En Secretaría
+                const enSecretaria = todasCausas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (!c.historial) return false;
+                    return c.historial.some(h => {
+                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
+                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
+                        return esAccion && esUsuario;
+                    });
+                }).length;
+
+                // En Defensor
+                const enDefensor = todasCausas.filter(c => {
+                    if (c.estado !== 'en_defensor') return false;
+                    const tieneRelacion = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    if (tieneRelacion) return true;
+                    if (c.historial) {
+                        return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
+                    }
+                    return false;
+                }).length;
+
+                // Con demora
+                const conDemora = todasCausas.filter(c => {
+                    if (c.estado !== 'en_proceso') return false;
+                    if (c.empleadoAsignado !== empId) return false;
+                    if (!c.fechaLimite) return false;
+                    return new Date(c.fechaLimite) < new Date();
+                }).length;
+
+                // TOTAL = SUMA DE TODOS LOS KPI (excepto Con Demora que es un subconjunto de En Proceso)
+                const total = enProceso + enSecretaria + enDefensor + finalizados;
+
+                return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
+            }
+
             // ---------- RENDER PRINCIPAL (Bandeja Activa + Historial) ----------
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
@@ -1259,6 +1653,9 @@
 
                 const pStateActivas = paginationState.activas;
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
+
+                // ---------- CÁLCULO DE KPIs GLOBALES ----------
+                const kpis = calcularKPIs();
 
                 function generarTablaActivas(items) {
                     if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
@@ -1311,6 +1708,52 @@
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnEstadisticas"><i class="bi bi-bar-chart"></i> Estadísticas</button>
                             </div>
                         </div>
+
+                        <!-- KPIs -->
+                        <div class="kpi-grid">
+                            <!-- Total -->
+                            <div class="kpi-item">
+                                <div class="label">Total</div>
+                                <div class="value total">${kpis.total}</div>
+                                <div class="sub">suma todos</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">En Proceso</div>
+                                <div class="value proceso">${kpis.enProceso}</div>
+                                <div class="sub">activos</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">
+                                    En Secretaría
+                                    <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="value secretaria">${kpis.enSecretaria}</div>
+                                <div class="sub">en secretaría</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">
+                                    En Defensor
+                                    <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="value defensor">${kpis.enDefensor}</div>
+                                <div class="sub">con defensor</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">Finalizados</div>
+                                <div class="value finalizado">${kpis.finalizados}</div>
+                                <div class="sub">pases terminados</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="label">Con Demora</div>
+                                <div class="value demora">${kpis.conDemora}</div>
+                                <div class="sub">vencidos</div>
+                            </div>
+                        </div>
+
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <div style="display:flex; align-items:center; gap:4px;">
                                 <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
@@ -1861,6 +2304,10 @@
                     justificarCausaId = null;
                     document.getElementById('motivoJustificacion').value = '';
                 });
+
+                // ---- Exponer funciones para abrir modales de detalle globalmente ----
+                window.abrirModalEnSecretaria = abrirModalEnSecretaria;
+                window.abrirModalEnDefensor = abrirModalEnDefensor;
             });
         })();
     </script>
