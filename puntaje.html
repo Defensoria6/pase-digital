@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puntaje por actividad de empleados</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Firebase (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f0f4fc;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 1.8rem;
+            box-shadow: 0 8px 32px rgba(0, 20, 40, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            margin-bottom: 2rem;
+        }
+        .dashboard-card h2 {
+            font-weight: 700;
+            color: #0a2a44;
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+        }
+        .dashboard-card h2 i {
+            color: #1a6bb0;
+            margin-right: 10px;
+        }
+
+        .filtros-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 12px rgba(0, 20, 40, 0.04);
+        }
+        .filtros-panel .filtro-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem 1.5rem;
+            align-items: flex-end;
+        }
+        .filtros-panel .filtro-item {
+            flex: 0 1 auto;
+            min-width: 150px;
+        }
+        .filtros-panel .filtro-item label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #5f7f9f;
+            letter-spacing: 0.3px;
+            margin-bottom: 2px;
+            display: block;
+        }
+        .filtros-panel .filtro-item select {
+            width: 100%;
+            padding: 5px 10px;
+            border-radius: 30px;
+            border: 1px solid #dce5ec;
+            background: rgba(255, 255, 255, 0.8);
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+        .filtros-panel .filtro-item select:focus {
+            border-color: #1a6bb0;
+            box-shadow: 0 0 0 3px rgba(26, 107, 176, 0.1);
+            outline: none;
+            background: #fff;
+        }
+        .filtros-panel .radio-group {
+            display: flex;
+            gap: 1.2rem;
+            align-items: center;
+            padding-top: 4px;
+        }
+        .filtros-panel .radio-group .form-check {
+            padding-left: 0;
+            margin-right: 0.8rem;
+        }
+        .filtros-panel .radio-group .form-check-input {
+            margin-right: 4px;
+        }
+        .filtros-panel .radio-group .form-check-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1a3a5a;
+        }
+        .btn-limpiar {
+            background: #e9eef5;
+            border: none;
+            border-radius: 60px;
+            padding: 5px 18px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1a3a5a;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .btn-limpiar:hover {
+            background: #d2e0ed;
+        }
+        .btn-accion {
+            background: #e9eef5;
+            border: none;
+            border-radius: 60px;
+            padding: 5px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1a3a5a;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .btn-accion:hover {
+            background: #d2e0ed;
+        }
+        .btn-accion.primary {
+            background: #1a6bb0;
+            color: #fff;
+        }
+        .btn-accion.primary:hover {
+            background: #0b4b7a;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 16px;
+            margin-top: 1.2rem;
+        }
+        .table-modern {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
+        }
+        .table-modern thead th {
+            background: #e9f0f8;
+            color: #1a3a5a;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 10px;
+            border-bottom: 2px solid #d2e0ed;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: nowrap;
+        }
+        .table-modern tbody td {
+            padding: 10px 10px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9eef5;
+            color: #1a344a;
+        }
+        .table-modern tbody tr:hover {
+            background: rgba(26, 107, 176, 0.04);
+        }
+
+        .puntaje-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1.3rem;
+            min-width: 60px;
+            text-align: center;
+        }
+        .puntaje-verde { background: #e8f5e9; color: #1b5e20; }
+        .puntaje-naranja { background: #fff3e0; color: #e67e22; }
+        .puntaje-violeta { background: #f3e5f5; color: #6a1b9a; }
+        .puntaje-rojo { background: #ffebee; color: #c62828; }
+
+        .dias-retraso {
+            font-weight: 700 !important;
+        }
+        .dias-retraso.rojo {
+            color: #c62828 !important;
+        }
+        .dias-retraso.celeste {
+            color: #0d6efd !important;
+        }
+
+        .total-recibidos {
+            color: #0d6efd !important;
+            font-weight: 700 !important;
+        }
+        .en-proceso {
+            color: #000000 !important;
+            font-weight: 700 !important;
+        }
+        .finalizadas {
+            color: #2e7d32 !important;
+            font-weight: 700 !important;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .empleado-ausente {
+            opacity: 0.6;
+            background-color: #f5f5f5;
+        }
+        .empleado-ausente td {
+            opacity: 0.6;
+        }
+        .empleado-no-seleccionado {
+            opacity: 0.35 !important;
+            background-color: #f0f0f0 !important;
+        }
+        .empleado-no-seleccionado td {
+            opacity: 0.35 !important;
+        }
+        .badge-ausente {
+            background: #ffcdd2;
+            color: #b71c1c;
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        .badge-activo {
+            background: #c8e6c9;
+            color: #1b5e20;
+            padding: 2px 12px;
+            border-radius: 40px;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #5f7f9f;
+        }
+        .loading i {
+            font-size: 2.5rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .kpi-mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .kpi-mini-item {
+            background: #f9fcff;
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            text-align: center;
+            border: 1px solid #e2edf7;
+        }
+        .kpi-mini-item .kpi-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #5f7f9f;
+            letter-spacing: 0.3px;
+        }
+        .kpi-mini-item .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0a2a44;
+        }
+
+        @media (max-width: 768px) {
+            .filtros-panel .filtro-item { flex: 1 0 100%; }
+            .filtros-panel .radio-group { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <h2><i class="bi bi-bar-chart-fill"></i> Puntaje por actividad de empleados</h2>
+                    <div>
+                        <button class="btn-accion primary me-2" id="btnImprimirGrafico"><i class="bi bi-image me-1"></i> Imprimir Gráfico</button>
+                        <button class="btn-accion primary" id="btnImprimirTabla"><i class="bi bi-table me-1"></i> Imprimir Tabla</button>
+                        <button class="btn-accion ms-2" id="btnActualizar"><i class="bi bi-arrow-repeat me-1"></i> Actualizar</button>
+                    </div>
+                </div>
+
+                <!-- Panel de filtros -->
+                <div class="filtros-panel">
+                    <div class="filtro-group">
+                        <div class="filtro-item" style="flex: 0 0 200px;">
+                            <label>Vista</label>
+                            <div class="radio-group">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaTodos" value="todos" checked />
+                                    <label class="form-check-label" for="vistaTodos">Todos</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaIndividual" value="individual" />
+                                    <label class="form-check-label" for="vistaIndividual">Individual</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="filtro-item" style="flex: 1 0 200px;">
+                            <label for="filtroEmpleado">Empleado</label>
+                            <select id="filtroEmpleado" disabled>
+                                <option value="">Seleccionar...</option>
+                            </select>
+                        </div>
+                        <div class="filtro-item" style="flex:0 0 auto;">
+                            <button class="btn-limpiar" id="btnLimpiarFiltros"><i class="bi bi-eraser me-1"></i>Limpiar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs -->
+                <div id="kpiContainer" class="kpi-mini"></div>
+
+                <!-- Gráfico -->
+                <div class="chart-container">
+                    <canvas id="puntajeChart"></canvas>
+                </div>
+
+                <!-- Tabla -->
+                <div id="tablaContainer">
+                    <div class="loading"><i class="bi bi-arrow-repeat"></i><br />Cargando datos...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ============================================================
+        //  CONFIGURACIÓN
+        // ============================================================
+        const CONFIG = {
+            empleados: [
+                { id: 'emp1', nombre: 'Bazante Nadia Romina' },
+                { id: 'emp3', nombre: 'Cardozo Maria Raquel' },
+                { id: 'emp4', nombre: 'Cedron Noelia' },
+                { id: 'emp5', nombre: 'Escobar Monica Graciela' },
+                { id: 'emp6', nombre: 'Fioravante Rómulo' },
+                { id: 'emp7', nombre: 'Gonzalez Alberto Misael' },
+                { id: 'emp8', nombre: 'Gonzalez Juan Jose' },
+                { id: 'emp9', nombre: 'Gudiño Natalia Esther' },
+                { id: 'emp10', nombre: 'Ortega Lucia Noemi' },
+                { id: 'emp11', nombre: 'Pablos Patricia Tamara' },
+                { id: 'emp12', nombre: 'Palacios Ana Gabriela' },
+                { id: 'emp13', nombre: 'Sosa Rita Cecilia' }
+            ],
+            secretarios: [
+                { id: 'sec1', nombre: 'Corrales A.Mariela' },
+                { id: 'sec2', nombre: 'Riveros Patricia' },
+                { id: 'sec3', nombre: 'Magnani Enzo' }
+            ],
+            nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
+            nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 }
+        };
+
+        const DIAS_GRACIA = 2;
+        const COEF_DESVIACION = 0.3;
+        const COEF_PENALIZACION_RETRASO = 0.5;
+        const COEF_BONO_PRODUCTIVIDAD = 0.2;
+        const COEF_BONO_PRODUCTIVIDAD_EXTRA = 0.5;
+        const COEF_HISTORICO_BAJO = 2;
+        const COEF_HISTORICO_ALTO = 1.5;
+
+        // ============================================================
+        //  FIREBASE
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+            authDomain: "pasedefensoria6.firebaseapp.com",
+            projectId: "pasedefensoria6",
+            storageBucket: "pasedefensoria6.firebasestorage.app",
+            messagingSenderId: "785250989941",
+            appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // ============================================================
+        //  ESTADO GLOBAL
+        // ============================================================
+        let state = {
+            causas: [],
+            empleados: []
+        };
+        let chartInstance = null;
+
+        // ============================================================
+        //  FUNCIONES AUXILIARES
+        // ============================================================
+        function getEmpName(id) {
+            const e = CONFIG.empleados.find(x => x.id === id);
+            return e ? e.nombre : '-';
+        }
+
+        function isAusente(empId) {
+            const e = state.empleados.find(se => se.id === empId);
+            return e ? e.ausente : false;
+        }
+
+        function getFactorTipo(tipo) {
+            const factores = {
+                'Nuevo patrocinio': 0.5,
+                'Nuevo patrocinio Violencia Familiar': 0.8,
+                'Amparo': 0.4,
+                'Acción de protección de persona': 0.3,
+                'Alimentos': 0.2,
+                'CEJUME Formulario': 0.2,
+                'Cuidado personal': 0.3,
+                'Declaración de incapacidad': 0.4,
+                'Desalojo': 0.3,
+                'Determinación de capacidad': 0.4,
+                'Divorcio': 0.2,
+                'Evaluación Art 42 C.C.C.N.': 0.3,
+                'Filiación': 0.2,
+                'Filiación y Daño': 0.3,
+                'Guarda': 0.2,
+                'Homologación Acuerdo CEJUME': 0.2,
+                'Laboral': 0.3,
+                'Medida autosatisfactiva': 0.3,
+                'Medida de protección integral': 0.4,
+                'Penal (cámara gesell)': 0.5,
+                'Prescripción Adquisitiva': 0.3,
+                'Régimen de comunicación y contacto': 0.3,
+                'Restitución de menores': 0.4,
+                'Restricción de capacidad': 0.4,
+                'Violencia Familiar': 0.6,
+                'Otro': 0.1
+            };
+            return factores[tipo] || 0.1;
+        }
+
+        function calcularPuntosCausa(causa) {
+            const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
+            const ptsBase = CONFIG.nivelesPuntos[nivel] || 2;
+            const factor = getFactorTipo(causa.tipo);
+            return ptsBase + factor;
+        }
+
+        function calcularCDI() {
+            const activos = CONFIG.empleados.filter(e => !isAusente(e.id));
+            if (activos.length === 0) return 0;
+            let suma = 0;
+            let count = 0;
+            activos.forEach(e => {
+                const causas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
+                const pts = causas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+                suma += pts;
+                count++;
+            });
+            return count > 0 ? suma / count : 0;
+        }
+
+        function calcularProductividad(empId) {
+            const ahora = new Date();
+            const hace30Dias = new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000);
+            const causasRecibidas = state.causas.filter(c =>
+                (c.empleadoAsignado === empId || c.empleadoOriginal === empId) &&
+                c.fechaAsignacion && new Date(c.fechaAsignacion) >= hace30Dias
+            );
+            const finalizadas = causasRecibidas.filter(c => c.estado === 'finalizada' || c.estado === 'en_defensor');
+            const total = causasRecibidas.length;
+            if (total === 0) return 0;
+            const ptsRecibidas = causasRecibidas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+            const ptsFinalizadas = finalizadas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+            return ptsFinalizadas / ptsRecibidas;
+        }
+
+        function calcularDiasRetraso(empId) {
+            let totalDias = 0;
+            const causas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
+            const ahora = new Date();
+            causas.forEach(c => {
+                if (c.fechaLimite) {
+                    const limite = new Date(c.fechaLimite);
+                    if (limite < ahora) {
+                        const diff = (ahora - limite) / (1000 * 60 * 60 * 24);
+                        totalDias += Math.max(0, diff);
+                    }
+                }
+            });
+            return totalDias;
+        }
+
+        function tieneJustificacion(empId) {
+            const causas = state.causas.filter(c => c.empleadoAsignado === empId);
+            for (let c of causas) {
+                if (c.historial) {
+                    for (let h of c.historial) {
+                        if (h.accion && h.accion.toLowerCase().includes('justificación') && h.accion.toLowerCase().includes('atraso')) {
+                            const fecha = new Date(h.fecha);
+                            const ahora = new Date();
+                            const diff = (ahora - fecha) / (1000 * 60 * 60 * 24);
+                            if (diff <= DIAS_GRACIA) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function calcularIA(empId, puntosNuevos = 0) {
+            const emp = CONFIG.empleados.find(e => e.id === empId);
+            if (!emp) return Infinity;
+            if (isAusente(empId)) return Infinity;
+
+            const causasActivas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
+            const CA = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0) + puntosNuevos;
+
+            const todas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
+            const HA = todas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+
+            const CDI = calcularCDI();
+            const Pr = calcularProductividad(empId);
+
+            let diasRetraso = calcularDiasRetraso(empId);
+            const justificado = tieneJustificacion(empId);
+            if (justificado) {
+                diasRetraso = Math.max(0, diasRetraso - DIAS_GRACIA);
+            }
+            const Pp = diasRetraso * COEF_PENALIZACION_RETRASO;
+
+            let Bp = 0;
+            if (Pr > 0) {
+                if (Pr > 0.8) {
+                    Bp = (Pr - 0.8) * 5 * COEF_BONO_PRODUCTIVIDAD;
+                }
+                const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
+                if (Pr > promedioPr) {
+                    Bp += COEF_BONO_PRODUCTIVIDAD_EXTRA;
+                }
+            }
+
+            const promedioHA = CONFIG.empleados.reduce((s, e) => s +
+                state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
+                .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
+            const FH = promedioHA > 0 ? HA / promedioHA : 1;
+            let factorHistorico = 0;
+            if (FH < 0.8) {
+                factorHistorico = (0.8 - FH) * COEF_HISTORICO_BAJO;
+            } else if (FH > 1.2) {
+                factorHistorico = -(FH - 1.2) * COEF_HISTORICO_ALTO;
+            }
+
+            const desviacion = (CA - CDI) * COEF_DESVIACION;
+            let IA = desviacion + Pp - Bp + factorHistorico;
+            return IA;
+        }
+
+        // ============================================================
+        //  CÁLCULO DE MÉTRICAS Y PUNTAJE (0-10)
+        // ============================================================
+        function calcularMetricasEmpleado(empId) {
+            const emp = CONFIG.empleados.find(e => e.id === empId);
+            if (!emp) return null;
+
+            const todasCausas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
+            const totalRecibidos = todasCausas.length;
+            const enProceso = todasCausas.filter(c => c.estado === 'en_proceso').length;
+            const finalizadas = todasCausas.filter(c => c.estado === 'finalizada' || c.estado === 'en_defensor').length;
+
+            const diasRetraso = calcularDiasRetraso(empId);
+            const productividad = calcularProductividad(empId);
+            const ia = calcularIA(empId, 0);
+
+            let puntaje = 10 - (ia * 0.3) + (productividad * 4) - (diasRetraso * 0.2);
+            puntaje = Math.min(10, Math.max(0, puntaje));
+
+            return {
+                empId,
+                nombre: emp.nombre,
+                totalRecibidos,
+                enProceso,
+                finalizadas,
+                diasRetraso,
+                puntaje: parseFloat(puntaje.toFixed(2)),
+                ausente: isAusente(empId)
+            };
+        }
+
+        // ============================================================
+        //  FILTROS
+        // ============================================================
+        function getFiltros() {
+            const vista = document.querySelector('input[name="vistaEmpleado"]:checked').value;
+            const empleado = document.getElementById('filtroEmpleado').value;
+            return { vista, empleado };
+        }
+
+        function aplicarFiltros(metrics) {
+            const f = getFiltros();
+            let resultado = metrics;
+            if (f.vista === 'individual' && f.empleado) {
+                resultado = resultado.filter(m => m.empId === f.empleado);
+            }
+            return resultado;
+        }
+
+        // ============================================================
+        //  CARGA DE DATOS Y RENDER
+        // ============================================================
+        async function cargarDatos() {
+            try {
+                const causasSnapshot = await db.collection('operador').get();
+                const causas = [];
+                causasSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (doc.id === 'secretario_config') return;
+                    if (!data.id) data.id = doc.id;
+                    if (!data.empleadoAsignado && data.empleadoId) {
+                        data.empleadoAsignado = data.empleadoId;
+                    }
+                    causas.push(data);
+                });
+                state.causas = causas;
+
+                const configDoc = await db.collection('operador').doc('secretario_config').get();
+                if (configDoc.exists) {
+                    const configData = configDoc.data();
+                    state.empleados = configData.empleados || CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+                } else {
+                    state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+                    await db.collection('operador').doc('secretario_config').set({ empleados: state.empleados });
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+                showToast('Error al conectar con Firestore', 'danger');
+                state.causas = [];
+                state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+            }
+            const select = document.getElementById('filtroEmpleado');
+            select.innerHTML = '<option value="">Seleccionar...</option>';
+            CONFIG.empleados.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = e.nombre;
+                select.appendChild(opt);
+            });
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            const allMetrics = CONFIG.empleados.map(emp => calcularMetricasEmpleado(emp.id)).filter(m => m !== null);
+            const filtrados = aplicarFiltros(allMetrics);
+            const vista = document.querySelector('input[name="vistaEmpleado"]:checked').value;
+            const empleadoSeleccionado = document.getElementById('filtroEmpleado').value;
+
+            const totalEmpleados = filtrados.length;
+            const totalCausas = filtrados.reduce((s, m) => s + m.totalRecibidos, 0);
+            const totalEnProceso = filtrados.reduce((s, m) => s + m.enProceso, 0);
+            const promedioPuntaje = totalEmpleados > 0 ? filtrados.reduce((s, m) => s + m.puntaje, 0) / totalEmpleados : 0;
+
+            const kpiContainer = document.getElementById('kpiContainer');
+            kpiContainer.innerHTML = `
+                <div class="kpi-mini-item">
+                    <div class="kpi-label">Empleados</div>
+                    <div class="kpi-value">${totalEmpleados}</div>
+                </div>
+                <div class="kpi-mini-item">
+                    <div class="kpi-label">Causas recibidas</div>
+                    <div class="kpi-value">${totalCausas}</div>
+                </div>
+                <div class="kpi-mini-item">
+                    <div class="kpi-label">En proceso</div>
+                    <div class="kpi-value text-warning">${totalEnProceso}</div>
+                </div>
+                <div class="kpi-mini-item">
+                    <div class="kpi-label">Puntaje promedio</div>
+                    <div class="kpi-value" style="color: #2e7d32;">${promedioPuntaje.toFixed(1)}</div>
+                </div>
+            `;
+
+            renderChart(filtrados);
+            renderTable(allMetrics, filtrados, vista, empleadoSeleccionado);
+        }
+
+        function renderChart(metrics) {
+            const ctx = document.getElementById('puntajeChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            if (!metrics.length) {
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+                return;
+            }
+
+            const labels = metrics.map(m => m.nombre.split(' ').slice(0, 2).join(' '));
+            const data = metrics.map(m => m.puntaje);
+
+            const colores = metrics.map(m => {
+                const p = m.puntaje;
+                if (p === 10) return '#2e7d32';
+                if (p >= 7) return '#e67e22';
+                if (p >= 3) return '#6a1b9a';
+                return '#c62828';
+            });
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Puntaje (0-10)',
+                        data: data,
+                        backgroundColor: colores,
+                        borderRadius: 6,
+                        maxBarThickness: 40,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const m = metrics[context[0].dataIndex];
+                                    return [
+                                        `Total: ${m.totalRecibidos} | En proceso: ${m.enProceso}`,
+                                        `Retraso: ${Math.round(m.diasRetraso)} días`,
+                                        `Puntaje: ${m.puntaje.toFixed(1)}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(allMetrics, filtrados, vista, empleadoSeleccionado) {
+            const container = document.getElementById('tablaContainer');
+            if (!allMetrics.length) {
+                container.innerHTML = `<div class="empty-state text-center py-4"><i class="bi bi-inbox" style="font-size:2rem;opacity:0.4;"></i><p>No hay datos de empleados.</p></div>`;
+                return;
+            }
+
+            const filtradosIds = new Set(filtrados.map(m => m.empId));
+
+            let html = `
+                <div class="table-wrap">
+                    <table class="table-modern table">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Estado</th>
+                                <th>Total recibidos</th>
+                                <th>En proceso</th>
+                                <th>Finalizadas</th>
+                                <th>Días retraso</th>
+                                <th>Puntaje (0-10)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allMetrics.map(m => {
+                                const isFiltrado = filtradosIds.has(m.empId);
+                                const isSeleccionado = (empleadoSeleccionado && m.empId === empleadoSeleccionado);
+                                let rowClass = '';
+                                if (m.ausente) rowClass += ' empleado-ausente';
+                                if (vista === 'individual' && empleadoSeleccionado && !isSeleccionado) {
+                                    rowClass += ' empleado-no-seleccionado';
+                                } else if (vista === 'todos' && !isFiltrado) {
+                                    rowClass += ' empleado-no-seleccionado';
+                                }
+
+                                const badgeEstado = m.ausente ? '<span class="badge-ausente">Ausente</span>' : '<span class="badge-activo">Activo</span>';
+                                let puntajeClass = '';
+                                if (m.puntaje === 10) puntajeClass = 'puntaje-verde';
+                                else if (m.puntaje >= 7) puntajeClass = 'puntaje-naranja';
+                                else if (m.puntaje >= 3) puntajeClass = 'puntaje-violeta';
+                                else puntajeClass = 'puntaje-rojo';
+
+                                const diasRedondeados = Math.round(m.diasRetraso);
+                                let diasClass = 'dias-retraso';
+                                if (diasRedondeados === 0) {
+                                    diasClass += ' celeste';
+                                } else {
+                                    diasClass += ' rojo';
+                                }
+
+                                return `
+                                <tr class="${rowClass}">
+                                    <td><strong>${m.nombre}</strong></td>
+                                    <td>${badgeEstado}</td>
+                                    <td class="total-recibidos">${m.totalRecibidos}</td>
+                                    <td class="en-proceso">${m.enProceso}</td>
+                                    <td class="finalizadas">${m.finalizadas}</td>
+                                    <td class="${diasClass}">${diasRedondeados}</td>
+                                    <td><span class="puntaje-badge ${puntajeClass}">${m.puntaje.toFixed(1)}</span></td>
+                                </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = html;
+        }
+
+        // ============================================================
+        //  FUNCIONES DE IMPRESIÓN (CORREGIDAS)
+        // ============================================================
+        function obtenerFechaHora() {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const anio = now.getFullYear();
+            const horas = String(now.getHours()).padStart(2, '0');
+            const minutos = String(now.getMinutes()).padStart(2, '0');
+            return { fecha: `${dia}/${mes}/${anio}`, hora: `${horas}:${minutos}` };
+        }
+
+        function imprimirGraficoDirecto() {
+            const canvas = document.getElementById('puntajeChart');
+            if (!canvas) {
+                alert('No hay gráfico para imprimir');
+                return;
+            }
+            const dataUrl = canvas.toDataURL('image/png');
+            const { fecha, hora } = obtenerFechaHora();
+            const win = window.open('', '_blank');
+            if (!win) {
+                alert('Por favor, permita ventanas emergentes para imprimir');
+                return;
+            }
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Gráfico de Puntajes</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+                        h2 { margin: 0 0 10px 0; color: #0a2a44; }
+                        .info { font-size: 0.9rem; color: #5f7f9f; margin-bottom: 20px; }
+                        img { max-width: 100%; max-height: 60vh; border: 1px solid #ddd; border-radius: 8px; }
+                        .botones { margin-top: 20px; display: flex; gap: 15px; }
+                        .btn { padding: 10px 30px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+                        .btn-primary { background: #1a6bb0; color: #fff; }
+                        .btn-primary:hover { background: #0b4b7a; }
+                        .btn-secondary { background: #e9eef5; color: #1a3a5a; }
+                        .btn-secondary:hover { background: #d2e0ed; }
+                        @media print {
+                            .botones { display: none; }
+                            body { padding: 0; }
+                            img { max-height: 90vh; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Gráfico de Puntajes</h2>
+                    <div class="info">Fecha de impresión: ${fecha}  ·  Hora: ${hora}</div>
+                    <img src="${dataUrl}" alt="Gráfico de puntajes" />
+                    <div class="botones">
+                        <button class="btn btn-primary" onclick="window.print();">Imprimir</button>
+                        <button class="btn btn-secondary" onclick="window.close();">Cerrar</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            win.focus();
+        }
+
+        function imprimirTablaDirecta() {
+            const tablaOriginal = document.querySelector('#tablaContainer .table-modern');
+            if (!tablaOriginal) {
+                alert('No hay tabla para imprimir');
+                return;
+            }
+            const clone = tablaOriginal.cloneNode(true);
+            // Limpiar estilos visuales que puedan afectar la impresión
+            clone.querySelectorAll('tr').forEach(row => {
+                row.classList.remove('empleado-no-seleccionado', 'empleado-ausente');
+                row.style.opacity = '1';
+                row.style.backgroundColor = 'transparent';
+            });
+            clone.querySelectorAll('td .puntaje-badge').forEach(el => {
+                el.style.fontSize = '1rem';
+                el.style.minWidth = '50px';
+            });
+            clone.querySelectorAll('.badge-ausente, .badge-activo').forEach(el => {
+                el.style.fontSize = '0.65rem';
+            });
+
+            const { fecha, hora } = obtenerFechaHora();
+            const win = window.open('', '_blank');
+            if (!win) {
+                alert('Por favor, permita ventanas emergentes para imprimir');
+                return;
+            }
+            const tablaHtml = clone.outerHTML;
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Tabla de Puntajes</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 20px; }
+                        h2 { margin: 0 0 10px 0; color: #0a2a44; }
+                        .info { font-size: 0.9rem; color: #5f7f9f; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+                        th, td { border: 1px solid #d2e0ed; padding: 8px 10px; text-align: left; }
+                        th { background: #e9f0f8; font-weight: 700; color: #1a3a5a; }
+                        .total-recibidos { color: #0d6efd; font-weight: 700; }
+                        .en-proceso { color: #000; font-weight: 700; }
+                        .finalizadas { color: #2e7d32; font-weight: 700; }
+                        .dias-retraso { font-weight: 700; }
+                        .dias-retraso.rojo { color: #c62828; }
+                        .dias-retraso.celeste { color: #0d6efd; }
+                        .puntaje-badge { display: inline-block; padding: 4px 14px; border-radius: 40px; font-weight: 700; font-size: 1rem; min-width: 50px; text-align: center; }
+                        .puntaje-verde { background: #e8f5e9; color: #1b5e20; }
+                        .puntaje-naranja { background: #fff3e0; color: #e67e22; }
+                        .puntaje-violeta { background: #f3e5f5; color: #6a1b9a; }
+                        .puntaje-rojo { background: #ffebee; color: #c62828; }
+                        .badge-ausente { background: #ffcdd2; color: #b71c1c; padding: 2px 12px; border-radius: 40px; font-size: 0.65rem; font-weight: 700; }
+                        .badge-activo { background: #c8e6c9; color: #1b5e20; padding: 2px 12px; border-radius: 40px; font-size: 0.65rem; font-weight: 700; }
+                        .botones { margin-top: 20px; display: flex; gap: 15px; }
+                        .btn { padding: 10px 30px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+                        .btn-primary { background: #1a6bb0; color: #fff; }
+                        .btn-primary:hover { background: #0b4b7a; }
+                        .btn-secondary { background: #e9eef5; color: #1a3a5a; }
+                        .btn-secondary:hover { background: #d2e0ed; }
+                        @media print {
+                            .botones { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Tabla de Puntajes</h2>
+                    <div class="info">Fecha de impresión: ${fecha}  ·  Hora: ${hora}</div>
+                    ${tablaHtml}
+                    <div class="botones">
+                        <button class="btn btn-primary" onclick="window.print();">Imprimir</button>
+                        <button class="btn btn-secondary" onclick="window.close();">Cerrar</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            win.focus();
+        }
+
+        // ============================================================
+        //  TOAST
+        // ============================================================
+        function showToast(msg, type = 'info') {
+            console.log(`[${type}] ${msg}`);
+        }
+
+        // ============================================================
+        //  EVENTOS
+        // ============================================================
+        document.querySelectorAll('input[name="vistaEmpleado"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const select = document.getElementById('filtroEmpleado');
+                if (this.value === 'individual') {
+                    select.disabled = false;
+                } else {
+                    select.disabled = true;
+                    select.value = '';
+                }
+                renderDashboard();
+            });
+        });
+
+        document.getElementById('filtroEmpleado').addEventListener('change', renderDashboard);
+
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', function() {
+            document.querySelector('input[name="vistaEmpleado"][value="todos"]').checked = true;
+            document.getElementById('filtroEmpleado').disabled = true;
+            document.getElementById('filtroEmpleado').value = '';
+            renderDashboard();
+        });
+
+        document.getElementById('btnActualizar').addEventListener('click', function() {
+            cargarDatos();
+            showToast('Datos actualizados', 'info');
+        });
+
+        // IMPRESIÓN DIRECTA SIN MODALES
+        document.getElementById('btnImprimirGrafico').addEventListener('click', imprimirGraficoDirecto);
+        document.getElementById('btnImprimirTabla').addEventListener('click', imprimirTablaDirecta);
+
+        // ============================================================
+        //  INICIO
+        // ============================================================
+        cargarDatos();
+
+    })();
+</script>
+
+</body>
+</html>
