@@ -1,0 +1,2692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema Digital de Pases · Operador</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ===== CONFIGURACIÓN INICIAL ===== -->
+    <script>
+        let USE_FIRESTORE = false;
+        const JSON_DATA_URL = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
+    </script>
+
+    <!-- Carga condicional de Firebase -->
+    <script>
+        if (USE_FIRESTORE) {
+            document.write('<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"><\/script>');
+            document.write('<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"><\/script>');
+        }
+    </script>
+
+    <style>
+        /* ===== BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4fc;
+            min-height: 100vh;
+            color: #0b1e33;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e9eef5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #b0c8dd;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8aaec9;
+        }
+
+        /* ===== LOGIN ===== */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(145deg, #e3ecf7 0%, #c8dbea 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #loginOverlay.hidden {
+            opacity: 0;
+            transform: scale(1.02);
+            pointer-events: none;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 48px;
+            padding: 2.6rem 2.4rem 2.2rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 30px 60px -20px rgba(0, 20, 40, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+        .login-card .icon {
+            font-size: 3.6rem;
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            margin-bottom: 0.1rem;
+        }
+        .login-card h2 {
+            font-weight: 800;
+            color: #0a2a44;
+            letter-spacing: -0.5px;
+            font-size: 1.6rem;
+        }
+        .login-card .sub {
+            color: #5f7f9f;
+            font-size: 0.9rem;
+            margin-bottom: 1.8rem;
+        }
+        .login-card select,
+        .login-card input {
+            border-radius: 60px;
+            padding: 13px 22px;
+            border: 1px solid #d2e0ed;
+            background: rgba(255, 255, 255, 0.8);
+            width: 100%;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .login-card select:focus,
+        .login-card input:focus {
+            border-color: #1a6bb0;
+            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.15);
+            outline: none;
+            background: #fff;
+        }
+        .login-card .btn-ingresar {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            border: none;
+            border-radius: 60px;
+            padding: 14px;
+            font-weight: 700;
+            width: 100%;
+            color: #fff;
+            transition: 0.25s;
+            font-size: 1rem;
+            letter-spacing: 0.3px;
+        }
+        .login-card .btn-ingresar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -8px rgba(26, 107, 176, 0.4);
+        }
+        .login-error {
+            color: #c62828;
+            font-size: 0.8rem;
+            margin: -0.3rem 0 0.8rem;
+            display: none;
+            font-weight: 600;
+        }
+
+        /* ===== APP WRAPPER ===== */
+        .app-wrapper {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 18px 20px 30px;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        .app-wrapper.visible {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 32px;
+            padding: 0.9rem 1.8rem;
+            box-shadow: 0 4px 24px rgba(0, 20, 40, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+        }
+        .app-header .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .app-header .brand .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.4rem;
+            box-shadow: 0 4px 12px rgba(26, 107, 176, 0.25);
+        }
+        .app-header .brand h1 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 0;
+            color: #0a2a44;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+        .app-header .brand h1 small {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #5f7f9f;
+            letter-spacing: 0.2px;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .header-actions .badge-role {
+            background: #e3effa;
+            color: #0b4b7a;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(26, 107, 176, 0.12);
+        }
+        .header-actions .badge-role.operator {
+            background: #e6f5ed;
+            color: #1d6b4a;
+            border-color: rgba(29, 107, 74, 0.15);
+        }
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 160px;
+            max-width: 280px;
+        }
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8aa3bc;
+            font-size: 0.9rem;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 8px 14px 8px 38px;
+            border-radius: 60px;
+            border: 1px solid #dce5ec;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.82rem;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .search-box input:focus {
+            border-color: #1a6bb0;
+            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.1);
+            outline: none;
+            background: #fff;
+        }
+        .btn-header {
+            padding: 7px 18px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            border: none;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #dce5ec;
+            color: #1a3a5a;
+        }
+        .btn-header:hover {
+            background: #e9eff6;
+            border-color: #b8cce0;
+        }
+        .btn-header.primary {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: #fff;
+            border: none;
+        }
+        .btn-header.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(26, 107, 176, 0.3);
+        }
+        .btn-header.danger-outline {
+            color: #b71c1c;
+            border-color: #ffcdd2;
+            background: rgba(255, 235, 238, 0.5);
+        }
+        .btn-header.danger-outline:hover {
+            background: #ffebee;
+            border-color: #ef9a9a;
+        }
+
+        /* ===== CARDS ===== */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 20px rgba(0, 20, 40, 0.04);
+            padding: 1.5rem 1.8rem;
+            margin-bottom: 1.5rem;
+            transition: box-shadow 0.25s;
+        }
+        .glass-card:hover {
+            box-shadow: 0 8px 32px rgba(0, 20, 40, 0.07);
+        }
+        .glass-card .card-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0a2a44;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .glass-card .card-title i {
+            color: #1a6bb0;
+        }
+
+        /* ===== FORM ===== */
+        .form-modern .form-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #2c5a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+        }
+        .form-modern .form-control,
+        .form-modern .form-select {
+            border-radius: 16px;
+            border: 1px solid #dce5ec;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            transition: 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .form-modern .form-control:focus,
+        .form-modern .form-select:focus {
+            border-color: #1a6bb0;
+            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.1);
+            background: #fff;
+        }
+        .btn-modern {
+            border-radius: 60px;
+            padding: 10px 28px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border: none;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-modern-primary {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: #fff;
+        }
+        .btn-modern-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26, 107, 176, 0.3);
+            color: #fff;
+        }
+        .btn-modern-outline {
+            background: transparent;
+            border: 1px solid #dce5ec;
+            color: #2c5a7a;
+        }
+        .btn-modern-outline:hover {
+            background: #f1f6fd;
+            border-color: #b8cce0;
+        }
+        .btn-modern-sm {
+            padding: 5px 14px;
+            font-size: 0.7rem;
+        }
+        .btn-modern-success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            color: #fff;
+        }
+        .btn-modern-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(46, 155, 74, 0.3);
+            color: #fff;
+        }
+        .btn-modern-danger {
+            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+            color: #fff;
+        }
+        .btn-modern-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(211, 47, 47, 0.3);
+            color: #fff;
+        }
+
+        /* ===== TABLA ===== */
+        .table-wrap {
+            overflow-y: auto;
+            max-height: 65vh;
+            border-radius: 16px;
+        }
+        .table-modern {
+            margin: 0;
+            font-size: 0.78rem;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: auto;
+        }
+        .table-modern thead th {
+            background: #e9f0f8;
+            color: #1a3a5a;
+            font-weight: 700;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 8px;
+            border-bottom: 2px solid #d2e0ed;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            white-space: normal;
+        }
+        .table-modern tbody td {
+            padding: 8px 8px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e9eef5;
+            color: #1a344a;
+            font-size: 0.78rem;
+            transition: background 0.15s;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .table-modern tbody tr {
+            transition: background 0.15s;
+        }
+        .table-modern tbody tr:hover {
+            background: rgba(26, 107, 176, 0.04);
+        }
+        .table-modern tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===== BADGES ===== */
+        .badge-estado {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.6rem;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        .badge-sec {
+            background: #fff3e0;
+            color: #e67e22;
+        }
+        .badge-proc {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .badge-fin {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .badge-def {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .badge-dev {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .badge-rem {
+            background: #e8eaf6;
+            color: #3949ab;
+        }
+        .badge-rech {
+            background: #fce4ec;
+            color: #c62828;
+        }
+        .badge-fuente {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 20px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            background: #e3f2fd;
+            color: #1565c0;
+            margin-right: 2px;
+        }
+        .badge-fuente.ambas {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* ===== PAGINACIÓN ===== */
+        .pagination-bar {
+            padding: 0.8rem 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            border-top: 1px solid #e9eef5;
+            margin-top: 0.6rem;
+        }
+        .pagination-bar .info {
+            font-size: 0.7rem;
+            color: #5f7f9f;
+        }
+        .pagination-bar .page-btn {
+            background: #f0f4f9;
+            border: none;
+            border-radius: 30px;
+            padding: 3px 12px;
+            font-weight: 600;
+            color: #1a3a5a;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 0.7rem;
+            min-width: 30px;
+        }
+        .pagination-bar .page-btn.active {
+            background: #1a6bb0;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(26, 107, 176, 0.25);
+        }
+        .pagination-bar .page-btn:disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .pagination-bar .page-btn:hover:not(:disabled):not(.active) {
+            background: #d2e0ed;
+        }
+        .pagination-bar .page-selector {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
+        }
+        .pagination-bar .page-selector select {
+            padding: 2px 8px;
+            border-radius: 30px;
+            border: 1px solid #dce5ec;
+            background: #fff;
+            font-size: 0.7rem;
+        }
+
+        /* ===== FILTROS ===== */
+        .filtros-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .filtros-container label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #2c5a7a;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-right: 2px;
+        }
+        .filtros-container select {
+            padding: 4px 10px;
+            border-radius: 30px;
+            border: 1px solid #dce5ec;
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 0.72rem;
+            max-width: 110px;
+            transition: 0.15s;
+        }
+        .filtros-container select:focus {
+            border-color: #1a6bb0;
+            outline: none;
+        }
+        .filtros-container .btn-limpiar {
+            padding: 3px 14px;
+            font-size: 0.65rem;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #dce5ec;
+            color: #2c5a7a;
+            cursor: pointer;
+            transition: 0.15s;
+            font-weight: 600;
+        }
+        .filtros-container .btn-limpiar:hover {
+            background: #dce5ec;
+        }
+
+        /* ===== MODALES MEJORADOS ===== */
+        .modal-modern .modal-content {
+            border-radius: 32px;
+            border: none;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+        .modal-modern .modal-header {
+            background: linear-gradient(135deg, #0a2a44, #0b4b7a);
+            color: #fff;
+            padding: 1.2rem 2rem;
+            border: none;
+        }
+        .modal-modern .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.7;
+        }
+        .modal-modern .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+        .modal-modern .modal-body {
+            padding: 2rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .modal-modern .modal-footer {
+            border-top: 1px solid #e9eef5;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ===== TOAST ===== */
+        #toastContainer {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            max-width: 400px;
+            width: 100%;
+        }
+        .toast-custom {
+            background: rgba(30, 43, 59, 0.92);
+            backdrop-filter: blur(16px);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+            border-left: 5px solid transparent;
+        }
+        .toast-custom.success {
+            border-left-color: #4caf50;
+        }
+        .toast-custom.warning {
+            border-left-color: #ff9800;
+        }
+        .toast-custom.danger {
+            border-left-color: #f44336;
+        }
+        .toast-custom.info {
+            border-left-color: #2196f3;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .toast-custom.removing {
+            animation: fadeOut 0.3s forwards;
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(20px) scale(0.94);
+            }
+        }
+
+        /* ===== LOGOUT ALERT ===== */
+        #logoutAlert {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 6px solid #c62828;
+            border-radius: 24px;
+            padding: 18px 24px;
+            min-width: 260px;
+            max-width: 360px;
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.15);
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            border: 1px solid rgba(255, 205, 210, 0.5);
+            animation: slideUp 0.35s ease;
+        }
+        #logoutAlert .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            color: #c62828;
+            font-size: 1rem;
+        }
+        #logoutAlert .alert-header i {
+            font-size: 1.4rem;
+        }
+        #logoutAlert .alert-body {
+            color: #1a344a;
+            font-size: 0.85rem;
+        }
+        #logoutAlert .alert-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        #logoutAlert .alert-actions button {
+            padding: 6px 20px;
+            border-radius: 60px;
+            border: none;
+            font-weight: 700;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #logoutAlert .alert-actions .btn-cancel {
+            background: #e9eef5;
+            color: #1a344a;
+        }
+        #logoutAlert .alert-actions .btn-cancel:hover {
+            background: #d2e0ed;
+        }
+        #logoutAlert .alert-actions .btn-confirm {
+            background: #c62828;
+            color: #fff;
+        }
+        #logoutAlert .alert-actions .btn-confirm:hover {
+            background: #b71c1c;
+            transform: scale(1.02);
+        }
+
+        /* ===== AUSENCIAS ===== */
+        .ausencia-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9eef5;
+        }
+        .ausencia-item:last-child {
+            border-bottom: none;
+        }
+        .ausencia-item .fechas {
+            font-size: 0.8rem;
+            color: #2c5a7a;
+        }
+
+        /* ===== BOTONES ACCIÓN TABLA ===== */
+        .btn-accion-tabla {
+            padding: 3px 8px;
+            font-size: 0.6rem;
+            border-radius: 30px;
+            border: none;
+            background: transparent;
+            color: #5f7f9f;
+            transition: 0.15s;
+            cursor: pointer;
+        }
+        .btn-accion-tabla:hover {
+            background: #e9eff6;
+            color: #0a2a44;
+        }
+        .btn-accion-tabla.danger:hover {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .btn-accion-tabla.primary:hover {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .btn-accion-tabla.success:hover {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .app-header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+            }
+            .header-actions {
+                justify-content: stretch;
+            }
+            .search-box {
+                max-width: 100%;
+                flex: 1;
+            }
+            .glass-card {
+                padding: 1rem;
+            }
+            .filtros-container {
+                border-radius: 20px;
+                padding: 8px 12px;
+            }
+        }
+        @media (max-width: 576px) {
+            .login-card {
+                padding: 1.8rem 1.2rem;
+                border-radius: 32px;
+                margin: 0 12px;
+            }
+            .app-wrapper {
+                padding: 10px 8px;
+            }
+            .app-header .brand h1 {
+                font-size: 1rem;
+            }
+            .glass-card {
+                padding: 0.8rem;
+                border-radius: 20px;
+            }
+            .table-modern {
+                font-size: 0.7rem;
+            }
+            .table-modern thead th,
+            .table-modern tbody td {
+                padding: 6px 4px;
+            }
+            .modal-modern .modal-body {
+                padding: 1rem;
+            }
+            #toastContainer {
+                bottom: 12px;
+                right: 12px;
+                max-width: calc(100% - 24px);
+            }
+            .toast-custom {
+                padding: 12px 16px;
+                font-size: 0.8rem;
+            }
+            .pagination-bar {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .filtros-container {
+                flex-wrap: wrap;
+                border-radius: 16px;
+            }
+            .filtros-container select {
+                max-width: 80px;
+                font-size: 0.65rem;
+            }
+        }
+
+        /* ===== PRINT ===== */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #modalReporte,
+            #modalReporte * {
+                visibility: visible !important;
+            }
+            #modalReporte {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: white !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            #modalReporte .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #modalReporte .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+            }
+            #modalReporte .modal-header,
+            #modalReporte .modal-footer,
+            #modalReporte .btn-close,
+            #modalReporte .btn-modern,
+            #modalReporte .btn-secondary,
+            #modalReporte .pagination-bar {
+                display: none !important;
+            }
+            #modalReporte .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            #modalReporte .table-wrap {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            #modalReporte .table-modern {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 0.6rem !important;
+                border-collapse: collapse !important;
+                table-layout: auto !important;
+            }
+            #modalReporte .table-modern th,
+            #modalReporte .table-modern td {
+                padding: 3px 4px !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                border: 1px solid #ccc !important;
+            }
+            #modalReporte .table-modern thead th {
+                background: #f1f6fd !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            #modalReporte .table-modern tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* ===== UTILITY ===== */
+        .text-muted-light {
+            color: #8aa3bc;
+        }
+        .gap-2 {
+            gap: 0.5rem;
+        }
+        .fw-600 {
+            font-weight: 600;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .bg-soft-primary {
+            background: rgba(26, 107, 176, 0.06);
+        }
+        .rounded-4 {
+            border-radius: 20px;
+        }
+        .border-dash {
+            border: 1px dashed #d2e0ed;
+        }
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: #8aa3bc;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.8rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== LOGIN ===== -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <h2>Operador-Respaldo</h2>
+            <p class="sub">Seleccione su usuario e ingrese su clave</p>
+            <select id="loginOperador" class="form-select"><option value="">Seleccione un operador…</option></select>
+            <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
+            <div id="loginError" class="login-error">❌ Clave incorrecta o falta seleccionar operador.</div>
+            <button class="btn-ingresar" id="btnLogin"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+        </div>
+    </div>
+
+    <!-- ===== APP ===== -->
+    <div id="appWrapper" class="app-wrapper">
+
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon"><i class="bi bi-balance-scale"></i></div>
+                <div>
+                    <h1>Sistema Digital de Pases <small>Defensoría Oficial Civil y Comercial 6</small></h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <span class="badge-role"><i class="bi bi-person-badge"></i> Operador</span>
+                <span class="badge-role operator"><i class="bi bi-person-check"></i> <span id="operadorNombre"></span></span>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Buscar expediente…" autocomplete="off" />
+                </div>
+                <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
+                    <i class="bi bi-arrow-repeat"></i> Actualizar
+                </button>
+                <!-- Botones para cambiar modo (ocultos por defecto, se muestran según el caso) -->
+                <button class="btn-header" id="btnActivarFirestore" style="display:none; background:#1976d2; color:#fff; border-color:#1976d2;"><i class="bi bi-cloud-upload me-1"></i>Activar Base (Firestore)</button>
+                <button class="btn-header" id="btnActivarJSON" style="display:none; background:#6c757d; color:#fff; border-color:#6c757d;"><i class="bi bi-file-earmark me-1"></i>Usar Base Guardada (JSON)</button>
+                <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
+            </div>
+        </header>
+
+        <!-- CUERPO -->
+        <div class="row g-4">
+            <!-- FORMULARIO -->
+            <div class="col-lg-5">
+                <div class="glass-card" id="formularioContainer">
+                    <!-- Se genera en createFormulario() -->
+                </div>
+            </div>
+            <!-- TABLA -->
+            <div class="col-lg-7">
+                <div class="glass-card table-container" id="tablaContainer">
+                    <!-- Se genera en renderTabla() -->
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-muted-light mt-4" style="font-size:0.65rem; border-top:1px solid #e2edf7; padding-top:1rem;">
+            <i class="bi bi-cloud-check"></i> 
+            <span id="modoIndicador">Modo: JSON local</span> · Datos almacenados localmente · Cronómetros en tiempo real · Alertas >48h
+        </footer>
+    </div>
+
+    <!-- ===== MODALES ===== -->
+
+    <!-- HISTORIAL -->
+    <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalHistorialBody">
+                    <!-- Se llena dinámicamente: incluirá el empleado actual y el historial -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORTE -->
+    <div class="modal fade modal-modern" id="modalReporte" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Actividad</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando…</div></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUSENCIAS -->
+    <div class="modal fade modal-modern" id="modalAusencias" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-x me-2"></i>Gestión de Ausencias de Secretarios</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="ausenciasList"></div>
+                    <hr />
+                    <h6 class="fw-600" style="font-size:0.85rem;">Agregar ausencia</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <select id="ausenciaSecretario" class="form-select form-select-sm"><option value="">Seleccione secretario…</option></select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="ausenciaFechaInicio" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" id="ausenciaFechaFin" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnAgregarAusencia"><i class="bi bi-plus"></i> Agregar</button>
+                        </div>
+                    </div>
+                    <small class="text-muted" style="font-size:0.7rem;">Si no se especifica fecha fin, se considera solo el día de inicio.</small>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCIÓN -->
+    <div class="modal fade modal-modern" id="modalAccion" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAccionTitulo"><i class="bi bi-arrow-return-left me-2"></i>Acción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="accionCausaId" />
+                    <input type="hidden" id="accionTipo" />
+                    <div id="accionCampos">
+                        <div class="mb-3" id="campoDependencia" style="display:none;">
+                            <label class="form-label">Dependencia destino *</label>
+                            <input type="text" id="accionDependencia" class="form-control" placeholder="Ej: Juzgado N° 3" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Motivo *</label>
+                            <textarea id="accionMotivo" class="form-control" rows="3" placeholder="Ingrese el motivo de la acción…"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarAccion"><i class="bi bi-check2"></i> Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGOUT ALERT -->
+    <div id="logoutAlert">
+        <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
+        <div class="alert-body">Volverás a la pantalla de inicio. Los datos no se perderán.</div>
+        <div class="alert-actions">
+            <button class="btn-cancel" id="btnCancelarSalida">Cancelar</button>
+            <button class="btn-confirm" id="btnConfirmarSalida">Sí, salir</button>
+        </div>
+    </div>
+
+    <!-- TOASTS -->
+    <div id="toastContainer"></div>
+
+    <!-- ===== SCRIPT ===== -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            //  CONFIGURACIÓN Y CONSTANTES
+            // ============================================================
+            const CONFIG = {
+                operadoresClaves: {
+                    'Boillat Enrique': '111',
+                    'Cardozo Raquel': '222',
+                    'Cedron Noelia': '444',
+                    'Pablos Patricia': '333',
+                    'Gonzalez Misael': '606'
+                },
+                nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
+                nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
+                empleados: [
+                    { id: 'emp1', nombre: 'Bazante Nadia Romina' },
+                    { id: 'emp2', nombre: 'Bolillat Cesar Enrique' },
+                    { id: 'emp3', nombre: 'Cardozo Maria Raquel' },
+                    { id: 'emp4', nombre: 'Cedron Noelia' },
+                    { id: 'emp5', nombre: 'Fioravante Rómulo' },
+                    { id: 'emp6', nombre: 'Gonzalez Alberto Misael' },
+                    { id: 'emp7', nombre: 'Gonzalez Juan Jose' },
+                    { id: 'emp8', nombre: 'Gudiño Natalia Esther' },
+                    { id: 'emp9', nombre: 'Ortega Lucia Noemi' },
+                    { id: 'emp10', nombre: 'Pablos Patricia Tamara' },
+                    { id: 'emp11', nombre: 'Palacios Ana Gabriela' },
+                    { id: 'emp12', nombre: 'Sosa Rita Cecilia' }
+                ],
+                secretarios: [
+                    { id: 'sec1', nombre: 'Corrales A.Mariela' },
+                    { id: 'sec2', nombre: 'Riveros Patricia' },
+                    { id: 'sec3', nombre: 'Magnani Enzo' }
+                ],
+                operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Patricia', 'Gonzalez Misael'],
+                ordenSecretarios: ['sec1', 'sec3', 'sec2']
+            };
+
+            // ============================================================
+            //  VARIABLES GLOBALES
+            // ============================================================
+            let state = {
+                causas: [],
+                ausencias: [],
+                lastIndex: 0
+            };
+            let currentOperator = '';
+            let searchTerm = '';
+            let cronoInterval = null;
+            let refreshInterval = null;
+            let paginationState = {
+                ingreso: { page: 1, perPage: 10 },
+                rechazados: { page: 1, perPage: 10 }
+            };
+            let formularioInicializado = false;
+            let filtroMes = '';
+            let filtroAnio = '';
+            let db = null; // referencia a Firestore (si está activo)
+            let unsubscribeCausas = null;
+
+            // ============================================================
+            //  FUNCIONES AUXILIARES
+            // ============================================================
+            function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
+            function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
+            function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
+            function fmtDt(iso) {
+                if (!iso) return '-';
+                const d = new Date(iso);
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+            function fmtDateShort(iso) {
+                if (!iso) return '-';
+                const d = new Date(iso);
+                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            }
+
+            function getEstadoBadge(estado) {
+                const map = {
+                    'en_secretaria': '<span class="badge-estado badge-sec">📋 Secretaría</span>',
+                    'en_proceso': '<span class="badge-estado badge-proc">🔄 En proceso</span>',
+                    'finalizada': '<span class="badge-estado badge-fin">✅ Finalizada</span>',
+                    'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
+                    'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto SIGED</span>',
+                    'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>',
+                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>'
+                };
+                return map[estado] || `<span class="badge-estado">${estado}</span>`;
+            }
+
+            function getEstadoTexto(estado) {
+                const map = {
+                    'en_secretaria': 'En Secretaria',
+                    'en_proceso': 'En Proceso',
+                    'finalizada': 'Finalizada',
+                    'en_defensor': 'En Defensor',
+                    'devuelto_siged': 'Devuelto',
+                    'remitido': 'Remitido',
+                    'rechazado': 'Rechazado'
+                };
+                return map[estado] || estado;
+            }
+
+            function showToast(msg, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const icons = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill',
+                    danger: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
+                const div = document.createElement('div');
+                div.className = `toast-custom ${type}`;
+                div.innerHTML = `<i class="bi ${icons[type] || 'bi-info-circle-fill'}"></i> ${msg}`;
+                container.appendChild(div);
+                setTimeout(() => { div.classList.add('removing');
+                    setTimeout(() => div.remove(), 300); }, 3800);
+            }
+
+            // ============================================================
+            //  PERSISTENCIA LOCAL (JSON + localStorage)
+            // ============================================================
+            function guardarEstadoLocal() {
+                localStorage.setItem('pases_data_operador', JSON.stringify({
+                    causas: state.causas,
+                    ausencias: state.ausencias,
+                    lastIndex: state.lastIndex
+                }));
+            }
+
+            function setDefaultData() {
+                state.causas = [];
+                state.ausencias = [];
+                state.lastIndex = 0;
+                guardarEstadoLocal();
+            }
+
+            async function cargarDatosDesdeJSON() {
+                try {
+                    const resp = await fetch(JSON_DATA_URL);
+                    if (!resp.ok) throw new Error('Error al cargar JSON desde GitHub');
+                    const data = await resp.json();
+                    state.causas = data.causas || [];
+                    state.ausencias = data.ausencias || [];
+                    state.lastIndex = data.lastIndex || 0;
+                    // Asegurar que no haya duplicados por ID
+                    const ids = new Set();
+                    state.causas = state.causas.filter(c => {
+                        if (!c.id) { c.id = generateId(); return true; }
+                        if (ids.has(c.id)) return false;
+                        ids.add(c.id);
+                        return true;
+                    });
+                    guardarEstadoLocal();
+                    showToast('Datos cargados desde JSON (GitHub)', 'success');
+                } catch (e) {
+                    console.warn('No se pudo cargar JSON desde GitHub, usando localStorage...', e);
+                    const local = localStorage.getItem('pases_data_operador');
+                    if (local) {
+                        try {
+                            const parsed = JSON.parse(local);
+                            state.causas = parsed.causas || [];
+                            state.ausencias = parsed.ausencias || [];
+                            state.lastIndex = parsed.lastIndex || 0;
+                            showToast('Datos cargados desde localStorage', 'info');
+                        } catch (e2) {
+                            console.warn('Error parseando localStorage', e2);
+                            setDefaultData();
+                        }
+                    } else {
+                        setDefaultData();
+                    }
+                }
+                renderTabla();
+            }
+
+            // ============================================================
+            //  FUNCIONES DE FIRESTORE
+            // ============================================================
+            function inicializarFirebase() {
+                if (typeof firebase === 'undefined') {
+                    const loadScript = (src) => {
+                        return new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = src;
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                        });
+                    };
+                    return Promise.all([
+                        loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'),
+                        loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js')
+                    ]).then(() => {
+                        const firebaseConfig = {
+                            apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+                            authDomain: "pasedefensoria6.firebaseapp.com",
+                            projectId: "pasedefensoria6",
+                            storageBucket: "pasedefensoria6.firebasestorage.app",
+                            messagingSenderId: "785250989941",
+                            appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+                        };
+                        firebase.initializeApp(firebaseConfig);
+                        db = firebase.firestore();
+                        showToast('Firebase activado correctamente', 'success');
+                        return db;
+                    }).catch((err) => {
+                        console.error('Error cargando Firebase:', err);
+                        showToast('Error al cargar Firebase', 'danger');
+                        throw err;
+                    });
+                } else {
+                    if (!db) {
+                        const firebaseConfig = {
+                            apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+                            authDomain: "pasedefensoria6.firebaseapp.com",
+                            projectId: "pasedefensoria6",
+                            storageBucket: "pasedefensoria6.firebasestorage.app",
+                            messagingSenderId: "785250989941",
+                            appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+                        };
+                        if (!firebase.apps.length) {
+                            firebase.initializeApp(firebaseConfig);
+                        }
+                        db = firebase.firestore();
+                    }
+                    return Promise.resolve(db);
+                }
+            }
+
+            async function addCausaFirestore(causa) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc(causa.id).set(causa);
+                } catch (error) {
+                    console.error('Error agregando causa en Firestore:', error);
+                    showToast('Error al guardar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateCausaFirestore(id, updates) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc(id).update(updates);
+                } catch (error) {
+                    console.error('Error actualizando causa en Firestore:', error);
+                    showToast('Error al actualizar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateAusenciasFirestore(ausenciasArray) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc('ausencias').set({ ausencias: ausenciasArray });
+                } catch (error) {
+                    console.error('Error actualizando ausencias en Firestore:', error);
+                    showToast('Error al guardar ausencias', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateConfigFirestore(lastIndex) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc('config').set({ lastIndex }, { merge: true });
+                } catch (error) {
+                    console.error('Error guardando configuración en Firestore:', error);
+                }
+            }
+
+            async function loadStateFromFirestore() {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    const snapshot = await db.collection('operador').get();
+                    const causas = [];
+                    let ausencias = [];
+                    let config = { lastIndex: 0 };
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (doc.id === 'ausencias') {
+                            ausencias = data.ausencias || [];
+                        } else if (doc.id === 'config') {
+                            config = data;
+                        } else {
+                            if (!data.id) data.id = doc.id;
+                            causas.push(data);
+                        }
+                    });
+                    state.causas = causas;
+                    state.ausencias = ausencias;
+                    state.lastIndex = config.lastIndex || 0;
+                } catch (error) {
+                    console.error('Error cargando datos desde Firestore:', error);
+                    showToast('Error al conectar con Firestore', 'danger');
+                    state.causas = [];
+                    state.ausencias = [];
+                    state.lastIndex = 0;
+                }
+                renderTabla();
+            }
+
+            // ============================================================
+            //  FUNCIONES DE GUARDADO UNIFICADAS
+            // ============================================================
+            async function guardarCausa(causa) {
+                if (USE_FIRESTORE && db) {
+                    await addCausaFirestore(causa);
+                } else {
+                    updateCausaInLocal(causa);
+                }
+            }
+
+            async function guardarAusencias(ausenciasArray) {
+                if (USE_FIRESTORE && db) {
+                    await updateAusenciasFirestore(ausenciasArray);
+                } else {
+                    state.ausencias = ausenciasArray;
+                    guardarEstadoLocal();
+                    renderTabla();
+                }
+            }
+
+            async function guardarConfiguracion(lastIndex) {
+                if (USE_FIRESTORE && db) {
+                    await updateConfigFirestore(lastIndex);
+                } else {
+                    state.lastIndex = lastIndex;
+                    guardarEstadoLocal();
+                }
+            }
+
+            function updateCausaInLocal(causa) {
+                const index = state.causas.findIndex(c => c.id === causa.id);
+                if (index !== -1) {
+                    state.causas[index] = causa;
+                } else {
+                    state.causas.push(causa);
+                }
+                guardarEstadoLocal();
+                renderTabla();
+            }
+
+            async function actualizarCausa(id, updates) {
+                if (USE_FIRESTORE && db) {
+                    await updateCausaFirestore(id, updates);
+                } else {
+                    const c = state.causas.find(x => x.id === id);
+                    if (c) {
+                        Object.assign(c, updates);
+                        guardarEstadoLocal();
+                        renderTabla();
+                    }
+                }
+            }
+
+            // ============================================================
+            //  CARGA PRINCIPAL (decide según USE_FIRESTORE)
+            // ============================================================
+            async function cargarDatos() {
+                if (unsubscribeCausas) { unsubscribeCausas(); unsubscribeCausas = null; }
+
+                if (USE_FIRESTORE) {
+                    if (!db) {
+                        try {
+                            await inicializarFirebase();
+                        } catch (e) {
+                            showToast('No se pudo inicializar Firebase, cambiando a modo JSON', 'danger');
+                            USE_FIRESTORE = false;
+                            localStorage.setItem('modo_preferido', 'json');
+                            cargarDatos();
+                            return;
+                        }
+                    }
+                    await loadStateFromFirestore();
+                    document.getElementById('modoIndicador').textContent = 'Modo: Firebase (nube)';
+                    document.getElementById('btnActivarFirestore').style.display = 'none';
+                    document.getElementById('btnActivarJSON').style.display = 'inline-block';
+                } else {
+                    await cargarDatosDesdeJSON();
+                    document.getElementById('modoIndicador').textContent = 'Modo: JSON local';
+                    document.getElementById('btnActivarFirestore').style.display = 'inline-block';
+                    document.getElementById('btnActivarJSON').style.display = 'none';
+                }
+                actualizarBotonesModo();
+                createFormulario();
+                renderTabla();
+            }
+
+            function actualizarBotonesModo() {
+                const btnFire = document.getElementById('btnActivarFirestore');
+                const btnJSON = document.getElementById('btnActivarJSON');
+                if (USE_FIRESTORE) {
+                    btnFire.style.display = 'none';
+                    btnJSON.style.display = 'inline-block';
+                } else {
+                    btnFire.style.display = 'inline-block';
+                    btnJSON.style.display = 'none';
+                }
+            }
+
+            // ============================================================
+            //  CAMBIAR MODO EN TIEMPO REAL
+            // ============================================================
+            function cambiarModo(nuevoModo) {
+                if (nuevoModo === USE_FIRESTORE) {
+                    showToast('Ya estás en ese modo', 'info');
+                    return;
+                }
+                if (state.causas.length > 0 && !USE_FIRESTORE) {
+                    if (!confirm('¿Cambiar a Firestore? Los datos locales se mantendrán, pero se cargarán los de la nube. ¿Continuar?')) {
+                        return;
+                    }
+                }
+                USE_FIRESTORE = nuevoModo;
+                localStorage.setItem('modo_preferido', USE_FIRESTORE ? 'firestore' : 'json');
+                state.causas = [];
+                state.ausencias = [];
+                state.lastIndex = 0;
+                cargarDatos();
+                showToast(`Modo cambiado a ${USE_FIRESTORE ? 'Firestore (nube)' : 'JSON local'}`, 'success');
+            }
+
+            // ============================================================
+            //  AUSENCIAS (con guardado unificado)
+            // ============================================================
+            function estaAusente(secretarioId, fecha) {
+                if (!state.ausencias || state.ausencias.length === 0) return false;
+                const f = new Date(fecha);
+                f.setHours(0, 0, 0, 0);
+                return state.ausencias.some(a => {
+                    if (a.secretarioId !== secretarioId) return false;
+                    const inicio = new Date(a.fechaInicio);
+                    inicio.setHours(0, 0, 0, 0);
+                    const fin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    fin.setHours(0, 0, 0, 0);
+                    return f >= inicio && f <= fin;
+                });
+            }
+
+            async function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
+                if (!secretarioId || !fechaInicio) { showToast('Debe seleccionar secretario y fecha de inicio',
+                    'warning'); return false; }
+                const inicio = new Date(fechaInicio);
+                inicio.setHours(0, 0, 0, 0);
+                const fin = fechaFin ? new Date(fechaFin) : new Date(fechaInicio);
+                fin.setHours(0, 0, 0, 0);
+                if (fin < inicio) { showToast('La fecha fin no puede ser anterior a la fecha inicio', 'warning'); return false; }
+                const solapada = state.ausencias.some(a => {
+                    if (a.secretarioId !== secretarioId) return false;
+                    const aIni = new Date(a.fechaInicio);
+                    aIni.setHours(0, 0, 0, 0);
+                    const aFin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    aFin.setHours(0, 0, 0, 0);
+                    return !(fin < aIni || inicio > aFin);
+                });
+                if (solapada) { showToast('Ya existe una ausencia para ese período', 'warning'); return false; }
+                const nueva = { id: generateId(), secretarioId, fechaInicio, fechaFin: fechaFin || null };
+                state.ausencias.push(nueva);
+                await guardarAusencias(state.ausencias);
+                showToast('Ausencia registrada correctamente', 'success');
+                return true;
+            }
+
+            async function eliminarAusencia(id) {
+                state.ausencias = state.ausencias.filter(a => a.id !== id);
+                await guardarAusencias(state.ausencias);
+                renderAusenciasModal();
+                showToast('Ausencia eliminada', 'info');
+            }
+
+            function renderAusenciasModal() {
+                const list = document.getElementById('ausenciasList');
+                if (!state.ausencias || state.ausencias.length === 0) {
+                    list.innerHTML = '<div class="text-muted">No hay ausencias registradas.</div>';
+                    return;
+                }
+                list.innerHTML = state.ausencias.map(a => {
+                    const sec = CONFIG.secretarios.find(s => s.id === a.secretarioId);
+                    const nombre = sec ? sec.nombre : 'Desconocido';
+                    const fin = a.fechaFin ? fmtDateShort(a.fechaFin) : 'solo día';
+                    return `<div class="ausencia-item">
+                        <span><strong>${nombre}</strong> · ${fmtDateShort(a.fechaInicio)} ${a.fechaFin ? '→ ' + fmtDateShort(a.fechaFin) : ''}</span>
+                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-eliminar-ausencia" data-id="${a.id}" style="padding:2px 8px;"><i class="bi bi-trash"></i></button>
+                    </div>`;
+                }).join('');
+                list.querySelectorAll('.btn-eliminar-ausencia').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        await eliminarAusencia(this.dataset.id);
+                    });
+                });
+            }
+
+            // ============================================================
+            //  ASIGNACIÓN AUTOMÁTICA (ROTATIVA)
+            // ============================================================
+            function obtenerSecretarioAsignado() {
+                const hoy = new Date();
+                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
+                if (disponibles.length === 0) {
+                    showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
+                        'danger');
+                    return null;
+                }
+                const orden = CONFIG.ordenSecretarios;
+                const disponiblesEnOrden = orden.filter(id => disponibles.some(s => s.id === id));
+                if (disponiblesEnOrden.length === 0) {
+                    showToast('No hay secretarios disponibles en el orden definido.', 'danger');
+                    return null;
+                }
+                let lastIdx = state.lastIndex || 0;
+                let startIdx = disponiblesEnOrden.findIndex(id => id === orden[lastIdx]);
+                if (startIdx === -1) { startIdx = 0; }
+                let nextIdx = (startIdx + 1) % disponiblesEnOrden.length;
+                const elegidoId = disponiblesEnOrden[nextIdx];
+                const nuevoIndex = orden.indexOf(elegidoId);
+                state.lastIndex = nuevoIndex;
+                guardarConfiguracion(nuevoIndex);
+                const secretario = CONFIG.secretarios.find(s => s.id === elegidoId);
+                return secretario;
+            }
+
+            // ============================================================
+            //  REGISTRO DE CAUSA
+            // ============================================================
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut) {
+                if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
+                const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
+
+                let estado = 'en_secretaria';
+                let secretarioId = null;
+                let accionHistorial = '';
+                let motivoGuardado = motivo || null;
+                let dependenciaGuardada = dependencia || null;
+
+                if (accion === 'devolver') {
+                    estado = 'devuelto_siged';
+                    accionHistorial = 'Devuelto a SIGED (ingreso directo)';
+                } else if (accion === 'remitir') {
+                    estado = 'remitido';
+                    accionHistorial = `Remitido a ${dependenciaGuardada || 'dependencia no especificada'} (ingreso directo)`;
+                } else if (accion === 'rechazar') {
+                    estado = 'rechazado';
+                    accionHistorial = 'Rechazado (ingreso directo)';
+                } else {
+                    if (esGesell) {
+                        estado = 'en_defensor';
+                        accionHistorial = 'Ingreso directo a Defensor (Cámara Gesell)';
+                    } else {
+                        const asignado = obtenerSecretarioAsignado();
+                        if (!asignado) {
+                            showToast('No hay secretarios disponibles. La causa se guarda sin asignar.', 'warning');
+                            secretarioId = null;
+                            accionHistorial = 'Ingreso sin asignación (todos ausentes)';
+                        } else {
+                            secretarioId = asignado.id;
+                            accionHistorial = `Ingreso a Secretaría (${getSecName(secretarioId)})`;
+                        }
+                    }
+                }
+
+                const nueva = {
+                    id: generateId(),
+                    numero: num.trim().toUpperCase(),
+                    dni: dni.trim() || '',
+                    datosParte: datosParte || '',
+                    asisteDefensoria: asisteDefensoria || '',
+                    tipo: tipo || 'Otro',
+                    nivelOperador: parseInt(nivel) || 2,
+                    nivelSecretario: null,
+                    puntos: 0,
+                    observaciones: obs || '',
+                    estado: estado,
+                    secretarioId: secretarioId,
+                    empleadoId: null,
+                    empleadoAsignado: null,
+                    empleadoOriginal: null,
+                    tipoAsignacion: null,
+                    esReingreso: false,
+                    fechaPaseSecretario: new Date().toISOString(),
+                    fechaAsignacion: null,
+                    fechaFinalizacion: null,
+                    fechaLimite: null,
+                    fechaResolucionEmpleado: null,
+                    operador: op || currentOperator || 'Desconocido',
+                    asistenciaCamaraGesell: false,
+                    asistenciaGesell: 'pendiente',
+                    fechaHoraGesell: null,
+                    fuenteSiged: fuenteSiged || false,
+                    fuenteZimbra: fuenteZimbra || false,
+                    fuenteDeut: fuenteDeut || false,
+                    motivoAccion: motivoGuardado,
+                    dependenciaRemision: dependenciaGuardada,
+                    modoIntervencion: modoIntervencion || '',
+                    historial: [{
+                        fecha: new Date().toISOString(),
+                        accion: accionHistorial,
+                        usuario: op || currentOperator || 'Operador',
+                        comentario: motivoGuardado || obs || 'Sin observaciones'
+                    }]
+                };
+
+                try {
+                    await guardarCausa(nueva);
+                    state.causas.push(nueva);
+                    if (accion === 'devolver') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como DEVUELTA a SIGED.`);
+                    } else if (accion === 'remitir') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como REMITIDA a ${dependenciaGuardada || 'dependencia'}.`);
+                    } else if (accion === 'rechazar') {
+                        showToast(`✅ Causa ${nueva.numero} registrada como RECHAZADA.`);
+                    } else {
+                        if (esGesell) {
+                            showToast(`✅ Pase registrado (Cámara Gesell) - Derivado a Defensor: ${nueva.numero}`);
+                        } else if (secretarioId) {
+                            showToast(`✅ Pase registrado: ${nueva.numero} (Secretario: ${getSecName(secretarioId)})`);
+                        } else {
+                            showToast(`✅ Pase registrado: ${nueva.numero} (sin asignar por ausencias)`);
+                        }
+                    }
+                    renderTabla();
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            // ============================================================
+            //  ACCIONES DEL OPERADOR
+            // ============================================================
+            async function devolverSIGED(id, operador, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'devuelto_siged') { showToast('Ya fue devuelto a SIGED', 'warning'); return; }
+                await cambiarEstado(id, 'devuelto_siged', 'Devuelto a SIGED', operador, motivo || 'Sin motivo especificado');
+            }
+
+            async function remitirDependencia(id, operador, dependencia, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'remitido') { showToast('Ya fue remitido', 'warning'); return; }
+                if (!dependencia || dependencia.trim() === '') { showToast('Debe especificar la dependencia', 'warning'); return; }
+                await cambiarEstado(id, 'remitido', `Remitido a ${dependencia.trim()}`, operador, motivo ||
+                    'Sin motivo especificado');
+                c.dependenciaRemision = dependencia.trim();
+                await actualizarCausa(id, { dependenciaRemision: dependencia.trim() });
+            }
+
+            async function rechazarCausa(id, operador, motivo) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado === 'rechazado') { showToast('Ya fue rechazada', 'warning'); return; }
+                await cambiarEstado(id, 'rechazado', 'Rechazado', operador, motivo || 'Sin motivo especificado');
+            }
+
+            async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                c.estado = nuevoEstado;
+                if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
+                if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido' ||
+                    nuevoEstado === 'rechazado') {
+                    c.empleadoId = null;
+                    c.fechaAsignacion = null;
+                    c.fechaLimite = null;
+                    c.fechaResolucionEmpleado = null;
+                }
+                const historialEntry = { fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema',
+                    comentario: com || '-' };
+                c.historial.push(historialEntry);
+
+                const updates = {
+                    estado: c.estado,
+                    fechaFinalizacion: c.fechaFinalizacion || null,
+                    empleadoId: c.empleadoId || null,
+                    fechaAsignacion: c.fechaAsignacion || null,
+                    fechaLimite: c.fechaLimite || null,
+                    fechaResolucionEmpleado: c.fechaResolucionEmpleado || null,
+                    historial: c.historial
+                };
+                try {
+                    await actualizarCausa(id, updates);
+                    showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                } catch (error) {
+                    showToast('Error al actualizar en Firestore', 'danger');
+                }
+            }
+
+            // ============================================================
+            //  FILTRADO
+            // ============================================================
+            function obtenerCausasFiltradas() {
+                let causas = state.causas.filter(c => c.operador === currentOperator);
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causas = causas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroMes || filtroAnio) {
+                    causas = causas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                return causas;
+            }
+
+            // ============================================================
+            //  REPORTE
+            // ============================================================
+            function generarReporte(causasArray, titulo) {
+                const total = causasArray.length;
+                const now = new Date();
+                const fechaStr =
+                    `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                let filtrosTexto = [];
+                if (filtroMes) {
+                    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
+                        'Octubre', 'Noviembre', 'Diciembre'
+                    ];
+                    filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
+                }
+                if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
+                const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
+
+                let html = `
+                    <div class="mb-3">
+                        <p><strong>Operador:</strong> ${currentOperator}</p>
+                        <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
+                        <p><strong>Reporte:</strong> ${titulo}</p>
+                        <p><strong>Registros encontrados:</strong> ${total}</p>
+                        <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                    </div>
+                    <hr />
+                    <h6>Expedientes</h6>
+                    <div class="table-wrap">
+                        <table class="table-modern table">
+                            <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
+                            <tbody>${causasArray.map(c => `
+                                <tr><td><strong>${c.numero}</strong></td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td></tr>
+                            `).join('')}</tbody>
+                        </table>
+                    </div>
+                    ${total === 0 ? '<div class="text-muted">No hay registros que coincidan con los filtros.</div>' : ''}
+                `;
+                document.getElementById('modalReporteBody').innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
+            }
+
+            // ============================================================
+            //  HISTORIAL
+            // ============================================================
+            function abrirHistorial(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                document.getElementById('modalHistorialExp').textContent = c.numero;
+
+                const body = document.getElementById('modalHistorialBody');
+
+                let empleadoActual = 'Sin asignar';
+                if (c.estado === 'en_proceso' && c.historial && c.historial.length > 0) {
+                    const logAsignacion = c.historial.slice().reverse().find(m => m.accion && m.accion.toLowerCase().includes('asignado'));
+                    if (logAsignacion) {
+                        const match = logAsignacion.accion.match(/Asignado.*?a\s+(.*?)(?:\s+-|$)/i);
+                        if (match && match[1]) {
+                            empleadoActual = match[1].trim();
+                        } else {
+                            empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                        }
+                    } else {
+                        empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                    }
+                } else {
+                    empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
+                }
+
+                let html = `<div class="mb-3"><strong>Empleado actual:</strong> ${empleadoActual}</div>`;
+                html += `<hr /><h6>Movimientos</h6>`;
+
+                if (!c.historial || !c.historial.length) {
+                    html += '<div class="text-muted">Sin movimientos registrados.</div>';
+                } else {
+                    html += c.historial.slice().reverse().map(m =>
+                        `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2">
+                            <span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span>
+                            <span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span>
+                            <span style="flex:1;">${m.accion}</span>
+                            <span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span>
+                        </div>`
+                    ).join('');
+                }
+                body.innerHTML = html;
+                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+            }
+
+            // ============================================================
+            //  PAGINACIÓN
+            // ============================================================
+            function paginateData(data, page, perPage = 10) {
+                const total = data.length;
+                const totalPages = Math.ceil(total / perPage) || 1;
+                const start = (page - 1) * perPage;
+                const end = Math.min(start + perPage, total);
+                return { items: data.slice(start, end), total, totalPages, page, start, end };
+            }
+
+            function renderPagination(targetId, total, totalPages, page, perPage, callback) {
+                const container = document.getElementById(targetId);
+                if (!container) return;
+                let html = `<div class="pagination-bar">
+                    <div class="info">Mostrando ${Math.min((page-1)*perPage + 1, total)} - ${Math.min(page*perPage, total)} de ${total}</div>
+                    <div>
+                        <button class="page-btn" data-page="prev" ${page<=1?'disabled':''}>Anterior</button>
+                        ${Array.from({length: Math.min(totalPages, 10)}, (_, i) => {
+                            let p = i + 1;
+                            if (totalPages > 10) { if (p < page - 4 || p > page + 4) { if (p === 1 || p === totalPages) return `<button class="page-btn" data-page="${p}">${p}</button>`; if (p === page - 5 || p === page + 5) return `<span>…</span>`; return ''; } }
+                            return `<button class="page-btn ${p===page?'active':''}" data-page="${p}">${p}</button>`;
+                        }).join('')}
+                        <button class="page-btn" data-page="next" ${page>=totalPages?'disabled':''}>Siguiente</button>
+                    </div>
+                    <div class="page-selector">
+                        <label>Ver:</label>
+                        <select class="form-select form-select-sm" style="width:70px;" id="perPageSelect">
+                            <option value="5" ${perPage===5?'selected':''}>5</option><option value="10" ${perPage===10?'selected':''}>10</option>
+                            <option value="25" ${perPage===25?'selected':''}>25</option><option value="50" ${perPage===50?'selected':''}>50</option>
+                        </select>
+                    </div>
+                </div>`;
+                container.innerHTML = html;
+                container.querySelectorAll('.page-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        const p = this.dataset.page;
+                        let newPage = page;
+                        if (p === 'prev') newPage = Math.max(1, page - 1);
+                        else if (p === 'next') newPage = Math.min(totalPages, page + 1);
+                        else newPage = parseInt(p);
+                        if (newPage !== page) callback(newPage, perPage);
+                    });
+                });
+                const perPageSelect = document.getElementById('perPageSelect');
+                if (perPageSelect) { perPageSelect.addEventListener('change', function(e) { callback(1, parseInt(this
+                        .value)); }); }
+            }
+
+            // ============================================================
+            //  CREAR FORMULARIO
+            // ============================================================
+            function createFormulario() {
+                if (formularioInicializado) return;
+                const container = document.getElementById('formularioContainer');
+                const operadorOptions = `<option value="${currentOperator}" selected>${currentOperator}</option>`;
+                const tipos = [
+                    'Nuevo patrocinio',
+                    'Nuevo patrocinio Violencia Familiar',
+                    'Amparo',
+                    'Acción de protección de persona',
+                    'Alimentos',
+                    'CEJUME Formulario',
+                    'Cuidado personal',
+                    'Declaración de incapacidad',
+                    'Desalojo',
+                    'Determinación de capacidad',
+                    'Divorcio',
+                    'Evaluación Art 42 C.C.C.N.',
+                    'Filiación',
+                    'Filiación y Daño',
+                    'Guarda',
+                    'Homologación Acuerdo CEJUME',
+                    'Laboral',
+                    'Medida autosatisfactiva',
+                    'Medida de protección integral',
+                    'Penal (cámara gesell)',
+                    'Prescripción Adquisitiva',
+                    'Régimen de comunicación y contacto',
+                    'Restitución de menores',
+                    'Restricción de capacidad',
+                    'Violencia Familiar',
+                    'Otro'
+                ];
+                const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+                const modoIntervencionOptions = [
+                    'Defensor Oficial',
+                    'Ministerio Principal',
+                    'Ministerio Complementario',
+                    'Patrocinante Actor',
+                    'Patrocinante Demandado',
+                    'Patrocinante Tercero',
+                    'Defensor de Ausente',
+                    'Patrocinante presunto incapaz',
+                    'Asistencia Letrada del incapaz',
+                    'Ministerio Público del incapaz',
+                    'Ministerio Público en turno Abril',
+                    'Ministerio Público en turno Agosto',
+                    'Ministerio Público en turno Diciembre',
+                    'Tutor Ad Litem',
+                    'Defensor Oficial Art 329 CPCC',
+                    'Defensor Oficial Art 626 CPCC'
+                ].map(m => `<option value="${m}">${m}</option>`).join('');
+
+                container.innerHTML = `
+                    <div class="card-title"><i class="bi bi-file-earmark-plus"></i> Nueva Causa</div>
+                    <form id="formIngreso" class="form-modern">
+                        <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
+                        <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
+
+                        <!-- Nuevo campo: Datos de la Parte/Cliente -->
+                        <div class="mb-3">
+                            <label class="form-label">Datos de la Parte/Cliente</label>
+                            <input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">DNI</label>
+                            <input type="text" id="inpDni" class="form-control" autocomplete="off"
+                                   placeholder="Ingrese el DNI (opcional)" maxlength="8"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                            <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
+                        </div>
+
+                        <!-- Nuevo campo: Asiste a la Defensoría -->
+                        <div class="mb-3">
+                            <label class="form-label">Asiste a la Defensoría</label>
+                            <select id="inpAsisteDefensoria" class="form-select">
+                                <option value="">Seleccione…</option>
+                                <option value="Por citación">Por citación</option>
+                                <option value="Sin citación">Sin citación</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
+                            <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Modo de Intervención</label>
+                            <select id="inpModoIntervencion" class="form-select">
+                                <option value="">Seleccione…</option>
+                                ${modoIntervencionOptions}
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Fuente</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteSiged" /><label class="form-check-label" for="fuenteSiged">SIGED</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteZimbra" /><label class="form-check-label" for="fuenteZimbra">ZIMBRA</label></div>
+                                <!-- Nuevo checkbox DEUT -->
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteDeut" /><label class="form-check-label" for="fuenteDeut">DEUT</label></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Acción previa a la asignación</label>
+                            <select id="inpAccion" class="form-select">
+                                <option value="asignar">Asignar a Secretaría (predeterminado)</option>
+                                <option value="devolver">Devolución a SIGED</option>
+                                <option value="remitir">Remisión a otra dependencia</option>
+                                <option value="rechazar">Rechazo</option>
+                            </select>
+                        </div>
+                        <div id="camposAccion" style="display:none;">
+                            <div class="mb-3" id="campoDependenciaForm">
+                                <label class="form-label">Dependencia destino *</label>
+                                <input type="text" id="inpDependencia" class="form-control" placeholder="Ej: Juzgado N° 3" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Motivo *</label>
+                                <textarea id="inpMotivo" class="form-control" rows="2" placeholder="Ingrese el motivo de la acción…"></textarea>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Gestión de Ausencias de Secretarios</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
+                                <span class="text-muted" style="font-size:0.7rem; align-self:center;">La asignación es automática entre los presentes.</span>
+                            </div>
+                        </div>
+                        <div class="mb-3"><label class="form-label">Observaciones</label><textarea id="inpObs" class="form-control" rows="2"></textarea></div>
+                        <button type="submit" class="btn btn-modern btn-modern-primary w-100"><i class="bi bi-send me-2"></i>Registrar</button>
+                    </form>
+                `;
+
+                // Campos condicionales
+                const accionSelect = document.getElementById('inpAccion');
+                const camposAccionDiv = document.getElementById('camposAccion');
+                const campoDependencia = document.getElementById('campoDependenciaForm');
+                const inpDependencia = document.getElementById('inpDependencia');
+                const inpMotivo = document.getElementById('inpMotivo');
+
+                function toggleCamposAccion() {
+                    const val = accionSelect.value;
+                    if (val === 'asignar') {
+                        camposAccionDiv.style.display = 'none';
+                    } else {
+                        camposAccionDiv.style.display = 'block';
+                        campoDependencia.style.display = (val === 'remitir') ? 'block' : 'none';
+                        if (val !== 'remitir') inpDependencia.value = '';
+                    }
+                }
+                accionSelect.addEventListener('change', toggleCamposAccion);
+                toggleCamposAccion();
+
+                document.getElementById('formIngreso').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const operador = currentOperator;
+                    const num = document.getElementById('inpExpediente').value;
+                    const tipo = document.getElementById('inpTipo').value;
+                    const nivel = document.getElementById('inpNivel').value;
+                    const obs = document.getElementById('inpObs').value;
+                    const fuenteSiged = document.getElementById('fuenteSiged').checked;
+                    const fuenteZimbra = document.getElementById('fuenteZimbra').checked;
+                    const fuenteDeut = document.getElementById('fuenteDeut').checked;
+                    const accion = document.getElementById('inpAccion').value;
+                    const motivo = document.getElementById('inpMotivo').value.trim();
+                    const dependencia = document.getElementById('inpDependencia').value.trim();
+                    const dni = document.getElementById('inpDni').value.trim();
+                    const modoIntervencion = document.getElementById('inpModoIntervencion').value;
+                    const datosParte = document.getElementById('inpDatosParte').value.trim();
+                    const asisteDefensoria = document.getElementById('inpAsisteDefensoria').value;
+
+                    if (dni && !/^\d{7,8}$/.test(dni)) {
+                        showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
+                        return;
+                    }
+                    if (accion !== 'asignar') {
+                        if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
+                        if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino',
+                                'warning'); return; }
+                    }
+                    const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion,
+                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut);
+                    if (ok) {
+                        document.getElementById('inpExpediente').value = '';
+                        document.getElementById('inpTipo').value = '';
+                        document.getElementById('inpNivel').value = '2';
+                        document.getElementById('inpObs').value = '';
+                        document.getElementById('fuenteSiged').checked = false;
+                        document.getElementById('fuenteZimbra').checked = false;
+                        document.getElementById('fuenteDeut').checked = false;
+                        document.getElementById('inpAccion').value = 'asignar';
+                        document.getElementById('camposAccion').style.display = 'none';
+                        document.getElementById('inpMotivo').value = '';
+                        document.getElementById('inpDependencia').value = '';
+                        document.getElementById('inpDni').value = '';
+                        document.getElementById('inpModoIntervencion').value = '';
+                        document.getElementById('inpDatosParte').value = '';
+                        document.getElementById('inpAsisteDefensoria').value = '';
+                        renderTabla();
+                    }
+                });
+
+                document.getElementById('btnGestionAusencias').addEventListener('click', function() {
+                    const modal = new bootstrap.Modal(document.getElementById('modalAusencias'));
+                    const select = document.getElementById('ausenciaSecretario');
+                    select.innerHTML = '<option value="">Seleccione secretario…</option>';
+                    CONFIG.secretarios.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.nombre;
+                        select.appendChild(opt);
+                    });
+                    const hoy = new Date().toISOString().split('T')[0];
+                    document.getElementById('ausenciaFechaInicio').value = hoy;
+                    document.getElementById('ausenciaFechaFin').value = '';
+                    renderAusenciasModal();
+                    modal.show();
+                });
+
+                document.getElementById('btnAgregarAusencia').addEventListener('click', async function() {
+                    const secretarioId = document.getElementById('ausenciaSecretario').value;
+                    const fechaInicio = document.getElementById('ausenciaFechaInicio').value;
+                    const fechaFin = document.getElementById('ausenciaFechaFin').value || null;
+                    if (await agregarAusencia(secretarioId, fechaInicio, fechaFin)) {
+                        renderAusenciasModal();
+                        document.getElementById('ausenciaSecretario').value = '';
+                        document.getElementById('ausenciaFechaInicio').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('ausenciaFechaFin').value = '';
+                    }
+                });
+
+                formularioInicializado = true;
+            }
+
+            // ============================================================
+            //  RENDER TABLA
+            // ============================================================
+            function renderTabla() {
+                const container = document.getElementById('tablaContainer');
+                let causasFiltradas = obtenerCausasFiltradas();
+
+                // ---- Tabla de Recientes ----
+                let datosMostrar = causasFiltradas;
+                if (!filtroMes && !filtroAnio) {
+                    datosMostrar = datosMostrar.slice(0, 50);
+                }
+
+                const pState = paginationState.ingreso;
+                const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
+                .perPage);
+
+                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
+                let causasRechazadas = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causasRechazadas = causasRechazadas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroMes || filtroAnio) {
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                causasRechazadas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                const pStateRech = paginationState.rechazados;
+                const { items: itemsRech, total: totalRech, totalPages: totalPagesRech, page: pageRech } = paginateData(
+                    causasRechazadas, pStateRech.page, pStateRech.perPage
+                );
+
+                // ---- Generar HTML ----
+                const añoOptions = [];
+                for (let y = 2026; y <= 2040; y++) {
+                    añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
+                }
+                const mesOptions = [];
+                const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
+                    'Octubre', 'Noviembre', 'Diciembre'
+                ];
+                for (let m = 1; m <= 12; m++) {
+                    mesOptions.push(`<option value="${m}" ${filtroMes == m ? 'selected' : ''}>${mesesNombres[m-1]}</option>`);
+                }
+
+                let html = `
+                    <!-- FILTROS -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                        <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteOperador"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                        </div>
+                    </div>
+                    <div class="filtros-container">
+                        <label>Filtrar por:</label>
+                        <select id="filtroMesSelect">
+                            <option value="">Mes</option>
+                            ${mesOptions}
+                        </select>
+                        <select id="filtroAnioSelect">
+                            <option value="">Año</option>
+                            ${añoOptions}
+                        </select>
+                        <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
+                        ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                    </div>
+                `;
+
+                // Tabla de Recientes (con columna de acciones)
+                if (total) {
+                    html += `
+                        <div style="width:100%; border-radius:16px;">
+                            <table class="table-modern table table-sm" style="margin-bottom:0;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th style="width:80px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items.map(c => {
+                                        const fuentes = [];
+                                        if (c.fuenteSiged) fuentes.push('S');
+                                        if (c.fuenteZimbra) fuentes.push('Z');
+                                        if (c.fuenteDeut) fuentes.push('D');
+                                        const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
+                                            `<span class="badge-fuente ${fuentes.length > 1 ? 'ambas' : ''}">${fuentes.join('/')}</span>`;
+                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.65rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${fuenteHtml}</td>
+                                            <td><strong>${getEstadoTexto(c.estado)}</strong></td>
+                                            <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td>
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="paginationIngreso"></div>
+                    `;
+                } else {
+                    html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
+                }
+
+                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
+                html += `
+                    <hr class="my-4" />
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                        <div class="card-title mb-0"><i class="bi bi-x-circle"></i> Rechazados/Devueltos/Remitidos</div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-secondary">${totalRech} expedientes</span>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteRechazados"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                        </div>
+                    </div>
+                `;
+                if (totalRech) {
+                    html += `
+                        <div style="width:100%; border-radius:16px;">
+                            <table class="table-modern table table-sm" style="margin-bottom:0;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th>
+                                        <th>Tipo</th><th>Nivel</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Pase</th>
+                                        <th>Motivo</th>
+                                        <th style="width:80px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsRech.map(c => {
+                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.65rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${getEstadoBadge(c.estado)}</td>
+                                            <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td>
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                            </td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="paginationRechazados"></div>
+                    `;
+                } else {
+                    html += `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>No hay expedientes rechazados, devueltos o remitidos.</div>`;
+                }
+
+                container.innerHTML = html;
+
+                // ---- Paginación ----
+                if (total > 0) {
+                    renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
+                        paginationState.ingreso.page = newPage;
+                        paginationState.ingreso.perPage = newPerPage;
+                        renderTabla();
+                    });
+                }
+                if (totalRech > 0) {
+                    renderPagination('paginationRechazados', totalRech, totalPagesRech, pageRech, pStateRech.perPage, (
+                        newPage, newPerPage) => {
+                        paginationState.rechazados.page = newPage;
+                        paginationState.rechazados.perPage = newPerPage;
+                        renderTabla();
+                    });
+                }
+
+                // ---- Filtros ----
+                const mesSelect = document.getElementById('filtroMesSelect');
+                const anioSelect = document.getElementById('filtroAnioSelect');
+                const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+                if (mesSelect) { mesSelect.addEventListener('change', function() { filtroMes = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        renderTabla(); }); }
+                if (anioSelect) { anioSelect.addEventListener('change', function() { filtroAnio = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        renderTabla(); }); }
+                if (limpiarBtn) { limpiarBtn.addEventListener('click', function() { filtroMes = '';
+                        filtroAnio = '';
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        renderTabla(); }); }
+
+                // ---- Eventos de los botones de reporte ----
+                const btnReporteRecientes = container.querySelector('#btnReporteOperador');
+                if (btnReporteRecientes) {
+                    btnReporteRecientes.addEventListener('click', function() {
+                        generarReporte(causasFiltradas, 'Recientes');
+                    });
+                }
+                const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
+                if (btnReporteRechazados) {
+                    btnReporteRechazados.addEventListener('click', function() {
+                        generarReporte(causasRechazadas, 'Rechazados/Devueltos/Remitidos');
+                    });
+                }
+
+                // ---- Acciones de historial (para ambas tablas) ----
+                container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const accion = this.dataset.accion;
+                        if (accion === 'historial') { abrirHistorial(id); }
+                    });
+                });
+            }
+
+            // ============================================================
+            //  MODAL ACCIÓN
+            // ============================================================
+            function abrirModalAccion(id, tipoAccion) {
+                const modal = new bootstrap.Modal(document.getElementById('modalAccion'));
+                document.getElementById('accionCausaId').value = id;
+                document.getElementById('accionTipo').value = tipoAccion;
+
+                const titulo = document.getElementById('modalAccionTitulo');
+                const campoDependencia = document.getElementById('campoDependencia');
+                const inpDependencia = document.getElementById('accionDependencia');
+                const inpMotivo = document.getElementById('accionMotivo');
+
+                if (tipoAccion === 'devolver') {
+                    titulo.innerHTML = '<i class="bi bi-arrow-return-left me-2"></i>Devolver a SIGED';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                } else if (tipoAccion === 'remitir') {
+                    titulo.innerHTML = '<i class="bi bi-send me-2"></i>Remitir a otra dependencia';
+                    campoDependencia.style.display = 'block';
+                } else if (tipoAccion === 'rechazar') {
+                    titulo.innerHTML = '<i class="bi bi-x-circle me-2"></i>Rechazar causa';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                }
+                inpMotivo.value = '';
+                modal.show();
+            }
+
+            document.getElementById('btnConfirmarAccion').addEventListener('click', async function() {
+                const id = document.getElementById('accionCausaId').value;
+                const tipo = document.getElementById('accionTipo').value;
+                const motivo = document.getElementById('accionMotivo').value.trim();
+                const dependencia = document.getElementById('accionDependencia').value.trim();
+
+                if (!motivo) { showToast('Debe ingresar un motivo', 'warning'); return; }
+                if (tipo === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
+
+                if (tipo === 'devolver') { await devolverSIGED(id, currentOperator, motivo); } else if (tipo ===
+                    'remitir') { await remitirDependencia(id, currentOperator, dependencia, motivo); } else if (tipo ===
+                    'rechazar') { await rechazarCausa(id, currentOperator, motivo); }
+                bootstrap.Modal.getInstance(document.getElementById('modalAccion')).hide();
+                renderTabla();
+            });
+
+            // ============================================================
+            //  CRONOMETROS Y ACTUALIZACIÓN AUTOMÁTICA
+            // ============================================================
+            function iniciarCronometros() {
+                if (cronoInterval) clearInterval(cronoInterval);
+                cronoInterval = setInterval(() => { renderTabla(); }, 10000);
+            }
+
+            // ============================================================
+            //  LOGIN
+            // ============================================================
+            async function handleLogin() {
+                const operador = document.getElementById('loginOperador').value;
+                const pass = document.getElementById('loginPassword').value;
+                const errorDiv = document.getElementById('loginError');
+
+                if (!operador) { errorDiv.textContent = '❌ Seleccione operador.';
+                    errorDiv.style.display = 'block';
+                    setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+                if (pass !== CONFIG.operadoresClaves[operador]) { errorDiv.textContent = '❌ Clave incorrecta.';
+                    errorDiv.style.display = 'block';
+                    setTimeout(() => errorDiv.style.display = 'none', 3000); return; }
+
+                errorDiv.style.display = 'none';
+                currentOperator = operador;
+                document.getElementById('loginOverlay').classList.add('hidden');
+                document.getElementById('appWrapper').classList.add('visible');
+                document.getElementById('operadorNombre').textContent = operador;
+
+                // Leer preferencia de modo guardada
+                const modoGuardado = localStorage.getItem('modo_preferido');
+                if (modoGuardado === 'firestore') {
+                    USE_FIRESTORE = true;
+                } else if (modoGuardado === 'json') {
+                    USE_FIRESTORE = false;
+                }
+
+                await cargarDatos();
+                showToast(`Bienvenido/a ${operador}`, 'success');
+                iniciarCronometros();
+
+                if (refreshInterval) clearInterval(refreshInterval);
+                refreshInterval = setInterval(() => {
+                    if (!document.hidden) {
+                        recargarDatos();
+                    }
+                }, 15 * 60 * 1000);
+            }
+
+            async function recargarDatos() {
+                await cargarDatos();
+                showToast('Datos actualizados', 'info');
+            }
+
+            function cerrarSesion() {
+                document.getElementById('logoutAlert').style.display = 'none';
+                if (cronoInterval) clearInterval(cronoInterval);
+                if (refreshInterval) clearInterval(refreshInterval);
+                refreshInterval = null;
+                if (unsubscribeCausas) { unsubscribeCausas(); unsubscribeCausas = null; }
+                document.getElementById('appWrapper').classList.remove('visible');
+                document.getElementById('loginOverlay').classList.remove('hidden');
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('loginOperador').value = '';
+                currentOperator = '';
+                formularioInicializado = false;
+                filtroMes = '';
+                filtroAnio = '';
+                state.causas = [];
+                state.ausencias = [];
+                state.lastIndex = 0;
+                showToast('Sesión cerrada', 'warning');
+            }
+
+            // ============================================================
+            //  INICIALIZACIÓN
+            // ============================================================
+            document.addEventListener('DOMContentLoaded', function() {
+                const opSelect = document.getElementById('loginOperador');
+                CONFIG.operadores.forEach(op => {
+                    const opt = document.createElement('option');
+                    opt.value = op;
+                    opt.textContent = op;
+                    opSelect.appendChild(opt);
+                });
+
+                document.getElementById('globalSearch').addEventListener('input', function() {
+                    searchTerm = this.value.trim();
+                    paginationState.ingreso.page = 1;
+                    paginationState.rechazados.page = 1;
+                    renderTabla();
+                });
+
+                document.getElementById('btnLogin').addEventListener('click', handleLogin);
+                document.getElementById('loginPassword').addEventListener('keypress', function(e) { if (e.key ===
+                        'Enter') handleLogin(); });
+
+                document.getElementById('btnCerrarSesion').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.getElementById('logoutAlert').style.display = 'flex';
+                });
+                document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById(
+                    'logoutAlert').style.display = 'none');
+                document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+                document.addEventListener('click', function(e) {
+                    const a = document.getElementById('logoutAlert');
+                    if (a.style.display === 'flex' && !a.contains(e.target) && e.target.id !== 'btnCerrarSesion')
+                        a.style.display = 'none';
+                });
+
+                document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
+
+                // ---- Botones para cambiar modo ----
+                document.getElementById('btnActivarFirestore').addEventListener('click', function() {
+                    if (USE_FIRESTORE) {
+                        showToast('Ya estás en modo Firestore', 'info');
+                        return;
+                    }
+                    if (confirm('¿Activar el modo Firestore? Se conectarán los datos desde la nube. Los datos locales se mantendrán.')) {
+                        cambiarModo(true);
+                    }
+                });
+
+                document.getElementById('btnActivarJSON').addEventListener('click', function() {
+                    if (!USE_FIRESTORE) {
+                        showToast('Ya estás en modo JSON', 'info');
+                        return;
+                    }
+                    if (confirm('¿Cambiar a modo JSON? Se usarán los datos guardados localmente (JSON). Los cambios en la nube no se verán.')) {
+                        cambiarModo(false);
+                    }
+                });
+            });
+
+        })();
+    </script>
+</body>
+</html>
