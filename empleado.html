@@ -405,6 +405,10 @@
             color: #8aa3bc;
             margin-top: 2px;
         }
+        /* Estado de justificación */
+        .justif-pendiente { background: #fff3cd; color: #856404; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+        .justif-aprobada { background: #d4edda; color: #155724; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+        .justif-rechazada { background: #f8d7da; color: #721c24; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -853,7 +857,6 @@
 
                 return state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
-                    // Debe tener al menos un registro de envío a secretaría por parte del empleado
                     if (!c.historial) return false;
                     return c.historial.some(h => {
                         const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
@@ -861,7 +864,6 @@
                         return esAccion && esUsuario;
                     });
                 }).sort((a, b) => {
-                    // Ordenar por fecha de envío más reciente (tomar la última acción de envío)
                     const getLastSendDate = (c) => {
                         if (!c.historial) return 0;
                         const sends = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
@@ -879,20 +881,17 @@
 
                 return state.causas.filter(c => {
                     if (c.estado !== 'en_defensor') return false;
-                    // Debe tener relación con el empleado: haber sido asignado a él o tener historial de él
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
                         (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
                         (c.empleadoOriginal && c.empleadoOriginal === empId)
                     );
                     if (esSuPase) return true;
-                    // O que tenga historial con el empleado
                     if (c.historial) {
                         return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
                     }
                     return false;
                 }).sort((a, b) => {
-                    // Ordenar por fecha de asignación a defensor más reciente (si existe)
                     const getLastDefensorDate = (c) => {
                         if (!c.historial) return 0;
                         const defs = c.historial.filter(h => h.accion && h.accion.includes('Defensor'));
@@ -927,7 +926,6 @@
                                 <tbody>
                     `;
                     lista.forEach(c => {
-                        // Obtener la última acción de envío a secretaría
                         let ultimoEnvio = null;
                         if (c.historial) {
                             const envios = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
@@ -979,7 +977,6 @@
                                 <tbody>
                     `;
                     lista.forEach(c => {
-                        // Obtener la fecha de asignación a defensor (del historial)
                         let fechaDef = '-';
                         if (c.historial) {
                             const defs = c.historial.filter(h => h.accion && h.accion.includes('Defensor'));
@@ -1037,6 +1034,7 @@
                                     <th>Fecha Asignación</th>
                                     <th>Fecha Finalización</th>
                                     <th>Historial</th>
+                                    <th>Justificación</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1044,6 +1042,14 @@
 
                 pasesFinalizados.forEach(c => {
                     const fechaAsig = getFechaAsignacion(c);
+                    // Buscar justificaciones relacionadas con este expediente
+                    let justifHtml = '-';
+                    if (c.justificaciones && c.justificaciones.length > 0) {
+                        const ultima = c.justificaciones[c.justificaciones.length - 1];
+                        const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                        const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                        justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                    }
                     html += `
                         <tr>
                             <td><strong>${c.numero}</strong></td>
@@ -1057,6 +1063,7 @@
                                     <i class="bi bi-eye"></i> Ver
                                 </button>
                             </td>
+                            <td>${justifHtml}</td>
                         </tr>
                     `;
                 });
@@ -1077,7 +1084,6 @@
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
 
-                // 1. Obtener causas del empleado con filtros de búsqueda y mes/año (para la bandeja activa)
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empId);
 
                 if (searchTerm) {
@@ -1111,7 +1117,6 @@
                 const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
                 activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
-                // 2. Historial: usar la misma función que la interfaz (sin filtros de búsqueda/mes/año)
                 const historial = obtenerHistorialPasesEmpleado();
 
                 const ahora = new Date();
@@ -1188,11 +1193,19 @@
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Asignación</th>
                                         <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Finalización</th>
+                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Justificación</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${historial.map(c => {
                                         const fechaAsig = getFechaAsignacion(c);
+                                        let justifHtml = '-';
+                                        if (c.justificaciones && c.justificaciones.length > 0) {
+                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
+                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                                        }
                                         return `<tr style="border-bottom: 1px solid #eef2f7;">
                                             <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
                                             <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
@@ -1200,6 +1213,7 @@
                                             <td style="padding: 6px 8px;"><span class="badge-estado badge-fin">✅ Finalizada</span></td>
                                             <td style="padding: 6px 8px;">${fechaAsig}</td>
                                             <td style="padding: 6px 8px;">${fmtDt(c.fechaFinalizacion)}</td>
+                                            <td style="padding: 6px 8px;">${justifHtml}</td>
                                         </tr>`;
                                     }).join('')}
                                 </tbody>
@@ -1225,7 +1239,6 @@
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
 
-                // ---- 1. Obtener TODAS las causas del empleado (misma lógica que el historial) ----
                 const todasCausas = state.causas.filter(c => {
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === emp.id || c.empleadoId === emp.nombre)) ||
@@ -1235,8 +1248,7 @@
                     return esSuPase;
                 });
 
-                // ---- 2. Activas con filtros de búsqueda y mes/año (para la bandeja) ----
-                let causasFiltradas = todasCausas; // copia
+                let causasFiltradas = todasCausas;
 
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
@@ -1269,10 +1281,8 @@
                 const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
                 activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
 
-                // ---- 3. Historial finalizado (igual que el principal) ----
                 const historial = obtenerHistorialPasesEmpleado();
 
-                // ---- 4. Estadísticas por nivel (sobre TODAS las causas) ----
                 const statsNivel = { 1: { total: 0, cumplidas: 0, tiempos: [] }, 2: { total: 0, cumplidas: 0, tiempos: [] }, 3: { total: 0, cumplidas: 0, tiempos: [] }, 4: { total: 0, cumplidas: 0, tiempos: [] } };
 
                 todasCausas.forEach(c => {
@@ -1289,7 +1299,6 @@
                     }
                 });
 
-                // ---- 5. Secretarios que asignaron (usando la función auxiliar) ----
                 const asignadores = {};
                 todasCausas.forEach(c => {
                     const secId = obtenerSecretarioAsignante(c);
@@ -1422,11 +1431,19 @@
                                         <th style="padding:6px 8px; text-align:left;">Estado</th>
                                         <th style="padding:6px 8px; text-align:left;">Fecha Asignación</th>
                                         <th style="padding:6px 8px; text-align:left;">Fecha Finalización</th>
+                                        <th style="padding:6px 8px; text-align:left;">Justificación</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${historial.map(c => {
                                         const fechaAsig = getFechaAsignacion(c);
+                                        let justifHtml = '-';
+                                        if (c.justificaciones && c.justificaciones.length > 0) {
+                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
+                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                                        }
                                         return `<tr style="border-bottom:1px solid #eef2f7;">
                                             <td style="padding:6px 8px; font-weight:600;">${c.numero}</td>
                                             <td style="padding:6px 8px;">${c.tipo || '-'}</td>
@@ -1434,6 +1451,7 @@
                                             <td style="padding:6px 8px;"><span class="badge-estado badge-fin">✅ Finalizada</span></td>
                                             <td style="padding:6px 8px;">${fechaAsig}</td>
                                             <td style="padding:6px 8px;">${fmtDt(c.fechaFinalizacion)}</td>
+                                            <td style="padding:6px 8px;">${justifHtml}</td>
                                         </tr>`;
                                     }).join('')}
                                 </tbody>
@@ -1517,26 +1535,43 @@
                 const causa = state.causas.find(c => c.id === justificarCausaId);
                 if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
 
-                // Registrar justificación en el historial de la causa
+                // Crear objeto justificación con estado 'pendiente'
+                const nuevaJustificacion = {
+                    id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+                    empleadoId: currentEmpleadoId,
+                    empleadoNombre: getEmpName(currentEmpleadoId),
+                    motivo: motivo,
+                    fecha: new Date().toISOString(),
+                    estado: 'pendiente',   // pendiente, aprobada, rechazada
+                    fechaDecision: null,
+                    secretarioId: null,
+                    comentarioSecretario: null
+                };
+
+                if (!causa.justificaciones) causa.justificaciones = [];
+                causa.justificaciones.push(nuevaJustificacion);
+
+                // Registrar en el historial para trazabilidad
                 if (!causa.historial) causa.historial = [];
                 causa.historial.push({
                     fecha: new Date().toISOString(),
-                    accion: 'Justificación de atraso',
+                    accion: 'Justificación de atraso (pendiente de aprobación)',
                     usuario: getEmpName(currentEmpleadoId),
                     comentario: motivo
                 });
+
                 try {
                     await updateCausaInFirestore(causa);
-                    showToast(`✅ Justificación registrada para ${causa.numero}`, 'success');
+                    showToast(`✅ Justificación registrada para ${causa.numero}. Pendiente de aprobación.`, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
                     renderEmpleado();
 
-                    // Notificar al secretario por chat
+                    // Notificar al Secretario por chat
                     try {
                         await db.collection('chat_interno').add({
                             empleadoId: currentEmpleadoId,
                             remitente: getEmpName(currentEmpleadoId),
-                            texto: `📢 He justificado mi demora en el expediente ${causa.numero} por el siguiente motivo: "${motivo}"`,
+                            texto: `📢 He enviado una justificación de demora para el expediente ${causa.numero}. Motivo: "${motivo}"`,
                             timestamp: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     } catch (e) {
@@ -1559,7 +1594,6 @@
                 const empId = currentEmpleadoObj.id;
                 const empNombre = currentEmpleadoObj.nombre;
 
-                // Todas las causas que han pasado por este empleado
                 const todasCausas = state.causas.filter(c => {
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
@@ -1569,13 +1603,9 @@
                     return esSuPase;
                 });
 
-                // En proceso
                 const enProceso = todasCausas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId).length;
-
-                // Finalizados
                 const finalizados = obtenerHistorialPasesEmpleado().length;
 
-                // En Secretaría
                 const enSecretaria = todasCausas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (!c.historial) return false;
@@ -1586,7 +1616,6 @@
                     });
                 }).length;
 
-                // En Defensor
                 const enDefensor = todasCausas.filter(c => {
                     if (c.estado !== 'en_defensor') return false;
                     const tieneRelacion = (
@@ -1601,7 +1630,6 @@
                     return false;
                 }).length;
 
-                // Con demora
                 const conDemora = todasCausas.filter(c => {
                     if (c.estado !== 'en_proceso') return false;
                     if (c.empleadoAsignado !== empId) return false;
@@ -1609,7 +1637,6 @@
                     return new Date(c.fechaLimite) < new Date();
                 }).length;
 
-                // TOTAL = SUMA DE TODOS LOS KPI (excepto Con Demora que es un subconjunto de En Proceso)
                 const total = enProceso + enSecretaria + enDefensor + finalizados;
 
                 return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
@@ -1654,7 +1681,6 @@
                 const pStateActivas = paginationState.activas;
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
 
-                // ---------- CÁLCULO DE KPIs GLOBALES ----------
                 const kpis = calcularKPIs();
 
                 function generarTablaActivas(items) {
@@ -1678,6 +1704,11 @@
                                         const cronoHtml = getCronoHtml(c);
                                         const comentario = getComentarioAsignacion(c);
                                         const estaVencida = c.fechaLimite && new Date(c.fechaLimite) < new Date();
+                                        // Verificar si ya existe justificación pendiente para esta causa
+                                        let justifPendiente = false;
+                                        if (c.justificaciones) {
+                                            justifPendiente = c.justificaciones.some(j => j.estado === 'pendiente');
+                                        }
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.modoIntervencion || '-'}</td>
@@ -1689,7 +1720,8 @@
                                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-activa" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                ${estaVencida ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
+                                                ${estaVencida && !justifPendiente ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
+                                                ${estaVencida && justifPendiente ? `<span class="badge bg-warning text-dark">Justificación pendiente</span>` : ''}
                                             </td>
                                         </tr>`;
                                     }).join('')}
@@ -1711,7 +1743,6 @@
 
                         <!-- KPIs -->
                         <div class="kpi-grid">
-                            <!-- Total -->
                             <div class="kpi-item">
                                 <div class="label">Total</div>
                                 <div class="value total">${kpis.total}</div>
@@ -1980,7 +2011,6 @@
                 if (fechaCierre) {
                     cls = 'crono medio';
                 } else {
-                    // Evaluar estado de vencimiento si está en proceso
                     if (causa.fechaLimite) {
                         const ahora = new Date();
                         const diffDias = (new Date(causa.fechaLimite) - ahora) / (1000 * 60 * 60 * 24);
