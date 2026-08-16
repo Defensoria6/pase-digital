@@ -333,6 +333,24 @@
         ::-webkit-scrollbar-thumb { background: #b0c8dd; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #8aaec9; }
 
+        /* Contenedor del iframe para puntaje */
+        .iframe-container {
+            width: 100%;
+            height: calc(100vh - 180px);
+            min-height: 500px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #e2edf7;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
         @media print {
             body * { visibility: hidden; }
             #printArea, #printArea * { visibility: visible !important; }
@@ -365,6 +383,7 @@
             }
             .no-print { display: none !important; }
             .page-header .btn-group { display: none !important; }
+            .iframe-container { display: none !important; }
         }
 
         .toast-custom {
@@ -577,9 +596,17 @@
             .filtros-empleados select { width: 100%; }
             .total-filtro-kpi { flex-direction: column; align-items: stretch; gap: 0.5rem; }
             .total-filtro-kpi .filtro-activo { text-align: center; }
+            .iframe-container {
+                height: calc(100vh - 160px);
+                min-height: 350px;
+            }
         }
         @media (max-width: 480px) {
             .kpi-grid { grid-template-columns: 1fr; }
+            .iframe-container {
+                height: calc(100vh - 140px);
+                min-height: 250px;
+            }
         }
     </style>
 </head>
@@ -594,7 +621,9 @@
                 <small>Defensoría Civil y Comercial 6</small>
             </div>
             <nav class="nav-modulos">
-                <button class="modulo-btn active" data-modulo="resumen"><i class="bi bi-pie-chart-fill"></i> Resumen Global</button>
+                <!-- Nuevo módulo Puntaje de Actividad (primero) -->
+                <button class="modulo-btn active" data-modulo="puntaje"><i class="bi bi-bar-chart-fill"></i> Puntaje de Actividad</button>
+                <button class="modulo-btn" data-modulo="resumen"><i class="bi bi-pie-chart-fill"></i> Resumen Global</button>
                 <button class="modulo-btn" data-modulo="operador"><i class="bi bi-person-badge"></i> Reporte Operador</button>
                 <button class="modulo-btn" data-modulo="secretario"><i class="bi bi-person-lock"></i> Reporte Secretario</button>
                 <button class="modulo-btn" data-modulo="empleado"><i class="bi bi-person-check"></i> Reporte Empleados</button>
@@ -608,7 +637,7 @@
         <!-- Main -->
         <main class="main-content">
             <div class="page-header">
-                <h3 id="tituloModulo">Resumen Global</h3>
+                <h3 id="tituloModulo">Puntaje de Actividad</h3>
                 <div class="btn-group">
                     <button class="btn-refresh" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar</button>
                     <button class="btn-print" id="btnImprimir"><i class="bi bi-printer me-1"></i>Imprimir</button>
@@ -671,7 +700,7 @@
 
             // ---------- ESTADO ----------
             let causas = [];
-            let currentModulo = 'resumen';
+            let currentModulo = 'puntaje'; // Ahora el módulo inicial es puntaje
             let chartInstances = {};
             let empleadoSeleccionado = CONFIG.empleados[0]?.id || '';
             let filtroMes = '';
@@ -782,6 +811,14 @@
                 chartInstances = {};
 
                 switch (modulo) {
+                    case 'puntaje':
+                        titulo.textContent = 'Puntaje de Actividad';
+                        cont.innerHTML = `
+                            <div class="iframe-container">
+                                <iframe src="https://defensoria6.github.io/pase-digital/puntaje" title="Puntaje de Actividad"></iframe>
+                            </div>
+                        `;
+                        break;
                     case 'resumen':
                         titulo.textContent = 'Resumen Global';
                         renderResumen(cont);
@@ -1976,6 +2013,9 @@
                     canvas.parentNode.replaceChild(img, canvas);
                 });
 
+                // Si es el módulo puntaje, no incluimos el iframe (se oculta con CSS)
+                // Pero si queremos mostrar algo, dejamos que se oculte con .iframe-container { display:none; }
+
                 printArea.innerHTML = `
                     <div style="max-width: 1000px; margin: 0 auto;">
                         <h2 style="font-weight: 700; color: #0a2a44;">${titulo}</h2>
@@ -2015,7 +2055,7 @@
                 crearModalHistorial();
 
                 loadCausas().then(() => {
-                    renderModulo('resumen');
+                    renderModulo('puntaje'); // Ahora inicia con puntaje
                 });
             });
 
