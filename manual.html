@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
 
     <style>
-        /* Estilos existentes (no modificados) */
+        /* Estilos generales (sin cambios) */
         * {
             margin: 0;
             padding: 0;
@@ -294,7 +294,7 @@
             bottom: 2rem;
             right: 2rem;
             z-index: 1060;
-            background: #e67e22; /* naranja */
+            background: #e67e22;
             color: #fff;
             border: none;
             border-radius: 60px;
@@ -315,6 +315,36 @@
             box-shadow: 0 10px 30px rgba(230, 126, 34, 0.45);
         }
         .btn-admin-fab i {
+            font-size: 1.6rem;
+        }
+
+        /* --- BOTÓN FLOTANTE DEMORA (color rojo) --- */
+        .btn-demora-fab {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            z-index: 1060;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 60px;
+            padding: 14px 28px;
+            font-weight: 700;
+            font-size: 1rem;
+            box-shadow: 0 8px 24px rgba(220, 53, 69, 0.35);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+        }
+        .btn-demora-fab:hover {
+            background: #b02a37;
+            transform: scale(1.03);
+            box-shadow: 0 10px 30px rgba(220, 53, 69, 0.45);
+        }
+        .btn-demora-fab i {
             font-size: 1.6rem;
         }
 
@@ -341,6 +371,15 @@
                 font-size: 0.9rem;
             }
             .btn-admin-fab i {
+                font-size: 1.3rem;
+            }
+            .btn-demora-fab {
+                bottom: 1.2rem;
+                left: 1.2rem;
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            .btn-demora-fab i {
                 font-size: 1.3rem;
             }
         }
@@ -432,6 +471,16 @@
             .btn-admin-fab i {
                 font-size: 1.2rem;
             }
+            .btn-demora-fab {
+                bottom: 0.8rem;
+                left: 0.8rem;
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                border-radius: 40px;
+            }
+            .btn-demora-fab i {
+                font-size: 1.2rem;
+            }
         }
 
         @media (max-width: 800px) and (orientation: landscape) {
@@ -498,6 +547,15 @@
             .btn-admin-fab i {
                 font-size: 1rem;
             }
+            .btn-demora-fab {
+                padding: 8px 12px;
+                font-size: 0.7rem;
+                bottom: 0.5rem;
+                left: 0.5rem;
+            }
+            .btn-demora-fab i {
+                font-size: 1rem;
+            }
         }
 
         /* --- MODAL DE IMPRESIÓN --- */
@@ -541,47 +599,128 @@
             color: #0a2a44;
         }
 
+        /* Estilos específicos para impresión del contenido de demora */
+        .print-demora-content h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0a2a44;
+            border-bottom: 2px solid #1976d2;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .print-demora-content .fecha-impresion {
+            font-size: 0.9rem;
+            color: #5f7f9f;
+            margin-bottom: 1.5rem;
+            text-align: right;
+            border-bottom: 1px solid #eef2f9;
+            padding-bottom: 0.5rem;
+        }
+        .print-demora-content h4 {
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.8rem;
+            color: #0a2a44;
+        }
+        .print-demora-content p,
+        .print-demora-content li {
+            color: #334e68;
+            line-height: 1.6;
+        }
+        .print-demora-content ul,
+        .print-demora-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .print-demora-content strong {
+            color: #0a2a44;
+        }
+
+        /* ================================================================
+           CONFIGURACIÓN DE IMPRESIÓN (CORREGIDA - SIN HOJAS EN BLANCO)
+           ================================================================ */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
         @media print {
+            /* Reset completo */
+            html,
+            body {
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                overflow: visible !important;
+                font-size: 11pt;
+                line-height: 1.5;
+            }
+
+            /* Ocultar todo excepto el modal de impresión */
             body * {
-                visibility: hidden;
+                display: none !important;
             }
-            .modal,
-            .modal * {
-                visibility: visible;
-            }
-            .modal {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+
+            /* Mostrar solo el modal y su contenido */
+            .modal#printModal,
+            .modal#printModal * {
                 display: block !important;
-                background: white;
-                margin: 0;
-                padding: 0;
-                overflow: visible;
             }
+
+            .modal#printModal {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+                page-break-before: auto !important;
+                page-break-after: auto !important;
+            }
+
             .modal-dialog {
                 max-width: 100% !important;
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                transform: none !important;
             }
+
             .modal-content {
                 border: none !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
-                min-height: 100vh;
+                background: white !important;
+                height: auto !important;
+                min-height: 0 !important;
+                page-break-inside: auto;
             }
+
             .modal-header,
             .modal-footer {
                 display: none !important;
             }
+
             .modal-body {
-                padding: 20mm !important;
+                padding: 2cm 2cm 2cm 3cm !important;
                 font-size: 11pt;
                 line-height: 1.5;
+                height: auto !important;
+                overflow: visible !important;
+                page-break-inside: auto;
+                background: white !important;
+                box-sizing: border-box !important;
             }
+
             .print-modal-body h2 {
                 font-size: 18pt;
             }
@@ -592,7 +731,22 @@
             .print-modal-body li {
                 font-size: 11pt;
             }
+
+            .print-demora-content {
+                page-break-inside: auto;
+            }
+            .print-demora-content h1,
+            .print-demora-content h4 {
+                page-break-after: avoid;
+            }
+            .print-demora-content ul,
+            .print-demora-content ol {
+                page-break-inside: auto;
+            }
+
+            /* Asegurar visibilidad de todo lo que esté dentro del modal-body */
             .modal-body * {
+                display: block !important;
                 visibility: visible !important;
             }
         }
@@ -661,12 +815,17 @@
 
     </div>
 
-    <!-- Botón flotante Administrador (color naranja) -->
+    <!-- Botón flotante Administrador -->
     <button class="btn-admin-fab" id="btnAdminFab" title="Manual del Administrador">
         <i class="bi bi-person-gear"></i> Administrador
     </button>
 
-    <!-- Modal de impresión -->
+    <!-- Botón flotante Demora -->
+    <button class="btn-demora-fab" id="btnDemoraFab" title="Situación de Demora de Causas Asignadas">
+        <i class="bi bi-clock-history"></i> Demora
+    </button>
+
+    <!-- Modal de impresión (se reutiliza para módulos y demora) -->
     <div class="modal fade" id="printModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg" style="max-width: 210mm;">
             <div class="modal-content">
@@ -685,13 +844,65 @@
         </div>
     </div>
 
+    <!-- Modal de Demora -->
+    <div class="modal fade" id="demoraModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i> Situación de Demora de Causas Asignadas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" style="font-size:0.95rem; line-height:1.6; color:#0a2a44;">
+                    <p>Cuando una causa se atrasa más de lo previsto, el sistema permite <strong>justificar esa demora</strong>. Así, el empleado puede explicar por qué no la terminó a tiempo, y el secretario decide si acepta o no esa explicación.</p>
+
+                    <h4 class="mt-4">¿Cuándo se puede justificar?</h4>
+                    <ul>
+                        <li>Solamente cuando la causa está <strong>vencida</strong> (pasó la fecha límite).</li>
+                        <li>No se puede pedir una justificación si ya hay otra <strong>pendiente</strong> de revisión.</li>
+                    </ul>
+
+                    <h4 class="mt-4">Pasos para el Empleado</h4>
+                    <ol>
+                        <li><strong>Identificar la causa vencida</strong> en su lista de tareas. Verá un botón que dice <strong>“Justificar demora”</strong>.</li>
+                        <li>Al hacer clic, se abre una ventana donde debe <strong>escribir el motivo</strong> de la demora (por ejemplo, “falta de documentación”, “trámite externo”, etc.).</li>
+                        <li>Confirma el envío. La justificación queda en estado <strong>“pendiente”</strong> y el secretario recibe una notificación.</li>
+                        <li>Mientras espera la respuesta, el empleado puede ver el estado de su justificación en el <strong>historial</strong> de la causa (aparece como “Pendiente”, “Aprobada” o “Rechazada”).</li>
+                    </ol>
+
+                    <h4 class="mt-4">Pasos para el Secretario</h4>
+                    <ol>
+                        <li>Recibe una <strong>notificación visual</strong> (campana con un número) cuando hay justificaciones pendientes.</li>
+                        <li>Al hacer clic en la notificación, ve la lista de todas las justificaciones que esperan su decisión.</li>
+                        <li>Para cada una, puede <strong>aprobar</strong> o <strong>rechazar</strong> la justificación, y dejar un comentario opcional.</li>
+                        <li>Al decidir, el empleado recibe un aviso con el resultado. Si se aprueba, la demora <strong>no penaliza</strong> en las estadísticas de rendimiento; si se rechaza, la demora sigue contando.</li>
+                    </ol>
+
+                    <h4 class="mt-4">¿Qué pasa después?</h4>
+                    <ul>
+                        <li><strong>Si se aprueba</strong>: la causa queda registrada como justificada y el empleado no es penalizado por el retraso.</li>
+                        <li><strong>Si se rechaza</strong>: la demora se mantiene y afecta la métrica de rendimiento del empleado.</li>
+                        <li>Tanto el empleado como el secretario pueden ver el historial completo de decisiones en la ficha de cada causa.</li>
+                    </ul>
+
+                    <p class="mt-4"><strong>Importante:</strong> Esta funcionalidad ayuda a que el equipo trabaje de forma más justa, entendiendo los imprevistos y evitando sanciones automáticas cuando hay una razón válida.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="btnPrintDemora">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts de Bootstrap y lógica -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
     </script>
     <script>
         (function() {
             // ============================================================
-            //  CONTENIDO COMPLETO DEL MANUAL (sin emojis en títulos, excepto Administrador)
+            //  CONTENIDO COMPLETO DEL MANUAL
             // ============================================================
             const manualData = {
                 operador: `
@@ -961,15 +1172,18 @@
             const btnVolver = document.getElementById('btnVolver');
             const btnImprimir = document.getElementById('btnImprimir');
             const btnAdminFab = document.getElementById('btnAdminFab');
+            const btnDemoraFab = document.getElementById('btnDemoraFab');
 
-            // Modal de impresión
             const printModalEl = document.getElementById('printModal');
             const printModalBody = document.getElementById('printModalBody');
             const printModalLabel = document.getElementById('printModalLabel');
             const btnPrintAction = document.getElementById('btnPrintAction');
 
+            const demoraModalEl = document.getElementById('demoraModal');
+            let demoraModalInstance = null;
             let printModalInstance = null;
             let currentModuleName = '';
+            let isPrintingDemora = false;
 
             function mostrarModulo(moduleKey) {
                 if (manualData[moduleKey]) {
@@ -980,7 +1194,6 @@
                     btnVolver.style.display = 'flex';
                     btnImprimir.style.display = 'flex';
 
-                    // Obtener nombre del módulo para el título de impresión
                     if (moduleKey === 'administrador') {
                         currentModuleName = 'Administrador';
                     } else {
@@ -1005,7 +1218,6 @@
                 currentModuleName = '';
             }
 
-            // Eventos de las tarjetas
             document.querySelectorAll('.module-card').forEach(card => {
                 card.addEventListener('click', function(e) {
                     const moduleKey = this.dataset.module;
@@ -1013,14 +1225,76 @@
                 });
             });
 
-            // Botón flotante Administrador
             btnAdminFab.addEventListener('click', function() {
                 mostrarModulo('administrador');
             });
 
+            btnDemoraFab.addEventListener('click', function() {
+                if (!demoraModalInstance) {
+                    demoraModalInstance = new bootstrap.Modal(demoraModalEl, {
+                        backdrop: 'static',
+                        keyboard: true
+                    });
+                }
+                demoraModalInstance.show();
+            });
+
+            document.getElementById('btnPrintDemora').addEventListener('click', function() {
+                if (isPrintingDemora) return;
+                isPrintingDemora = true;
+
+                const demoraBody = document.querySelector('#demoraModal .modal-body');
+                if (!demoraBody) {
+                    isPrintingDemora = false;
+                    return;
+                }
+
+                const now = new Date();
+                const fecha = now.toLocaleDateString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                const hora = now.toLocaleTimeString('es-AR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const contenido = `
+                    <div class="print-demora-content">
+                        <h1>Situación de Demora de Causas Asignadas</h1>
+                        <div class="fecha-impresion">Impreso el ${fecha} a las ${hora}</div>
+                        ${demoraBody.innerHTML}
+                    </div>
+                `;
+
+                printModalBody.innerHTML = contenido;
+                printModalLabel.textContent = 'Imprimir - Demora';
+
+                if (demoraModalInstance) {
+                    demoraModalInstance.hide();
+                }
+
+                if (!printModalInstance) {
+                    printModalInstance = new bootstrap.Modal(printModalEl, {
+                        backdrop: 'static',
+                        keyboard: true
+                    });
+                }
+                printModalInstance.show();
+
+                // Pequeño retraso para asegurar renderizado antes de imprimir
+                printModalEl.addEventListener('shown.bs.modal', function onShown() {
+                    printModalEl.removeEventListener('shown.bs.modal', onShown);
+                    setTimeout(function() {
+                        window.print();
+                        isPrintingDemora = false;
+                    }, 300);
+                });
+            });
+
             btnVolver.addEventListener('click', volverInicio);
 
-            // Botón Imprimir
             btnImprimir.addEventListener('click', function() {
                 if (!moduleContent.innerHTML.trim()) return;
 
