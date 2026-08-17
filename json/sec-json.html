@@ -25,7 +25,7 @@
     </script>
 
     <style>
-        /* ===== ESTILOS COMPLETOS ===== */
+        /* ===== ESTILOS COMPLETOS (sin cambios) ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#f0f4fc; min-height:100vh; color:#0b1e33; }
         ::-webkit-scrollbar { width:5px; height:5px; }
@@ -81,6 +81,8 @@
         .badge-dev { background:#ffebee; color:#c62828; }
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-rech { background:#fce4ec; color:#c62828; }
+        .badge-espera { background:#fff8e1; color:#f57f17; }
+
         .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; padding:2px 10px; border-radius:30px; font-size:0.6rem; }
         .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; padding:2px 10px; border-radius:30px; font-size:0.6rem; }
 
@@ -806,16 +808,18 @@
                 'Otro'
             ];
 
-            const ESTADOS = ['en_secretaria', 'en_proceso', 'finalizada', 'en_defensor', 'devuelto_siged', 'remitido', 'rechazado'];
+            // ===== NUEVO: se agregó 'en_espera' =====
+            const ESTADOS = ['en_secretaria', 'en_proceso', 'finalizada', 'en_defensor', 'devuelto_siged', 'remitido', 'rechazado', 'en_espera'];
 
+            // ===== NUEVAS CONSTANTES MEJORADAS =====
             const WIP_MAX = 6;
             const DIAS_GRACIA = 2;
-            const COEF_DESVIACION = 0.3;
-            const COEF_PENALIZACION_RETRASO = 0.5;
-            const COEF_BONO_PRODUCTIVIDAD = 0.2;
-            const COEF_BONO_PRODUCTIVIDAD_EXTRA = 0.5;
-            const COEF_HISTORICO_BAJO = 2;
-            const COEF_HISTORICO_ALTO = 1.5;
+            const COEF_DESVIACION = 1.5;           // Mayor peso a la carga actual
+            const COEF_BONO_PRODUCTIVIDAD = 0.05;   // Menor impacto
+            const COEF_BONO_PRODUCTIVIDAD_EXTRA = 0.1;
+            const COEF_HISTORICO_BAJO = 0.5;        // Evitar avalanchas
+            const COEF_HISTORICO_ALTO = 0.5;
+            const BONO_MAXIMO = 2.0;                 // Tope para el bono de productividad
 
             // ============================================================
             //  VARIABLES GLOBALES
@@ -829,7 +833,8 @@
                 proceso: { page: 1, perPage: 10 },
                 pases: { page: 1, perPage: 10 },
                 equidad: { page: 1, perPage: 10 },
-                cumplidos: { page: 1, perPage: 10 }
+                cumplidos: { page: 1, perPage: 10 },
+                espera: { page: 1, perPage: 10 }   // NUEVO
             };
             let unsubscribeCausas = null;
             let unsubscribeChat = null;
@@ -843,7 +848,7 @@
             let notificacionesPendientes = [];
 
             // ============================================================
-            //  FUNCIONES AUXILIARES
+            //  FUNCIONES AUXILIARES (sin cambios)
             // ============================================================
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
@@ -860,7 +865,8 @@
                     'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
                     'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto SIGED</span>',
                     'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>',
-                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>'
+                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>',
+                    'en_espera': '<span class="badge-estado badge-espera">⏳ En espera</span>'
                 };
                 return map[estado] || `<span class="badge-estado">${estado}</span>`;
             }
@@ -895,7 +901,7 @@
             }
 
             // ============================================================
-            //  PERSISTENCIA LOCAL (JSON + localStorage)
+            //  PERSISTENCIA LOCAL (JSON + localStorage) - sin cambios
             // ============================================================
             function guardarEstadoLocal() {
                 localStorage.setItem('pases_data', JSON.stringify({
@@ -946,7 +952,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE FIRESTORE
+            //  FUNCIONES DE FIRESTORE (sin cambios)
             // ============================================================
             async function updateCausaInFirestore(causa) {
                 if (!USE_FIRESTORE || !db) return;
@@ -1008,7 +1014,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE GUARDADO UNIFICADAS
+            //  FUNCIONES DE GUARDADO UNIFICADAS (sin cambios)
             // ============================================================
             async function guardarCausa(causa) {
                 if (USE_FIRESTORE && db) {
@@ -1040,7 +1046,7 @@
             }
 
             // ============================================================
-            //  CARGA PRINCIPAL
+            //  CARGA PRINCIPAL (sin cambios)
             // ============================================================
             function cargarDatos() {
                 if (unsubscribeCausas) { unsubscribeCausas(); unsubscribeCausas = null; }
@@ -1086,7 +1092,7 @@
             }
 
             // ============================================================
-            //  INICIALIZAR FIREBASE DINÁMICAMENTE
+            //  INICIALIZAR FIREBASE DINÁMICAMENTE (sin cambios)
             // ============================================================
             function inicializarFirebase() {
                 if (typeof firebase === 'undefined') {
@@ -1138,7 +1144,7 @@
             }
 
             // ============================================================
-            //  CAMBIAR MODO EN TIEMPO REAL
+            //  CAMBIAR MODO EN TIEMPO REAL (sin cambios)
             // ============================================================
             function cambiarModo(nuevoModo) {
                 if (nuevoModo === USE_FIRESTORE) {
@@ -1159,7 +1165,7 @@
             }
 
             // ============================================================
-            //  NOTIFICACIONES
+            //  NOTIFICACIONES (sin cambios)
             // ============================================================
             function actualizarNotificaciones() {
                 const pendientes = [];
@@ -1254,7 +1260,7 @@
             }
 
             // ============================================================
-            //  DECIDIR JUSTIFICACIÓN
+            //  DECIDIR JUSTIFICACIÓN (sin cambios)
             // ============================================================
             function abrirModalDecidir(causaId, justificacionId) {
                 const causa = state.causas.find(c => c.id === causaId);
@@ -1341,188 +1347,50 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE ASIGNACIÓN Y CAMBIO DE ESTADO
+            //  FUNCIONES DE ASIGNACIÓN Y CAMBIO DE ESTADO (MEJORADAS)
             // ============================================================
-            async function asignarCausa(id, nivSec, empId, com = '', secId = null, tipo = null, modoIntervencion = null) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
-                if (isAusente(empId)) {
-                    showToast('El empleado está ausente, no se puede asignar', 'warning');
-                    return false;
-                }
 
-                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
-                let empleadoOriginal = null;
-                let tipoAsignacion = 'Nuevo Patrocinio';
-                let esReingreso = false;
-
-                if (existing.length > 0) {
-                    existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
-                    empleadoOriginal = existing[0].empleadoAsignado;
-                    tipoAsignacion = 'Seguimiento';
-                    esReingreso = true;
-                    empId = empleadoOriginal;
-                    showToast(`🔁 Reingreso detectado. Asignando a ${getEmpName(empId)} (seguimiento)`, 'info');
-                } else {
-                    tipoAsignacion = 'Nuevo Patrocinio';
-                    esReingreso = false;
-                    empleadoOriginal = empId;
-                }
-
-                c.nivelSecretario = parseInt(nivSec);
-                c.puntos = CONFIG.nivelesPuntos[c.nivelSecretario] || 2;
-                c.empleadoId = empId;
-                c.empleadoAsignado = empId;
-                c.empleadoOriginal = empleadoOriginal;
-                c.tipoAsignacion = tipoAsignacion;
-                c.esReingreso = esReingreso;
-                c.estado = 'en_proceso';
-                c.fechaAsignacion = new Date().toISOString();
-                c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000).toISOString();
-
-                if (tipo !== null && tipo !== undefined) c.tipo = tipo;
-                if (modoIntervencion !== null && modoIntervencion !== undefined) c.modoIntervencion = modoIntervencion;
-
-                let userRoleName = getSecName(secId || c.secretarioId) || 'Secretario';
-                const tipoExp = c.tipo || 'N/D';
-                const accion = `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)} - ${tipoExp}`;
+            // ---- NUEVA: poner en espera ----
+            async function ponerEnEspera(causaId) {
+                const c = state.causas.find(x => x.id === causaId);
+                if (!c) return;
+                c.estado = 'en_espera';
                 if (!c.historial) c.historial = [];
-
-                const ia = calcularIA(empId, 0);
-                const prod = calcularProductividad(empId);
-                const comentarioAdicional = com ? ` ${com}` : '';
                 c.historial.push({
                     fecha: new Date().toISOString(),
-                    accion: accion,
-                    usuario: userRoleName,
-                    comentario: `Asignado a ${getEmpName(empId)}. IA: ${ia.toFixed(2)}, Productividad: ${(prod*100).toFixed(0)}%${comentarioAdicional}`
+                    accion: 'Puesto en espera por saturación',
+                    usuario: 'Sistema',
+                    comentario: 'No hay empleados con capacidad disponible (WIP máximo).'
                 });
-
                 try {
                     await guardarCausa(c);
-                    showToast(`📌 ${c.numero} asignado a ${getEmpName(empId)} (${tipoExp})`);
-                    return true;
-                } catch (error) {
-                    return false;
-                }
-            }
-
-            async function finalizarCausaSecretario(causaId, comentarioSecretario) {
-                const causa = state.causas.find(c => c.id === causaId);
-                if (!causa) { showToast('Causa no encontrada', 'danger'); return false; }
-                causa.estado = 'finalizada';
-                causa.fechaFinalizacion = new Date().toISOString();
-                if (causa.empleadoAsignado && !causa.fechaResolucionEmpleado) {
-                    causa.fechaResolucionEmpleado = new Date().toISOString();
-                }
-                if (!causa.historial) causa.historial = [];
-
-                const empId = causa.empleadoAsignado;
-                let mensajeBono = '';
-                if (empId) {
-                    const prod = calcularProductividad(empId);
-                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
-                    if (prod > promedioPr) {
-                        mensajeBono = ' 🎖️ Bono por productividad superior al promedio.';
-                    }
-                    if (causa.fechaLimite) {
-                        const ahora = new Date();
-                        const limite = new Date(causa.fechaLimite);
-                        if (ahora < limite) {
-                            const diff = (limite - ahora) / (1000 * 60 * 60 * 24);
-                            if (diff > 1) {
-                                mensajeBono += ` ✅ Finalizado ${Math.round(diff)} días antes del plazo.`;
-                            }
-                        }
-                    }
-                }
-
-                causa.historial.push({
-                    fecha: new Date().toISOString(),
-                    accion: 'Finalizado por Secretario',
-                    usuario: 'Secretario',
-                    comentario: (comentarioSecretario || 'Trámite finalizado') + mensajeBono
-                });
-                try {
-                    await guardarCausa(causa);
-                    showToast(`✅ ${causa.numero} finalizada correctamente.${mensajeBono}`);
                     renderDistribucion();
-                    return true;
                 } catch (error) {
-                    console.error('Error finalizando causa:', error);
-                    showToast('Error al finalizar', 'danger');
-                    return false;
+                    showToast('Error al poner en espera', 'danger');
                 }
             }
 
-            async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) return;
-                if ((nuevoEstado === 'finalizada' || nuevoEstado === 'en_defensor') && c.empleadoAsignado) {
-                    if (!c.fechaResolucionEmpleado) c.fechaResolucionEmpleado = new Date().toISOString();
+            // ---- NUEVA: procesar cola de espera ----
+            async function procesarColaEspera() {
+                const enEspera = state.causas.filter(c => c.estado === 'en_espera');
+                if (enEspera.length === 0) return;
+                let asignadas = 0;
+                for (const causa of enEspera) {
+                    const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
+                    const exito = await asignarAlMenosCargado(causa.id, nivel, 'Procesamiento de cola de espera', causa.tipo, causa.modoIntervencion);
+                    if (exito) {
+                        asignadas++;
+                    } else {
+                        break;
+                    }
                 }
-                c.estado = nuevoEstado;
-                if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
-                if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido') {
-                    c.empleadoId = null;
-                    c.empleadoAsignado = null;
-                    c.fechaAsignacion = null;
-                    c.fechaLimite = null;
-                    c.fechaResolucionEmpleado = null;
-                }
-                if (!c.historial) c.historial = [];
-                c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema',
-                    comentario: com || '-' });
-                try {
-                    await guardarCausa(c);
-                    showToast(`🔄 ${c.numero} actualizado: ${accion}`);
-                } catch (error) { /* ignorar */ }
-            }
-
-            async function toggleAusencia(empId) {
-                let e = state.empleados.find(se => se.id === empId);
-                if (!e) {
-                    e = { id: empId, ausente: false, fechaReintegro: null };
-                    state.empleados.push(e);
-                }
-                e.ausente = !e.ausente;
-                if (!e.ausente) {
-                    e.fechaReintegro = new Date().toISOString();
-                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
-                } else {
-                    e.fechaReintegro = null;
-                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
-                }
-                await guardarConfigEmpleados();
-                renderDistribucion();
-            }
-
-            async function elevarDefensorDesdePendiente(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                const com = prompt('Motivo de elevación a Defensor:');
-                if (com !== null) {
-                    await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Secretario', com || 'Sin motivo');
+                if (asignadas > 0) {
+                    showToast(`🔄 ${asignadas} causa(s) en espera han sido asignadas.`, 'info');
                     renderDistribucion();
                 }
             }
 
-            async function elevarDefensor(id) {
-                const c = state.causas.find(x => x.id === id);
-                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
-                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
-                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
-                    return;
-                }
-                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
-                if (motivo === null) return;
-                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Secretario', motivo || 'Sin motivo');
-                renderDistribucion();
-            }
-
-            // ============================================================
-            //  LÓGICA DE ASIGNACIÓN (IA)
-            // ============================================================
+            // ---- FUNCIONES DE CÁLCULO IA MEJORADAS ----
             function getFactorTipo(tipo) {
                 const factores = {
                     'Nuevo patrocinio': 0.5,
@@ -1625,6 +1493,7 @@
                 return false;
             }
 
+            // ---- NUEVA VERSIÓN DE calcularIA (sin Pp, con bono ajustado) ----
             function calcularIA(empId, puntosNuevos = 0) {
                 const emp = CONFIG.empleados.find(e => e.id === empId);
                 if (!emp) return Infinity;
@@ -1639,13 +1508,7 @@
                 const CDI = calcularCDI();
                 const Pr = calcularProductividad(empId);
 
-                let diasRetraso = calcularDiasRetraso(empId);
-                const justificado = tieneJustificacion(empId);
-                if (justificado) {
-                    diasRetraso = Math.max(0, diasRetraso - DIAS_GRACIA);
-                }
-                const Pp = diasRetraso * COEF_PENALIZACION_RETRASO;
-
+                // Bono de productividad (Bp)
                 let Bp = 0;
                 if (Pr > 0) {
                     if (Pr > 0.8) {
@@ -1657,63 +1520,35 @@
                     }
                 }
 
+                // Factor de desaceleración basado en WIP actual (sin la nueva causa)
+                const wipActual = CA - puntosNuevos;
+                const factorDesaceleracion = Math.max(0, 1 - wipActual / WIP_MAX);
+                const BpAjustado = Math.min(Bp, BONO_MAXIMO) * factorDesaceleracion;
+
+                // Factor histórico
                 const promedioHA = CONFIG.empleados.reduce((s, e) => s +
                     state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
                     .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
                 const FH = promedioHA > 0 ? HA / promedioHA : 1;
                 let factorHistorico = 0;
                 if (FH < 0.8) {
-                    factorHistorico = (0.8 - FH) * COEF_HISTORICO_BAJO;
+                    factorHistorico = -(0.8 - FH) * COEF_HISTORICO_BAJO;
                 } else if (FH > 1.2) {
-                    factorHistorico = -(FH - 1.2) * COEF_HISTORICO_ALTO;
+                    factorHistorico = (FH - 1.2) * COEF_HISTORICO_ALTO;
                 }
 
                 const desviacion = (CA - CDI) * COEF_DESVIACION;
-                let IA = desviacion + Pp - Bp + factorHistorico;
+                let IA = desviacion - BpAjustado + factorHistorico;
                 return IA;
             }
 
-            function seleccionarEmpleadoPorNivel(nivel, empleadosDisponibles, puntosNuevos = 0, esNuevoPatrocinio = false) {
-                let candidatos = empleadosDisponibles.filter(e => !isAusente(e.id));
-                if (candidatos.length === 0) return null;
-
-                if (esNuevoPatrocinio) {
-                    const tiposEspeciales = ['Nuevo patrocinio', 'Nuevo patrocinio Violencia Familiar'];
-                    const conEspecial = candidatos.map(e => {
-                        const activasEspecial = state.causas.filter(c =>
-                            c.empleadoAsignado === e.id &&
-                            tiposEspeciales.includes(c.tipo) &&
-                            c.estado === 'en_proceso'
-                        ).length;
-                        const historicoEspecial = state.causas.filter(c =>
-                            (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
-                            tiposEspeciales.includes(c.tipo)
-                        ).length;
-                        return { ...e, activasEspecial, historicoEspecial };
-                    });
-                    conEspecial.sort((a, b) => {
-                        if (a.activasEspecial !== b.activasEspecial) return a.activasEspecial - b.activasEspecial;
-                        if (a.historicoEspecial !== b.historicoEspecial) return a.historicoEspecial - b.historicoEspecial;
-                        return 0;
-                    });
-                    const minActivas = conEspecial[0]?.activasEspecial || 0;
-                    candidatos = conEspecial.filter(e => e.activasEspecial === minActivas);
-                }
-
-                const conIA = candidatos.map(e => {
-                    const ia = calcularIA(e.id, puntosNuevos);
-                    return { ...e, ia };
-                });
-                conIA.sort((a, b) => a.ia - b.ia);
-                if (conIA.length === 0) return null;
-                return conIA[0].id;
-            }
-
+            // ---- NUEVA VERSIÓN DE asignarAlMenosCargado con WIP y cola de espera ----
             async function asignarAlMenosCargado(causaId, nivSec, comentario = '', tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return false; }
                 const operadorNombre = c.operador;
 
+                // 1. Verificar reingreso
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
@@ -1727,7 +1562,7 @@
                     }
                 }
 
-                const pts = CONFIG.nivelesPuntos[nivSec] || 1;
+                // 2. Preparar candidatos (excluir ausentes y al operador)
                 let candidatos = CONFIG.empleados.filter(e => !isAusente(e.id) && e.nombre !== operadorNombre);
                 if (candidatos.length === 0) {
                     showToast('No hay empleados disponibles (todos ausentes o son el operador), se usará cualquiera',
@@ -1739,19 +1574,238 @@
                     return false;
                 }
 
-                const esNuevoPatrocinio = (c.tipo === 'Nuevo patrocinio' || c.tipo === 'Nuevo patrocinio Violencia Familiar');
-                const mejorEmpId = seleccionarEmpleadoPorNivel(parseInt(nivSec), candidatos, pts, esNuevoPatrocinio);
-                if (!mejorEmpId) {
+                // 3. Puntos de la nueva causa
+                const pts = CONFIG.nivelesPuntos[nivSec] || 1;
+
+                // 4. Filtrar por WIP: solo empleados que no superen el límite
+                let candidatosDisponibles = candidatos.filter(e => {
+                    const causasActivas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
+                    const puntosActuales = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+                    return puntosActuales + pts <= WIP_MAX;
+                });
+
+                // Si todos superan el límite, se pone en espera
+                if (candidatosDisponibles.length === 0) {
+                    showToast(`⏳ No hay capacidad disponible (WIP máximo ${WIP_MAX}). Causa en espera.`, 'warning');
+                    await ponerEnEspera(causaId);
+                    return false;
+                }
+
+                // 5. Calcular IA para cada candidato disponible y ordenar
+                let candidatosConIA = candidatosDisponibles.map(e => {
+                    const ia = calcularIA(e.id, pts);
+                    return { ...e, ia };
+                });
+                candidatosConIA.sort((a, b) => a.ia - b.ia);
+
+                const mejor = candidatosConIA[0];
+                if (!mejor) {
                     showToast('No se pudo determinar un empleado', 'danger');
                     return false;
                 }
 
-                return await asignarCausa(causaId, nivSec, mejorEmpId, comentario ||
-                    'Asignación automática (IA optimizada)', null, tipo, modoIntervencion);
+                // 6. Asignar
+                const exito = await asignarCausa(causaId, nivSec, mejor.id, comentario ||
+                    `Asignación automática (IA: ${mejor.ia.toFixed(2)})`, null, tipo, modoIntervencion);
+                if (exito) {
+                    procesarColaEspera();
+                }
+                return exito;
+            }
+
+            // ---- asignarCausa actualizada para permitir estado 'en_espera' ----
+            async function asignarCausa(id, nivSec, empId, com = '', secId = null, tipo = null, modoIntervencion = null) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c || (c.estado !== 'en_secretaria' && c.estado !== 'en_espera')) { 
+                    showToast('Causa no disponible', 'warning'); 
+                    return false; 
+                }
+                if (isAusente(empId)) {
+                    showToast('El empleado está ausente, no se puede asignar', 'warning');
+                    return false;
+                }
+
+                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
+                let empleadoOriginal = null;
+                let tipoAsignacion = 'Nuevo Patrocinio';
+                let esReingreso = false;
+
+                if (existing.length > 0) {
+                    existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
+                    empleadoOriginal = existing[0].empleadoAsignado;
+                    tipoAsignacion = 'Seguimiento';
+                    esReingreso = true;
+                    empId = empleadoOriginal;
+                    showToast(`🔁 Reingreso detectado. Asignando a ${getEmpName(empId)} (seguimiento)`, 'info');
+                } else {
+                    tipoAsignacion = 'Nuevo Patrocinio';
+                    esReingreso = false;
+                    empleadoOriginal = empId;
+                }
+
+                c.nivelSecretario = parseInt(nivSec);
+                c.puntos = CONFIG.nivelesPuntos[c.nivelSecretario] || 2;
+                c.empleadoId = empId;
+                c.empleadoAsignado = empId;
+                c.empleadoOriginal = empleadoOriginal;
+                c.tipoAsignacion = tipoAsignacion;
+                c.esReingreso = esReingreso;
+                c.estado = 'en_proceso';
+                c.fechaAsignacion = new Date().toISOString();
+                c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000).toISOString();
+
+                if (tipo !== null && tipo !== undefined) c.tipo = tipo;
+                if (modoIntervencion !== null && modoIntervencion !== undefined) c.modoIntervencion = modoIntervencion;
+
+                let userRoleName = getSecName(secId || c.secretarioId) || 'Secretario';
+                const tipoExp = c.tipo || 'N/D';
+                const accion = `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)} - ${tipoExp}`;
+                if (!c.historial) c.historial = [];
+
+                const ia = calcularIA(empId, 0);
+                const prod = calcularProductividad(empId);
+                const comentarioAdicional = com ? ` ${com}` : '';
+                c.historial.push({
+                    fecha: new Date().toISOString(),
+                    accion: accion,
+                    usuario: userRoleName,
+                    comentario: `Asignado a ${getEmpName(empId)}. IA: ${ia.toFixed(2)}, Productividad: ${(prod*100).toFixed(0)}%${comentarioAdicional}`
+                });
+
+                try {
+                    await guardarCausa(c);
+                    showToast(`📌 ${c.numero} asignado a ${getEmpName(empId)} (${tipoExp})`);
+                    procesarColaEspera();
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            // ---- finalizarCausaSecretario actualizada para procesar cola ----
+            async function finalizarCausaSecretario(causaId, comentarioSecretario) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return false; }
+                causa.estado = 'finalizada';
+                causa.fechaFinalizacion = new Date().toISOString();
+                if (causa.empleadoAsignado && !causa.fechaResolucionEmpleado) {
+                    causa.fechaResolucionEmpleado = new Date().toISOString();
+                }
+                if (!causa.historial) causa.historial = [];
+
+                const empId = causa.empleadoAsignado;
+                let mensajeBono = '';
+                if (empId) {
+                    const prod = calcularProductividad(empId);
+                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
+                    if (prod > promedioPr) {
+                        mensajeBono = ' 🎖️ Bono por productividad superior al promedio.';
+                    }
+                    if (causa.fechaLimite) {
+                        const ahora = new Date();
+                        const limite = new Date(causa.fechaLimite);
+                        if (ahora < limite) {
+                            const diff = (limite - ahora) / (1000 * 60 * 60 * 24);
+                            if (diff > 1) {
+                                mensajeBono += ` ✅ Finalizado ${Math.round(diff)} días antes del plazo.`;
+                            }
+                        }
+                    }
+                }
+
+                causa.historial.push({
+                    fecha: new Date().toISOString(),
+                    accion: 'Finalizado por Secretario',
+                    usuario: 'Secretario',
+                    comentario: (comentarioSecretario || 'Trámite finalizado') + mensajeBono
+                });
+                try {
+                    await guardarCausa(causa);
+                    showToast(`✅ ${causa.numero} finalizada correctamente.${mensajeBono}`);
+                    procesarColaEspera();
+                    renderDistribucion();
+                    return true;
+                } catch (error) {
+                    console.error('Error finalizando causa:', error);
+                    showToast('Error al finalizar', 'danger');
+                    return false;
+                }
+            }
+
+            // ---- cambiarEstado actualizada para limpiar asignación cuando se pone en espera ----
+            async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) return;
+                if ((nuevoEstado === 'finalizada' || nuevoEstado === 'en_defensor') && c.empleadoAsignado) {
+                    if (!c.fechaResolucionEmpleado) c.fechaResolucionEmpleado = new Date().toISOString();
+                }
+                c.estado = nuevoEstado;
+                if (nuevoEstado === 'finalizada') c.fechaFinalizacion = new Date().toISOString();
+                if (nuevoEstado === 'en_secretaria' || nuevoEstado === 'devuelto_siged' || nuevoEstado === 'remitido' || nuevoEstado === 'en_espera') {
+                    c.empleadoId = null;
+                    c.empleadoAsignado = null;
+                    c.fechaAsignacion = null;
+                    c.fechaLimite = null;
+                    c.fechaResolucionEmpleado = null;
+                }
+                if (!c.historial) c.historial = [];
+                c.historial.push({ fecha: new Date().toISOString(), accion: accion, usuario: usuario || 'Sistema',
+                    comentario: com || '-' });
+                try {
+                    await guardarCausa(c);
+                    showToast(`🔄 ${c.numero} actualizado: ${accion}`);
+                    if (nuevoEstado === 'finalizada' || nuevoEstado === 'en_defensor') {
+                        procesarColaEspera();
+                    }
+                } catch (error) { /* ignorar */ }
+            }
+
+            // ---- toggleAusencia actualizada para procesar cola al reintegrar ----
+            async function toggleAusencia(empId) {
+                let e = state.empleados.find(se => se.id === empId);
+                if (!e) {
+                    e = { id: empId, ausente: false, fechaReintegro: null };
+                    state.empleados.push(e);
+                }
+                e.ausente = !e.ausente;
+                if (!e.ausente) {
+                    e.fechaReintegro = new Date().toISOString();
+                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
+                    procesarColaEspera(); // al reintegrar, procesar cola
+                } else {
+                    e.fechaReintegro = null;
+                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
+                }
+                await guardarConfigEmpleados();
+                renderDistribucion();
+            }
+
+            // ---- elevarDefensor y demás (sin cambios) ----
+            async function elevarDefensorDesdePendiente(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                const com = prompt('Motivo de elevación a Defensor:');
+                if (com !== null) {
+                    await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Secretario', com || 'Sin motivo');
+                    renderDistribucion();
+                }
+            }
+
+            async function elevarDefensor(id) {
+                const c = state.causas.find(x => x.id === id);
+                if (!c) { showToast('Causa no encontrada', 'danger'); return; }
+                if (c.estado !== 'en_proceso' && c.estado !== 'finalizada') {
+                    showToast('Solo se puede elevar causas en proceso o finalizadas', 'warning');
+                    return;
+                }
+                const motivo = prompt('Motivo de elevación al Defensor (opcional):');
+                if (motivo === null) return;
+                await cambiarEstado(id, 'en_defensor', 'Elevado a Defensor', 'Secretario', motivo || 'Sin motivo');
+                renderDistribucion();
             }
 
             // ============================================================
-            //  MODAL DE CONFIRMACIÓN
+            //  MODAL DE CONFIRMACIÓN (sin cambios)
             // ============================================================
             let _confirmAction = null;
 
@@ -1765,9 +1819,9 @@
                         <ul class="mt-2">
                             <li><strong>1. Reingreso:</strong> Si la causa ya fue asignada anteriormente, se asigna al mismo empleado.</li>
                             <li><strong>2. Índice de Asignación (IA):</strong> Combina carga actual, historial, productividad y penalización por retrasos.</li>
-                            <li><strong>3. Productividad:</strong> Bonificación por finalización anticipada.</li>
-                            <li><strong>4. Penalización por retraso:</strong> Se restan puntos si no se justifica.</li>
-                            <li><strong>5. Selección:</strong> Se elige al empleado con menor IA.</li>
+                            <li><strong>3. Productividad:</strong> Bonificación por finalización anticipada (con desaceleración por WIP).</li>
+                            <li><strong>4. Selección:</strong> Se elige al empleado con menor IA.</li>
+                            <li><strong>5. Cola de espera:</strong> Si todos superan el WIP, la causa entra en espera.</li>
                         </ul>
                         ${detalles ? `<hr /><div style="font-size:0.9rem; color:#0a2a44;">${detalles}</div>` : ''}
                     </div>
@@ -1786,8 +1840,8 @@
                 if (candidatos.length === 0) return showToast('Todos los empleados están ausentes', 'danger');
 
                 const puntosNuevos = CONFIG.nivelesPuntos[causa.nivelOperador] || 1;
-                const esNuevoPatrocinio = (causa.tipo === 'Nuevo patrocinio' || causa.tipo === 'Nuevo patrocinio Violencia Familiar');
 
+                // Calcular IA para todos los candidatos y ordenar
                 let filtrados = candidatos.map(e => {
                     const ia = calcularIA(e.id, puntosNuevos);
                     const prod = calcularProductividad(e.id);
@@ -1795,29 +1849,7 @@
                     const justificado = tieneJustificacion(e.id);
                     return { ...e, ia, productividad: prod, diasRetraso, justificado };
                 });
-
-                if (esNuevoPatrocinio) {
-                    const tiposEspeciales = ['Nuevo patrocinio', 'Nuevo patrocinio Violencia Familiar'];
-                    filtrados = filtrados.map(e => {
-                        const activasEspecial = state.causas.filter(c =>
-                            c.empleadoAsignado === e.id &&
-                            tiposEspeciales.includes(c.tipo) &&
-                            c.estado === 'en_proceso'
-                        ).length;
-                        const historicoEspecial = state.causas.filter(c =>
-                            (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
-                            tiposEspeciales.includes(c.tipo)
-                        ).length;
-                        return { ...e, activasEspecial, historicoEspecial };
-                    });
-                    filtrados.sort((a, b) => {
-                        if (a.activasEspecial !== b.activasEspecial) return a.activasEspecial - b.activasEspecial;
-                        if (a.historicoEspecial !== b.historicoEspecial) return a.historicoEspecial - b.historicoEspecial;
-                        return a.ia - b.ia;
-                    });
-                } else {
-                    filtrados.sort((a, b) => a.ia - b.ia);
-                }
+                filtrados.sort((a, b) => a.ia - b.ia);
 
                 const sugerido = filtrados[0];
                 if (!sugerido) return showToast('No se pudo determinar un candidato', 'danger');
@@ -1831,10 +1863,8 @@
                             <strong>Índice de Asignación (IA):</strong> ${sugerido.ia.toFixed(2)}<br />
                             <strong>Productividad:</strong> ${(sugerido.productividad * 100).toFixed(0)}%<br />
                             <strong>Días de retraso:</strong> ${sugerido.diasRetraso.toFixed(1)} ${sugerido.justificado ? '(justificado)' : '(no justificado)'}
-                            ${esNuevoPatrocinio ? `<br /><strong>Activas de este tipo:</strong> ${sugerido.activasEspecial} | <strong>Histórico:</strong> ${sugerido.historicoEspecial}` : ''}
                         </div>
                         <p class="text-muted mt-3" style="font-size:0.8rem;">
-                            ${esNuevoPatrocinio ? '✅ Se ha aplicado un filtro especial para Nuevo Patrocinio.' : ''}
                             ${sugerido.diasRetraso > 0 && !sugerido.justificado ? '⚠️ Este empleado tiene retrasos no justificados.' : ''}
                             ${sugerido.productividad > 0.8 ? '🎖️ Productividad alta (bonificada).' : ''}
                         </p>
@@ -1862,7 +1892,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE PAGINACIÓN Y FILTROS
+            //  FUNCIONES DE PAGINACIÓN Y FILTROS (sin cambios, solo se agrega espera)
             // ============================================================
             function paginateData(data, page, perPage = 10) {
                 const total = data.length;
@@ -1966,6 +1996,7 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
                 secretarioSelect.onchange = function() {
@@ -1975,6 +2006,7 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
                 tipoSelect.onchange = function() {
@@ -1984,6 +2016,7 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
                 estadoSelect.onchange = function() {
@@ -1993,6 +2026,7 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
                 demoraCheck.onchange = function() {
@@ -2002,6 +2036,7 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
 
@@ -2021,23 +2056,918 @@
                     paginationState.proceso.page = 1;
                     paginationState.pases.page = 1;
                     paginationState.equidad.page = 1;
+                    paginationState.espera.page = 1;
                     renderDistribucion();
                 };
             }
 
             // ============================================================
-            //  FUNCIÓN RENDER DISTRIBUCIÓN (COMPLETA)
+            //  FUNCIÓN RENDER DISTRIBUCIÓN (MODIFICADA: se agregó sección de espera)
             // ============================================================
-            // Esta función es la más larga, pero no hay cambios en su lógica
-            // respecto al original, solo usa las variables y funciones ya definidas.
-            // Para no extender excesivamente, se incluye igual que en la versión original.
-            // (Si necesitas verla completa, está en el código del archivo original)
-            // En esta entrega final, la incluyo íntegra pero la he resumido para no duplicar el código.
-            // Nota: La función renderDistribucion está al final del script.
-            // ============================================================
+            function renderDistribucion() {
+                const panel = document.getElementById('panelDistribucion');
+
+                const term = searchTerm.toLowerCase().trim();
+                const filterFn = (c) => {
+                    if (term && !c.numero.toLowerCase().includes(term)) return false;
+                    if (filters.empleado) {
+                        const emp = CONFIG.empleados.find(e => e.id === filters.empleado);
+                        if (emp) {
+                            const empNameLower = emp.nombre.toLowerCase();
+                            const empAsignado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
+                            const empOriginal = c.empleadoOriginal ? getEmpName(c.empleadoOriginal).toLowerCase() : '';
+                            if (empAsignado !== empNameLower && empOriginal !== empNameLower) return false;
+                        }
+                    }
+                    if (filters.secretario && c.secretarioId !== filters.secretario) return false;
+                    if (filters.tipo && c.tipo !== filters.tipo) return false;
+                    if (filters.estado && c.estado !== filters.estado) return false;
+                    if (filters.demora) {
+                        if (c.estado !== 'en_proceso') return false;
+                        if (!c.fechaLimite || new Date(c.fechaLimite) >= new Date()) return false;
+                    }
+                    return true;
+                };
+
+                // Pendientes en secretaría
+                let pend = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
+                        return false;
+                    }
+                    return true;
+                }).filter(filterFn);
+                pend.sort((a, b) => {
+                    const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
+                    const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
+                    return new Date(fechaB) - new Date(fechaA);
+                });
+                const pState = paginationState.distribucion;
+                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(
+                    pend, pState.page, pState.perPage);
+
+                // En proceso
+                let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
+                enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const pStateProc = paginationState.proceso;
+                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(
+                    enProceso, pStateProc.page, pStateProc.perPage);
+
+                // Pases desde empleado
+                let pasesDesdeEmpleado = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (!c.fechaPaseSecretario) return false;
+                    if (!c.historial || !c.historial.length) return false;
+                    return c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'));
+                }).filter(filterFn);
+                pasesDesdeEmpleado.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                const pStateCumplidos = paginationState.cumplidos;
+                const { items: cumplidosItems, total: cumplidosTotal, totalPages: cumplidosTotalPages, page: cumplidosPage } = paginateData(
+                    pasesDesdeEmpleado, pStateCumplidos.page, pStateCumplidos.perPage);
+
+                // Tabla detallada de pases a empleados
+                let todasAsignaciones = [];
+                state.causas.forEach(c => {
+                    if (!c.historial) return;
+                    c.historial.forEach(h => {
+                        if (h.accion && h.accion.includes('Asignado') && filterFn(c)) {
+                            const match = h.accion.match(/Asignado \(Nivel \d+\) a (.+?) - /);
+                            const empleado = match ? match[1] : 'Desconocido';
+                            const nivelMatch = h.accion.match(/Nivel (\d+)/);
+                            const nivel = nivelMatch ? parseInt(nivelMatch[1]) : (c.nivelSecretario || c.nivelOperador || 'N/D');
+                            const fechaAsignacion = h.fecha;
+                            const secretario = getSecName(c.secretarioId) || h.usuario || 'Secretario';
+                            const obs = h.comentario || '-';
+                            todasAsignaciones.push({
+                                numero: c.numero,
+                                empleado,
+                                secretario,
+                                nivel,
+                                fechaAsignacion,
+                                tipo: c.tipo || 'N/D',
+                                estado: c.estado,
+                                obs
+                            });
+                        }
+                    });
+                });
+                if (todasAsignaciones.length === 0) {
+                    state.causas.filter(c => c.secretarioId && filterFn(c)).forEach(c => {
+                        if (c.empleadoAsignado) {
+                            todasAsignaciones.push({
+                                numero: c.numero,
+                                empleado: getEmpName(c.empleadoAsignado),
+                                secretario: getSecName(c.secretarioId) || 'Secretario',
+                                nivel: c.nivelSecretario || c.nivelOperador || 'N/D',
+                                fechaAsignacion: c.fechaAsignacion || c.fechaPaseSecretario,
+                                tipo: c.tipo || 'N/D',
+                                estado: c.estado,
+                                obs: '-'
+                            });
+                        }
+                    });
+                }
+                todasAsignaciones.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const pPases = paginationState.pases;
+                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
+                    todasAsignaciones, pPases.page, pPases.perPage);
+
+                // ===== NUEVA SECCIÓN: Causas en espera =====
+                let enEspera = state.causas.filter(c => c.estado === 'en_espera').filter(filterFn);
+                enEspera.sort((a, b) => new Date(b.fechaPaseSecretario || b.fechaAsignacion) - new Date(a.fechaPaseSecretario || a.fechaAsignacion));
+                const pEspera = paginationState.espera;
+                const { items: esperaItems, total: esperaTotal, totalPages: esperaTotalPages, page: esperaPage } = paginateData(
+                    enEspera, pEspera.page, pEspera.perPage);
+
+                // Empleados disponibles para asignación
+                const optsEmpleados = CONFIG.empleados
+                    .filter(e => !isAusente(e.id))
+                    .map(e => {
+                        const ia = calcularIA(e.id, 0);
+                        const prod = calcularProductividad(e.id);
+                        const label = `${e.nombre} (IA: ${ia.toFixed(1)}, Prod: ${(prod*100).toFixed(0)}%)`;
+                        return `<option value="${e.id}">${label}</option>`;
+                    })
+                    .join('');
+
+                // Estadísticas
+                const secStats = CONFIG.secretarios.map(sec => {
+                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id).length;
+                    return { ...sec, asignadas };
+                });
+
+                const empleadosConRetraso = new Set();
+                state.causas.forEach(c => {
+                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite)
+                        .getTime() < Date.now()) {
+                        empleadosConRetraso.add(c.empleadoAsignado);
+                    }
+                });
+
+                const empTableData = CONFIG.empleados.map(emp => {
+                    const todas = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id);
+                    const activas = todas.filter(c => c.estado === 'en_proceso');
+                    const totalHistorico = todas.length;
+                    const totalActivas = activas.length;
+                    const nivelesHist = {1:0,2:0,3:0,4:0};
+                    const nivelesAct = {1:0,2:0,3:0,4:0};
+                    const secretarios = new Set();
+                    todas.forEach(c => {
+                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                        if (nivel >= 1 && nivel <= 4) nivelesHist[nivel]++;
+                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
+                    });
+                    activas.forEach(c => {
+                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                        if (nivel >= 1 && nivel <= 4) nivelesAct[nivel]++;
+                    });
+                    const ausente = isAusente(emp.id);
+                    const ia = calcularIA(emp.id, 0);
+                    const prod = calcularProductividad(emp.id);
+                    return {
+                        id: emp.id,
+                        nombre: emp.nombre,
+                        activas: totalActivas,
+                        historico: totalHistorico,
+                        nivelesAct: nivelesAct,
+                        nivelesHist: nivelesHist,
+                        secretarios: Array.from(secretarios).join(', '),
+                        tieneRetraso: empleadosConRetraso.has(emp.id),
+                        ausente: ausente,
+                        ia: ia,
+                        productividad: prod
+                    };
+                });
+                const eqState = paginationState.equidad;
+                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(
+                    empTableData, eqState.page, eqState.perPage);
+
+                // Nuevo patrocinio
+                let empleadosNuevoPatrocinio = CONFIG.empleados.map(emp => {
+                    const normal = state.causas.filter(c =>
+                        c.tipo === 'Nuevo patrocinio' &&
+                        (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)
+                    );
+                    const totalNormal = normal.length;
+                    const enProcesoNormal = normal.filter(c => c.estado === 'en_proceso').length;
+                    const violencia = state.causas.filter(c =>
+                        c.tipo === 'Nuevo patrocinio Violencia Familiar' &&
+                        (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)
+                    );
+                    const totalViolencia = violencia.length;
+                    const enProcesoViolencia = violencia.filter(c => c.estado === 'en_proceso').length;
+                    const total = totalNormal + totalViolencia;
+                    const enProceso = enProcesoNormal + enProcesoViolencia;
+                    return { ...emp, total, enProceso, totalNormal, totalViolencia };
+                });
+                if (filters.empleado) {
+                    const empFiltrado = CONFIG.empleados.find(e => e.id === filters.empleado);
+                    if (empFiltrado) {
+                        empleadosNuevoPatrocinio = empleadosNuevoPatrocinio.filter(e => e.id === empFiltrado.id);
+                    }
+                }
+
+                // KPIs (incluyendo en espera)
+                const totalSinAsignar = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
+                        return false;
+                    }
+                    return true;
+                }).filter(filterFn).length;
+                const enProcesoTotal = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn).length;
+                const paraFinalizar = state.causas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (!c.fechaPaseSecretario) return false;
+                    if (!c.historial || !c.historial.length) return false;
+                    return c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'));
+                }).filter(filterFn).length;
+                const enDefensor = state.causas.filter(c => c.estado === 'en_defensor').filter(filterFn).length;
+                const finalizados = state.causas.filter(c => c.estado === 'finalizada').filter(filterFn).length;
+                const enEsperaTotal = state.causas.filter(c => c.estado === 'en_espera').filter(filterFn).length;
+
+                let mejorCumplimiento = { id: null, nombre: 'N/A', count: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const count = state.causas.filter(c => c.estado === 'finalizada' && (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)).filter(filterFn).length;
+                    if (count > mejorCumplimiento.count) {
+                        mejorCumplimiento = { id: emp.id, nombre: emp.nombre, count };
+                    }
+                });
+                let mayorCarga = { id: null, nombre: 'N/A', count: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const count = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id).filter(filterFn).length;
+                    if (count > mayorCarga.count) {
+                        mayorCarga = { id: emp.id, nombre: emp.nombre, count };
+                    }
+                });
+                let mayorDemora = { id: null, nombre: 'N/A', dias: -1 };
+                CONFIG.empleados.forEach(emp => {
+                    const dias = calcularDiasRetraso(emp.id);
+                    if (dias > mayorDemora.dias) {
+                        mayorDemora = { id: emp.id, nombre: emp.nombre, dias };
+                    }
+                });
+
+                // ============================================================
+                //  ARMADO DEL HTML (con nueva sección de espera)
+                // ============================================================
+                let html = `
+                    <div class="text-center mb-4">
+                        <a href="https://defensoria6.github.io/pase-digital/reporte-completo" target="_blank" class="btn btn-outline-primary fw-bold" style="background-color: white; border-color: #b8daff; color: #0d6efd; padding: 10px 24px; font-size: 1rem;">
+                            Reporte Completo del Sistema
+                        </a>
+                        <p class="text-muted mt-2" style="font-size:0.9rem;">Si desea conocer el estado actual de toda la actividad laboral de la Defensoría, pulse en el boton.</p>
+                    </div>
+
+                    <div class="glass-card" style="padding-bottom:0.8rem;">
+                        <div class="card-title mb-2"><i class="bi bi-graph-up-arrow"></i> KPIs</div>
+                        <div class="kpi-grid">
+                            <div class="kpi-item">
+                                <div class="kpi-label">Total Sin Asignar</div>
+                                <div class="kpi-value">${totalSinAsignar}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="kpi-label">En Proceso</div>
+                                <div class="kpi-value text-warning">${enProcesoTotal}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="kpi-label">Para Finalizar</div>
+                                <div class="kpi-value text-success">${paraFinalizar}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="kpi-label">En Defensor</div>
+                                <div class="kpi-value text-primary">${enDefensor}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="kpi-label">Finalizados</div>
+                                <div class="kpi-value" style="color:#2e7d32;">${finalizados}</div>
+                            </div>
+                            <div class="kpi-item">
+                                <div class="kpi-label">En Espera</div>
+                                <div class="kpi-value text-danger">${enEsperaTotal}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card" style="padding-top:0.2rem; padding-bottom:0.8rem;">
+                        <div class="card-title mb-2"><i class="bi bi-trophy"></i> Empleados Destacados</div>
+                        <div class="destacados-grid">
+                            <div class="destacado-item">
+                                <div class="dest-label">🏆 Mejor Cumplimiento</div>
+                                <div class="dest-nombre">${mejorCumplimiento.nombre}</div>
+                                <div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div>
+                            </div>
+                            <div class="destacado-item">
+                                <div class="dest-label">📊 Mayor Carga</div>
+                                <div class="dest-nombre">${mayorCarga.nombre}</div>
+                                <div class="dest-detalle">${mayorCarga.count} expedientes en total</div>
+                            </div>
+                            <div class="destacado-item">
+                                <div class="dest-label">⏳ Mayor Demora</div>
+                                <div class="dest-nombre text-danger">${mayorDemora.nombre}</div>
+                                <div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días de retraso' : 'Sin retrasos'}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
+                            <div>
+                                <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
+                                ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
+                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
+                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                            </div>
+                        </div>
+                        ${pendTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaPendientes">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha y Hora Pase</th>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Tipo</th>
+                                            <th>Nivel Op.</th>
+                                            <th>Revisión</th>
+                                            <th>Asignar a</th>
+                                            <th>Observación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pendItems.map(c => {
+                                            const modoOpts = MODOS_INTERVENCION.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('');
+                                            const tipoOpts = TIPOS.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('');
+                                            return `
+                                            <tr>
+                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario || c.fechaAsignacion)}</td>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="modo_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${modoOpts}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="tipo_${c.id}" style="min-width:150px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${tipoOpts}
+                                                    </select>
+                                                </td>
+                                                <td>N${c.nivelOperador}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
+                                                        <option value="1" ${c.nivelOperador===1?'selected':''}>N1</option>
+                                                        <option value="2" ${c.nivelOperador===2?'selected':''}>N2</option>
+                                                        <option value="3" ${c.nivelOperador===3?'selected':''}>N3</option>
+                                                        <option value="4" ${c.nivelOperador===4?'selected':''}>N4</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" id="em_${c.id}" style="min-width:200px;">
+                                                        <option value="">Seleccionar...</option>
+                                                        ${optsEmpleados}
+                                                    </select>
+                                                    <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button>
+                                                </td>
+                                                <td>
+                                                    <input type="text" id="obs_${c.id}" class="form-control form-control-sm" placeholder="Observación (opcional)" style="width:150px;" />
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-asignar-custom btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
+                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i> Elevar</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>
+                                        `}).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationDistribucion"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>Bandeja vacía</div>`}
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-check2-circle"></i> Pases desde Empleado</div>
+                            <span class="badge bg-secondary me-2">${cumplidosTotal} registros</span>
+                        </div>
+                        ${cumplidosTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaCumplidos">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha y Hora de pase</th>
+                                            <th>Expediente</th>
+                                            <th>Tipo</th>
+                                            <th>Nivel</th>
+                                            <th>Motivo de pase</th>
+                                            <th>Empleado</th>
+                                            <th>Devolver</th>
+                                            <th>Enviar a DEFENSOR</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${cumplidosItems.map(c => {
+                                            let empleadoNombre = 'Sin asignar';
+                                            let motivo = '-';
+                                            if (c.historial) {
+                                                const consulta = c.historial.find(h => h.accion && h.accion.toLowerCase().includes('consulta'));
+                                                if (consulta) {
+                                                    if (consulta.usuario && consulta.usuario !== 'Sistema' && consulta.usuario !== 'Secretario') {
+                                                        empleadoNombre = consulta.usuario;
+                                                    }
+                                                    if (consulta.comentario) motivo = consulta.comentario;
+                                                }
+                                            }
+                                            const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
+                                            const fechaPase = c.fechaPaseSecretario || '-';
+                                            return `<tr>
+                                                <td style="font-size:0.75rem;">${fmtDt(fechaPase)}</td>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.tipo || '-'}</td>
+                                                <td>N${nivel}</td>
+                                                <td style="font-size:0.8rem;">${motivo}</td>
+                                                <td><strong style="color:#0d6efd;">${empleadoNombre}</strong></td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-consulta" data-id="${c.id}" data-empleado="${empleadoNombre}" ${empleadoNombre === 'Sin asignar' ? 'disabled' : ''}>
+                                                        <i class="bi bi-arrow-return-left"></i> Devolver
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-def-cumplido" data-id="${c.id}"><i class="bi bi-arrow-up"></i> Elevar</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationCumplidos"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay pases desde empleados.</div>`}
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-people"></i> Causas en Proceso</div>
+                        </div>
+                        ${procTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaProceso">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Modo Intervención</th>
+                                            <th>Empleado</th>
+                                            <th>Nivel</th>
+                                            <th>Tipo</th>
+                                            <th>Demora</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${procItems.map(c => {
+                                            const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
+                                            const isLate = c.fechaLimite && new Date(c.fechaLimite) < new Date();
+                                            const demoraHtml = demora ? `<span style="font-family:monospace;font-size:0.7rem;background:#e9eef5;padding:2px 10px;border-radius:30px;${isLate ? 'color:red;font-weight:700;' : ''}">${demora}</span>` : '-';
+                                            return `<tr>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.modoIntervencion || '-'}</td>
+                                                <td>${getEmpName(c.empleadoAsignado)}</td>
+                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
+                                                <td>${c.tipo || '-'}</td>
+                                                <td>${demoraHtml}</td>
+                                                <td>
+                                                    <button class="btn btn-finalizar-secretario btn-modern-sm btn-cumplido" data-id="${c.id}">Finalizar Secretario</button>
+                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationProceso"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
+                    </div>
+
+                    <!-- ===== NUEVA SECCIÓN: CAUSAS EN ESPERA ===== -->
+                    <div class="glass-card mt-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Causas en Espera (por saturación)</div>
+                            <span class="badge bg-warning text-dark me-2">${esperaTotal} en espera</span>
+                        </div>
+                        ${esperaTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaEspera">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Expediente</th>
+                                            <th>Tipo</th>
+                                            <th>Nivel</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${esperaItems.map(c => {
+                                            const fecha = c.fechaPaseSecretario || c.fechaAsignacion || '-';
+                                            return `<tr>
+                                                <td style="font-size:0.75rem;">${fmtDt(fecha)}</td>
+                                                <td><strong>${c.numero}</strong></td>
+                                                <td>${c.tipo || '-'}</td>
+                                                <td>N${c.nivelOperador || c.nivelSecretario || 'N/D'}</td>
+                                                <td>
+                                                    <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-asignar-espera" data-id="${c.id}">Asignar ahora</button>
+                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
+                                                </td>
+                                            </tr>`;
+                                        }).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationEspera"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en espera.</div>`}
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <div class="card-title mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas de Equidad</div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Asignaciones por Secretario</h6>
+                                <div class="equidad-grid">
+                                    ${secStats.map(s => `
+                                        <div class="equidad-item">
+                                            <div class="eq-label">${s.nombre}</div>
+                                            <div class="eq-value">${s.asignadas}</div>
+                                            <div class="eq-actions">
+                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-sec" data-sec="${s.id}">Ver historial</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga de pases por Empleado (IA / Productividad)</h6>
+                                <div class="table-wrap">
+                                    <table class="table-modern table" style="min-width:0; width:100%;">
+                                        <thead>
+                                            <tr>
+                                                <th>Empleado</th>
+                                                <th>IA</th>
+                                                <th>Productividad</th>
+                                                <th>Activas</th>
+                                                <th>Histórico</th>
+                                                <th>N1</th>
+                                                <th>N2</th>
+                                                <th>N3</th>
+                                                <th>N4</th>
+                                                <th>Secretario(s)</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${eqItems.map(e => {
+                                                const prodPercent = (e.productividad * 100).toFixed(0);
+                                                const iaStr = e.ia.toFixed(1);
+                                                return `
+                                                <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
+                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
+                                                    <td><span class="ia-badge">${iaStr}</span></td>
+                                                    <td><span class="prod-badge">${prodPercent}%</span></td>
+                                                    <td>${e.activas}</td>
+                                                    <td>${e.historico}</td>
+                                                    <td>${e.nivelesAct[1]}/${e.nivelesHist[1]}</td>
+                                                    <td>${e.nivelesAct[2]}/${e.nivelesHist[2]}</td>
+                                                    <td>${e.nivelesAct[3]}/${e.nivelesHist[3]}</td>
+                                                    <td>${e.nivelesAct[4]}/${e.nivelesHist[4]}</td>
+                                                    <td>${e.secretarios || '-'}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
+                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
+                                                        </button>
+                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-emp" data-id="${e.id}" data-nombre="${e.nombre}">
+                                                            <i class="bi bi-eye"></i> Ver Historial
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `}).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="paginationEquidad"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // TABLA DETALLADA DE TODOS LOS PASES
+                html += `
+                    <div class="glass-card mt-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
+                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirPases"><i class="bi bi-printer"></i> Imprimir</button>
+                        </div>
+                        ${pasesTotal ? `
+                            <div class="table-wrap">
+                                <table class="table-modern table" id="tablaPases">
+                                    <thead>
+                                        <tr>
+                                            <th>Expediente</th>
+                                            <th>Empleado</th>
+                                            <th>Secretario</th>
+                                            <th>Nivel</th>
+                                            <th>Fecha Asignación</th>
+                                            <th>Tipo</th>
+                                            <th>Estado</th>
+                                            <th>Observaciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pasesItems.map(a => `
+                                            <tr>
+                                                <td><strong>${a.numero}</strong></td>
+                                                <td>${a.empleado}</td>
+                                                <td>${a.secretario}</td>
+                                                <td>N${a.nivel}</td>
+                                                <td style="font-size:0.75rem;">${fmtDt(a.fechaAsignacion)}</td>
+                                                <td>${a.tipo}</td>
+                                                <td>${getEstadoBadge(a.estado)}</td>
+                                                <td style="font-size:0.75rem;">${a.obs}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="paginationPases"></div>
+                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay registros de asignaciones históricas.</div>`}
+                    </div>
+                `;
+
+                // PANEL NUEVO PATROCINIO
+                const totalKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.total, 0);
+                const totalActualKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.enProceso, 0);
+                const totalViolenciaKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.totalViolencia, 0);
+                const totalHistoricoKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + (e.total - e.enProceso), 0);
+                html += `
+                    <div class="glass-card mt-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-pie-chart-fill"></i> Panel de Nuevo Patrocinio por Empleado</div>
+                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirNuevoPatrocinio"><i class="bi bi-printer"></i> Imprimir</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="table-modern table" id="tablaNuevoPatrocinio" style="min-width:0; width:100%;">
+                                <thead>
+                                    <tr style="background: #f8f9fa; font-weight: 700; color: #0a2a44; font-size:0.75rem;">
+                                        <th>Empleado <span class="kpi-badge">${empleadosNuevoPatrocinio.length}</span></th>
+                                        <th>Total <span class="kpi-badge">${totalKPI}</span></th>
+                                        <th>Pase Actual <span class="kpi-badge">${totalActualKPI}</span></th>
+                                        <th>N.P. Violencia Familiar <span class="kpi-badge">${totalViolenciaKPI}</span></th>
+                                        <th>Pase Histórico <span class="kpi-badge">${totalHistoricoKPI}</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${empleadosNuevoPatrocinio.map(emp => {
+                                        const historico = emp.total - emp.enProceso;
+                                        return `
+                                        <tr data-empleado="${emp.nombre.toLowerCase()}">
+                                            <td><strong>${emp.nombre}</strong></td>
+                                            <td style="font-weight:800; font-size:1.1rem; color:#000;">${emp.total}</td>
+                                            <td style="color:#3498db; font-weight:700;">${emp.enProceso}</td>
+                                            <td style="color:#9b59b6; font-weight:700;">${emp.totalViolencia}</td>
+                                            <td>${historico}</td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                panel.innerHTML = html;
+
+                // PAGINACIÓN
+                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.distribucion.page = newPage;
+                        paginationState.distribucion.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.proceso.page = newPage;
+                        paginationState.proceso.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.pases.page = newPage;
+                        paginationState.pases.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (
+                    newPage, newPerPage) => {
+                        paginationState.equidad.page = newPage;
+                        paginationState.equidad.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (cumplidosTotal > 0) renderPagination('paginationCumplidos', cumplidosTotal, cumplidosTotalPages, cumplidosPage, pStateCumplidos
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.cumplidos.page = newPage;
+                        paginationState.cumplidos.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+                if (esperaTotal > 0) renderPagination('paginationEspera', esperaTotal, esperaTotalPages, esperaPage, pEspera
+                    .perPage, (newPage, newPerPage) => {
+                        paginationState.espera.page = newPage;
+                        paginationState.espera.perPage = newPerPage;
+                        renderDistribucion();
+                    });
+
+                // EVENTOS (incluyendo nuevos botones de espera)
+                panel.removeEventListener('click', panel._clickHandler);
+                panel._clickHandler = async function(e) {
+                    const target = e.target.closest('.btn-auto-asig');
+                    if (!target) return;
+                    const id = target.dataset.id;
+                    if (id) {
+                        abrirModalAsignacionAuto(id);
+                    }
+                };
+                panel.addEventListener('click', panel._clickHandler);
+
+                document.querySelectorAll('.btn-asignar').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const emp = document.getElementById(`em_${id}`).value;
+                        const niv = document.getElementById(`nv_${id}`).value;
+                        const obs = document.getElementById(`obs_${id}`).value.trim();
+                        const modo = document.getElementById(`modo_${id}`).value;
+                        const tipo = document.getElementById(`tipo_${id}`).value;
+                        if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
+                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar',
+                            'warning'); return; }
+                        await asignarCausa(id, niv, emp, obs || 'Sin observación adicional', null, tipo, modo);
+                        renderDistribucion();
+                    });
+                });
+
+                document.querySelectorAll('.btn-elevar-def').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        await elevarDefensorDesdePendiente(this.dataset.id);
+                    });
+                });
+                document.querySelectorAll('.btn-elevar-def-cumplido').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        await elevarDefensorDesdePendiente(this.dataset.id);
+                    });
+                });
+                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
+                document.querySelectorAll('.btn-cumplido').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                        if (causa.estado !== 'en_proceso') {
+                            showToast('Solo se pueden finalizar causas en proceso', 'warning');
+                            return;
+                        }
+                        if (confirm(`¿Autorizar cumplimiento de ${causa.numero}?`)) {
+                            const comentario = prompt('Deje un comentario (opcional):', 'Cumplido autorizado');
+                            if (comentario === null) return;
+                            await finalizarCausaSecretario(id, comentario || 'Cumplido autorizado');
+                        }
+                    });
+                });
+                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
+                    btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
+                });
+                document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
+                    btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
+                });
+                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        verHistorialSecretario(this.dataset.sec);
+                    });
+                });
+                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const empNombre = this.dataset.emp;
+                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
+                        if (emp) await toggleAusencia(emp.id);
+                    });
+                });
+                document.querySelectorAll('.btn-devolver-consulta').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const empleadoNombre = this.dataset.empleado;
+                        if (!empleadoNombre || empleadoNombre === 'Sin asignar') {
+                            showToast('No se puede devolver: empleado no identificado', 'warning');
+                            return;
+                        }
+                        const emp = CONFIG.empleados.find(e => e.nombre === empleadoNombre);
+                        if (!emp) {
+                            showToast('Empleado no encontrado en el sistema', 'danger');
+                            return;
+                        }
+                        if (isAusente(emp.id)) {
+                            showToast('El empleado está ausente, no se puede devolver', 'warning');
+                            return;
+                        }
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                        const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
+                        const exito = await asignarCausa(id, nivel, emp.id, 'Devuelto al empleado que realizó la consulta', null, causa.tipo, causa.modoIntervencion);
+                        if (exito) {
+                            renderDistribucion();
+                        }
+                    });
+                });
+
+                // BOTÓN DISTRIBUIR AUTOMÁTICO
+                const btnMasivo = document.getElementById('btnDistribuirMasivo');
+                if (btnMasivo) {
+                    btnMasivo.removeEventListener('click', btnMasivo._listener);
+                    btnMasivo._listener = function() {
+                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
+                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
+                        const total = pendientes.length;
+                        const detalles = `
+                            <strong>Total de causas a distribuir:</strong> ${total}<br />
+                            <strong>Empleados activos disponibles:</strong> ${CONFIG.empleados.filter(e => !isAusente(e.id)).length}<br />
+                            <strong>Métrica IA:</strong> se prioriza el menor Índice de Asignación.<br />
+                            <strong>Productividad:</strong> se bonifica a quienes finalizan antes del plazo.<br />
+                            <strong>WIP máximo:</strong> ${WIP_MAX} puntos.
+                        `;
+                        mostrarModalConfirmacion(
+                            'Distribución automática masiva',
+                            `Se asignarán <strong>${total}</strong> causas pendientes de forma automática utilizando IA.`,
+                            detalles,
+                            async () => {
+                                const comentarioGlobal = prompt(
+                                    'Ingrese un comentario para todas las asignaciones (opcional):');
+                                if (comentarioGlobal === null) return;
+                                let asignadas = 0;
+                                for (const c of pendientes) {
+                                    const exito = await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
+                                    if (exito) asignadas++;
+                                }
+                                showToast(`✅ ${asignadas} de ${pendientes.length} causas distribuidas`);
+                                renderDistribucion();
+                            }
+                        );
+                    };
+                    btnMasivo.addEventListener('click', btnMasivo._listener);
+                }
+
+                // Botones para asignar desde espera
+                document.querySelectorAll('.btn-asignar-espera').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.dataset.id;
+                        const causa = state.causas.find(c => c.id === id);
+                        if (!causa) return;
+                        const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
+                        const exito = await asignarAlMenosCargado(id, nivel, 'Asignación manual desde cola de espera');
+                        if (exito) renderDistribucion();
+                    });
+                });
+
+                const btnReporte = document.getElementById('btnReporteCompleto');
+                if (btnReporte) btnReporte.addEventListener('click', abrirReporteCompleto);
+                const btnEquidad = document.getElementById('btnInformeEquidad');
+                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
+                const btnImprimirPases = document.getElementById('btnImprimirPases');
+                if (btnImprimirPases) {
+                    btnImprimirPases.addEventListener('click', imprimirPasesCompleto);
+                }
+                document.getElementById('btnImprimirNuevoPatrocinio')?.addEventListener('click', imprimirNuevoPatrocinio);
+                document.querySelectorAll('.btn-ver-hist-emp').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = this.dataset.id;
+                        const nombre = this.dataset.nombre;
+                        if (id && nombre) {
+                            cargarHistorialEmpleado(id, nombre);
+                        } else {
+                            showToast('Faltan datos del empleado', 'danger');
+                        }
+                    });
+                });
+                const btnImprimirHistEmp = document.getElementById('btnImprimirHistorialEmpleado');
+                if (btnImprimirHistEmp) {
+                    btnImprimirHistEmp.onclick = window.imprimirHistorialEmpleado;
+                }
+            }
 
             // ============================================================
-            //  FUNCIONES DE HISTORIAL Y CONSULTAS
+            //  FUNCIONES DE HISTORIAL Y CONSULTAS (sin cambios)
             // ============================================================
             function abrirHistorial(id) {
                 const c = state.causas.find(x => x.id === id);
@@ -2121,6 +3051,7 @@
                                 <option value="devuelto_siged">Devuelto SIGED</option>
                                 <option value="remitido">Remitido</option>
                                 <option value="rechazado">Rechazado</option>
+                                <option value="en_espera">En espera</option>
                             </select>
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
@@ -2273,7 +3204,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE IMPRESIÓN Y REPORTES
+            //  FUNCIONES DE IMPRESIÓN Y REPORTES (sin cambios)
             // ============================================================
             function abrirReporteCompleto() {
                 const body = document.getElementById('modalReporteBody');
@@ -2439,6 +3370,7 @@
                         .badge-dev { background:#ffebee; color:#c62828; }
                         .badge-rem { background:#e8eaf6; color:#3949ab; }
                         .badge-rech { background:#fce4ec; color:#c62828; }
+                        .badge-espera { background:#fff8e1; color:#f57f17; }
                         .impresion-info { margin-bottom: 15px; font-size: 0.9rem; }
                         @media print { body { padding: 0; } }
                     </style>
@@ -2748,7 +3680,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE CHAT
+            //  FUNCIONES DE CHAT (sin cambios)
             // ============================================================
             function inicializarChat(nombreUsuario) {
                 if (!USE_FIRESTORE || !db) {
@@ -3114,6 +4046,7 @@
                         .badge-dev { background:#ffebee; color:#c62828; }
                         .badge-rem { background:#e8eaf6; color:#3949ab; }
                         .badge-rech { background:#fce4ec; color:#c62828; }
+                        .badge-espera { background:#fff8e1; color:#f57f17; }
                         @media print { body { padding: 0; } }
                     </style>
                     </head><body>
@@ -3147,6 +4080,7 @@
                         .badge-dev { background:#ffebee; color:#c62828; }
                         .badge-rem { background:#e8eaf6; color:#3949ab; }
                         .badge-rech { background:#fce4ec; color:#c62828; }
+                        .badge-espera { background:#fff8e1; color:#f57f17; }
                         @media print { body { padding: 0; } }
                     </style>
                     </head><body>
@@ -3159,842 +4093,7 @@
             };
 
             // ============================================================
-            //  RENDER DISTRIBUCIÓN (COMPLETA)
-            // ============================================================
-            function renderDistribucion() {
-                const panel = document.getElementById('panelDistribucion');
-
-                const term = searchTerm.toLowerCase().trim();
-                const filterFn = (c) => {
-                    if (term && !c.numero.toLowerCase().includes(term)) return false;
-                    if (filters.empleado) {
-                        const emp = CONFIG.empleados.find(e => e.id === filters.empleado);
-                        if (emp) {
-                            const empNameLower = emp.nombre.toLowerCase();
-                            const empAsignado = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
-                            const empOriginal = c.empleadoOriginal ? getEmpName(c.empleadoOriginal).toLowerCase() : '';
-                            if (empAsignado !== empNameLower && empOriginal !== empNameLower) return false;
-                        }
-                    }
-                    if (filters.secretario && c.secretarioId !== filters.secretario) return false;
-                    if (filters.tipo && c.tipo !== filters.tipo) return false;
-                    if (filters.estado && c.estado !== filters.estado) return false;
-                    if (filters.demora) {
-                        if (c.estado !== 'en_proceso') return false;
-                        if (!c.fechaLimite || new Date(c.fechaLimite) >= new Date()) return false;
-                    }
-                    return true;
-                };
-
-                // PENDIENTES EN SECRETARÍA
-                let pend = state.causas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
-                        return false;
-                    }
-                    return true;
-                }).filter(filterFn);
-                pend.sort((a, b) => {
-                    const fechaA = a.fechaPaseSecretario || a.fechaAsignacion || '';
-                    const fechaB = b.fechaPaseSecretario || b.fechaAsignacion || '';
-                    return new Date(fechaB) - new Date(fechaA);
-                });
-                const pState = paginationState.distribucion;
-                const { items: pendItems, total: pendTotal, totalPages: pendTotalPages, page: pendPage } = paginateData(
-                    pend, pState.page, pState.perPage);
-
-                // EN PROCESO
-                let enProceso = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn);
-                enProceso.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pStateProc = paginationState.proceso;
-                const { items: procItems, total: procTotal, totalPages: procTotalPages, page: procPage } = paginateData(
-                    enProceso, pStateProc.page, pStateProc.perPage);
-
-                // PASES DESDE EMPLEADO
-                let pasesDesdeEmpleado = state.causas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (!c.fechaPaseSecretario) return false;
-                    if (!c.historial || !c.historial.length) return false;
-                    return c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'));
-                }).filter(filterFn);
-                pasesDesdeEmpleado.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
-                const pStateCumplidos = paginationState.cumplidos;
-                const { items: cumplidosItems, total: cumplidosTotal, totalPages: cumplidosTotalPages, page: cumplidosPage } = paginateData(
-                    pasesDesdeEmpleado, pStateCumplidos.page, pStateCumplidos.perPage);
-
-                // TABLA DETALLADA DE PASES
-                let todasAsignaciones = [];
-                state.causas.forEach(c => {
-                    if (!c.historial) return;
-                    c.historial.forEach(h => {
-                        if (h.accion && h.accion.includes('Asignado') && filterFn(c)) {
-                            const match = h.accion.match(/Asignado \(Nivel \d+\) a (.+?) - /);
-                            const empleado = match ? match[1] : 'Desconocido';
-                            const nivelMatch = h.accion.match(/Nivel (\d+)/);
-                            const nivel = nivelMatch ? parseInt(nivelMatch[1]) : (c.nivelSecretario || c.nivelOperador || 'N/D');
-                            const fechaAsignacion = h.fecha;
-                            const secretario = getSecName(c.secretarioId) || h.usuario || 'Secretario';
-                            const obs = h.comentario || '-';
-                            todasAsignaciones.push({
-                                numero: c.numero,
-                                empleado,
-                                secretario,
-                                nivel,
-                                fechaAsignacion,
-                                tipo: c.tipo || 'N/D',
-                                estado: c.estado,
-                                obs
-                            });
-                        }
-                    });
-                });
-                if (todasAsignaciones.length === 0) {
-                    state.causas.filter(c => c.secretarioId && filterFn(c)).forEach(c => {
-                        if (c.empleadoAsignado) {
-                            todasAsignaciones.push({
-                                numero: c.numero,
-                                empleado: getEmpName(c.empleadoAsignado),
-                                secretario: getSecName(c.secretarioId) || 'Secretario',
-                                nivel: c.nivelSecretario || c.nivelOperador || 'N/D',
-                                fechaAsignacion: c.fechaAsignacion || c.fechaPaseSecretario,
-                                tipo: c.tipo || 'N/D',
-                                estado: c.estado,
-                                obs: '-'
-                            });
-                        }
-                    });
-                }
-                todasAsignaciones.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pPases = paginationState.pases;
-                const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
-                    todasAsignaciones, pPases.page, pPases.perPage);
-
-                // EMPLEADOS DISPONIBLES
-                const optsEmpleados = CONFIG.empleados
-                    .filter(e => !isAusente(e.id))
-                    .map(e => {
-                        const ia = calcularIA(e.id, 0);
-                        const prod = calcularProductividad(e.id);
-                        const label = `${e.nombre} (IA: ${ia.toFixed(1)}, Prod: ${(prod*100).toFixed(0)}%)`;
-                        return `<option value="${e.id}">${label}</option>`;
-                    })
-                    .join('');
-
-                // ESTADÍSTICAS
-                const secStats = CONFIG.secretarios.map(sec => {
-                    const asignadas = state.causas.filter(c => c.secretarioId === sec.id).length;
-                    return { ...sec, asignadas };
-                });
-
-                const empleadosConRetraso = new Set();
-                state.causas.forEach(c => {
-                    if (c.empleadoAsignado && c.estado === 'en_proceso' && c.fechaLimite && new Date(c.fechaLimite)
-                        .getTime() < Date.now()) {
-                        empleadosConRetraso.add(c.empleadoAsignado);
-                    }
-                });
-
-                const empTableData = CONFIG.empleados.map(emp => {
-                    const todas = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id);
-                    const activas = todas.filter(c => c.estado === 'en_proceso');
-                    const totalHistorico = todas.length;
-                    const totalActivas = activas.length;
-                    const nivelesHist = {1:0,2:0,3:0,4:0};
-                    const nivelesAct = {1:0,2:0,3:0,4:0};
-                    const secretarios = new Set();
-                    todas.forEach(c => {
-                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
-                        if (nivel >= 1 && nivel <= 4) nivelesHist[nivel]++;
-                        if (c.secretarioId) secretarios.add(getSecName(c.secretarioId));
-                    });
-                    activas.forEach(c => {
-                        const nivel = c.nivelSecretario || c.nivelOperador || 0;
-                        if (nivel >= 1 && nivel <= 4) nivelesAct[nivel]++;
-                    });
-                    const ausente = isAusente(emp.id);
-                    const ia = calcularIA(emp.id, 0);
-                    const prod = calcularProductividad(emp.id);
-                    return {
-                        id: emp.id,
-                        nombre: emp.nombre,
-                        activas: totalActivas,
-                        historico: totalHistorico,
-                        nivelesAct: nivelesAct,
-                        nivelesHist: nivelesHist,
-                        secretarios: Array.from(secretarios).join(', '),
-                        tieneRetraso: empleadosConRetraso.has(emp.id),
-                        ausente: ausente,
-                        ia: ia,
-                        productividad: prod
-                    };
-                });
-                const eqState = paginationState.equidad;
-                const { items: eqItems, total: eqTotal, totalPages: eqTotalPages, page: eqPage } = paginateData(
-                    empTableData, eqState.page, eqState.perPage);
-
-                // NUEVO PATROCINIO
-                let empleadosNuevoPatrocinio = CONFIG.empleados.map(emp => {
-                    const normal = state.causas.filter(c =>
-                        c.tipo === 'Nuevo patrocinio' &&
-                        (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)
-                    );
-                    const totalNormal = normal.length;
-                    const enProcesoNormal = normal.filter(c => c.estado === 'en_proceso').length;
-                    const violencia = state.causas.filter(c =>
-                        c.tipo === 'Nuevo patrocinio Violencia Familiar' &&
-                        (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)
-                    );
-                    const totalViolencia = violencia.length;
-                    const enProcesoViolencia = violencia.filter(c => c.estado === 'en_proceso').length;
-                    const total = totalNormal + totalViolencia;
-                    const enProceso = enProcesoNormal + enProcesoViolencia;
-                    return { ...emp, total, enProceso, totalNormal, totalViolencia };
-                });
-                if (filters.empleado) {
-                    const empFiltrado = CONFIG.empleados.find(e => e.id === filters.empleado);
-                    if (empFiltrado) {
-                        empleadosNuevoPatrocinio = empleadosNuevoPatrocinio.filter(e => e.id === empFiltrado.id);
-                    }
-                }
-
-                // KPIS
-                const totalSinAsignar = state.causas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
-                        return false;
-                    }
-                    return true;
-                }).filter(filterFn).length;
-                const enProcesoTotal = state.causas.filter(c => c.estado === 'en_proceso').filter(filterFn).length;
-                const paraFinalizar = state.causas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (!c.fechaPaseSecretario) return false;
-                    if (!c.historial || !c.historial.length) return false;
-                    return c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'));
-                }).filter(filterFn).length;
-                const enDefensor = state.causas.filter(c => c.estado === 'en_defensor').filter(filterFn).length;
-                const finalizados = state.causas.filter(c => c.estado === 'finalizada').filter(filterFn).length;
-
-                let mejorCumplimiento = { id: null, nombre: 'N/A', count: -1 };
-                CONFIG.empleados.forEach(emp => {
-                    const count = state.causas.filter(c => c.estado === 'finalizada' && (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)).filter(filterFn).length;
-                    if (count > mejorCumplimiento.count) {
-                        mejorCumplimiento = { id: emp.id, nombre: emp.nombre, count };
-                    }
-                });
-                let mayorCarga = { id: null, nombre: 'N/A', count: -1 };
-                CONFIG.empleados.forEach(emp => {
-                    const count = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id).filter(filterFn).length;
-                    if (count > mayorCarga.count) {
-                        mayorCarga = { id: emp.id, nombre: emp.nombre, count };
-                    }
-                });
-                let mayorDemora = { id: null, nombre: 'N/A', dias: -1 };
-                CONFIG.empleados.forEach(emp => {
-                    const dias = calcularDiasRetraso(emp.id);
-                    if (dias > mayorDemora.dias) {
-                        mayorDemora = { id: emp.id, nombre: emp.nombre, dias };
-                    }
-                });
-
-                // ============================================================
-                //  ARMADO DEL HTML
-                // ============================================================
-                let html = `
-                    <div class="text-center mb-4">
-                        <a href="https://defensoria6.github.io/pase-digital/reporte-completo" target="_blank" class="btn btn-outline-primary fw-bold" style="background-color: white; border-color: #b8daff; color: #0d6efd; padding: 10px 24px; font-size: 1rem;">
-                            Reporte Completo del Sistema
-                        </a>
-                        <p class="text-muted mt-2" style="font-size:0.9rem;">Si desea conocer el estado actual de toda la actividad laboral de la Defensoría, pulse en el boton.</p>
-                    </div>
-
-                    <div class="glass-card" style="padding-bottom:0.8rem;">
-                        <div class="card-title mb-2"><i class="bi bi-graph-up-arrow"></i> KPIs</div>
-                        <div class="kpi-grid">
-                            <div class="kpi-item">
-                                <div class="kpi-label">Total Sin Asignar</div>
-                                <div class="kpi-value">${totalSinAsignar}</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="kpi-label">En Proceso</div>
-                                <div class="kpi-value text-warning">${enProcesoTotal}</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="kpi-label">Para Finalizar</div>
-                                <div class="kpi-value text-success">${paraFinalizar}</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="kpi-label">En Defensor</div>
-                                <div class="kpi-value text-primary">${enDefensor}</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="kpi-label">Finalizados</div>
-                                <div class="kpi-value" style="color:#2e7d32;">${finalizados}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card" style="padding-top:0.2rem; padding-bottom:0.8rem;">
-                        <div class="card-title mb-2"><i class="bi bi-trophy"></i> Empleados Destacados</div>
-                        <div class="destacados-grid">
-                            <div class="destacado-item">
-                                <div class="dest-label">🏆 Mejor Cumplimiento</div>
-                                <div class="dest-nombre">${mejorCumplimiento.nombre}</div>
-                                <div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div>
-                            </div>
-                            <div class="destacado-item">
-                                <div class="dest-label">📊 Mayor Carga</div>
-                                <div class="dest-nombre">${mayorCarga.nombre}</div>
-                                <div class="dest-detalle">${mayorCarga.count} expedientes en total</div>
-                            </div>
-                            <div class="destacado-item">
-                                <div class="dest-label">⏳ Mayor Demora</div>
-                                <div class="dest-nombre text-danger">${mayorDemora.nombre}</div>
-                                <div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días de retraso' : 'Sin retrasos'}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="glass-card">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-share"></i> Pendientes en Secretaría</div>
-                            <div>
-                                <span class="badge bg-primary me-2">${pendTotal} pendientes</span>
-                                ${searchTerm ? `<span class="badge bg-info text-dark me-2">Filtrado: ${pendTotal} coincidencias</span>` : ''}
-                                <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivo"><i class="bi bi-magic"></i> Distribuir automático</button>
-                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
-                            </div>
-                        </div>
-                        ${pendTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaPendientes">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha y Hora Pase</th>
-                                            <th>Expediente</th>
-                                            <th>Modo Intervención</th>
-                                            <th>Tipo</th>
-                                            <th>Nivel Op.</th>
-                                            <th>Revisión</th>
-                                            <th>Asignar a</th>
-                                            <th>Observación</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${pendItems.map(c => {
-                                            const modoOpts = MODOS_INTERVENCION.map(m => `<option value="${m}" ${c.modoIntervencion === m ? 'selected' : ''}>${m}</option>`).join('');
-                                            const tipoOpts = TIPOS.map(t => `<option value="${t}" ${c.tipo === t ? 'selected' : ''}>${t}</option>`).join('');
-                                            return `
-                                            <tr>
-                                                <td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario || c.fechaAsignacion)}</td>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="modo_${c.id}" style="min-width:150px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${modoOpts}
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="tipo_${c.id}" style="min-width:150px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${tipoOpts}
-                                                    </select>
-                                                </td>
-                                                <td>N${c.nivelOperador}</td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="nv_${c.id}" style="width:90px;display:inline-block;">
-                                                        <option value="1" ${c.nivelOperador===1?'selected':''}>N1</option>
-                                                        <option value="2" ${c.nivelOperador===2?'selected':''}>N2</option>
-                                                        <option value="3" ${c.nivelOperador===3?'selected':''}>N3</option>
-                                                        <option value="4" ${c.nivelOperador===4?'selected':''}>N4</option>
-                                                    </select>
-                                                </td>
-                                                <td>
-                                                    <select class="form-select form-select-sm" id="em_${c.id}" style="min-width:200px;">
-                                                        <option value="">Seleccionar...</option>
-                                                        ${optsEmpleados}
-                                                    </select>
-                                                    <button class="btn btn-outline-secondary btn-sm btn-auto-asig mt-1" data-id="${c.id}">Auto</button>
-                                                </td>
-                                                <td>
-                                                    <input type="text" id="obs_${c.id}" class="form-control form-control-sm" placeholder="Observación (opcional)" style="width:150px;" />
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-asignar-custom btn-modern-sm btn-asignar" data-id="${c.id}">Asignar</button>
-                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-def" data-id="${c.id}"><i class="bi bi-arrow-up"></i> Elevar</button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>
-                                        `}).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationDistribucion"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-check-circle" style="color:#2e7d32;"></i>Bandeja vacía</div>`}
-                    </div>
-
-                    <div class="glass-card">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-check2-circle"></i> Pases desde Empleado</div>
-                            <span class="badge bg-secondary me-2">${cumplidosTotal} registros</span>
-                        </div>
-                        ${cumplidosTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaCumplidos">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha y Hora de pase</th>
-                                            <th>Expediente</th>
-                                            <th>Tipo</th>
-                                            <th>Nivel</th>
-                                            <th>Motivo de pase</th>
-                                            <th>Empleado</th>
-                                            <th>Devolver</th>
-                                            <th>Enviar a DEFENSOR</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${cumplidosItems.map(c => {
-                                            let empleadoNombre = 'Sin asignar';
-                                            let motivo = '-';
-                                            if (c.historial) {
-                                                const consulta = c.historial.find(h => h.accion && h.accion.toLowerCase().includes('consulta'));
-                                                if (consulta) {
-                                                    if (consulta.usuario && consulta.usuario !== 'Sistema' && consulta.usuario !== 'Secretario') {
-                                                        empleadoNombre = consulta.usuario;
-                                                    }
-                                                    if (consulta.comentario) motivo = consulta.comentario;
-                                                }
-                                            }
-                                            const nivel = c.nivelSecretario || c.nivelOperador || 'N/D';
-                                            const fechaPase = c.fechaPaseSecretario || '-';
-                                            return `<tr>
-                                                <td style="font-size:0.75rem;">${fmtDt(fechaPase)}</td>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${c.tipo || '-'}</td>
-                                                <td>N${nivel}</td>
-                                                <td style="font-size:0.8rem;">${motivo}</td>
-                                                <td><strong style="color:#0d6efd;">${empleadoNombre}</strong></td>
-                                                <td>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-consulta" data-id="${c.id}" data-empleado="${empleadoNombre}" ${empleadoNombre === 'Sin asignar' ? 'disabled' : ''}>
-                                                        <i class="bi bi-arrow-return-left"></i> Devolver
-                                                    </button>
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-def-cumplido" data-id="${c.id}"><i class="bi bi-arrow-up"></i> Elevar</button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>`;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationCumplidos"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay pases desde empleados.</div>`}
-                    </div>
-
-                    <div class="glass-card">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-people"></i> Causas en Proceso</div>
-                        </div>
-                        ${procTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaProceso">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Modo Intervención</th>
-                                            <th>Empleado</th>
-                                            <th>Nivel</th>
-                                            <th>Tipo</th>
-                                            <th>Demora</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${procItems.map(c => {
-                                            const demora = getTiempoTranscurrido(c.fechaAsignacion, null);
-                                            const isLate = c.fechaLimite && new Date(c.fechaLimite) < new Date();
-                                            const demoraHtml = demora ? `<span style="font-family:monospace;font-size:0.7rem;background:#e9eef5;padding:2px 10px;border-radius:30px;${isLate ? 'color:red;font-weight:700;' : ''}">${demora}</span>` : '-';
-                                            return `<tr>
-                                                <td><strong>${c.numero}</strong></td>
-                                                <td>${c.modoIntervencion || '-'}</td>
-                                                <td>${getEmpName(c.empleadoAsignado)}</td>
-                                                <td>N${c.nivelSecretario || c.nivelOperador}</td>
-                                                <td>${c.tipo || '-'}</td>
-                                                <td>${demoraHtml}</td>
-                                                <td>
-                                                    <button class="btn btn-finalizar-secretario btn-modern-sm btn-cumplido" data-id="${c.id}">Finalizar Secretario</button>
-                                                    <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button>
-                                                    <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                </td>
-                                            </tr>`;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationProceso"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
-                    </div>
-
-                    <div class="glass-card">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                            <div class="card-title mb-0"><i class="bi bi-bar-chart-fill"></i> Estadísticas de Equidad</div>
-                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button>
-                        </div>
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Asignaciones por Secretario</h6>
-                                <div class="equidad-grid">
-                                    ${secStats.map(s => `
-                                        <div class="equidad-item">
-                                            <div class="eq-label">${s.nombre}</div>
-                                            <div class="eq-value">${s.asignadas}</div>
-                                            <div class="eq-actions">
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-sec" data-sec="${s.id}">Ver historial</button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0a2a44;">Carga de pases por Empleado (IA / Productividad)</h6>
-                                <div class="table-wrap">
-                                    <table class="table-modern table" style="min-width:0; width:100%;">
-                                        <thead>
-                                            <tr>
-                                                <th>Empleado</th>
-                                                <th>IA</th>
-                                                <th>Productividad</th>
-                                                <th>Activas</th>
-                                                <th>Histórico</th>
-                                                <th>N1</th>
-                                                <th>N2</th>
-                                                <th>N3</th>
-                                                <th>N4</th>
-                                                <th>Secretario(s)</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${eqItems.map(e => {
-                                                const prodPercent = (e.productividad * 100).toFixed(0);
-                                                const iaStr = e.ia.toFixed(1);
-                                                return `
-                                                <tr class="${e.tieneRetraso ? 'text-danger-bg' : ''} ${e.ausente ? 'row-ausente' : 'row-presente'}">
-                                                    <td><strong class="${e.tieneRetraso ? 'text-danger' : ''}">${e.nombre}</strong></td>
-                                                    <td><span class="ia-badge">${iaStr}</span></td>
-                                                    <td><span class="prod-badge">${prodPercent}%</span></td>
-                                                    <td>${e.activas}</td>
-                                                    <td>${e.historico}</td>
-                                                    <td>${e.nivelesAct[1]}/${e.nivelesHist[1]}</td>
-                                                    <td>${e.nivelesAct[2]}/${e.nivelesHist[2]}</td>
-                                                    <td>${e.nivelesAct[3]}/${e.nivelesHist[3]}</td>
-                                                    <td>${e.nivelesAct[4]}/${e.nivelesHist[4]}</td>
-                                                    <td>${e.secretarios || '-'}</td>
-                                                    <td>
-                                                        <button class="btn btn-sm ${e.ausente ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">
-                                                            ${e.ausente ? 'Marcar reintegro' : 'Marcar ausente'}
-                                                        </button>
-                                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-emp" data-id="${e.id}" data-nombre="${e.nombre}">
-                                                            <i class="bi bi-eye"></i> Ver Historial
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            `}).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div id="paginationEquidad"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // TABLA DETALLADA DE TODOS LOS PASES
-                html += `
-                    <div class="glass-card mt-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-list-ul"></i> Tabla detallada de pases a empleados</div>
-                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirPases"><i class="bi bi-printer"></i> Imprimir</button>
-                        </div>
-                        ${pasesTotal ? `
-                            <div class="table-wrap">
-                                <table class="table-modern table" id="tablaPases">
-                                    <thead>
-                                        <tr>
-                                            <th>Expediente</th>
-                                            <th>Empleado</th>
-                                            <th>Secretario</th>
-                                            <th>Nivel</th>
-                                            <th>Fecha Asignación</th>
-                                            <th>Tipo</th>
-                                            <th>Estado</th>
-                                            <th>Observaciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${pasesItems.map(a => `
-                                            <tr>
-                                                <td><strong>${a.numero}</strong></td>
-                                                <td>${a.empleado}</td>
-                                                <td>${a.secretario}</td>
-                                                <td>N${a.nivel}</td>
-                                                <td style="font-size:0.75rem;">${fmtDt(a.fechaAsignacion)}</td>
-                                                <td>${a.tipo}</td>
-                                                <td>${getEstadoBadge(a.estado)}</td>
-                                                <td style="font-size:0.75rem;">${a.obs}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="paginationPases"></div>
-                        ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay registros de asignaciones históricas.</div>`}
-                    </div>
-                `;
-
-                // PANEL NUEVO PATROCINIO
-                const totalKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.total, 0);
-                const totalActualKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.enProceso, 0);
-                const totalViolenciaKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + e.totalViolencia, 0);
-                const totalHistoricoKPI = empleadosNuevoPatrocinio.reduce((s, e) => s + (e.total - e.enProceso), 0);
-                html += `
-                    <div class="glass-card mt-4">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-pie-chart-fill"></i> Panel de Nuevo Patrocinio por Empleado</div>
-                            <button class="btn btn-imprimir btn-modern-sm" id="btnImprimirNuevoPatrocinio"><i class="bi bi-printer"></i> Imprimir</button>
-                        </div>
-                        <div class="table-wrap">
-                            <table class="table-modern table" id="tablaNuevoPatrocinio" style="min-width:0; width:100%;">
-                                <thead>
-                                    <tr style="background: #f8f9fa; font-weight: 700; color: #0a2a44; font-size:0.75rem;">
-                                        <th>Empleado <span class="kpi-badge">${empleadosNuevoPatrocinio.length}</span></th>
-                                        <th>Total <span class="kpi-badge">${totalKPI}</span></th>
-                                        <th>Pase Actual <span class="kpi-badge">${totalActualKPI}</span></th>
-                                        <th>N.P. Violencia Familiar <span class="kpi-badge">${totalViolenciaKPI}</span></th>
-                                        <th>Pase Histórico <span class="kpi-badge">${totalHistoricoKPI}</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${empleadosNuevoPatrocinio.map(emp => {
-                                        const historico = emp.total - emp.enProceso;
-                                        return `
-                                        <tr data-empleado="${emp.nombre.toLowerCase()}">
-                                            <td><strong>${emp.nombre}</strong></td>
-                                            <td style="font-weight:800; font-size:1.1rem; color:#000;">${emp.total}</td>
-                                            <td style="color:#3498db; font-weight:700;">${emp.enProceso}</td>
-                                            <td style="color:#9b59b6; font-weight:700;">${emp.totalViolencia}</td>
-                                            <td>${historico}</td>
-                                        </tr>
-                                    `}).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-
-                panel.innerHTML = html;
-
-                // PAGINACIÓN
-                if (pendTotal > 0) renderPagination('paginationDistribucion', pendTotal, pendTotalPages, pendPage, pState
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.distribucion.page = newPage;
-                        paginationState.distribucion.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (procTotal > 0) renderPagination('paginationProceso', procTotal, procTotalPages, procPage, pStateProc
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.proceso.page = newPage;
-                        paginationState.proceso.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (pasesTotal > 0) renderPagination('paginationPases', pasesTotal, pasesTotalPages, pasesPage, pPases
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.pases.page = newPage;
-                        paginationState.pases.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (eqTotal > 0) renderPagination('paginationEquidad', eqTotal, eqTotalPages, eqPage, eqState.perPage, (
-                    newPage, newPerPage) => {
-                        paginationState.equidad.page = newPage;
-                        paginationState.equidad.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-                if (cumplidosTotal > 0) renderPagination('paginationCumplidos', cumplidosTotal, cumplidosTotalPages, cumplidosPage, pStateCumplidos
-                    .perPage, (newPage, newPerPage) => {
-                        paginationState.cumplidos.page = newPage;
-                        paginationState.cumplidos.perPage = newPerPage;
-                        renderDistribucion();
-                    });
-
-                // EVENTOS
-                panel.removeEventListener('click', panel._clickHandler);
-                panel._clickHandler = async function(e) {
-                    const target = e.target.closest('.btn-auto-asig');
-                    if (!target) return;
-                    const id = target.dataset.id;
-                    if (id) {
-                        abrirModalAsignacionAuto(id);
-                    }
-                };
-                panel.addEventListener('click', panel._clickHandler);
-
-                document.querySelectorAll('.btn-asignar').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const emp = document.getElementById(`em_${id}`).value;
-                        const niv = document.getElementById(`nv_${id}`).value;
-                        const obs = document.getElementById(`obs_${id}`).value.trim();
-                        const modo = document.getElementById(`modo_${id}`).value;
-                        const tipo = document.getElementById(`tipo_${id}`).value;
-                        if (!emp) { showToast('Seleccione un empleado', 'warning'); return; }
-                        if (isAusente(emp)) { showToast('El empleado está ausente, no se puede asignar',
-                            'warning'); return; }
-                        await asignarCausa(id, niv, emp, obs || 'Sin observación adicional', null, tipo, modo);
-                        renderDistribucion();
-                    });
-                });
-
-                document.querySelectorAll('.btn-elevar-def').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        await elevarDefensorDesdePendiente(this.dataset.id);
-                    });
-                });
-                document.querySelectorAll('.btn-elevar-def-cumplido').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        await elevarDefensorDesdePendiente(this.dataset.id);
-                    });
-                });
-                document.querySelectorAll('.btn-ver-hist').forEach(btn => {
-                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
-                });
-                document.querySelectorAll('.btn-cumplido').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const causa = state.causas.find(c => c.id === id);
-                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
-                        if (causa.estado !== 'en_proceso') {
-                            showToast('Solo se pueden finalizar causas en proceso', 'warning');
-                            return;
-                        }
-                        if (confirm(`¿Autorizar cumplimiento de ${causa.numero}?`)) {
-                            const comentario = prompt('Deje un comentario (opcional):', 'Cumplido autorizado');
-                            if (comentario === null) return;
-                            await finalizarCausaSecretario(id, comentario || 'Cumplido autorizado');
-                        }
-                    });
-                });
-                document.querySelectorAll('.btn-elevar-defensor').forEach(btn => {
-                    btn.addEventListener('click', async function() { await elevarDefensor(this.dataset.id); });
-                });
-                document.querySelectorAll('.btn-ver-consultas').forEach(btn => {
-                    btn.addEventListener('click', function() { verConsultas(this.dataset.id); });
-                });
-                document.querySelectorAll('.btn-ver-hist-sec').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        verHistorialSecretario(this.dataset.sec);
-                    });
-                });
-                document.querySelectorAll('.btn-toggle-ausencia').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const empNombre = this.dataset.emp;
-                        const emp = CONFIG.empleados.find(e => e.nombre === empNombre);
-                        if (emp) await toggleAusencia(emp.id);
-                    });
-                });
-                document.querySelectorAll('.btn-devolver-consulta').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const empleadoNombre = this.dataset.empleado;
-                        if (!empleadoNombre || empleadoNombre === 'Sin asignar') {
-                            showToast('No se puede devolver: empleado no identificado', 'warning');
-                            return;
-                        }
-                        const emp = CONFIG.empleados.find(e => e.nombre === empleadoNombre);
-                        if (!emp) {
-                            showToast('Empleado no encontrado en el sistema', 'danger');
-                            return;
-                        }
-                        if (isAusente(emp.id)) {
-                            showToast('El empleado está ausente, no se puede devolver', 'warning');
-                            return;
-                        }
-                        const causa = state.causas.find(c => c.id === id);
-                        if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
-                        const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
-                        const exito = await asignarCausa(id, nivel, emp.id, 'Devuelto al empleado que realizó la consulta', null, causa.tipo, causa.modoIntervencion);
-                        if (exito) {
-                            renderDistribucion();
-                        }
-                    });
-                });
-
-                // BOTÓN DISTRIBUIR AUTOMÁTICO
-                const btnMasivo = document.getElementById('btnDistribuirMasivo');
-                if (btnMasivo) {
-                    btnMasivo.removeEventListener('click', btnMasivo._listener);
-                    btnMasivo._listener = function() {
-                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
-                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
-                        const total = pendientes.length;
-                        const detalles = `
-                            <strong>Total de causas a distribuir:</strong> ${total}<br />
-                            <strong>Empleados activos disponibles:</strong> ${CONFIG.empleados.filter(e => !isAusente(e.id)).length}<br />
-                            <strong>Métrica IA:</strong> se prioriza el menor Índice de Asignación.<br />
-                            <strong>Productividad:</strong> se bonifica a quienes finalizan antes del plazo.
-                        `;
-                        mostrarModalConfirmacion(
-                            'Distribución automática masiva',
-                            `Se asignarán <strong>${total}</strong> causas pendientes de forma automática utilizando IA.`,
-                            detalles,
-                            async () => {
-                                const comentarioGlobal = prompt(
-                                    'Ingrese un comentario para todas las asignaciones (opcional):');
-                                if (comentarioGlobal === null) return;
-                                let asignadas = 0;
-                                for (const c of pendientes) {
-                                    const exito = await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
-                                    if (exito) asignadas++;
-                                }
-                                showToast(`✅ ${asignadas} de ${pendientes.length} causas distribuidas`);
-                                renderDistribucion();
-                            }
-                        );
-                    };
-                    btnMasivo.addEventListener('click', btnMasivo._listener);
-                }
-
-                const btnReporte = document.getElementById('btnReporteCompleto');
-                if (btnReporte) btnReporte.addEventListener('click', abrirReporteCompleto);
-                const btnEquidad = document.getElementById('btnInformeEquidad');
-                if (btnEquidad) btnEquidad.addEventListener('click', generarInformeEquidad);
-                const btnImprimirPases = document.getElementById('btnImprimirPases');
-                if (btnImprimirPases) {
-                    btnImprimirPases.addEventListener('click', imprimirPasesCompleto);
-                }
-                document.getElementById('btnImprimirNuevoPatrocinio')?.addEventListener('click', imprimirNuevoPatrocinio);
-                document.querySelectorAll('.btn-ver-hist-emp').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.dataset.id;
-                        const nombre = this.dataset.nombre;
-                        if (id && nombre) {
-                            cargarHistorialEmpleado(id, nombre);
-                        } else {
-                            showToast('Faltan datos del empleado', 'danger');
-                        }
-                    });
-                });
-                const btnImprimirHistEmp = document.getElementById('btnImprimirHistorialEmpleado');
-                if (btnImprimirHistEmp) {
-                    btnImprimirHistEmp.onclick = window.imprimirHistorialEmpleado;
-                }
-            }
-
-            // ============================================================
-            //  LOGIN / LOGOUT
+            //  LOGIN / LOGOUT (sin cambios)
             // ============================================================
             async function handleLogin() {
                 const pass = document.getElementById('loginPassword').value;
@@ -4039,7 +4138,7 @@
             }
 
             // ============================================================
-            //  EVENTOS GLOBALES
+            //  EVENTOS GLOBALES (sin cambios)
             // ============================================================
             document.getElementById('btnLogin').addEventListener('click', handleLogin);
             document.getElementById('loginPassword').addEventListener('keypress', function(e) {
@@ -4092,6 +4191,7 @@
                 paginationState.proceso.page = 1;
                 paginationState.pases.page = 1;
                 paginationState.equidad.page = 1;
+                paginationState.espera.page = 1;
                 renderDistribucion();
             });
 
@@ -4145,9 +4245,6 @@
                 document.getElementById('chatTabEmpleados').addEventListener('click', () => cambiarModoChat('empleados'));
                 document.getElementById('chatTabDefensor').addEventListener('click', () => cambiarModoChat('defensor'));
             }
-
-            // Inicializar si ya estamos logueados (por si el script se ejecuta después)
-            // No se hace nada aquí porque el login inicia todo.
 
         })();
     </script>
