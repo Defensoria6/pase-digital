@@ -1470,6 +1470,7 @@
 
             // ============================================================
             //  NUEVA LÓGICA DE ASIGNACIÓN AUTOMÁTICA (tomada de ULTIMO Ag26-secretario.html)
+            //  Y ACTUALIZADA CON LA VERSIÓN DE secretario.html (distinción NP y desempate por nivel histórico)
             // ============================================================
 
             // ---- poner en espera ----
@@ -1512,7 +1513,7 @@
                 }
             }
 
-            // ---- NUEVA VERSIÓN DE asignarAlMenosCargado (con distinción Nuevo Patrocinio) ----
+            // ---- NUEVA VERSIÓN DE asignarAlMenosCargado (con distinción Nuevo Patrocinio y desempate por nivel) ----
             async function asignarAlMenosCargado(causaId, nivSec, comentario = '', tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return false; }
@@ -1663,7 +1664,9 @@
                 }
             }
 
-            // ---- NUEVA VERSIÓN DE abrirModalAsignacionAuto (con la nueva lógica) ----
+            // ============================================================
+            //  ABRIR MODAL ASIGNACIÓN AUTOMÁTICA INDIVIDUAL (NUEVA VERSIÓN CON ESTADÍSTICAS Y ADVERTENCIAS)
+            // ============================================================
             function abrirModalAsignacionAuto(causaId) {
                 const causa = state.causas.find(x => x.id === causaId);
                 if (!causa) return showToast('Causa no encontrada', 'danger');
@@ -1823,6 +1826,49 @@
                     newBtn.innerHTML = 'Confirmar asignación';
                 };
                 new bootstrap.Modal(document.getElementById('modalConfirmacionAuto')).show();
+            }
+
+            // ============================================================
+            //  MODAL DE CONFIRMACIÓN PARA DISTRIBUCIÓN MASIVA (NUEVA VERSIÓN)
+            // ============================================================
+            let _confirmAction = null;
+
+            function mostrarModalConfirmacion(totalCausas, empleadosActivos, onConfirm) {
+                const modalBody = document.getElementById('modalConfirmacionBody');
+                modalBody.innerHTML = `
+                    <div class="text-center mb-3">
+                        <h5 class="fw-700">Distribución automática masiva (con distinción según tipo de causa)</h5>
+                        <p class="text-muted">Se asignarán <strong>${totalCausas}</strong> causas pendientes con el criterio específico según el tipo de causa.</p>
+                        <p><strong>Total de causas a distribuir:</strong> ${totalCausas}</p>
+                        <p><strong>Empleados activos disponibles:</strong> ${empleadosActivos}</p>
+                    </div>
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        <strong>Verifique antes del Pase Automático:</strong> 
+                        Si el expediente ya fue asignado previamente a un empleado en particular, 
+                        tenga en cuenta que el sistema automático lo asignará al de menor carga, 
+                        lo que puede no coincidir con el empleado que lo venía llevando. 
+                        Si es necesario, use la asignación <strong>manual</strong> para ese caso.
+                    </div>
+                    <p class="text-muted" style="font-size:0.85rem;">¿Desea continuar con la asignación automática?</p>
+                `;
+                _confirmAction = onConfirm;
+                const modal = new bootstrap.Modal(document.getElementById('modalConfirmacionAuto'));
+                modal.show();
+
+                const btnConfirm = document.getElementById('btnConfirmarAuto');
+                const newBtn = btnConfirm.cloneNode(true);
+                btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+                newBtn.onclick = function() {
+                    if (_confirmAction) {
+                        newBtn.disabled = true;
+                        newBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Asignando...';
+                        _confirmAction();
+                        newBtn.disabled = false;
+                        newBtn.innerHTML = 'Confirmar asignación';
+                        bootstrap.Modal.getInstance(document.getElementById('modalConfirmacionAuto')).hide();
+                    }
+                };
             }
 
             // ============================================================
@@ -2117,7 +2163,7 @@
             }
 
             // ============================================================
-            //  FUNCIÓN RENDER DISTRIBUCIÓN (sin cambios estructurales, solo se usa la nueva lógica)
+            //  FUNCIÓN RENDER DISTRIBUCIÓN (con el listener actualizado para distribución masiva)
             // ============================================================
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
@@ -2234,7 +2280,7 @@
                 const { items: esperaItems, total: esperaTotal, totalPages: esperaTotalPages, page: esperaPage } = paginateData(
                     enEspera, pEspera.page, pEspera.perPage);
 
-                // Empleados disponibles para asignación (se mantiene el formato, pero ahora la lógica de asignación es la nueva)
+                // Empleados disponibles para asignación
                 const optsEmpleados = CONFIG.empleados
                     .filter(e => !isAusente(e.id))
                     .map(e => {
@@ -2947,37 +2993,37 @@
                     });
                 });
 
-                // BOTÓN DISTRIBUIR AUTOMÁTICO (usa la nueva lógica)
+                // BOTÓN DISTRIBUIR AUTOMÁTICO (actualizado con la nueva lógica de modal)
                 const btnMasivo = document.getElementById('btnDistribuirMasivo');
                 if (btnMasivo) {
                     btnMasivo.removeEventListener('click', btnMasivo._listener);
                     btnMasivo._listener = function() {
-                        const pendientes = state.causas.filter(c => c.estado === 'en_secretaria').filter(filterFn);
-                        if (!pendientes.length) { showToast('No hay pendientes', 'warning'); return; }
-                        const total = pendientes.length;
-                        const detalles = `
-                            <strong>Total de causas a distribuir:</strong> ${total}<br />
-                            <strong>Empleados activos disponibles:</strong> ${CONFIG.empleados.filter(e => !isAusente(e.id)).length}<br />
-                            <strong>Criterio de asignación:</strong> se prioriza menor cantidad de "Nuevo patrocinio" (y "Violencia Familiar") y luego menor historial total, menor activo y desempate por nivel histórico.<br />
-                            <strong>WIP máximo:</strong> ${WIP_MAX} puntos.
-                        `;
-                        mostrarModalConfirmacion(
-                            'Distribución automática masiva',
-                            `Se asignarán <strong>${total}</strong> causas pendientes de forma automática.`,
-                            detalles,
-                            async () => {
-                                const comentarioGlobal = prompt(
-                                    'Ingrese un comentario para todas las asignaciones (opcional):');
-                                if (comentarioGlobal === null) return;
-                                let asignadas = 0;
-                                for (const c of pendientes) {
-                                    const exito = await asignarAlMenosCargado(c.id, c.nivelOperador, comentarioGlobal || '');
-                                    if (exito) asignadas++;
-                                }
-                                showToast(`✅ ${asignadas} de ${pendientes.length} causas distribuidas`);
-                                renderDistribucion();
+                        // Solo causas en secretaría que NO tienen consulta (es decir, pendientes de asignación desde operador)
+                        const pendientes = state.causas.filter(c => {
+                            if (c.estado !== 'en_secretaria') return false;
+                            if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
+                                return false;
                             }
-                        );
+                            return true;
+                        }).filter(filterFn);
+
+                        if (!pendientes.length) { showToast('No hay pendientes sin consulta', 'warning'); return; }
+                        const total = pendientes.length;
+                        const empleadosActivos = CONFIG.empleados.filter(e => !isAusente(e.id));
+
+                        mostrarModalConfirmacion(total, empleadosActivos.length, async () => {
+                            const comentarioGlobal = prompt(
+                                'Ingrese un comentario para todas las asignaciones (opcional):');
+                            if (comentarioGlobal === null) return;
+                            let asignadas = 0;
+                            for (const c of pendientes) {
+                                const nivelModificado = parseInt(document.getElementById(`nv_${c.id}`).value) || c.nivelOperador;
+                                const exito = await asignarAlMenosCargado(c.id, nivelModificado, comentarioGlobal || '', c.tipo, c.modoIntervencion);
+                                if (exito) asignadas++;
+                            }
+                            showToast(`✅ ${asignadas} de ${pendientes.length} causas distribuidas`);
+                            renderDistribucion();
+                        });
                     };
                     btnMasivo.addEventListener('click', btnMasivo._listener);
                 }
@@ -3018,34 +3064,6 @@
                 if (btnImprimirHistEmp) {
                     btnImprimirHistEmp.onclick = window.imprimirHistorialEmpleado;
                 }
-            }
-
-            // ============================================================
-            //  MODAL DE CONFIRMACIÓN (sin cambios)
-            // ============================================================
-            let _confirmAction = null;
-
-            function mostrarModalConfirmacion(titulo, mensaje, detalles, onConfirm) {
-                const modalBody = document.getElementById('modalConfirmacionBody');
-                modalBody.innerHTML = `
-                    <h6 class="fw-700">${titulo}</h6>
-                    <p>${mensaje}</p>
-                    <div class="bg-light p-3 rounded-3 mb-3" style="font-size:0.9rem;">
-                        <strong>Resumen de la lógica de asignación:</strong>
-                        <ul class="mt-2">
-                            <li><strong>1. Reingreso:</strong> Si la causa ya fue asignada anteriormente, se asigna al mismo empleado.</li>
-                            <li><strong>2. Tipo de causa:</strong> Si es "Nuevo patrocinio" o "Nuevo patrocinio Violencia Familiar", se prioriza al empleado con menor cantidad de estas causas en su historial.</li>
-                            <li><strong>3. Para otras causas:</strong> se ordena por: menor cantidad de Nuevo Patrocinio, luego menor historial total, luego menor activo, y finalmente menor historial por nivel.</li>
-                            <li><strong>4. Selección:</strong> Se elige al primer empleado que no supere el WIP (${WIP_MAX} pts).</li>
-                            <li><strong>5. Cola de espera:</strong> Si todos superan el WIP, la causa entra en espera.</li>
-                        </ul>
-                        ${detalles ? `<hr /><div style="font-size:0.9rem; color:#0a2a44;">${detalles}</div>` : ''}
-                    </div>
-                    <p class="text-muted" style="font-size:0.85rem;">¿Desea continuar con la asignación automática?</p>
-                `;
-                _confirmAction = onConfirm;
-                const modal = new bootstrap.Modal(document.getElementById('modalConfirmacionAuto'));
-                modal.show();
             }
 
             // ============================================================
@@ -4175,6 +4193,54 @@
             };
 
             // ============================================================
+            //  FUNCIÓN calcularIA (se mantiene para estadísticas, no se usa en asignación)
+            // ============================================================
+            function calcularIA(empId, puntosNuevos = 0) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) return Infinity;
+                if (isAusente(empId)) return Infinity;
+
+                const causasActivas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
+                const CA = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0) + puntosNuevos;
+
+                const todas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
+                const HA = todas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+
+                const CDI = calcularCDI();
+                const Pr = calcularProductividad(empId);
+
+                let Bp = 0;
+                if (Pr > 0) {
+                    if (Pr > 0.8) {
+                        Bp = (Pr - 0.8) * 5 * COEF_BONO_PRODUCTIVIDAD;
+                    }
+                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
+                    if (Pr > promedioPr) {
+                        Bp += COEF_BONO_PRODUCTIVIDAD_EXTRA;
+                    }
+                }
+
+                const wipActual = CA - puntosNuevos;
+                const factorDesaceleracion = Math.max(0, 1 - wipActual / WIP_MAX);
+                const BpAjustado = Math.min(Bp, BONO_MAXIMO) * factorDesaceleracion;
+
+                const promedioHA = CONFIG.empleados.reduce((s, e) => s +
+                    state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
+                    .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
+                const FH = promedioHA > 0 ? HA / promedioHA : 1;
+                let factorHistorico = 0;
+                if (FH < 0.8) {
+                    factorHistorico = -(0.8 - FH) * COEF_HISTORICO_BAJO;
+                } else if (FH > 1.2) {
+                    factorHistorico = (FH - 1.2) * COEF_HISTORICO_ALTO;
+                }
+
+                const desviacion = (CA - CDI) * COEF_DESVIACION;
+                let IA = desviacion - BpAjustado + factorHistorico;
+                return IA;
+            }
+
+            // ============================================================
             //  LOGIN / LOGOUT (sin cambios)
             // ============================================================
             async function handleLogin() {
@@ -4326,54 +4392,6 @@
 
                 document.getElementById('chatTabEmpleados').addEventListener('click', () => cambiarModoChat('empleados'));
                 document.getElementById('chatTabDefensor').addEventListener('click', () => cambiarModoChat('defensor'));
-            }
-
-            // ============================================================
-            //  FUNCIÓN calcularIA (se mantiene para estadísticas, no se usa en asignación)
-            // ============================================================
-            function calcularIA(empId, puntosNuevos = 0) {
-                const emp = CONFIG.empleados.find(e => e.id === empId);
-                if (!emp) return Infinity;
-                if (isAusente(empId)) return Infinity;
-
-                const causasActivas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
-                const CA = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0) + puntosNuevos;
-
-                const todas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
-                const HA = todas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
-
-                const CDI = calcularCDI();
-                const Pr = calcularProductividad(empId);
-
-                let Bp = 0;
-                if (Pr > 0) {
-                    if (Pr > 0.8) {
-                        Bp = (Pr - 0.8) * 5 * COEF_BONO_PRODUCTIVIDAD;
-                    }
-                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
-                    if (Pr > promedioPr) {
-                        Bp += COEF_BONO_PRODUCTIVIDAD_EXTRA;
-                    }
-                }
-
-                const wipActual = CA - puntosNuevos;
-                const factorDesaceleracion = Math.max(0, 1 - wipActual / WIP_MAX);
-                const BpAjustado = Math.min(Bp, BONO_MAXIMO) * factorDesaceleracion;
-
-                const promedioHA = CONFIG.empleados.reduce((s, e) => s +
-                    state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
-                    .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
-                const FH = promedioHA > 0 ? HA / promedioHA : 1;
-                let factorHistorico = 0;
-                if (FH < 0.8) {
-                    factorHistorico = -(0.8 - FH) * COEF_HISTORICO_BAJO;
-                } else if (FH > 1.2) {
-                    factorHistorico = (FH - 1.2) * COEF_HISTORICO_ALTO;
-                }
-
-                const desviacion = (CA - CDI) * COEF_DESVIACION;
-                let IA = desviacion - BpAjustado + factorHistorico;
-                return IA;
             }
 
         })();
