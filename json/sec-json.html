@@ -808,18 +808,17 @@
                 'Otro'
             ];
 
-            // ===== NUEVO: se agregó 'en_espera' =====
             const ESTADOS = ['en_secretaria', 'en_proceso', 'finalizada', 'en_defensor', 'devuelto_siged', 'remitido', 'rechazado', 'en_espera'];
 
-            // ===== NUEVAS CONSTANTES MEJORADAS =====
+            // ===== CONSTANTES MEJORADAS (se mantienen) =====
             const WIP_MAX = 6;
             const DIAS_GRACIA = 2;
-            const COEF_DESVIACION = 1.5;           // Mayor peso a la carga actual
-            const COEF_BONO_PRODUCTIVIDAD = 0.05;   // Menor impacto
+            const COEF_DESVIACION = 1.5;
+            const COEF_BONO_PRODUCTIVIDAD = 0.05;
             const COEF_BONO_PRODUCTIVIDAD_EXTRA = 0.1;
-            const COEF_HISTORICO_BAJO = 0.5;        // Evitar avalanchas
+            const COEF_HISTORICO_BAJO = 0.5;
             const COEF_HISTORICO_ALTO = 0.5;
-            const BONO_MAXIMO = 2.0;                 // Tope para el bono de productividad
+            const BONO_MAXIMO = 2.0;
 
             // ============================================================
             //  VARIABLES GLOBALES
@@ -834,7 +833,7 @@
                 pases: { page: 1, perPage: 10 },
                 equidad: { page: 1, perPage: 10 },
                 cumplidos: { page: 1, perPage: 10 },
-                espera: { page: 1, perPage: 10 }   // NUEVO
+                espera: { page: 1, perPage: 10 }
             };
             let unsubscribeCausas = null;
             let unsubscribeChat = null;
@@ -901,7 +900,7 @@
             }
 
             // ============================================================
-            //  PERSISTENCIA LOCAL (JSON + localStorage) - sin cambios
+            //  PERSISTENCIA LOCAL (sin cambios)
             // ============================================================
             function guardarEstadoLocal() {
                 localStorage.setItem('pases_data', JSON.stringify({
@@ -1092,7 +1091,7 @@
             }
 
             // ============================================================
-            //  INICIALIZAR FIREBASE DINÁMICAMENTE (sin cambios)
+            //  INICIALIZAR FIREBASE (sin cambios)
             // ============================================================
             function inicializarFirebase() {
                 if (typeof firebase === 'undefined') {
@@ -1144,7 +1143,7 @@
             }
 
             // ============================================================
-            //  CAMBIAR MODO EN TIEMPO REAL (sin cambios)
+            //  CAMBIAR MODO (sin cambios)
             // ============================================================
             function cambiarModo(nuevoModo) {
                 if (nuevoModo === USE_FIRESTORE) {
@@ -1347,50 +1346,8 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE ASIGNACIÓN Y CAMBIO DE ESTADO (MEJORADAS)
+            //  FUNCIONES DE CÁLCULO (se mantienen para estadísticas)
             // ============================================================
-
-            // ---- NUEVA: poner en espera ----
-            async function ponerEnEspera(causaId) {
-                const c = state.causas.find(x => x.id === causaId);
-                if (!c) return;
-                c.estado = 'en_espera';
-                if (!c.historial) c.historial = [];
-                c.historial.push({
-                    fecha: new Date().toISOString(),
-                    accion: 'Puesto en espera por saturación',
-                    usuario: 'Sistema',
-                    comentario: 'No hay empleados con capacidad disponible (WIP máximo).'
-                });
-                try {
-                    await guardarCausa(c);
-                    renderDistribucion();
-                } catch (error) {
-                    showToast('Error al poner en espera', 'danger');
-                }
-            }
-
-            // ---- NUEVA: procesar cola de espera ----
-            async function procesarColaEspera() {
-                const enEspera = state.causas.filter(c => c.estado === 'en_espera');
-                if (enEspera.length === 0) return;
-                let asignadas = 0;
-                for (const causa of enEspera) {
-                    const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
-                    const exito = await asignarAlMenosCargado(causa.id, nivel, 'Procesamiento de cola de espera', causa.tipo, causa.modoIntervencion);
-                    if (exito) {
-                        asignadas++;
-                    } else {
-                        break;
-                    }
-                }
-                if (asignadas > 0) {
-                    showToast(`🔄 ${asignadas} causa(s) en espera han sido asignadas.`, 'info');
-                    renderDistribucion();
-                }
-            }
-
-            // ---- FUNCIONES DE CÁLCULO IA MEJORADAS ----
             function getFactorTipo(tipo) {
                 const factores = {
                     'Nuevo patrocinio': 0.5,
@@ -1493,80 +1450,82 @@
                 return false;
             }
 
-            // ---- NUEVA VERSIÓN DE calcularIA (sin Pp, con bono ajustado) ----
-            function calcularIA(empId, puntosNuevos = 0) {
-                const emp = CONFIG.empleados.find(e => e.id === empId);
-                if (!emp) return Infinity;
-                if (isAusente(empId)) return Infinity;
-
-                const causasActivas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
-                const CA = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0) + puntosNuevos;
-
-                const todas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
-                const HA = todas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
-
-                const CDI = calcularCDI();
-                const Pr = calcularProductividad(empId);
-
-                // Bono de productividad (Bp)
-                let Bp = 0;
-                if (Pr > 0) {
-                    if (Pr > 0.8) {
-                        Bp = (Pr - 0.8) * 5 * COEF_BONO_PRODUCTIVIDAD;
-                    }
-                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
-                    if (Pr > promedioPr) {
-                        Bp += COEF_BONO_PRODUCTIVIDAD_EXTRA;
+            // ============================================================
+            //  NUEVA FUNCIÓN: tieneJustificacionParaCausa (para la lógica de asignación)
+            // ============================================================
+            function tieneJustificacionParaCausa(causa, empId) {
+                if (!causa || !causa.justificaciones) return false;
+                const ahora = new Date();
+                for (let j of causa.justificaciones) {
+                    if (j.empleadoId === empId && j.estado === 'aprobada') {
+                        const fecha = new Date(j.fecha);
+                        const diff = (ahora - fecha) / (1000 * 60 * 60 * 24);
+                        if (diff <= DIAS_GRACIA) {
+                            return true;
+                        }
                     }
                 }
-
-                // Factor de desaceleración basado en WIP actual (sin la nueva causa)
-                const wipActual = CA - puntosNuevos;
-                const factorDesaceleracion = Math.max(0, 1 - wipActual / WIP_MAX);
-                const BpAjustado = Math.min(Bp, BONO_MAXIMO) * factorDesaceleracion;
-
-                // Factor histórico
-                const promedioHA = CONFIG.empleados.reduce((s, e) => s +
-                    state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
-                    .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
-                const FH = promedioHA > 0 ? HA / promedioHA : 1;
-                let factorHistorico = 0;
-                if (FH < 0.8) {
-                    factorHistorico = -(0.8 - FH) * COEF_HISTORICO_BAJO;
-                } else if (FH > 1.2) {
-                    factorHistorico = (FH - 1.2) * COEF_HISTORICO_ALTO;
-                }
-
-                const desviacion = (CA - CDI) * COEF_DESVIACION;
-                let IA = desviacion - BpAjustado + factorHistorico;
-                return IA;
+                return false;
             }
 
-            // ---- NUEVA VERSIÓN DE asignarAlMenosCargado con WIP y cola de espera ----
+            // ============================================================
+            //  NUEVA LÓGICA DE ASIGNACIÓN AUTOMÁTICA (tomada de ULTIMO Ag26-secretario.html)
+            // ============================================================
+
+            // ---- poner en espera ----
+            async function ponerEnEspera(causaId) {
+                const c = state.causas.find(x => x.id === causaId);
+                if (!c) return;
+                c.estado = 'en_espera';
+                if (!c.historial) c.historial = [];
+                c.historial.push({
+                    fecha: new Date().toISOString(),
+                    accion: 'Puesto en espera por saturación o bloqueo',
+                    usuario: 'Sistema',
+                    comentario: 'No hay empleados con capacidad disponible o todos están bloqueados.'
+                });
+                try {
+                    await guardarCausa(c);
+                    renderDistribucion();
+                } catch (error) {
+                    showToast('Error al poner en espera', 'danger');
+                }
+            }
+
+            // ---- procesar cola de espera ----
+            async function procesarColaEspera() {
+                const enEspera = state.causas.filter(c => c.estado === 'en_espera');
+                if (enEspera.length === 0) return;
+                let asignadas = 0;
+                for (const causa of enEspera) {
+                    const nivel = causa.nivelSecretario || causa.nivelOperador || 2;
+                    const exito = await asignarAlMenosCargado(causa.id, nivel, 'Procesamiento de cola de espera', causa.tipo, causa.modoIntervencion);
+                    if (exito) {
+                        asignadas++;
+                    } else {
+                        break;
+                    }
+                }
+                if (asignadas > 0) {
+                    showToast(`🔄 ${asignadas} causa(s) en espera han sido asignadas.`, 'info');
+                    renderDistribucion();
+                }
+            }
+
+            // ---- NUEVA VERSIÓN DE asignarAlMenosCargado (con distinción Nuevo Patrocinio) ----
             async function asignarAlMenosCargado(causaId, nivSec, comentario = '', tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return false; }
                 const operadorNombre = c.operador;
 
-                // 1. Verificar reingreso
-                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
-                if (existing.length > 0) {
-                    existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
-                    const empId = existing[0].empleadoAsignado;
-                    if (!isAusente(empId)) {
-                        showToast(`🔁 Reingreso: se asigna a ${getEmpName(empId)} (seguimiento)`, 'info');
-                        return await asignarCausa(causaId, nivSec, empId, comentario ||
-                            'Reasignación automática por reingreso', null, tipo, modoIntervencion);
-                    } else {
-                        showToast('El empleado original está ausente. Se asignará a otro.', 'warning');
-                    }
-                }
+                // Determinar si es nuevo patrocinio (incluye violencia familiar)
+                const tipoCausa = tipo || c.tipo || '';
+                const esNuevoPatrocinio = (tipoCausa === 'Nuevo patrocinio' || tipoCausa === 'Nuevo patrocinio Violencia Familiar');
 
-                // 2. Preparar candidatos (excluir ausentes y al operador)
+                // Obtener empleados no ausentes, excluyendo al operador (si está en la lista)
                 let candidatos = CONFIG.empleados.filter(e => !isAusente(e.id) && e.nombre !== operadorNombre);
                 if (candidatos.length === 0) {
-                    showToast('No hay empleados disponibles (todos ausentes o son el operador), se usará cualquiera',
-                        'warning');
+                    showToast('No hay empleados disponibles (todos ausentes o son el operador), se usará cualquiera', 'warning');
                     candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
                 }
                 if (candidatos.length === 0) {
@@ -1574,46 +1533,69 @@
                     return false;
                 }
 
-                // 3. Puntos de la nueva causa
                 const pts = CONFIG.nivelesPuntos[nivSec] || 1;
+                const tiposNuevo = ['Nuevo patrocinio', 'Nuevo patrocinio Violencia Familiar'];
 
-                // 4. Filtrar por WIP: solo empleados que no superen el límite
-                let candidatosDisponibles = candidatos.filter(e => {
-                    const causasActivas = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
-                    const puntosActuales = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
-                    return puntosActuales + pts <= WIP_MAX;
+                // Calcular métricas para cada candidato
+                let candidatosConMetricas = candidatos.map(e => {
+                    const nuevoHist = state.causas.filter(c =>
+                        (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
+                        tiposNuevo.includes(c.tipo)
+                    ).length;
+                    const historicoTotal = state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id).length;
+                    const activo = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso').length;
+                    const puntosActuales = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso')
+                                             .reduce((s, c) => s + calcularPuntosCausa(c), 0);
+                    // Historial por nivel (1-4)
+                    const historialPorNivel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                    state.causas.forEach(c => {
+                        if (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) {
+                            const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                            if (nivel >= 1 && nivel <= 4) historialPorNivel[nivel]++;
+                        }
+                    });
+                    return { ...e, nuevoHist, historicoTotal, activo, puntosActuales, historialPorNivel };
                 });
 
-                // Si todos superan el límite, se pone en espera
-                if (candidatosDisponibles.length === 0) {
-                    showToast(`⏳ No hay capacidad disponible (WIP máximo ${WIP_MAX}). Causa en espera.`, 'warning');
+                // Ordenar: si es nuevo patrocinio, solo por nuevoHist
+                // si es común: por nuevoHist, historicoTotal, activo, y luego por historialPorNivel[nivSec]
+                if (esNuevoPatrocinio) {
+                    candidatosConMetricas.sort((a, b) => a.nuevoHist - b.nuevoHist);
+                } else {
+                    const nivelCausa = parseInt(nivSec) || 2;
+                    candidatosConMetricas.sort((a, b) => {
+                        if (a.nuevoHist !== b.nuevoHist) return a.nuevoHist - b.nuevoHist;
+                        if (a.historicoTotal !== b.historicoTotal) return a.historicoTotal - b.historicoTotal;
+                        if (a.activo !== b.activo) return a.activo - b.activo;
+                        // Desempate por nivel histórico de la causa
+                        return (a.historialPorNivel[nivelCausa] || 0) - (b.historialPorNivel[nivelCausa] || 0);
+                    });
+                }
+
+                // Seleccionar el primero que cumpla con WIP
+                let seleccionado = null;
+                for (let cand of candidatosConMetricas) {
+                    if (cand.puntosActuales + pts <= WIP_MAX) {
+                        seleccionado = cand;
+                        break;
+                    }
+                }
+
+                if (!seleccionado) {
+                    showToast(`⏳ No hay capacidad disponible (WIP). Causa en espera.`, 'warning');
                     await ponerEnEspera(causaId);
                     return false;
                 }
 
-                // 5. Calcular IA para cada candidato disponible y ordenar
-                let candidatosConIA = candidatosDisponibles.map(e => {
-                    const ia = calcularIA(e.id, pts);
-                    return { ...e, ia };
-                });
-                candidatosConIA.sort((a, b) => a.ia - b.ia);
-
-                const mejor = candidatosConIA[0];
-                if (!mejor) {
-                    showToast('No se pudo determinar un empleado', 'danger');
-                    return false;
-                }
-
-                // 6. Asignar
-                const exito = await asignarCausa(causaId, nivSec, mejor.id, comentario ||
-                    `Asignación automática (IA: ${mejor.ia.toFixed(2)})`, null, tipo, modoIntervencion);
+                // Asignar
+                const exito = await asignarCausa(causaId, nivSec, seleccionado.id, comentario || `Asignación automática (Nuevo Patrocinio: ${seleccionado.nuevoHist}, Hist: ${seleccionado.historicoTotal}, Act: ${seleccionado.activo})`, null, tipo, modoIntervencion);
                 if (exito) {
                     procesarColaEspera();
                 }
                 return exito;
             }
 
-            // ---- asignarCausa actualizada para permitir estado 'en_espera' ----
+            // ---- NUEVA VERSIÓN DE asignarCausa (con tipoAsignacion, esReingreso, etc.) ----
             async function asignarCausa(id, nivSec, empId, com = '', secId = null, tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c || (c.estado !== 'en_secretaria' && c.estado !== 'en_espera')) { 
@@ -1625,6 +1607,7 @@
                     return false;
                 }
 
+                // Verificar reingreso (ya existe causa con mismo número y empleado asignado)
                 const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
                 let empleadoOriginal = null;
                 let tipoAsignacion = 'Nuevo Patrocinio';
@@ -1662,14 +1645,12 @@
                 const accion = `Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empId)} - ${tipoExp}`;
                 if (!c.historial) c.historial = [];
 
-                const ia = calcularIA(empId, 0);
-                const prod = calcularProductividad(empId);
                 const comentarioAdicional = com ? ` ${com}` : '';
                 c.historial.push({
                     fecha: new Date().toISOString(),
                     accion: accion,
                     usuario: userRoleName,
-                    comentario: `Asignado a ${getEmpName(empId)}. IA: ${ia.toFixed(2)}, Productividad: ${(prod*100).toFixed(0)}%${comentarioAdicional}`
+                    comentario: `Asignado a ${getEmpName(empId)}${comentarioAdicional}`
                 });
 
                 try {
@@ -1682,7 +1663,171 @@
                 }
             }
 
-            // ---- finalizarCausaSecretario actualizada para procesar cola ----
+            // ---- NUEVA VERSIÓN DE abrirModalAsignacionAuto (con la nueva lógica) ----
+            function abrirModalAsignacionAuto(causaId) {
+                const causa = state.causas.find(x => x.id === causaId);
+                if (!causa) return showToast('Causa no encontrada', 'danger');
+
+                const nivelSeleccionado = parseInt(document.getElementById(`nv_${causaId}`).value) || causa.nivelOperador || 2;
+                const candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
+                if (candidatos.length === 0) return showToast('Todos los empleados están ausentes', 'danger');
+
+                const pts = CONFIG.nivelesPuntos[nivelSeleccionado] || 1;
+                const tiposNuevo = ['Nuevo patrocinio', 'Nuevo patrocinio Violencia Familiar'];
+                const esNuevoPatrocinio = (causa.tipo === 'Nuevo patrocinio' || causa.tipo === 'Nuevo patrocinio Violencia Familiar');
+                const nivelCausa = parseInt(nivelSeleccionado) || 2;
+
+                let candidatosConMetricas = candidatos.map(e => {
+                    const totalNuevo = state.causas.filter(c =>
+                        (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
+                        tiposNuevo.includes(c.tipo)
+                    ).length;
+                    const enProcesoNuevo = state.causas.filter(c =>
+                        (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
+                        tiposNuevo.includes(c.tipo) &&
+                        c.estado === 'en_proceso'
+                    ).length;
+                    const totalViolencia = state.causas.filter(c =>
+                        (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) &&
+                        c.tipo === 'Nuevo patrocinio Violencia Familiar'
+                    ).length;
+                    const historicoTotal = state.causas.filter(c =>
+                        c.empleadoAsignado === e.id || c.empleadoOriginal === e.id
+                    ).length;
+                    const activoTotal = state.causas.filter(c =>
+                        c.empleadoAsignado === e.id && c.estado === 'en_proceso'
+                    ).length;
+                    const puntosActuales = state.causas.filter(c =>
+                        c.empleadoAsignado === e.id && c.estado === 'en_proceso'
+                    ).reduce((s, c) => s + calcularPuntosCausa(c), 0);
+                    const historialPorNivel = { 1: 0, 2: 0, 3: 0, 4: 0 };
+                    state.causas.forEach(c => {
+                        if (c.empleadoAsignado === e.id || c.empleadoOriginal === e.id) {
+                            const nivel = c.nivelSecretario || c.nivelOperador || 0;
+                            if (nivel >= 1 && nivel <= 4) historialPorNivel[nivel]++;
+                        }
+                    });
+                    return { ...e, totalNuevo, enProcesoNuevo, totalViolencia, historicoTotal, activoTotal, puntosActuales, historialPorNivel };
+                });
+
+                if (esNuevoPatrocinio) {
+                    candidatosConMetricas.sort((a, b) => a.totalNuevo - b.totalNuevo);
+                } else {
+                    candidatosConMetricas.sort((a, b) => {
+                        if (a.totalNuevo !== b.totalNuevo) return a.totalNuevo - b.totalNuevo;
+                        if (a.historicoTotal !== b.historicoTotal) return a.historicoTotal - b.historicoTotal;
+                        if (a.activoTotal !== b.activoTotal) return a.activoTotal - b.activoTotal;
+                        return (a.historialPorNivel[nivelCausa] || 0) - (b.historialPorNivel[nivelCausa] || 0);
+                    });
+                }
+
+                let sugerido = null;
+                for (let cand of candidatosConMetricas) {
+                    if (cand.puntosActuales + pts <= WIP_MAX) {
+                        sugerido = cand;
+                        break;
+                    }
+                }
+
+                if (!sugerido) {
+                    showToast('No hay empleados disponibles que cumplan con el WIP', 'warning');
+                    return;
+                }
+
+                // Obtener empleado anterior (si existe)
+                let empleadoAnterior = null;
+                const causasAnteriores = state.causas.filter(c => c.numero === causa.numero && c.empleadoAsignado);
+                if (causasAnteriores.length > 0) {
+                    const ultima = causasAnteriores.reduce((a, b) => new Date(a.fechaAsignacion) > new Date(b.fechaAsignacion) ? a : b);
+                    empleadoAnterior = CONFIG.empleados.find(e => e.id === ultima.empleadoAsignado);
+                }
+
+                const modalBody = document.getElementById('modalConfirmacionBody');
+                let infoHTML = '';
+                if (esNuevoPatrocinio) {
+                    const paseHistorico = sugerido.totalNuevo - sugerido.enProcesoNuevo;
+                    infoHTML = `
+                        <div class="mt-2" style="font-size: 0.9rem; background: #f8f9fa; padding: 8px 12px; border-radius: 8px;">
+                            <table class="table table-sm table-borderless" style="margin:0; font-size:0.9rem;">
+                                <tr><td><strong>Total:</strong></td><td>${sugerido.totalNuevo}</td></tr>
+                                <tr><td><strong>Pase Actual:</strong></td><td>${sugerido.enProcesoNuevo}</td></tr>
+                                <tr><td><strong>N.P. Violencia Familiar:</strong></td><td>${sugerido.totalViolencia}</td></tr>
+                                <tr><td><strong>Pase Histórico:</strong></td><td>${paseHistorico}</td></tr>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    infoHTML = `
+                        <div class="mt-2" style="font-size: 0.9rem; background: #f8f9fa; padding: 8px 12px; border-radius: 8px;">
+                            <table class="table table-sm table-borderless" style="margin:0; font-size:0.9rem;">
+                                <tr><td><strong>Activas:</strong></td><td>${sugerido.activoTotal}</td></tr>
+                                <tr><td><strong>Histórico:</strong></td><td>${sugerido.historicoTotal}</td></tr>
+                                <tr><td><strong>Histórico nivel ${nivelCausa}:</strong></td><td>${sugerido.historialPorNivel[nivelCausa] || 0}</td></tr>
+                                <tr><td><strong>Puntos WIP:</strong></td><td>${sugerido.puntosActuales.toFixed(1)} / ${WIP_MAX}</td></tr>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                let advertencia = '';
+                if (empleadoAnterior && empleadoAnterior.id !== sugerido.id) {
+                    advertencia = `
+                        <div class="alert alert-warning mt-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> <strong>¡Atención!</strong> 
+                            Este expediente fue asignado anteriormente a <strong>${empleadoAnterior.nombre}</strong>. 
+                            El sistema sugiere a <strong>${sugerido.nombre}</strong> según el criterio de asignación (${esNuevoPatrocinio ? 'menor Nuevo Patrocinio' : 'carga combinada + nivel histórico'}). 
+                            Si considera que debe seguir con el empleado anterior, utilice el botón <strong>"Asignar"</strong> manual en la fila correspondiente.
+                        </div>
+                    `;
+                } else if (empleadoAnterior && empleadoAnterior.id === sugerido.id) {
+                    advertencia = `
+                        <div class="alert alert-success mt-3" role="alert">
+                            <i class="bi bi-check-circle-fill"></i> El empleado sugerido coincide con el que llevaba la causa anteriormente.
+                        </div>
+                    `;
+                }
+
+                const mensajeVerificacion = `
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                        <strong>Verifique antes del Pase Automático:</strong> 
+                        Si el expediente ya fue asignado previamente a un empleado en particular, 
+                        tenga en cuenta que el sistema automático lo asignará al de menor carga, 
+                        lo que puede no coincidir con el empleado que lo venía llevando. 
+                        Si es necesario, use la asignación <strong>manual</strong> para ese caso.
+                    </div>
+                `;
+
+                modalBody.innerHTML = `
+                    <div class="text-center mb-4">
+                        <h4 class="text-primary mt-2 mb-0">${sugerido.nombre}</h4>
+                        ${infoHTML}
+                        ${advertencia}
+                        ${mensajeVerificacion}
+                    </div>
+                `;
+
+                const btnConfirm = document.getElementById('btnConfirmarAuto');
+                const newBtn = btnConfirm.cloneNode(true);
+                btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
+                newBtn.onclick = async () => {
+                    newBtn.disabled = true;
+                    newBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Asignando...';
+                    const exito = await asignarCausa(causaId, nivelSeleccionado, sugerido.id,
+                        `Asignación automática (${esNuevoPatrocinio ? 'solo Nuevo Patrocinio' : 'Nuevo Patrocinio: ' + sugerido.totalNuevo + ', Hist: ' + sugerido.historicoTotal + ', Act: ' + sugerido.activoTotal + ', Nivel ' + nivelCausa + ': ' + (sugerido.historialPorNivel[nivelCausa]||0)})`, null, causa.tipo, causa.modoIntervencion);
+                    if (exito) {
+                        bootstrap.Modal.getInstance(document.getElementById('modalConfirmacionAuto')).hide();
+                        renderDistribucion();
+                    }
+                    newBtn.disabled = false;
+                    newBtn.innerHTML = 'Confirmar asignación';
+                };
+                new bootstrap.Modal(document.getElementById('modalConfirmacionAuto')).show();
+            }
+
+            // ============================================================
+            //  FUNCIONES DE ESTADO y CAMBIO DE ESTADO (sin cambios, usan la nueva asignación)
+            // ============================================================
             async function finalizarCausaSecretario(causaId, comentarioSecretario) {
                 const causa = state.causas.find(c => c.id === causaId);
                 if (!causa) { showToast('Causa no encontrada', 'danger'); return false; }
@@ -1732,7 +1877,6 @@
                 }
             }
 
-            // ---- cambiarEstado actualizada para limpiar asignación cuando se pone en espera ----
             async function cambiarEstado(id, nuevoEstado, accion, usuario, com) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) return;
@@ -1760,27 +1904,6 @@
                 } catch (error) { /* ignorar */ }
             }
 
-            // ---- toggleAusencia actualizada para procesar cola al reintegrar ----
-            async function toggleAusencia(empId) {
-                let e = state.empleados.find(se => se.id === empId);
-                if (!e) {
-                    e = { id: empId, ausente: false, fechaReintegro: null };
-                    state.empleados.push(e);
-                }
-                e.ausente = !e.ausente;
-                if (!e.ausente) {
-                    e.fechaReintegro = new Date().toISOString();
-                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
-                    procesarColaEspera(); // al reintegrar, procesar cola
-                } else {
-                    e.fechaReintegro = null;
-                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
-                }
-                await guardarConfigEmpleados();
-                renderDistribucion();
-            }
-
-            // ---- elevarDefensor y demás (sin cambios) ----
             async function elevarDefensorDesdePendiente(id) {
                 const c = state.causas.find(x => x.id === id);
                 if (!c) { showToast('Causa no encontrada', 'danger'); return; }
@@ -1804,95 +1927,27 @@
                 renderDistribucion();
             }
 
-            // ============================================================
-            //  MODAL DE CONFIRMACIÓN (sin cambios)
-            // ============================================================
-            let _confirmAction = null;
-
-            function mostrarModalConfirmacion(titulo, mensaje, detalles, onConfirm) {
-                const modalBody = document.getElementById('modalConfirmacionBody');
-                modalBody.innerHTML = `
-                    <h6 class="fw-700">${titulo}</h6>
-                    <p>${mensaje}</p>
-                    <div class="bg-light p-3 rounded-3 mb-3" style="font-size:0.9rem;">
-                        <strong>Resumen de la lógica de asignación automática (IA):</strong>
-                        <ul class="mt-2">
-                            <li><strong>1. Reingreso:</strong> Si la causa ya fue asignada anteriormente, se asigna al mismo empleado.</li>
-                            <li><strong>2. Índice de Asignación (IA):</strong> Combina carga actual, historial, productividad y penalización por retrasos.</li>
-                            <li><strong>3. Productividad:</strong> Bonificación por finalización anticipada (con desaceleración por WIP).</li>
-                            <li><strong>4. Selección:</strong> Se elige al empleado con menor IA.</li>
-                            <li><strong>5. Cola de espera:</strong> Si todos superan el WIP, la causa entra en espera.</li>
-                        </ul>
-                        ${detalles ? `<hr /><div style="font-size:0.9rem; color:#0a2a44;">${detalles}</div>` : ''}
-                    </div>
-                    <p class="text-muted" style="font-size:0.85rem;">¿Desea continuar con la asignación automática?</p>
-                `;
-                _confirmAction = onConfirm;
-                const modal = new bootstrap.Modal(document.getElementById('modalConfirmacionAuto'));
-                modal.show();
-            }
-
-            function abrirModalAsignacionAuto(causaId) {
-                const causa = state.causas.find(x => x.id === causaId);
-                if (!causa) return showToast('Causa no encontrada', 'danger');
-
-                const candidatos = CONFIG.empleados.filter(e => !isAusente(e.id));
-                if (candidatos.length === 0) return showToast('Todos los empleados están ausentes', 'danger');
-
-                const puntosNuevos = CONFIG.nivelesPuntos[causa.nivelOperador] || 1;
-
-                // Calcular IA para todos los candidatos y ordenar
-                let filtrados = candidatos.map(e => {
-                    const ia = calcularIA(e.id, puntosNuevos);
-                    const prod = calcularProductividad(e.id);
-                    const diasRetraso = calcularDiasRetraso(e.id);
-                    const justificado = tieneJustificacion(e.id);
-                    return { ...e, ia, productividad: prod, diasRetraso, justificado };
-                });
-                filtrados.sort((a, b) => a.ia - b.ia);
-
-                const sugerido = filtrados[0];
-                if (!sugerido) return showToast('No se pudo determinar un candidato', 'danger');
-
-                const modalBody = document.getElementById('modalConfirmacionBody');
-                modalBody.innerHTML = `
-                    <div class="text-center mb-4">
-                        <h6 class="text-muted text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px;">Sugerencia del Sistema (IA)</h6>
-                        <h4 class="text-primary mt-2 mb-0">${sugerido.nombre}</h4>
-                        <div class="mt-2" style="font-size: 0.9rem; background: #f8f9fa; padding: 8px 12px; border-radius: 8px;">
-                            <strong>Índice de Asignación (IA):</strong> ${sugerido.ia.toFixed(2)}<br />
-                            <strong>Productividad:</strong> ${(sugerido.productividad * 100).toFixed(0)}%<br />
-                            <strong>Días de retraso:</strong> ${sugerido.diasRetraso.toFixed(1)} ${sugerido.justificado ? '(justificado)' : '(no justificado)'}
-                        </div>
-                        <p class="text-muted mt-3" style="font-size:0.8rem;">
-                            ${sugerido.diasRetraso > 0 && !sugerido.justificado ? '⚠️ Este empleado tiene retrasos no justificados.' : ''}
-                            ${sugerido.productividad > 0.8 ? '🎖️ Productividad alta (bonificada).' : ''}
-                        </p>
-                    </div>
-                `;
-
-                const btnConfirm = document.getElementById('btnConfirmarAuto');
-                const newBtn = btnConfirm.cloneNode(true);
-                btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
-
-                newBtn.onclick = async () => {
-                    newBtn.disabled = true;
-                    newBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Asignando...';
-                    const exito = await asignarCausa(causaId, causa.nivelOperador, sugerido.id,
-                        `Asignación automática (IA: ${sugerido.ia.toFixed(2)})`, null, causa.tipo, causa.modoIntervencion);
-                    if (exito) {
-                        bootstrap.Modal.getInstance(document.getElementById('modalConfirmacionAuto')).hide();
-                        renderDistribucion();
-                    }
-                    newBtn.disabled = false;
-                    newBtn.innerHTML = 'Confirmar asignación';
-                };
-
-                new bootstrap.Modal(document.getElementById('modalConfirmacionAuto')).show();
+            async function toggleAusencia(empId) {
+                let e = state.empleados.find(se => se.id === empId);
+                if (!e) {
+                    e = { id: empId, ausente: false, fechaReintegro: null };
+                    state.empleados.push(e);
+                }
+                e.ausente = !e.ausente;
+                if (!e.ausente) {
+                    e.fechaReintegro = new Date().toISOString();
+                    showToast(`✅ ${getEmpName(empId)} reintegrado. Prioridad en próxima asignación.`, 'success');
+                    procesarColaEspera();
+                } else {
+                    e.fechaReintegro = null;
+                    showToast(`⛔ ${getEmpName(empId)} marcado como ausente.`, 'warning');
+                }
+                await guardarConfigEmpleados();
+                renderDistribucion();
             }
 
             // ============================================================
-            //  FUNCIONES DE PAGINACIÓN Y FILTROS (sin cambios, solo se agrega espera)
+            //  FUNCIONES DE PAGINACIÓN Y FILTROS (sin cambios)
             // ============================================================
             function paginateData(data, page, perPage = 10) {
                 const total = data.length;
@@ -2062,7 +2117,7 @@
             }
 
             // ============================================================
-            //  FUNCIÓN RENDER DISTRIBUCIÓN (MODIFICADA: se agregó sección de espera)
+            //  FUNCIÓN RENDER DISTRIBUCIÓN (sin cambios estructurales, solo se usa la nueva lógica)
             // ============================================================
             function renderDistribucion() {
                 const panel = document.getElementById('panelDistribucion');
@@ -2172,14 +2227,14 @@
                 const { items: pasesItems, total: pasesTotal, totalPages: pasesTotalPages, page: pasesPage } = paginateData(
                     todasAsignaciones, pPases.page, pPases.perPage);
 
-                // ===== NUEVA SECCIÓN: Causas en espera =====
+                // Causas en espera
                 let enEspera = state.causas.filter(c => c.estado === 'en_espera').filter(filterFn);
                 enEspera.sort((a, b) => new Date(b.fechaPaseSecretario || b.fechaAsignacion) - new Date(a.fechaPaseSecretario || a.fechaAsignacion));
                 const pEspera = paginationState.espera;
                 const { items: esperaItems, total: esperaTotal, totalPages: esperaTotalPages, page: esperaPage } = paginateData(
                     enEspera, pEspera.page, pEspera.perPage);
 
-                // Empleados disponibles para asignación
+                // Empleados disponibles para asignación (se mantiene el formato, pero ahora la lógica de asignación es la nueva)
                 const optsEmpleados = CONFIG.empleados
                     .filter(e => !isAusente(e.id))
                     .map(e => {
@@ -2267,7 +2322,7 @@
                     }
                 }
 
-                // KPIs (incluyendo en espera)
+                // KPIs
                 const totalSinAsignar = state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
@@ -2309,7 +2364,7 @@
                 });
 
                 // ============================================================
-                //  ARMADO DEL HTML (con nueva sección de espera)
+                //  ARMADO DEL HTML (sin cambios estructurales)
                 // ============================================================
                 let html = `
                     <div class="text-center mb-4">
@@ -2554,7 +2609,7 @@
                         ` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso actualmente.</div>`}
                     </div>
 
-                    <!-- ===== NUEVA SECCIÓN: CAUSAS EN ESPERA ===== -->
+                    <!-- ===== SECCIÓN: CAUSAS EN ESPERA ===== -->
                     <div class="glass-card mt-4">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
                             <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Causas en Espera (por saturación)</div>
@@ -2790,7 +2845,7 @@
                         renderDistribucion();
                     });
 
-                // EVENTOS (incluyendo nuevos botones de espera)
+                // EVENTOS (incluyendo botones de espera y auto-asignación)
                 panel.removeEventListener('click', panel._clickHandler);
                 panel._clickHandler = async function(e) {
                     const target = e.target.closest('.btn-auto-asig');
@@ -2892,7 +2947,7 @@
                     });
                 });
 
-                // BOTÓN DISTRIBUIR AUTOMÁTICO
+                // BOTÓN DISTRIBUIR AUTOMÁTICO (usa la nueva lógica)
                 const btnMasivo = document.getElementById('btnDistribuirMasivo');
                 if (btnMasivo) {
                     btnMasivo.removeEventListener('click', btnMasivo._listener);
@@ -2903,13 +2958,12 @@
                         const detalles = `
                             <strong>Total de causas a distribuir:</strong> ${total}<br />
                             <strong>Empleados activos disponibles:</strong> ${CONFIG.empleados.filter(e => !isAusente(e.id)).length}<br />
-                            <strong>Métrica IA:</strong> se prioriza el menor Índice de Asignación.<br />
-                            <strong>Productividad:</strong> se bonifica a quienes finalizan antes del plazo.<br />
+                            <strong>Criterio de asignación:</strong> se prioriza menor cantidad de "Nuevo patrocinio" (y "Violencia Familiar") y luego menor historial total, menor activo y desempate por nivel histórico.<br />
                             <strong>WIP máximo:</strong> ${WIP_MAX} puntos.
                         `;
                         mostrarModalConfirmacion(
                             'Distribución automática masiva',
-                            `Se asignarán <strong>${total}</strong> causas pendientes de forma automática utilizando IA.`,
+                            `Se asignarán <strong>${total}</strong> causas pendientes de forma automática.`,
                             detalles,
                             async () => {
                                 const comentarioGlobal = prompt(
@@ -2964,6 +3018,34 @@
                 if (btnImprimirHistEmp) {
                     btnImprimirHistEmp.onclick = window.imprimirHistorialEmpleado;
                 }
+            }
+
+            // ============================================================
+            //  MODAL DE CONFIRMACIÓN (sin cambios)
+            // ============================================================
+            let _confirmAction = null;
+
+            function mostrarModalConfirmacion(titulo, mensaje, detalles, onConfirm) {
+                const modalBody = document.getElementById('modalConfirmacionBody');
+                modalBody.innerHTML = `
+                    <h6 class="fw-700">${titulo}</h6>
+                    <p>${mensaje}</p>
+                    <div class="bg-light p-3 rounded-3 mb-3" style="font-size:0.9rem;">
+                        <strong>Resumen de la lógica de asignación:</strong>
+                        <ul class="mt-2">
+                            <li><strong>1. Reingreso:</strong> Si la causa ya fue asignada anteriormente, se asigna al mismo empleado.</li>
+                            <li><strong>2. Tipo de causa:</strong> Si es "Nuevo patrocinio" o "Nuevo patrocinio Violencia Familiar", se prioriza al empleado con menor cantidad de estas causas en su historial.</li>
+                            <li><strong>3. Para otras causas:</strong> se ordena por: menor cantidad de Nuevo Patrocinio, luego menor historial total, luego menor activo, y finalmente menor historial por nivel.</li>
+                            <li><strong>4. Selección:</strong> Se elige al primer empleado que no supere el WIP (${WIP_MAX} pts).</li>
+                            <li><strong>5. Cola de espera:</strong> Si todos superan el WIP, la causa entra en espera.</li>
+                        </ul>
+                        ${detalles ? `<hr /><div style="font-size:0.9rem; color:#0a2a44;">${detalles}</div>` : ''}
+                    </div>
+                    <p class="text-muted" style="font-size:0.85rem;">¿Desea continuar con la asignación automática?</p>
+                `;
+                _confirmAction = onConfirm;
+                const modal = new bootstrap.Modal(document.getElementById('modalConfirmacionAuto'));
+                modal.show();
             }
 
             // ============================================================
@@ -3473,7 +3555,7 @@
                         <div class="mb-3">
                             <h5 style="margin:0; font-weight:700; color:#0a2a44;">Informe de Equidad · ${fechaStr}</h5>
                             <p style="color:#5f7f9f; font-size:0.85rem;"><strong>Total de asignaciones en el período:</strong> ${asignacionesPeriodo.length}</p>
-                            <p style="color:#5f7f9f; font-size:0.85rem;"><strong>Métrica IA:</strong> Índice de Asignación (menor es mejor)</p>
+                            <p style="color:#5f7f9f; font-size:0.85rem;"><strong>Métrica de asignación:</strong> prioridad = menor Nuevo Patrocinio → menor Histórico → menor Activo (con WIP ${WIP_MAX} pts).</p>
                         </div>
                         <hr />
                         <h6>Asignaciones por Secretario</h6>
@@ -4244,6 +4326,54 @@
 
                 document.getElementById('chatTabEmpleados').addEventListener('click', () => cambiarModoChat('empleados'));
                 document.getElementById('chatTabDefensor').addEventListener('click', () => cambiarModoChat('defensor'));
+            }
+
+            // ============================================================
+            //  FUNCIÓN calcularIA (se mantiene para estadísticas, no se usa en asignación)
+            // ============================================================
+            function calcularIA(empId, puntosNuevos = 0) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) return Infinity;
+                if (isAusente(empId)) return Infinity;
+
+                const causasActivas = state.causas.filter(c => c.empleadoAsignado === empId && c.estado === 'en_proceso');
+                const CA = causasActivas.reduce((s, c) => s + calcularPuntosCausa(c), 0) + puntosNuevos;
+
+                const todas = state.causas.filter(c => c.empleadoAsignado === empId || c.empleadoOriginal === empId);
+                const HA = todas.reduce((s, c) => s + calcularPuntosCausa(c), 0);
+
+                const CDI = calcularCDI();
+                const Pr = calcularProductividad(empId);
+
+                let Bp = 0;
+                if (Pr > 0) {
+                    if (Pr > 0.8) {
+                        Bp = (Pr - 0.8) * 5 * COEF_BONO_PRODUCTIVIDAD;
+                    }
+                    const promedioPr = CONFIG.empleados.reduce((s, e) => s + calcularProductividad(e.id), 0) / CONFIG.empleados.length;
+                    if (Pr > promedioPr) {
+                        Bp += COEF_BONO_PRODUCTIVIDAD_EXTRA;
+                    }
+                }
+
+                const wipActual = CA - puntosNuevos;
+                const factorDesaceleracion = Math.max(0, 1 - wipActual / WIP_MAX);
+                const BpAjustado = Math.min(Bp, BONO_MAXIMO) * factorDesaceleracion;
+
+                const promedioHA = CONFIG.empleados.reduce((s, e) => s +
+                    state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
+                    .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
+                const FH = promedioHA > 0 ? HA / promedioHA : 1;
+                let factorHistorico = 0;
+                if (FH < 0.8) {
+                    factorHistorico = -(0.8 - FH) * COEF_HISTORICO_BAJO;
+                } else if (FH > 1.2) {
+                    factorHistorico = (FH - 1.2) * COEF_HISTORICO_ALTO;
+                }
+
+                const desviacion = (CA - CDI) * COEF_DESVIACION;
+                let IA = desviacion - BpAjustado + factorHistorico;
+                return IA;
             }
 
         })();
