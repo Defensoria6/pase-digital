@@ -995,6 +995,15 @@
             margin-bottom: 0.8rem;
             opacity: 0.5;
         }
+
+        /* ===== RESALTADO PARA CAUSAS DEVUELTAS (agregado) ===== */
+        .tr-devuelto {
+            background-color: #ffebee !important;
+        }
+        .expediente-devuelto {
+            font-weight: 800 !important;
+            color: #c62828 !important;
+        }
     </style>
 </head>
 <body>
@@ -1223,8 +1232,7 @@
                     { id: 'sec3', nombre: 'Magnani Enzo' }
                 ],
                 operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Patricia', 'Gonzalez Misael'],
-                // NUEVO: orden de asignación (round-robin) para los secretarios
-                ordenSecretarios: ['sec1', 'sec3', 'sec2'] // Corrales → Magnani → Riveros
+                ordenSecretarios: ['sec1', 'sec3', 'sec2']
             };
 
             // ============================================================
@@ -1233,7 +1241,7 @@
             let state = {
                 causas: [],
                 ausencias: [],
-                lastIndex: 0 // índice del último secretario asignado en el orden definido
+                lastIndex: 0
             };
             let currentOperator = '';
             let searchTerm = '';
@@ -1464,7 +1472,6 @@
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
-                // 1. Filtrar secretarios disponibles (no ausentes)
                 const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
@@ -1472,41 +1479,27 @@
                     return null;
                 }
 
-                // 2. Obtener el orden de asignación (definido en CONFIG.ordenSecretarios)
-                const orden = CONFIG.ordenSecretarios; // ['sec1','sec3','sec2']
-
-                // 3. Filtrar el orden para quedarnos solo con los disponibles (manteniendo el orden)
+                const orden = CONFIG.ordenSecretarios;
                 const disponiblesEnOrden = orden.filter(id => disponibles.some(s => s.id === id));
 
                 if (disponiblesEnOrden.length === 0) {
-                    // Esto no debería pasar porque ya filtramos disponibles, pero por seguridad:
                     showToast('No hay secretarios disponibles en el orden definido.', 'danger');
                     return null;
                 }
 
-                // 4. Calcular el próximo índice en el orden circular
                 let lastIdx = state.lastIndex || 0;
-                // Buscar el índice actual en el orden filtrado (disponiblesEnOrden)
-                // Si el último índice apunta a un secretario que no está disponible, avanzamos.
                 let startIdx = disponiblesEnOrden.findIndex(id => id === orden[lastIdx]);
                 if (startIdx === -1) {
-                    // Si el último no está disponible, empezamos desde el principio de los disponibles
                     startIdx = 0;
                 }
 
-                // Avanzar al siguiente disponible (circular)
                 let nextIdx = (startIdx + 1) % disponiblesEnOrden.length;
-                // Si el siguiente es el mismo que el actual (porque solo hay uno), se asigna ese.
                 const elegidoId = disponiblesEnOrden[nextIdx];
 
-                // 5. Actualizar el índice global (en el orden original)
                 const nuevoIndex = orden.indexOf(elegidoId);
                 state.lastIndex = nuevoIndex;
-
-                // 6. Guardar la configuración en Firestore (asíncrono, no esperamos para no bloquear)
                 guardarConfiguracion(nuevoIndex);
 
-                // 7. Retornar el secretario elegido
                 const secretario = CONFIG.secretarios.find(s => s.id === elegidoId);
                 return secretario;
             }
@@ -2007,14 +2000,14 @@
                     const obs = document.getElementById('inpObs').value;
                     const fuenteSiged = document.getElementById('fuenteSiged').checked;
                     const fuenteZimbra = document.getElementById('fuenteZimbra').checked;
-                    const fuenteDeut = document.getElementById('fuenteDeut').checked; // nuevo
+                    const fuenteDeut = document.getElementById('fuenteDeut').checked;
                     const accion = document.getElementById('inpAccion').value;
                     const motivo = document.getElementById('inpMotivo').value.trim();
                     const dependencia = document.getElementById('inpDependencia').value.trim();
                     const dni = document.getElementById('inpDni').value.trim();
                     const modoIntervencion = document.getElementById('inpModoIntervencion').value;
-                    const datosParte = document.getElementById('inpDatosParte').value.trim(); // nuevo
-                    const asisteDefensoria = document.getElementById('inpAsisteDefensoria').value; // nuevo
+                    const datosParte = document.getElementById('inpDatosParte').value.trim();
+                    const asisteDefensoria = document.getElementById('inpAsisteDefensoria').value;
 
                     if (dni && !/^\d{7,8}$/.test(dni)) {
                         showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
@@ -2086,7 +2079,6 @@
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
-                // ---- Tabla de Recientes ----
                 let datosMostrar = causasFiltradas;
                 if (!filtroMes && !filtroAnio) {
                     datosMostrar = datosMostrar.slice(0, 50);
@@ -2096,7 +2088,6 @@
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
                 .perPage);
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 let causasRechazadas = state.causas.filter(c =>
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
@@ -2123,7 +2114,6 @@
                     causasRechazadas, pStateRech.page, pStateRech.perPage
                 );
 
-                // ---- Generar HTML ----
                 const añoOptions = [];
                 for (let y = 2026; y <= 2040; y++) {
                     añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
@@ -2159,7 +2149,6 @@
                     </div>
                 `;
 
-                // Tabla de Recientes (con columna de acciones)
                 if (total) {
                     html += `
                         <div style="width:100%; border-radius:16px;">
@@ -2203,7 +2192,7 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
+                // ---- Tabla de Rechazados / Devueltos / Remitidos (con resaltado) ----
                 html += `
                     <hr class="my-4" />
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -2230,10 +2219,13 @@
                                 </thead>
                                 <tbody>
                                     ${itemsRech.map(c => {
+                                        const esDevuelto = c.estado === 'devuelto_siged';
+                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
                                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
                                         return `
-                                        <tr>
-                                            <td><strong>${c.numero}</strong></td>
+                                        <tr class="${claseFila}">
+                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
                                             <td style="font-size:0.65rem;">${c.tipo}</td>
                                             <td>N${c.nivelOperador}</td>
                                             <td>${getEstadoBadge(c.estado)}</td>
@@ -2255,7 +2247,6 @@
 
                 container.innerHTML = html;
 
-                // ---- Paginación ----
                 if (total > 0) {
                     renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
                         paginationState.ingreso.page = newPage;
@@ -2272,7 +2263,6 @@
                     });
                 }
 
-                // ---- Filtros ----
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
@@ -2290,7 +2280,6 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                // ---- Eventos de los botones de reporte ----
                 const btnReporteRecientes = container.querySelector('#btnReporteOperador');
                 if (btnReporteRecientes) {
                     btnReporteRecientes.addEventListener('click', function() {
@@ -2304,7 +2293,6 @@
                     });
                 }
 
-                // ---- Acciones de historial (para ambas tablas) ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
