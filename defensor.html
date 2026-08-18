@@ -683,6 +683,10 @@
                     <button class="btn-buscar" id="btnBuscarGlobal"><i class="bi bi-search"></i> Buscar</button>
                 </div>
                 <button class="btn-refresh" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar todas las BD</button>
+                <!-- Botón para limpiar filtro de expediente único (oculto inicialmente) -->
+                <button class="btn btn-outline-secondary btn-modern-sm" id="btnLimpiarFiltroExpediente" style="display:none;">
+                    <i class="bi bi-x-circle"></i> Mostrar todos
+                </button>
                 <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
@@ -935,7 +939,7 @@
                 ausencias: [],
                 empleados: []
             };
-            let searchTerm = ''; // Ya no se usa para filtrar, solo para el modal
+            let searchTerm = '';
             let chartInstances = {};
             let cronoInterval = null;
             let paginationState = {
@@ -950,6 +954,9 @@
             let puntajesManualesCache = {};
             let chatUnsubscribe = null;
             let justificarCausaId = null;
+
+            // ---------- NUEVA VARIABLE PARA FILTRO DE EXPEDIENTE ÚNICO ----------
+            let filtroExpedienteUnico = null;
 
             // ---------- UTILS ----------
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
@@ -1049,9 +1056,8 @@
                 return { puntosHistoricos, cantidadHistorica, activos };
             }
 
-            // Ya no se usa para filtrar, pero se mantiene por si acaso
             function getFilteredCausas() {
-                return state.causas; // Sin filtro
+                return state.causas;
             }
 
             function getEstadoBadge(estado) {
@@ -1640,12 +1646,16 @@
             }
 
             // ============================================================
-            //  RENDER DE PANELES (sin filtro de búsqueda en las tablas)
+            //  RENDER DE PANELES (con filtro de expediente único)
             // ============================================================
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
-                // Sin filtro, mostramos todas las causas en_defensor
-                const lista = state.causas.filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                let lista = state.causas.filter(c => c.estado === 'en_defensor');
+                // Aplicar filtro de expediente único si existe
+                if (filtroExpedienteUnico) {
+                    lista = lista.filter(c => c.numero === filtroExpedienteUnico);
+                }
+                lista.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 const pState = paginationState.defensor;
                 const { items, total, totalPages, page } = paginateData(lista, pState.page, pState.perPage);
 
@@ -1893,7 +1903,7 @@
             }
 
             // ============================================================
-            //  PANEL EMPLEADO (sin filtro de búsqueda)
+            //  PANEL EMPLEADO (con filtro de expediente único)
             // ============================================================
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
@@ -1902,8 +1912,11 @@
                 window._empSeleccionado = empSeleccionado;
 
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empSeleccionado);
+                // Aplicar filtro de expediente único
+                if (filtroExpedienteUnico) {
+                    causasFiltradas = causasFiltradas.filter(c => c.numero === filtroExpedienteUnico);
+                }
 
-                // Ya no se aplica filtro por searchTerm
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
                     const anio = parseInt(filtroAnio);
@@ -2209,11 +2222,14 @@
             });
 
             // ============================================================
-            //  PANEL PASES FINALIZADOS (sin filtro)
+            //  PANEL PASES FINALIZADOS (con filtro de expediente único)
             // ============================================================
             function renderPasesFinalizados() {
                 const panel = document.getElementById('panelPasesFinalizados');
                 let finalizadas = state.causas.filter(c => c.estado === 'finalizada' && c.fechaFinalizacion);
+                if (filtroExpedienteUnico) {
+                    finalizadas = finalizadas.filter(c => c.numero === filtroExpedienteUnico);
+                }
                 finalizadas.sort((a, b) => new Date(b.fechaFinalizacion) - new Date(a.fechaFinalizacion));
 
                 const pState = paginationState.pasesFinalizados;
@@ -2325,13 +2341,12 @@
             }
 
             // ============================================================
-            //  PANEL AUDITORIA (con contenedores de Secretarios y Empleados + botón imprimir)
+            //  PANEL AUDITORIA (con filtro de expediente único)
             // ============================================================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
 
                 // ========== CALCULAR KPIS PARA SECRETARIOS ==========
-                // Total Sin Asignar: causas en en_secretaria que NO son consultas de empleados
                 const totalSinAsignar = state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
@@ -2342,7 +2357,6 @@
 
                 const enProcesoTotal = state.causas.filter(c => c.estado === 'en_proceso').length;
 
-                // Para Finalizar: causas en en_secretaria que SÍ son consultas de empleados
                 const paraFinalizar = state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (!c.fechaPaseSecretario) return false;
@@ -2354,7 +2368,6 @@
                 const finalizados = state.causas.filter(c => c.estado === 'finalizada').length;
 
                 // ========== DESTACADOS DE EMPLEADOS ==========
-                // Mejor Cumplimiento: empleado con más causas finalizadas
                 let mejorCumplimiento = { id: null, nombre: 'N/A', count: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const count = state.causas.filter(c => c.estado === 'finalizada' && (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)).length;
@@ -2363,7 +2376,6 @@
                     }
                 });
 
-                // Mayor Carga: empleado con más causas en total (histórico)
                 let mayorCarga = { id: null, nombre: 'N/A', count: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const count = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id).length;
@@ -2372,7 +2384,6 @@
                     }
                 });
 
-                // Mayor Demora: empleado con mayor suma de días de retraso en causas activas
                 let mayorDemora = { id: null, nombre: 'N/A', dias: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const dias = calcularDiasRetraso(emp.id);
@@ -2384,7 +2395,10 @@
                 // ========== TABLA DE OPERADORES (trazabilidad) ==========
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); 
                 let operadorFiltro = filterSelect ? filterSelect.value : '';
-                let causasFiltradas = state.causas; // sin filtro de búsqueda
+                let causasFiltradas = state.causas;
+                if (filtroExpedienteUnico) {
+                    causasFiltradas = causasFiltradas.filter(c => c.numero === filtroExpedienteUnico);
+                }
                 if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
                 const list = causasFiltradas.slice(-50).reverse(); 
                 const pState = paginationState.auditoria; 
@@ -2523,7 +2537,6 @@
 
             // ========== FUNCIÓN PARA IMPRIMIR KPIs ==========
             function imprimirKPIsSecretarioEmpleado() {
-                // Obtener los contenedores actualizados del DOM
                 const contenedorSecretarios = document.querySelector('#panelAuditoria .card-modern:first-child');
                 const contenedorEmpleados = document.querySelector('#panelAuditoria .card-modern:nth-child(2)');
 
@@ -2532,15 +2545,12 @@
                     return;
                 }
 
-                // Clonar los contenedores para no afectar la vista
                 const clonSecretarios = contenedorSecretarios.cloneNode(true);
                 const clonEmpleados = contenedorEmpleados.cloneNode(true);
 
-                // Eliminar el botón de imprimir del clon (para que no aparezca en la impresión)
                 const btnImprimir = clonSecretarios.querySelector('#btnImprimirKPIs');
                 if (btnImprimir) btnImprimir.remove();
 
-                // Preparar el contenido para imprimir
                 const now = new Date();
                 const fechaHora = fmtDt(now.toISOString());
 
@@ -2553,7 +2563,6 @@
                     ${clonEmpleados.outerHTML}
                 `;
 
-                // Abrir ventana de impresión
                 const win = window.open('', '_blank', 'width=800,height=600');
                 if (!win) {
                     showToast('Permita ventanas emergentes para imprimir', 'warning');
@@ -3585,7 +3594,7 @@
             }
 
             // ============================================================
-            //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO
+            //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO Y FILTRO A SOLAPA
             // ============================================================
             function mostrarDetalleConHistorial(causa, volverCallback) {
                 window._ultimoDetalleCausa = causa;
@@ -3704,12 +3713,23 @@
                 document.getElementById('btnIrASolapaBusqueda').addEventListener('click', function() {
                     const panelId = this.dataset.panel;
                     const numero = this.dataset.numero;
+
+                    // Establecer filtro de expediente único
+                    filtroExpedienteUnico = numero;
+
+                    // Mostrar botón para limpiar filtro
+                    document.getElementById('btnLimpiarFiltroExpediente').style.display = 'inline-block';
+
+                    // Cambiar a la solapa correspondiente
                     const tabBtn = document.querySelector(`.tab-btn[data-target="${panelId}"]`);
                     if (tabBtn) {
                         tabBtn.click();
                         showToast(`Expediente ${numero} - Solapa ${panelId.replace('panel','')}`, 'info');
+                        // Cerrar modal
                         const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusqueda'));
                         if (modal) modal.hide();
+                        // Forzar renderizado con filtro
+                        renderAll();
                     }
                 });
             }
@@ -3978,6 +3998,9 @@
                 document.getElementById('chatWidget').classList.remove('visible');
                 const searchInput = document.getElementById('globalSearch');
                 if (searchInput) searchInput.value = '';
+                // Limpiar filtro al cerrar sesión
+                filtroExpedienteUnico = null;
+                document.getElementById('btnLimpiarFiltroExpediente').style.display = 'none';
                 showToast('Sesión cerrada', 'warning');
             }
 
@@ -3993,6 +4016,14 @@
                     await loadStateFromFirestore();
                     renderAll();
                     showToast('✅ Todas las bases de datos actualizadas (Firestore)', 'success');
+                });
+
+                // ========== EVENTO DEL BOTÓN PARA LIMPIAR FILTRO ==========
+                document.getElementById('btnLimpiarFiltroExpediente').addEventListener('click', function() {
+                    filtroExpedienteUnico = null;
+                    this.style.display = 'none';
+                    renderAll();
+                    showToast('Filtro de expediente eliminado', 'info');
                 });
             });
 
