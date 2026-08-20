@@ -2341,7 +2341,7 @@
             }
 
             // ============================================================
-            //  PANEL AUDITORIA (con filtro de expediente único)
+            //  PANEL AUDITORIA (con filtro de expediente único y TODOS los operadores)
             // ============================================================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
@@ -2395,16 +2395,30 @@
                 // ========== TABLA DE OPERADORES (trazabilidad) ==========
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); 
                 let operadorFiltro = filterSelect ? filterSelect.value : '';
+
+                // Obtener operadores únicos de los datos
+                const operadoresUnicos = [...new Set(state.causas.map(c => c.operador).filter(op => op && op.trim() !== ''))];
+                // Si no hay, usar la lista fija como fallback
+                const operadoresList = operadoresUnicos.length ? operadoresUnicos : CONFIG.operadores;
+
                 let causasFiltradas = state.causas;
                 if (filtroExpedienteUnico) {
                     causasFiltradas = causasFiltradas.filter(c => c.numero === filtroExpedienteUnico);
                 }
-                if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
-                const list = causasFiltradas.slice(-50).reverse(); 
-                const pState = paginationState.auditoria; 
-                const { items, total, totalPages, page } = paginateData(list, pState.page, pState.perPage);
+                if (operadorFiltro) {
+                    causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
+                }
 
-                const opciones = CONFIG.operadores.map(op => `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`).join('');
+                // Ordenar por fecha de pase (más reciente primero) y paginar sin límite de 50
+                causasFiltradas.sort((a, b) => new Date(b.fechaPaseSecretario || b.fechaAsignacion || 0) - new Date(a.fechaPaseSecretario || a.fechaAsignacion || 0));
+                const pState = paginationState.auditoria; 
+                const { items, total, totalPages, page } = paginateData(causasFiltradas, pState.page, pState.perPage);
+
+                // Generar opciones del select
+                let opciones = `<option value="">Todos</option>`;
+                operadoresList.forEach(op => {
+                    opciones += `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`;
+                });
 
                 // ========== ARMADO DEL HTML ==========
                 panel.innerHTML = `
@@ -2470,7 +2484,7 @@
                         </div>
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             <label class="form-label me-1" style="font-size:0.8rem; font-weight:600;">Filtrar por operador:</label>
-                            <select id="auditoriaFiltroOperador" class="form-select form-select-sm" style="width:auto; display:inline-block;"><option value="">Todos</option>${opciones}</select>
+                            <select id="auditoriaFiltroOperador" class="form-select form-select-sm" style="width:auto; display:inline-block;">${opciones}</select>
                             <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReportePorOperador"><i class="bi bi-file-earmark-text"></i> Informe por Operador</button>
                         </div>
                         <hr />
