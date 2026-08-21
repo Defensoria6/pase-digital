@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistema Digital de Pases · Defensor (Integrado)</title>
+    <title>Sistema Digital de Pases Respaldo Defensor</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
@@ -13,11 +13,11 @@
 
     <!-- ===== CONFIGURACIÓN INICIAL ===== -->
     <script>
-        let USE_FIRESTORE = false;
+        let USE_FIRESTORE = false; // Por defecto, modo JSON
         const JSON_DATA_URL = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
     </script>
 
-    <!-- Carga condicional de Firebase -->
+    <!-- Carga condicional de Firebase (solo si se activa) -->
     <script>
         if (USE_FIRESTORE) {
             document.write('<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"><\/script>');
@@ -656,6 +656,90 @@
             font-size: 0.8rem;
             color: #5f7f9f;
         }
+
+        /* ===== ESTILOS AGREGADOS PARA REPLICAR EMPLEADO ===== */
+        .kpi-grid-empleado {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .kpi-item-empleado {
+            flex: 1 1 150px;
+            min-width: 120px;
+            background: #f9fcff;
+            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            border: 1px solid #e2edf7;
+            text-align: center;
+            transition: box-shadow 0.2s;
+            position: relative;
+        }
+        .kpi-item-empleado:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .kpi-item-empleado .label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5f7f9f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        .kpi-item-empleado .label .btn-ver-detalle {
+            background: none;
+            border: none;
+            color: #1976d2;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: transform 0.2s;
+        }
+        .kpi-item-empleado .label .btn-ver-detalle:hover {
+            transform: scale(1.2);
+        }
+        .kpi-item-empleado .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0a2a44;
+            line-height: 1.2;
+        }
+        .kpi-item-empleado .value.total { color: #0a2a44; }
+        .kpi-item-empleado .value.proceso { color: #1976d2; }
+        .kpi-item-empleado .value.secretaria { color: #e67e22; }
+        .kpi-item-empleado .value.defensor { color: #7b1fa2; }
+        .kpi-item-empleado .value.finalizado { color: #2e7d32; }
+        .kpi-item-empleado .value.demora { color: #c62828; }
+        .kpi-item-empleado .sub {
+            font-size: 0.65rem;
+            color: #8aa3bc;
+            margin-top: 2px;
+        }
+
+        .justif-pendiente { background: #fff3cd; color: #856404; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+        .justif-aprobada { background: #d4edda; color: #155724; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+        .justif-rechazada { background: #f8d7da; color: #721c24; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+
+        .estado-plazo { color: #2e7d32; font-weight: 700; }
+        .estado-vencido { color: #e67e22; font-weight: 700; }
+        .estado-fueraplazo { color: #c62828; font-weight: 700; }
+
+        .tiempo-detalle { font-size: 0.9rem; }
+        .tiempo-detalle .row { margin-bottom: 0.5rem; }
+        .tiempo-detalle .label { font-weight: 600; color: #5f7f9f; }
+
+        /* Estilos para el modal de envío al secretario */
+        #modalEnviarSecretario .modal-body .d-flex.gap-3 { gap: 1rem; }
+        #modalEnviarSecretario .modal-body .btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; }
+        #seccionOpciones, #seccionConsulta, #seccionConfirmacion { min-height: 100px; }
+        #seccionConsulta textarea { resize: vertical; }
+
+        /* Estilos para el modal de detalle de tiempo */
+        #modalDetalleTiempo .modal-body .tiempo-detalle .row { padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+        #modalDetalleTiempo .modal-body .tiempo-detalle .row:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -693,7 +777,11 @@
                     <button class="btn-buscar" id="btnBuscarGlobal"><i class="bi bi-search"></i> Buscar</button>
                 </div>
                 <button class="btn-refresh" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar todas las BD</button>
-                <!-- Botones para cambiar modo -->
+                <!-- Botón para limpiar filtro de expediente único (oculto inicialmente) -->
+                <button class="btn btn-outline-secondary btn-modern-sm" id="btnLimpiarFiltroExpediente" style="display:none;">
+                    <i class="bi bi-x-circle"></i> Mostrar todos
+                </button>
+                <!-- Botones para cambiar modo (solo en JSON) -->
                 <button class="btn-header" id="btnActivarFirestore" style="display:none; background:#1976d2; color:#fff; border-color:#1976d2;"><i class="bi bi-cloud-upload me-1"></i>Activar Base (Firestore)</button>
                 <button class="btn-header" id="btnActivarJSON" style="display:none; background:#6c757d; color:#fff; border-color:#6c757d;"><i class="bi bi-file-earmark me-1"></i>Usar Base Guardada (JSON)</button>
                 <button class="btn-logout" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
@@ -826,6 +914,78 @@
         </div>
     </div>
 
+    <!-- ===== NUEVO MODAL: ENVÍO AL SECRETARIO (copiado de empleado) ===== -->
+    <div class="modal fade modal-modern" id="modalEnviarSecretario" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-share me-2"></i>Enviar al Secretario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalEnviarSecretarioBody">
+                    <!-- SECCIÓN OPCIONES INICIALES -->
+                    <div id="seccionOpciones">
+                        <p><strong>Usted está por enviar el expediente al Secretario.</strong></p>
+                        <div class="d-flex gap-3 justify-content-center mt-3">
+                            <button class="btn btn-modern btn-modern-success btn-lg" id="btnEnviarFinalizar">
+                                <i class="bi bi-check-circle"></i> Para finalizar
+                            </button>
+                            <button class="btn btn-modern btn-modern-primary btn-lg" id="btnEnviarConsulta">
+                                <i class="bi bi-question-circle"></i> Para Consulta
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN CONSULTA (campo de texto) -->
+                    <div id="seccionConsulta" style="display:none;">
+                        <div class="mb-3">
+                            <label for="txtMotivoConsulta" class="form-label">Motivo de la consulta</label>
+                            <textarea class="form-control" id="txtMotivoConsulta" rows="3" placeholder="Escriba el motivo de la consulta..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary" id="btnVolverOpciones">Volver</button>
+                            <button class="btn btn-modern btn-modern-primary" id="btnConfirmarConsulta">Confirmar consulta</button>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN CONFIRMACIÓN (mensaje + Aceptar/Cancelar) -->
+                    <div id="seccionConfirmacion" style="display:none;">
+                        <div id="mensajeConfirmacion" class="text-center mb-3">
+                            <p><strong id="confirmacionTexto">Tarea finalizada para control del Secretario.</strong></p>
+                            <p><strong>Expediente:</strong> <span id="confirmacionExpediente"></span></p>
+                            <p id="confirmacionDetalle" style="font-size:0.9rem; color:#555;"></p>
+                        </div>
+                        <div class="d-flex gap-3 justify-content-center">
+                            <button class="btn btn-secondary" id="btnConfirmacionCancelar">Cancelar</button>
+                            <button class="btn btn-modern btn-modern-success" id="btnConfirmacionAceptar">Aceptar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCerrarModalEnviar" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== NUEVO MODAL: DETALLE DE TIEMPO (copiado de empleado) ===== -->
+    <div class="modal fade modal-modern" id="modalDetalleTiempo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock me-2"></i>Detalle de Tiempo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleTiempoBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="logoutAlert">
         <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
         <div class="alert-body">Volverás a la pantalla de inicio. Los datos no se perderán.</div>
@@ -896,8 +1056,8 @@
                 operadores: [ 'Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Pato' ],
                 tipos: [
                     'Nuevo patrocinio', 'Amparo', 'Acción de protección de persona', 'Alimentos', 'Cuidado personal',
-                    'Desalojo', 'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño',
-                    'Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
+                    'Desalojo', 'Divorcio', 'Evaluación Art 42 C.C.C.N.', 'Filiación', 'Filiación y Daño', 'Guarda',
+                    'Homologación Acuerdo CEJUME', 'Insania','Laboral', 'Penal (cámara gesell)', 'Prescripción Adquisitiva',
                     'Régimen de comunicación y contacto', 'Violencia Familiar', 'Otro'
                 ],
                 modosIntervencion: [
@@ -930,7 +1090,7 @@
                 ausencias: [],
                 empleados: []
             };
-            let searchTerm = ''; // Ya no se usa para filtrar, solo para el modal
+            let searchTerm = '';
             let chartInstances = {};
             let cronoInterval = null;
             let paginationState = {
@@ -945,11 +1105,12 @@
             let puntajesManualesCache = {};
             let chatUnsubscribe = null;
             let justificarCausaId = null;
-            let db = null; // referencia a Firestore (si está activo)
+            let filtroExpedienteUnico = null;
+            let db = null; // referencia a Firestore (solo si se activa)
             let unsubscribeCausas = null;
 
             // ============================================================
-            //  FUNCIONES AUXILIARES
+            //  FUNCIONES AUXILIARES (comunes)
             // ============================================================
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
@@ -1162,7 +1323,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE FIRESTORE
+            //  FUNCIONES DE FIRESTORE (solo si se activa)
             // ============================================================
             function inicializarFirebase() {
                 if (typeof firebase === 'undefined') {
@@ -1212,57 +1373,6 @@
                         db = firebase.firestore();
                     }
                     return Promise.resolve(db);
-                }
-            }
-
-            async function addCausaFirestore(causa) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc(causa.id).set(causa);
-                } catch (error) {
-                    console.error('Error agregando causa en Firestore:', error);
-                    showToast('Error al guardar en Firestore', 'danger');
-                    throw error;
-                }
-            }
-
-            async function updateCausaFirestore(id, updates) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc(id).update(updates);
-                } catch (error) {
-                    console.error('Error actualizando causa en Firestore:', error);
-                    showToast('Error al actualizar en Firestore', 'danger');
-                    throw error;
-                }
-            }
-
-            async function updateAusenciasFirestore(ausenciasArray) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc('ausencias').set({ ausencias: ausenciasArray });
-                } catch (error) {
-                    console.error('Error actualizando ausencias en Firestore:', error);
-                    showToast('Error al guardar ausencias', 'danger');
-                }
-            }
-
-            async function updateConfigFirestore(lastIndex) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc('config').set({ lastIndex }, { merge: true });
-                } catch (error) {
-                    console.error('Error guardando configuración en Firestore:', error);
-                }
-            }
-
-            async function updateEmpleadosFirestore(empleadosArray) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc('secretario_config').set({ empleados: empleadosArray });
-                } catch (error) {
-                    console.error('Error guardando empleados en Firestore:', error);
-                    showToast('Error al guardar configuración de empleados', 'danger');
                 }
             }
 
@@ -1322,6 +1432,58 @@
                     state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                 }
                 renderAll();
+            }
+
+            // Funciones de escritura en Firestore
+            async function addCausaFirestore(causa) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc(causa.id).set(causa);
+                } catch (error) {
+                    console.error('Error agregando causa en Firestore:', error);
+                    showToast('Error al guardar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateCausaFirestore(id, updates) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc(id).update(updates);
+                } catch (error) {
+                    console.error('Error actualizando causa en Firestore:', error);
+                    showToast('Error al actualizar en Firestore', 'danger');
+                    throw error;
+                }
+            }
+
+            async function updateAusenciasFirestore(ausenciasArray) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc('ausencias').set({ ausencias: ausenciasArray });
+                } catch (error) {
+                    console.error('Error actualizando ausencias en Firestore:', error);
+                    showToast('Error al guardar ausencias', 'danger');
+                }
+            }
+
+            async function updateConfigFirestore(lastIndex) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc('config').set({ lastIndex }, { merge: true });
+                } catch (error) {
+                    console.error('Error guardando configuración en Firestore:', error);
+                }
+            }
+
+            async function updateEmpleadosFirestore(empleadosArray) {
+                if (!USE_FIRESTORE || !db) return;
+                try {
+                    await db.collection('operador').doc('secretario_config').set({ empleados: empleadosArray });
+                } catch (error) {
+                    console.error('Error guardando empleados en Firestore:', error);
+                    showToast('Error al guardar configuración de empleados', 'danger');
+                }
             }
 
             // ============================================================
@@ -1410,7 +1572,6 @@
                     document.getElementById('modoIndicador').textContent = 'Modo: Firebase (nube)';
                     document.getElementById('btnActivarFirestore').style.display = 'none';
                     document.getElementById('btnActivarJSON').style.display = 'inline-block';
-                    // Iniciar chat solo en modo Firestore
                     iniciarChatDespuesLogin();
                 } else {
                     await cargarDatosDesdeJSON();
@@ -1463,23 +1624,6 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE GESTIÓN DE AUSENCIAS (con guardado unificado)
-            // ============================================================
-            function estaAusente(secretarioId, fecha) {
-                if (!state.ausencias || state.ausencias.length === 0) return false;
-                const f = new Date(fecha);
-                f.setHours(0, 0, 0, 0);
-                return state.ausencias.some(a => {
-                    if (a.secretarioId !== secretarioId) return false;
-                    const inicio = new Date(a.fechaInicio);
-                    inicio.setHours(0, 0, 0, 0);
-                    const fin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
-                    fin.setHours(0, 0, 0, 0);
-                    return f >= inicio && f <= fin;
-                });
-            }
-
-            // ============================================================
             //  LÓGICA DE ASIGNACIÓN (IA) - sin cambios
             // ============================================================
             function getFactorTipo(tipo) {
@@ -1500,6 +1644,7 @@
                     'Filiación y Daño': 0.3,
                     'Guarda': 0.2,
                     'Homologación Acuerdo CEJUME': 0.2,
+                    'Insania': 0.3,
                     'Laboral': 0.3,
                     'Medida autosatisfactiva': 0.3,
                     'Medida de protección integral': 0.4,
@@ -2017,12 +2162,320 @@
             }
 
             // ============================================================
-            //  RENDER DE PANELES (sin filtro de búsqueda en las tablas)
+            //  NUEVAS FUNCIONES AUXILIARES (cálculo de días hábiles, etc.)
+            //  (copiadas de defensor.html)
+            // ============================================================
+            function calcularPascua(year) {
+                const a = year % 19;
+                const b = Math.floor(year / 100);
+                const c = year % 100;
+                const d = Math.floor(b / 4);
+                const e = b % 4;
+                const f = Math.floor((b + 8) / 25);
+                const g = Math.floor((b - f + 1) / 3);
+                const h = (19 * a + b - d - g + 15) % 30;
+                const i = Math.floor(c / 4);
+                const k = c % 4;
+                const l = (32 + 2 * e + 2 * i - h - k) % 7;
+                const m = Math.floor((a + 11 * h + 22 * l) / 451);
+                const month = Math.floor((h + l - 7 * m + 114) / 31);
+                const day = ((h + l - 7 * m + 114) % 31) + 1;
+                return new Date(year, month - 1, day);
+            }
+
+            function obtenerNesimoDiaSemana(year, month, dayOfWeek, n) {
+                let firstDay = new Date(year, month, 1);
+                let firstDayOfWeek = (firstDay.getDay() + 6) % 7;
+                let diff = (dayOfWeek - firstDayOfWeek + 7) % 7;
+                let day = 1 + diff + (n - 1) * 7;
+                if (day > new Date(year, month + 1, 0).getDate()) return null;
+                return new Date(year, month, day);
+            }
+
+            function getFeriados(year) {
+                const feriados = [];
+                const pascua = calcularPascua(year);
+                feriados.push(new Date(year, 0, 1));
+                feriados.push(new Date(year, 2, 24));
+                feriados.push(new Date(year, 3, 2));
+                feriados.push(new Date(year, 4, 1));
+                feriados.push(new Date(year, 4, 25));
+                feriados.push(new Date(year, 6, 9));
+                feriados.push(new Date(year, 11, 8));
+                feriados.push(new Date(year, 11, 25));
+                const carnavalLunes = new Date(pascua);
+                carnavalLunes.setDate(carnavalLunes.getDate() - 47);
+                feriados.push(carnavalLunes);
+                const carnavalMartes = new Date(pascua);
+                carnavalMartes.setDate(carnavalMartes.getDate() - 46);
+                feriados.push(carnavalMartes);
+                const juevesSanto = new Date(pascua);
+                juevesSanto.setDate(juevesSanto.getDate() - 3);
+                feriados.push(juevesSanto);
+                const viernesSanto = new Date(pascua);
+                viernesSanto.setDate(viernesSanto.getDate() - 2);
+                feriados.push(viernesSanto);
+                const tercerLunJun = obtenerNesimoDiaSemana(year, 5, 0, 3);
+                if (tercerLunJun) feriados.push(tercerLunJun);
+                const tercerLunAgo = obtenerNesimoDiaSemana(year, 7, 0, 3);
+                if (tercerLunAgo) feriados.push(tercerLunAgo);
+                const segundoLunOct = obtenerNesimoDiaSemana(year, 9, 0, 2);
+                if (segundoLunOct) feriados.push(segundoLunOct);
+                const cuartoLunNov = obtenerNesimoDiaSemana(year, 10, 0, 4);
+                if (cuartoLunNov) feriados.push(cuartoLunNov);
+                return feriados;
+            }
+
+            function esFeriado(fecha) {
+                const year = fecha.getFullYear();
+                const feriados = getFeriados(year);
+                return feriados.some(f =>
+                    f.getMonth() === fecha.getMonth() &&
+                    f.getDate() === fecha.getDate()
+                );
+            }
+
+            function esDiaHabil(fecha) {
+                const diaSemana = fecha.getDay();
+                if (diaSemana === 0 || diaSemana === 6) return false;
+                if (esFeriado(fecha)) return false;
+                return true;
+            }
+
+            function sumarDiasHabiles(fechaInicio, cantidadDias) {
+                let fecha = new Date(fechaInicio);
+                let diasAgregados = 0;
+                while (diasAgregados < cantidadDias) {
+                    fecha.setDate(fecha.getDate() + 1);
+                    if (esDiaHabil(fecha)) {
+                        diasAgregados++;
+                    }
+                }
+                return fecha;
+            }
+
+            function diasHabilesTranscurridos(fechaInicio, fechaFin) {
+                if (!fechaInicio) return 0;
+                const inicio = new Date(fechaInicio);
+                const fin = fechaFin ? new Date(fechaFin) : new Date();
+                if (inicio > fin) return 0;
+                let dias = 0;
+                let current = new Date(inicio);
+                while (!esDiaHabil(current) && current <= fin) {
+                    current.setDate(current.getDate() + 1);
+                }
+                while (current <= fin) {
+                    if (esDiaHabil(current)) {
+                        dias++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+                return dias;
+            }
+
+            function calcularFechaInicio(fechaAsignacionISO) {
+                const fechaAsig = new Date(fechaAsignacionISO);
+                let fechaInicio = new Date(fechaAsig);
+                const hora = fechaAsig.getHours();
+                const minutos = fechaAsig.getMinutes();
+                if (hora > 12 || (hora === 12 && minutos > 0)) {
+                    fechaInicio.setDate(fechaInicio.getDate() + 1);
+                }
+                while (!esDiaHabil(fechaInicio)) {
+                    fechaInicio.setDate(fechaInicio.getDate() + 1);
+                }
+                fechaInicio.setHours(7, 0, 0, 0);
+                return fechaInicio;
+            }
+
+            function calcularFechaLimite(fechaInicio, nivel) {
+                const dias = CONFIG.nivelesDias[nivel] || 5;
+                const fechaLim = sumarDiasHabiles(fechaInicio, dias);
+                fechaLim.setHours(12, 0, 0, 0);
+                return fechaLim;
+            }
+
+            function getEstadoPlazo(fechaLimite) {
+                if (!fechaLimite) return { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                const hoy = new Date();
+                const fin = new Date(fechaLimite);
+                hoy.setHours(0,0,0,0);
+                fin.setHours(0,0,0,0);
+                const diffDias = Math.floor((hoy - fin) / (1000*60*60*24));
+                if (diffDias <= 0) {
+                    return { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                } else if (diffDias <= 2) {
+                    return { estado: 'vencido', color: 'naranja', label: 'Vencido' };
+                } else {
+                    return { estado: 'fueraplazo', color: 'rojo', label: 'Fuera de plazo' };
+                }
+            }
+
+            function getDetalleTiempo(causa) {
+                if (!causa.fechaAsignacion) {
+                    return { error: 'Sin fecha de asignación' };
+                }
+                const fechaAsig = new Date(causa.fechaAsignacion);
+                const fechaInicio = calcularFechaInicio(causa.fechaAsignacion);
+                const nivel = causa.nivelSecretario || 1;
+                const fechaLimite = calcularFechaLimite(fechaInicio, nivel);
+                const hoy = new Date();
+                const transcurridos = diasHabilesTranscurridos(fechaInicio, hoy);
+                const estado = getEstadoPlazo(fechaLimite);
+                return {
+                    fechaAsignacion: fechaAsig,
+                    fechaInicio: fechaInicio,
+                    fechaLimite: fechaLimite,
+                    diasTranscurridos: transcurridos,
+                    estado: estado,
+                    nivel: nivel
+                };
+            }
+
+            // ---------- FUNCIÓN PARA CALCULAR KPIs DE UN EMPLEADO ----------
+            function calcularKPIsEmpleado(empId) {
+                if (!empId) return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
+                const empNombre = getEmpName(empId);
+                const todasCausas = state.causas.filter(c => {
+                    const esSuPase = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    return esSuPase;
+                });
+                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId).length;
+                const finalizados = obtenerHistorialPasesEmpleado(empId).length;
+                const enSecretaria = todasCausas.filter(c => {
+                    if (c.estado !== 'en_secretaria') return false;
+                    if (!c.historial) return false;
+                    return c.historial.some(h => {
+                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
+                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
+                        return esAccion && esUsuario;
+                    });
+                }).length;
+                const enDefensor = todasCausas.filter(c => {
+                    if (c.estado !== 'en_defensor') return false;
+                    const tieneRelacion = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    if (tieneRelacion) return true;
+                    if (c.historial) return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
+                    return false;
+                }).length;
+                const conDemora = todasCausas.filter(c => {
+                    if (c.estado !== 'en_proceso') return false;
+                    if (c.empleadoAsignado !== empId) return false;
+                    const detalle = getDetalleTiempo(c);
+                    return detalle.estado && (detalle.estado.estado === 'vencido' || detalle.estado.estado === 'fueraplazo');
+                }).length;
+                const total = enProceso + enSecretaria + enDefensor + finalizados;
+                return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
+            }
+
+            // ============================================================
+            //  FUNCIONES PARA MODALES (ENVÍO AL SECRETARIO, DETALLE DE TIEMPO)
+            // ============================================================
+            let _enviarCausaId = null;
+            let _tipoEnvio = null;
+
+            function abrirModalEnviarSecretario(causaId) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                _enviarCausaId = causaId;
+                _tipoEnvio = null;
+                mostrarSeccionEnviar('seccionOpciones');
+                document.getElementById('txtMotivoConsulta').value = '';
+                document.getElementById('confirmacionExpediente').textContent = causa.numero;
+                new bootstrap.Modal(document.getElementById('modalEnviarSecretario')).show();
+            }
+
+            function mostrarSeccionEnviar(seccionId) {
+                const opciones = document.getElementById('seccionOpciones');
+                const consulta = document.getElementById('seccionConsulta');
+                const confirmacion = document.getElementById('seccionConfirmacion');
+                opciones.style.display = 'none';
+                consulta.style.display = 'none';
+                confirmacion.style.display = 'none';
+                if (seccionId === 'seccionOpciones') opciones.style.display = 'block';
+                else if (seccionId === 'seccionConsulta') consulta.style.display = 'block';
+                else if (seccionId === 'seccionConfirmacion') confirmacion.style.display = 'block';
+            }
+
+            function mostrarConfirmacionEnviar(titulo, detalle, tipo) {
+                _tipoEnvio = tipo;
+                document.getElementById('confirmacionTexto').textContent = titulo;
+                document.getElementById('confirmacionDetalle').textContent = detalle || '';
+                const causa = state.causas.find(c => c.id === _enviarCausaId);
+                if (causa) document.getElementById('confirmacionExpediente').textContent = causa.numero;
+                mostrarSeccionEnviar('seccionConfirmacion');
+            }
+
+            async function ejecutarEnvioSecretario(causaId, tipo, motivo) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) return;
+                const secId = obtenerSecretarioAsignante(causa);
+                const nombreSec = secId ? getSecName(secId) : 'Secretario';
+                let accion, comentario;
+                if (tipo === 'finalizar') {
+                    accion = `Enviado a Secretario para finalización (${nombreSec})`;
+                    comentario = 'Envío para finalización';
+                } else {
+                    accion = `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`;
+                    comentario = motivo;
+                }
+                await cambiarEstado(causaId, 'en_secretaria', accion, getEmpName(causa.empleadoAsignado), comentario, secId);
+                renderEmpleado();
+            }
+
+            function mostrarDetalleTiempo(causaId) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                const detalle = getDetalleTiempo(causa);
+                const body = document.getElementById('modalDetalleTiempoBody');
+                if (detalle.error) {
+                    body.innerHTML = `<div class="text-muted">${detalle.error}</div>`;
+                } else {
+                    const fechaAsig = fmtDt(detalle.fechaAsignacion.toISOString());
+                    const fechaInicio = fmtDt(detalle.fechaInicio.toISOString());
+                    const fechaLimite = fmtDt(detalle.fechaLimite.toISOString());
+                    const dias = detalle.diasTranscurridos;
+                    const estadoLabel = detalle.estado.label;
+                    const estadoColor = detalle.estado.color === 'verde' ? 'text-success' : (detalle.estado.color === 'naranja' ? 'text-warning' : 'text-danger');
+                    let html = `
+                        <div class="tiempo-detalle">
+                            <div class="row"><div class="col-5 label">Expediente:</div><div class="col-7"><strong>${causa.numero}</strong></div></div>
+                            <div class="row"><div class="col-5 label">Nivel:</div><div class="col-7">N${detalle.nivel}</div></div>
+                            <div class="row"><div class="col-5 label">Fecha de Asignación:</div><div class="col-7">${fechaAsig}</div></div>
+                            <div class="row"><div class="col-5 label">Fecha de Inicio (regla):</div><div class="col-7">${fechaInicio}</div></div>
+                            <div class="row"><div class="col-5 label">Fecha Límite:</div><div class="col-7">${fechaLimite}</div></div>
+                            <div class="row"><div class="col-5 label">Días hábiles transcurridos:</div><div class="col-7"><strong>${dias}</strong></div></div>
+                            <div class="row"><div class="col-5 label">Estado Actual:</div><div class="col-7"><span class="${estadoColor}">${estadoLabel}</span></div></div>
+                            <div class="row mt-2"><div class="col-12 text-muted" style="font-size:0.7rem;">* La fecha de inicio se calcula según la regla: si la asignación es después de las 12:00, se inicia al siguiente día hábil a las 7:00. La fecha límite se calcula sumando los días hábiles correspondientes al nivel y ajustando a las 12:00.</div></div>
+                        </div>
+                    `;
+                    body.innerHTML = html;
+                }
+                const modalEl = document.getElementById('modalDetalleTiempo');
+                let modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.dispose();
+                modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
+
+            // ============================================================
+            //  RENDER DE PANELES (con filtro de expediente único)
             // ============================================================
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
-                // Sin filtro, mostramos todas las causas en_defensor
-                const lista = state.causas.filter(c => c.estado === 'en_defensor').sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                let lista = state.causas.filter(c => c.estado === 'en_defensor');
+                if (filtroExpedienteUnico) {
+                    lista = lista.filter(c => c.numero === filtroExpedienteUnico);
+                }
+                lista.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 const pState = paginationState.defensor;
                 const { items, total, totalPages, page } = paginateData(lista, pState.page, pState.perPage);
 
@@ -2270,7 +2723,7 @@
             }
 
             // ============================================================
-            //  PANEL EMPLEADO (sin filtro de búsqueda)
+            //  PANEL EMPLEADO (RENDER ACTUALIZADO - REPLICA EMPLEADO.HTML)
             // ============================================================
             function renderEmpleado() {
                 const panel = document.getElementById('panelEmpleado');
@@ -2279,8 +2732,10 @@
                 window._empSeleccionado = empSeleccionado;
 
                 let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empSeleccionado);
+                if (filtroExpedienteUnico) {
+                    causasFiltradas = causasFiltradas.filter(c => c.numero === filtroExpedienteUnico);
+                }
 
-                // Ya no se aplica filtro por searchTerm
                 if (filtroMes && filtroAnio) {
                     const mes = parseInt(filtroMes);
                     const anio = parseInt(filtroAnio);
@@ -2311,39 +2766,50 @@
                 const pStateActivas = paginationState.empleado;
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
 
+                // KPIs
+                const kpis = calcularKPIsEmpleado(empSeleccionado);
+
+                // Generar tabla activas (igual a empleado.html)
                 function generarTablaActivas(items) {
                     if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
                     return `
                         <div class="table-wrap">
                             <table class="table-modern table">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>Modo Intervención</th>
-                                        <th>Tipo</th>
-                                        <th>Tiempo</th>
-                                        <th>Nivel</th>
-                                        <th>Observación</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr>
+                                    <th>Expediente</th>
+                                    <th>Modo Intervención</th>
+                                    <th>Tipo</th>
+                                    <th>Tiempo (Día Hábil)</th>
+                                    <th>Estado Actual</th>
+                                    <th>Nivel</th>
+                                    <th>Observación</th>
+                                    <th>Acciones</th>
+                                </tr></thead>
                                 <tbody>
                                     ${items.map(c => {
-                                        const cronoHtml = getCronoHtml(c);
+                                        const detalle = getDetalleTiempo(c);
+                                        const dias = detalle.diasTranscurridos || 0;
+                                        const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                                        const estadoColor = estado.color === 'verde' ? 'estado-plazo' : (estado.color === 'naranja' ? 'estado-vencido' : 'estado-fueraplazo');
                                         const comentario = getComentarioAsignacion(c);
-                                        const estaVencida = c.fechaLimite && new Date(c.fechaLimite) < new Date();
+                                        const estaVencido = estado.estado === 'vencido' || estado.estado === 'fueraplazo';
+                                        let justifPendiente = false;
+                                        if (c.justificaciones) justifPendiente = c.justificaciones.some(j => j.estado === 'pendiente');
                                         return `<tr>
                                             <td><strong>${c.numero}</strong></td>
                                             <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo || '-'}</td>
-                                            <td>${cronoHtml}</td>
+                                            <td>
+                                                <span class="crono azul" style="cursor:pointer;" data-id="${c.id}">${dias}</span>
+                                            </td>
+                                            <td><span class="${estadoColor}">${estado.label}</span></td>
                                             <td>N${c.nivelSecretario}</td>
                                             <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
                                             <td>
-                                                <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-activa" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                ${estaVencida ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
+                                                ${estaVencido && !justifPendiente ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
+                                                ${estaVencido && justifPendiente ? `<span class="badge bg-warning text-dark">Justificación pendiente</span>` : ''}
                                             </td>
                                         </tr>`;
                                     }).join('')}
@@ -2353,7 +2819,46 @@
                     `;
                 }
 
+                // Historial de pases finalizados
                 const historial = obtenerHistorialPasesEmpleado(empSeleccionado);
+                let historialHtml = '';
+                if (historial.length === 0) {
+                    historialHtml = `
+                        <div class="empty-state" style="padding: 1.5rem 0; text-align: center; color: #8aa3bc;">
+                            <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                            <p style="margin:0;">No tienes pases finalizados registrados.</p>
+                        </div>`;
+                } else {
+                    historialHtml = `
+                        <div class="table-wrap">
+                            <table class="table-modern table table-sm">
+                                <thead><tr><th>N° Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asignación</th><th>Fecha Finalización</th><th>Historial</th><th>Justificación</th></tr></thead>
+                                <tbody>
+                                    ${historial.map(c => {
+                                        const fechaAsig = getFechaAsignacion(c);
+                                        let justifHtml = '-';
+                                        if (c.justificaciones && c.justificaciones.length > 0) {
+                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
+                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                                        }
+                                        return `<tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td>${c.tipo || '-'}</td>
+                                            <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                                            <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
+                                            <td>${fechaAsig}</td>
+                                            <td>${fmtDt(c.fechaFinalizacion)}</td>
+                                            <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial"><i class="bi bi-eye"></i> Ver</button></td>
+                                            <td>${justifHtml}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
 
                 const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}" ${e.id===empSeleccionado?'selected':''}>${e.nombre}</option>`).join('');
 
@@ -2365,24 +2870,38 @@
                 panel.innerHTML = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Tareas de Empleados</div>
+                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
                             <div class="d-flex flex-wrap gap-2">
                                 <label class="form-label me-1" style="font-size:0.75rem; margin:0;">Empleado:</label>
                                 <select id="${selectorId}" class="form-select form-select-sm" style="width:auto;display:inline-block;">${optsEmpleados}</select>
                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
                             </div>
                         </div>
-                        <div class="filtros-container">
-                            <label>Filtrar por:</label>
-                            <select id="filtroMesEmpleado">
-                                <option value="">Mes</option>
-                                ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
-                            </select>
-                            <select id="filtroAnioEmpleado">
-                                <option value="">Año</option>
-                                ${anioOptions.join('')}
-                            </select>
-                            <button class="btn-limpiar" id="btnLimpiarFiltrosEmp">Limpiar</button>
+                        <div class="kpi-grid-empleado">
+                            <div class="kpi-item-empleado"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">suma todos</div></div>
+                            <div class="kpi-item-empleado"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
+                            <div class="kpi-item-empleado"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
+                            <div class="kpi-item-empleado"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
+                            <div class="kpi-item-empleado"><div class="label">Finalizados</div><div class="value finalizado">${kpis.finalizados}</div><div class="sub">pases terminados</div></div>
+                            <div class="kpi-item-empleado"><div class="label">Con Demora</div><div class="value demora">${kpis.conDemora}</div><div class="sub">vencidos / fuera de plazo</div></div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
+                                <select id="filtroMesEmpleado" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Año:</label>
+                                <select id="filtroAnioEmpleado" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${anioOptions.join('')}
+                                </select>
+                            </div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltrosEmp"><i class="bi bi-eraser"></i> Limpiar</button>
                         </div>
 
                         <div class="mb-4">
@@ -2393,11 +2912,12 @@
 
                         <div>
                             <h6><i class="bi bi-clock-history text-secondary"></i> Historial</h6>
-                            <div id="tablaHistorialEmpleadoContainer"></div>
+                            <div id="tablaHistorialEmpleadoContainer">${historialHtml}</div>
                         </div>
                     </div>
                 `;
 
+                // Paginación
                 if (totalAct > 0) {
                     renderPagination('paginationEmpleado', totalAct, totalPagesAct, pageAct, pStateActivas.perPage, (newPage, newPerPage) => {
                         paginationState.empleado = { page: newPage, perPage: newPerPage };
@@ -2405,192 +2925,125 @@
                     });
                 }
 
-                const histContainer = document.getElementById('tablaHistorialEmpleadoContainer');
-                if (histContainer) {
-                    if (historial.length === 0) {
-                        histContainer.innerHTML = `
-                            <div class="empty-state" style="padding: 1.5rem 0; text-align: center; color: #8aa3bc;">
-                                <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                                <p style="margin:0;">No hay pases finalizados registrados.</p>
-                            </div>`;
-                    } else {
-                        let html = `
-                            <div class="table-wrap">
-                                <table class="table-modern table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>N° Expediente</th>
-                                            <th>Tipo</th>
-                                            <th>Nivel</th>
-                                            <th>Estado</th>
-                                            <th>Fecha Asignación</th>
-                                            <th>Fecha Finalización</th>
-                                            <th>Historial</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                        `;
-                        historial.forEach(c => {
-                            const fechaAsig = getFechaAsignacion(c);
-                            html += `
-                                <tr>
-                                    <td><strong>${c.numero}</strong></td>
-                                    <td>${c.tipo || '-'}</td>
-                                    <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                                    <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                                    <td>${fechaAsig}</td>
-                                    <td>${fmtDt(c.fechaFinalizacion)}</td>
-                                    <td>
-                                        <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial">
-                                            <i class="bi bi-eye"></i> Ver
-                                        </button>
-                                    </td>
-                                </tr>
-                            `;
-                        });
-                        html += `
-                                    </tbody>
-                                </table>
-                            </div>
-                        `;
-                        histContainer.innerHTML = html;
-                    }
-                }
-
-                // ----- EVENTOS -----
-                document.querySelectorAll('.btn-emp-devolver').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const causa = state.causas.find(c => c.id === id);
-                        if (!causa) return;
-                        const motivo = prompt('Motivo de devolución (obligatorio):');
-                        if (motivo === null || motivo.trim() === '') {
-                            showToast('Debe ingresar un motivo para devolver', 'warning');
-                            return;
-                        }
-                        const secId = obtenerSecretarioAsignante(causa);
-                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
-                        if (confirm(`¿Devolver a ${nombreSec} con motivo: "${motivo}"?`)) {
-                            await cambiarEstado(id, 'en_secretaria', `Devuelto a Secretaría (${nombreSec}) - Motivo: ${motivo}`, getEmpName(empSeleccionado), motivo, secId);
-                            renderEmpleado();
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
-                    btn.addEventListener('click', async function() {
-                        const id = this.dataset.id;
-                        const causa = state.causas.find(c => c.id === id);
-                        if (!causa) return;
-                        const motivo = prompt('Motivo de consulta (obligatorio):');
-                        if (motivo === null || motivo.trim() === '') {
-                            showToast('Debe ingresar un motivo de consulta', 'warning');
-                            return;
-                        }
-                        const secId = obtenerSecretarioAsignante(causa);
-                        const nombreSec = secId ? getSecName(secId) : 'Secretario';
-                        if (confirm(`¿Enviar a ${nombreSec} para consulta con motivo: "${motivo}"?`)) {
-                            await cambiarEstado(id, 'en_secretaria', `Enviado a Secretario para consulta (${nombreSec}) - Motivo: ${motivo}`, getEmpName(empSeleccionado), motivo, secId);
-                            renderEmpleado();
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.btn-ver-hist-activa, .btn-ver-hist-historial').forEach(btn => {
-                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
-                });
-
-                document.querySelectorAll('.btn-justificar-individual').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const id = this.dataset.id;
-                        abrirModalJustificar(id);
-                    });
-                });
-
+                // ========== EVENTOS ==========
+                // Selector de empleado
                 document.getElementById(selectorId).addEventListener('change', function() {
                     renderEmpleado();
                 });
 
+                // Filtros
                 const selectMes = document.getElementById('filtroMesEmpleado');
                 const selectAnio = document.getElementById('filtroAnioEmpleado');
-                if (selectMes) {
-                    selectMes.addEventListener('change', function() {
-                        filtroMes = this.value;
-                        paginationState.empleado.page = 1;
-                        renderEmpleado();
-                    });
-                }
-                if (selectAnio) {
-                    selectAnio.addEventListener('change', function() {
-                        filtroAnio = this.value;
-                        paginationState.empleado.page = 1;
-                        renderEmpleado();
-                    });
-                }
+                if (selectMes) selectMes.addEventListener('change', function() { filtroMes = this.value; paginationState.empleado.page = 1; renderEmpleado(); });
+                if (selectAnio) selectAnio.addEventListener('change', function() { filtroAnio = this.value; paginationState.empleado.page = 1; renderEmpleado(); });
                 const btnLimpiar = document.getElementById('btnLimpiarFiltrosEmp');
-                if (btnLimpiar) {
-                    btnLimpiar.addEventListener('click', function() {
-                        filtroMes = '';
-                        filtroAnio = '';
-                        paginationState.empleado.page = 1;
-                        renderEmpleado();
-                    });
-                }
+                if (btnLimpiar) btnLimpiar.addEventListener('click', function() { filtroMes = ''; filtroAnio = ''; paginationState.empleado.page = 1; renderEmpleado(); });
 
+                // Botón reporte
                 const btnReporte = document.getElementById('btnReporteEmpleado');
-                if (btnReporte) {
-                    btnReporte.addEventListener('click', function() {
-                        const empId = document.getElementById(selectorId).value;
-                        if (empId) generarReporteEmpleado(empId);
-                        else showToast('Seleccione un empleado', 'warning');
-                    });
-                }
-            }
-
-            // ---------- MODAL JUSTIFICAR ----------
-            function abrirModalJustificar(causaId) {
-                const causa = state.causas.find(c => c.id === causaId);
-                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
-                justificarCausaId = causaId;
-                document.getElementById('justificarExpediente').textContent = causa.numero;
-                document.getElementById('motivoJustificacion').value = '';
-                new bootstrap.Modal(document.getElementById('modalJustificar')).show();
-            }
-
-            document.getElementById('btnConfirmarJustificar').addEventListener('click', async function() {
-                if (!justificarCausaId) { showToast('No hay causa seleccionada', 'warning'); return; }
-                const motivo = document.getElementById('motivoJustificacion').value.trim();
-                if (!motivo) {
-                    showToast('Debe ingresar un motivo', 'warning');
-                    return;
-                }
-                const causa = state.causas.find(c => c.id === justificarCausaId);
-                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
-
-                if (!causa.historial) causa.historial = [];
-                causa.historial.push({
-                    fecha: new Date().toISOString(),
-                    accion: 'Justificación de atraso',
-                    usuario: getEmpName(causa.empleadoAsignado) || 'Empleado',
-                    comentario: motivo
+                if (btnReporte) btnReporte.addEventListener('click', function() {
+                    const empId = document.getElementById(selectorId).value;
+                    if (empId) generarReporteEmpleado(empId);
+                    else showToast('Seleccione un empleado', 'warning');
                 });
-                try {
-                    await guardarCausa(causa);
-                    showToast(`✅ Justificación registrada para ${causa.numero}`, 'success');
-                    bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
-                    renderEmpleado();
-                } catch (error) {
-                    console.error('Error al justificar:', error);
-                    showToast('Error al guardar la justificación', 'danger');
+
+                // Delegación de eventos para botones dinámicos
+                const panelContainer = panel;
+                panelContainer.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirModalEnviarSecretario(this.dataset.id); });
+                });
+                panelContainer.querySelectorAll('.btn-ver-hist-activa, .btn-ver-hist-historial').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
+                });
+                panelContainer.querySelectorAll('.btn-justificar-individual').forEach(btn => {
+                    btn.addEventListener('click', function() { abrirModalJustificar(this.dataset.id); });
+                });
+                panelContainer.querySelectorAll('.crono[data-id]').forEach(el => {
+                    el.addEventListener('click', function() { mostrarDetalleTiempo(this.dataset.id); });
+                });
+
+                // Funciones auxiliares para los modales de detalle de KPIs (Secretaría y Defensor)
+                window.abrirModalEnSecretaria = function() {
+                    if (!empSeleccionado) { showToast('Seleccione un empleado', 'warning'); return; }
+                    const lista = state.causas.filter(c => {
+                        if (c.estado !== 'en_secretaria') return false;
+                        if (!c.historial) return false;
+                        return c.historial.some(h => {
+                            const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
+                            const esUsuario = h.usuario && (h.usuario === getEmpName(empSeleccionado) || h.usuario === empSeleccionado);
+                            return esAccion && esUsuario;
+                        });
+                    });
+                    mostrarModalDetalleKPIs('Expedientes en Secretaría', lista, 'Fecha envío', 'Motivo');
+                };
+                window.abrirModalEnDefensor = function() {
+                    if (!empSeleccionado) { showToast('Seleccione un empleado', 'warning'); return; }
+                    const empNombre = getEmpName(empSeleccionado);
+                    const lista = state.causas.filter(c => {
+                        if (c.estado !== 'en_defensor') return false;
+                        const tieneRelacion = (
+                            (c.empleadoId && (c.empleadoId === empSeleccionado || c.empleadoId === empNombre)) ||
+                            (c.empleadoAsignado && (c.empleadoAsignado === empSeleccionado || c.empleadoAsignado === empNombre)) ||
+                            (c.empleadoOriginal && c.empleadoOriginal === empSeleccionado)
+                        );
+                        if (tieneRelacion) return true;
+                        if (c.historial) return c.historial.some(h => h.usuario === empNombre || h.usuario === empSeleccionado);
+                        return false;
+                    });
+                    mostrarModalDetalleKPIs('Expedientes en Defensor', lista, 'Fecha asignación', 'Nivel');
+                };
+            }
+
+            // Función auxiliar para mostrar modal de detalle de KPIs
+            function mostrarModalDetalleKPIs(titulo, lista, colFecha, colExtra) {
+                const body = document.getElementById('modalBusquedaBody');
+                const tituloModal = document.getElementById('modalBusquedaTitulo');
+                tituloModal.innerHTML = `<i class="bi bi-list-ul me-2"></i>${titulo}`;
+                if (lista.length === 0) {
+                    body.innerHTML = `<div class="text-muted">No hay expedientes en esta categoría.</div>`;
+                } else {
+                    let html = `
+                        <div class="table-wrap">
+                            <table class="table-modern table">
+                                <thead><tr><th>Expediente</th><th>${colFecha}</th><th>${colExtra}</th></tr></thead>
+                                <tbody>
+                    `;
+                    lista.forEach(c => {
+                        let fecha = '-';
+                        let extra = '-';
+                        if (colFecha === 'Fecha envío') {
+                            const envios = c.historial ? c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'))) : [];
+                            if (envios.length > 0) fecha = fmtDt(envios[envios.length - 1].fecha);
+                        } else if (colFecha === 'Fecha asignación') {
+                            fecha = getFechaAsignacion(c);
+                        }
+                        if (colExtra === 'Motivo') {
+                            const envios = c.historial ? c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'))) : [];
+                            extra = envios.length > 0 ? (envios[envios.length - 1].comentario || '-') : '-';
+                        } else if (colExtra === 'Nivel') {
+                            extra = `N${c.nivelSecretario || c.nivelOperador || 1}`;
+                        }
+                        html += `<tr><td><strong>${c.numero}</strong></td><td>${fecha}</td><td>${extra}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                    body.innerHTML = html;
                 }
-            });
+                const modalEl = document.getElementById('modalBusqueda');
+                let modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.dispose();
+                modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
 
             // ============================================================
-            //  PANEL PASES FINALIZADOS (sin filtro)
+            //  PANEL PASES FINALIZADOS (con filtro de expediente único)
             // ============================================================
             function renderPasesFinalizados() {
                 const panel = document.getElementById('panelPasesFinalizados');
                 let finalizadas = state.causas.filter(c => c.estado === 'finalizada' && c.fechaFinalizacion);
+                if (filtroExpedienteUnico) {
+                    finalizadas = finalizadas.filter(c => c.numero === filtroExpedienteUnico);
+                }
                 finalizadas.sort((a, b) => new Date(b.fechaFinalizacion) - new Date(a.fechaFinalizacion));
 
                 const pState = paginationState.pasesFinalizados;
@@ -2702,13 +3155,12 @@
             }
 
             // ============================================================
-            //  PANEL AUDITORIA (con contenedores de Secretarios y Empleados + botón imprimir)
+            //  PANEL AUDITORIA (con filtro de expediente único y TODOS los operadores)
             // ============================================================
             function renderAuditoria() {
                 const panel = document.getElementById('panelAuditoria');
 
                 // ========== CALCULAR KPIS PARA SECRETARIOS ==========
-                // Total Sin Asignar: causas en en_secretaria que NO son consultas de empleados
                 const totalSinAsignar = state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (c.fechaPaseSecretario && c.historial && c.historial.some(h => h.accion && h.accion.toLowerCase().includes('consulta'))) {
@@ -2719,7 +3171,6 @@
 
                 const enProcesoTotal = state.causas.filter(c => c.estado === 'en_proceso').length;
 
-                // Para Finalizar: causas en en_secretaria que SÍ son consultas de empleados
                 const paraFinalizar = state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
                     if (!c.fechaPaseSecretario) return false;
@@ -2731,7 +3182,6 @@
                 const finalizados = state.causas.filter(c => c.estado === 'finalizada').length;
 
                 // ========== DESTACADOS DE EMPLEADOS ==========
-                // Mejor Cumplimiento: empleado con más causas finalizadas
                 let mejorCumplimiento = { id: null, nombre: 'N/A', count: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const count = state.causas.filter(c => c.estado === 'finalizada' && (c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id)).length;
@@ -2740,7 +3190,6 @@
                     }
                 });
 
-                // Mayor Carga: empleado con más causas en total (histórico)
                 let mayorCarga = { id: null, nombre: 'N/A', count: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const count = state.causas.filter(c => c.empleadoAsignado === emp.id || c.empleadoOriginal === emp.id).length;
@@ -2749,7 +3198,6 @@
                     }
                 });
 
-                // Mayor Demora: empleado con mayor suma de días de retraso en causas activas
                 let mayorDemora = { id: null, nombre: 'N/A', dias: -1 };
                 CONFIG.empleados.forEach(emp => {
                     const dias = calcularDiasRetraso(emp.id);
@@ -2761,13 +3209,30 @@
                 // ========== TABLA DE OPERADORES (trazabilidad) ==========
                 const filterSelect = document.getElementById('auditoriaFiltroOperador'); 
                 let operadorFiltro = filterSelect ? filterSelect.value : '';
-                let causasFiltradas = state.causas; // sin filtro de búsqueda
-                if (operadorFiltro) causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
-                const list = causasFiltradas.slice(-50).reverse(); 
-                const pState = paginationState.auditoria; 
-                const { items, total, totalPages, page } = paginateData(list, pState.page, pState.perPage);
 
-                const opciones = CONFIG.operadores.map(op => `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`).join('');
+                // Obtener operadores únicos de los datos
+                const operadoresUnicos = [...new Set(state.causas.map(c => c.operador).filter(op => op && op.trim() !== ''))];
+                // Si no hay, usar la lista fija como fallback
+                const operadoresList = operadoresUnicos.length ? operadoresUnicos : CONFIG.operadores;
+
+                let causasFiltradas = state.causas;
+                if (filtroExpedienteUnico) {
+                    causasFiltradas = causasFiltradas.filter(c => c.numero === filtroExpedienteUnico);
+                }
+                if (operadorFiltro) {
+                    causasFiltradas = causasFiltradas.filter(c => c.operador === operadorFiltro);
+                }
+
+                // Ordenar por fecha de pase (más reciente primero) y paginar sin límite de 50
+                causasFiltradas.sort((a, b) => new Date(b.fechaPaseSecretario || b.fechaAsignacion || 0) - new Date(a.fechaPaseSecretario || a.fechaAsignacion || 0));
+                const pState = paginationState.auditoria; 
+                const { items, total, totalPages, page } = paginateData(causasFiltradas, pState.page, pState.perPage);
+
+                // Generar opciones del select
+                let opciones = `<option value="">Todos</option>`;
+                operadoresList.forEach(op => {
+                    opciones += `<option value="${op}" ${op === operadorFiltro ? 'selected' : ''}>${op}</option>`;
+                });
 
                 // ========== ARMADO DEL HTML ==========
                 panel.innerHTML = `
@@ -2833,7 +3298,7 @@
                         </div>
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             <label class="form-label me-1" style="font-size:0.8rem; font-weight:600;">Filtrar por operador:</label>
-                            <select id="auditoriaFiltroOperador" class="form-select form-select-sm" style="width:auto; display:inline-block;"><option value="">Todos</option>${opciones}</select>
+                            <select id="auditoriaFiltroOperador" class="form-select form-select-sm" style="width:auto; display:inline-block;">${opciones}</select>
                             <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReportePorOperador"><i class="bi bi-file-earmark-text"></i> Informe por Operador</button>
                         </div>
                         <hr />
@@ -2900,7 +3365,6 @@
 
             // ========== FUNCIÓN PARA IMPRIMIR KPIs ==========
             function imprimirKPIsSecretarioEmpleado() {
-                // Obtener los contenedores actualizados del DOM
                 const contenedorSecretarios = document.querySelector('#panelAuditoria .card-modern:first-child');
                 const contenedorEmpleados = document.querySelector('#panelAuditoria .card-modern:nth-child(2)');
 
@@ -2909,15 +3373,12 @@
                     return;
                 }
 
-                // Clonar los contenedores para no afectar la vista
                 const clonSecretarios = contenedorSecretarios.cloneNode(true);
                 const clonEmpleados = contenedorEmpleados.cloneNode(true);
 
-                // Eliminar el botón de imprimir del clon (para que no aparezca en la impresión)
                 const btnImprimir = clonSecretarios.querySelector('#btnImprimirKPIs');
                 if (btnImprimir) btnImprimir.remove();
 
-                // Preparar el contenido para imprimir
                 const now = new Date();
                 const fechaHora = fmtDt(now.toISOString());
 
@@ -2930,7 +3391,6 @@
                     ${clonEmpleados.outerHTML}
                 `;
 
-                // Abrir ventana de impresión
                 const win = window.open('', '_blank', 'width=800,height=600');
                 if (!win) {
                     showToast('Permita ventanas emergentes para imprimir', 'warning');
@@ -3962,7 +4422,7 @@
             }
 
             // ============================================================
-            //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO
+            //  BÚSQUEDA GLOBAL CON HISTORIAL COMPLETO Y FILTRO A SOLAPA
             // ============================================================
             function mostrarDetalleConHistorial(causa, volverCallback) {
                 window._ultimoDetalleCausa = causa;
@@ -4081,12 +4541,17 @@
                 document.getElementById('btnIrASolapaBusqueda').addEventListener('click', function() {
                     const panelId = this.dataset.panel;
                     const numero = this.dataset.numero;
+
+                    filtroExpedienteUnico = numero;
+                    document.getElementById('btnLimpiarFiltroExpediente').style.display = 'inline-block';
+
                     const tabBtn = document.querySelector(`.tab-btn[data-target="${panelId}"]`);
                     if (tabBtn) {
                         tabBtn.click();
                         showToast(`Expediente ${numero} - Solapa ${panelId.replace('panel','')}`, 'info');
                         const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusqueda'));
                         if (modal) modal.hide();
+                        renderAll();
                     }
                 });
             }
@@ -4238,7 +4703,6 @@
                 const chatMessages = document.getElementById('chatMessages');
                 const chatBadge = document.getElementById('chatBadge');
 
-                // Ocultar elementos que generaban espacio vacío
                 const employeeList = document.getElementById('chatEmployeeList');
                 if (employeeList) employeeList.style.display = 'none';
                 const conversation = document.getElementById('chatConversation');
@@ -4363,6 +4827,8 @@
                 document.getElementById('chatWidget').classList.remove('visible');
                 const searchInput = document.getElementById('globalSearch');
                 if (searchInput) searchInput.value = '';
+                filtroExpedienteUnico = null;
+                document.getElementById('btnLimpiarFiltroExpediente').style.display = 'none';
                 showToast('Sesión cerrada', 'warning');
             }
 
@@ -4377,6 +4843,13 @@
                 document.getElementById('btnActualizarBD').addEventListener('click', async function() {
                     await cargarDatos();
                     showToast('✅ Todas las bases de datos actualizadas', 'success');
+                });
+
+                document.getElementById('btnLimpiarFiltroExpediente').addEventListener('click', function() {
+                    filtroExpedienteUnico = null;
+                    this.style.display = 'none';
+                    renderAll();
+                    showToast('Filtro de expediente eliminado', 'info');
                 });
 
                 // ---- Botones para cambiar modo ----
@@ -4399,6 +4872,106 @@
                         cambiarModo(false);
                     }
                 });
+
+                // Configurar eventos de los modales nuevos (envío al secretario)
+                configurarModalEnviarSecretario();
+            });
+
+            // ---------- CONFIGURAR MODAL ENVIAR SECRETARIO ----------
+            function configurarModalEnviarSecretario() {
+                const btnFinalizar = document.getElementById('btnEnviarFinalizar');
+                const btnConsulta = document.getElementById('btnEnviarConsulta');
+                const btnVolver = document.getElementById('btnVolverOpciones');
+                const btnConfirmarConsulta = document.getElementById('btnConfirmarConsulta');
+                const btnConfirmacionAceptar = document.getElementById('btnConfirmacionAceptar');
+                const btnConfirmacionCancelar = document.getElementById('btnConfirmacionCancelar');
+
+                if (btnFinalizar) {
+                    btnFinalizar.addEventListener('click', function() {
+                        if (!_enviarCausaId) { showToast('No hay causa seleccionada', 'warning'); return; }
+                        const causa = state.causas.find(c => c.id === _enviarCausaId);
+                        if (causa) document.getElementById('confirmacionExpediente').textContent = causa.numero;
+                        mostrarConfirmacionEnviar('Tarea finalizada para control del Secretario.', '', 'finalizar');
+                    });
+                }
+                if (btnConsulta) {
+                    btnConsulta.addEventListener('click', function() {
+                        mostrarSeccionEnviar('seccionConsulta');
+                    });
+                }
+                if (btnVolver) {
+                    btnVolver.addEventListener('click', function() {
+                        mostrarSeccionEnviar('seccionOpciones');
+                        document.getElementById('txtMotivoConsulta').value = '';
+                    });
+                }
+                if (btnConfirmarConsulta) {
+                    btnConfirmarConsulta.addEventListener('click', function() {
+                        const motivo = document.getElementById('txtMotivoConsulta').value.trim();
+                        if (!motivo) { showToast('Debe ingresar un motivo de consulta', 'warning'); return; }
+                        const causa = state.causas.find(c => c.id === _enviarCausaId);
+                        if (causa) document.getElementById('confirmacionExpediente').textContent = causa.numero;
+                        mostrarConfirmacionEnviar('Confirmar envío de consulta', 'Motivo: ' + motivo, 'consulta');
+                    });
+                }
+                if (btnConfirmacionAceptar) {
+                    btnConfirmacionAceptar.addEventListener('click', function() {
+                        if (!_enviarCausaId) { showToast('No hay causa seleccionada', 'warning'); return; }
+                        if (_tipoEnvio === 'finalizar') {
+                            ejecutarEnvioSecretario(_enviarCausaId, 'finalizar', '');
+                        } else if (_tipoEnvio === 'consulta') {
+                            const motivo = document.getElementById('txtMotivoConsulta').value.trim();
+                            if (!motivo) { showToast('Debe ingresar un motivo de consulta', 'warning'); return; }
+                            ejecutarEnvioSecretario(_enviarCausaId, 'consulta', motivo);
+                        }
+                        bootstrap.Modal.getInstance(document.getElementById('modalEnviarSecretario')).hide();
+                    });
+                }
+                if (btnConfirmacionCancelar) {
+                    btnConfirmacionCancelar.addEventListener('click', function() {
+                        mostrarSeccionEnviar('seccionOpciones');
+                        document.getElementById('txtMotivoConsulta').value = '';
+                        _tipoEnvio = null;
+                    });
+                }
+            }
+
+            // Función auxiliar para justificar (reutiliza el modal existente)
+            function abrirModalJustificar(causaId) {
+                const causa = state.causas.find(c => c.id === causaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+                justificarCausaId = causaId;
+                document.getElementById('justificarExpediente').textContent = causa.numero;
+                document.getElementById('motivoJustificacion').value = '';
+                new bootstrap.Modal(document.getElementById('modalJustificar')).show();
+            }
+
+            document.getElementById('btnConfirmarJustificar').addEventListener('click', async function() {
+                if (!justificarCausaId) { showToast('No hay causa seleccionada', 'warning'); return; }
+                const motivo = document.getElementById('motivoJustificacion').value.trim();
+                if (!motivo) {
+                    showToast('Debe ingresar un motivo', 'warning');
+                    return;
+                }
+                const causa = state.causas.find(c => c.id === justificarCausaId);
+                if (!causa) { showToast('Causa no encontrada', 'danger'); return; }
+
+                if (!causa.historial) causa.historial = [];
+                causa.historial.push({
+                    fecha: new Date().toISOString(),
+                    accion: 'Justificación de atraso',
+                    usuario: getEmpName(causa.empleadoAsignado) || 'Empleado',
+                    comentario: motivo
+                });
+                try {
+                    await guardarCausa(causa);
+                    showToast(`✅ Justificación registrada para ${causa.numero}`, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
+                    renderEmpleado();
+                } catch (error) {
+                    console.error('Error al justificar:', error);
+                    showToast('Error al guardar la justificación', 'danger');
+                }
             });
 
         })();
