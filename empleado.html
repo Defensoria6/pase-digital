@@ -824,6 +824,206 @@
                 setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
             }
 
+            // ============================================================
+            //  NUEVA LÓGICA DE DÍAS HÁBILES Y FERIADOS (EXACTA Y ESTRICTA)
+            // ============================================================
+            
+            // Cálculo de Pascua (algoritmo de Gauss)
+            function calcularPascua(year) {
+                const a = year % 19;
+                const b = Math.floor(year / 100);
+                const c = year % 100;
+                const d = Math.floor(b / 4);
+                const e = b % 4;
+                const f = Math.floor((b + 8) / 25);
+                const g = Math.floor((b - f + 1) / 3);
+                const h = (19 * a + b - d - g + 15) % 30;
+                const i = Math.floor(c / 4);
+                const k = c % 4;
+                const l = (32 + 2 * e + 2 * i - h - k) % 7;
+                const m = Math.floor((a + 11 * h + 22 * l) / 451);
+                const month = Math.floor((h + l - 7 * m + 114) / 31);
+                const day = ((h + l - 7 * m + 114) % 31) + 1;
+                return new Date(year, month - 1, day);
+            }
+
+            // Obtener el enésimo día de la semana (0=lunes, 6=domingo) del mes
+            function obtenerNesimoDiaSemana(year, month, dayOfWeek, n) {
+                // dayOfWeek: 0=lunes, ..., 6=domingo
+                let firstDay = new Date(year, month, 1);
+                let firstDayOfWeek = (firstDay.getDay() + 6) % 7; // lunes=0
+                let diff = (dayOfWeek - firstDayOfWeek + 7) % 7;
+                let day = 1 + diff + (n - 1) * 7;
+                if (day > new Date(year, month + 1, 0).getDate()) return null;
+                return new Date(year, month, day);
+            }
+
+            function getFeriados(year) {
+                const feriados = [];
+                const pascua = calcularPascua(year);
+                
+                // 1 de enero
+                feriados.push(new Date(year, 0, 1));
+                // 24 de marzo
+                feriados.push(new Date(year, 2, 24));
+                // 2 de abril
+                feriados.push(new Date(year, 3, 2));
+                // 1 de mayo
+                feriados.push(new Date(year, 4, 1));
+                // 25 de mayo
+                feriados.push(new Date(year, 4, 25));
+                // 9 de julio
+                feriados.push(new Date(year, 6, 9));
+                // 8 de diciembre
+                feriados.push(new Date(year, 11, 8));
+                // 25 de diciembre
+                feriados.push(new Date(year, 11, 25));
+                
+                // Carnaval: lunes y martes (47 y 46 días antes de Pascua)
+                const carnavalLunes = new Date(pascua);
+                carnavalLunes.setDate(carnavalLunes.getDate() - 47);
+                feriados.push(carnavalLunes);
+                const carnavalMartes = new Date(pascua);
+                carnavalMartes.setDate(carnavalMartes.getDate() - 46);
+                feriados.push(carnavalMartes);
+                
+                // Jueves Santo (3 días antes) y Viernes Santo (2 días antes)
+                const juevesSanto = new Date(pascua);
+                juevesSanto.setDate(juevesSanto.getDate() - 3);
+                feriados.push(juevesSanto);
+                const viernesSanto = new Date(pascua);
+                viernesSanto.setDate(viernesSanto.getDate() - 2);
+                feriados.push(viernesSanto);
+                
+                // Feriados trasladables a lunes específicos
+                // 20 de junio -> tercer lunes de junio
+                const tercerLunJun = obtenerNesimoDiaSemana(year, 5, 0, 3);
+                if (tercerLunJun) feriados.push(tercerLunJun);
+                // 17 de agosto -> tercer lunes de agosto
+                const tercerLunAgo = obtenerNesimoDiaSemana(year, 7, 0, 3);
+                if (tercerLunAgo) feriados.push(tercerLunAgo);
+                // 12 de octubre -> segundo lunes de octubre
+                const segundoLunOct = obtenerNesimoDiaSemana(year, 9, 0, 2);
+                if (segundoLunOct) feriados.push(segundoLunOct);
+                // 20 de noviembre -> cuarto lunes de noviembre
+                const cuartoLunNov = obtenerNesimoDiaSemana(year, 10, 0, 4);
+                if (cuartoLunNov) feriados.push(cuartoLunNov);
+                
+                return feriados;
+            }
+
+            function esFeriado(fecha) {
+                const year = fecha.getFullYear();
+                const feriados = getFeriados(year);
+                // Comparar solo mes y día (ignorar año)
+                return feriados.some(f =>
+                    f.getMonth() === fecha.getMonth() &&
+                    f.getDate() === fecha.getDate()
+                );
+            }
+
+            function esDiaHabil(fecha) {
+                const diaSemana = fecha.getDay();
+                if (diaSemana === 0 || diaSemana === 6) return false;
+                if (esFeriado(fecha)) return false;
+                return true;
+            }
+
+            function sumarDiasHabiles(fechaInicio, cantidadDias) {
+                let fecha = new Date(fechaInicio);
+                let diasAgregados = 0;
+                while (diasAgregados < cantidadDias) {
+                    fecha.setDate(fecha.getDate() + 1);
+                    if (esDiaHabil(fecha)) {
+                        diasAgregados++;
+                    }
+                }
+                return fecha;
+            }
+
+            function diasHabilesTranscurridos(fechaInicio, fechaFin) {
+                if (!fechaInicio) return 0;
+                const inicio = new Date(fechaInicio);
+                const fin = fechaFin ? new Date(fechaFin) : new Date();
+                if (inicio > fin) return 0;
+                let dias = 0;
+                let current = new Date(inicio);
+                while (!esDiaHabil(current) && current <= fin) {
+                    current.setDate(current.getDate() + 1);
+                }
+                while (current <= fin) {
+                    if (esDiaHabil(current)) {
+                        dias++;
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+                return dias;
+            }
+
+            // ============================================================
+            //  FUNCIÓN CALCULAR FECHA INICIO (CORREGIDA)
+            // ============================================================
+            function calcularFechaInicio(fechaAsignacionISO) {
+                const fechaAsig = new Date(fechaAsignacionISO);
+                let fechaInicio = new Date(fechaAsig);
+                const hora = fechaAsig.getHours();
+                const minutos = fechaAsig.getMinutes();
+                // Si la asignación es después de las 12:00, sumamos un día hábil
+                if (hora > 12 || (hora === 12 && minutos > 0)) {
+                    fechaInicio.setDate(fechaInicio.getDate() + 1);
+                }
+                // Asegurar que la fecha de inicio sea un día hábil (si es feriado o fin de semana, avanzar)
+                while (!esDiaHabil(fechaInicio)) {
+                    fechaInicio.setDate(fechaInicio.getDate() + 1);
+                }
+                fechaInicio.setHours(7, 0, 0, 0);
+                return fechaInicio;
+            }
+
+            function calcularFechaLimite(fechaInicio, nivel) {
+                const dias = CONFIG.nivelesDias[nivel] || 5;
+                const fechaLim = sumarDiasHabiles(fechaInicio, dias);
+                fechaLim.setHours(12, 0, 0, 0);
+                return fechaLim;
+            }
+
+            function getEstadoPlazo(fechaLimite) {
+                if (!fechaLimite) return { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                const hoy = new Date();
+                const fin = new Date(fechaLimite);
+                hoy.setHours(0,0,0,0);
+                fin.setHours(0,0,0,0);
+                const diffDias = Math.floor((hoy - fin) / (1000*60*60*24));
+                if (diffDias <= 0) {
+                    return { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                } else if (diffDias <= 2) {
+                    return { estado: 'vencido', color: 'naranja', label: 'Vencido' };
+                } else {
+                    return { estado: 'fueraplazo', color: 'rojo', label: 'Fuera de plazo' };
+                }
+            }
+
+            function getDetalleTiempo(causa) {
+                if (!causa.fechaAsignacion) {
+                    return { error: 'Sin fecha de asignación' };
+                }
+                const fechaAsig = new Date(causa.fechaAsignacion);
+                const fechaInicio = calcularFechaInicio(causa.fechaAsignacion);
+                const nivel = causa.nivelSecretario || 1;
+                const fechaLimite = calcularFechaLimite(fechaInicio, nivel);
+                const hoy = new Date();
+                const transcurridos = diasHabilesTranscurridos(fechaInicio, hoy);
+                const estado = getEstadoPlazo(fechaLimite);
+                return {
+                    fechaAsignacion: fechaAsig,
+                    fechaInicio: fechaInicio,
+                    fechaLimite: fechaLimite,
+                    diasTranscurridos: transcurridos,
+                    estado: estado,
+                    nivel: nivel
+                };
+            }
+
             // ---------- FIRESTORE OPERATIONS ----------
             async function loadStateFromFirestore() {
                 try {
@@ -905,127 +1105,6 @@
                     }
                 }
                 return null;
-            }
-
-            // ============================================================
-            //  NUEVA LÓGICA DE DÍAS HÁBILES Y FERIADOS
-            // ============================================================
-            function getFeriados() {
-                const feriados = [
-                    [1,1], [2,12], [2,13], [3,24], [3,28], [3,29], [4,1], [4,2], [5,1], [5,25],
-                    [6,20], [7,9], [8,17], [10,14], [11,18], [12,8], [12,25],
-                    [1,1], [2,3], [2,4], [3,24], [4,17], [4,18], [5,1], [5,25], [6,20], [7,9],
-                    [8,17], [10,13], [11,24], [12,8], [12,25],
-                    [1,1], [2,16], [2,17], [3,24], [4,2], [4,3], [5,1], [5,25], [6,20], [7,9],
-                    [8,17], [10,12], [11,23], [12,8], [12,25],
-                    [1,1], [2,8], [2,9], [3,24], [3,25], [3,26], [5,1], [5,25], [6,20], [7,9],
-                    [8,17], [10,11], [11,22], [12,8], [12,25]
-                ];
-                return feriados.map(([m,d]) => ({ mes: m, dia: d }));
-            }
-
-            function esFeriado(fecha) {
-                const feriados = getFeriados();
-                const mes = fecha.getMonth() + 1;
-                const dia = fecha.getDate();
-                return feriados.some(f => f.mes === mes && f.dia === dia);
-            }
-
-            function esDiaHabil(fecha) {
-                const diaSemana = fecha.getDay();
-                if (diaSemana === 0 || diaSemana === 6) return false;
-                if (esFeriado(fecha)) return false;
-                return true;
-            }
-
-            function sumarDiasHabiles(fechaInicio, cantidadDias) {
-                let fecha = new Date(fechaInicio);
-                let diasAgregados = 0;
-                while (diasAgregados < cantidadDias) {
-                    fecha.setDate(fecha.getDate() + 1);
-                    if (esDiaHabil(fecha)) {
-                        diasAgregados++;
-                    }
-                }
-                return fecha;
-            }
-
-            function calcularFechaInicio(fechaAsignacionISO) {
-                const fechaAsig = new Date(fechaAsignacionISO);
-                let fechaInicio = new Date(fechaAsig);
-                const hora = fechaAsig.getHours();
-                const minutos = fechaAsig.getMinutes();
-                if (hora > 12 || (hora === 12 && minutos > 0)) {
-                    fechaInicio.setDate(fechaInicio.getDate() + 1);
-                    while (!esDiaHabil(fechaInicio)) {
-                        fechaInicio.setDate(fechaInicio.getDate() + 1);
-                    }
-                }
-                fechaInicio.setHours(7, 0, 0, 0);
-                return fechaInicio;
-            }
-
-            function calcularFechaLimite(fechaInicio, nivel) {
-                const dias = CONFIG.nivelesDias[nivel] || 5;
-                const fechaLim = sumarDiasHabiles(fechaInicio, dias);
-                fechaLim.setHours(12, 0, 0, 0);
-                return fechaLim;
-            }
-
-            function diasHabilesTranscurridos(fechaInicio, fechaFin) {
-                if (!fechaInicio) return 0;
-                const inicio = new Date(fechaInicio);
-                const fin = fechaFin ? new Date(fechaFin) : new Date();
-                if (inicio > fin) return 0;
-                let dias = 0;
-                let current = new Date(inicio);
-                while (!esDiaHabil(current) && current <= fin) {
-                    current.setDate(current.getDate() + 1);
-                }
-                while (current <= fin) {
-                    if (esDiaHabil(current)) {
-                        dias++;
-                    }
-                    current.setDate(current.getDate() + 1);
-                }
-                return dias;
-            }
-
-            function getEstadoPlazo(fechaLimite) {
-                if (!fechaLimite) return { estado: 'plazo', color: 'verde', label: 'En plazo' };
-                const hoy = new Date();
-                const fin = new Date(fechaLimite);
-                hoy.setHours(0,0,0,0);
-                fin.setHours(0,0,0,0);
-                const diffDias = Math.floor((hoy - fin) / (1000*60*60*24));
-                if (diffDias <= 0) {
-                    return { estado: 'plazo', color: 'verde', label: 'En plazo' };
-                } else if (diffDias <= 2) {
-                    return { estado: 'vencido', color: 'naranja', label: 'Vencido' };
-                } else {
-                    return { estado: 'fueraplazo', color: 'rojo', label: 'Fuera de plazo' };
-                }
-            }
-
-            function getDetalleTiempo(causa) {
-                if (!causa.fechaAsignacion) {
-                    return { error: 'Sin fecha de asignación' };
-                }
-                const fechaAsig = new Date(causa.fechaAsignacion);
-                const fechaInicio = calcularFechaInicio(causa.fechaAsignacion);
-                const nivel = causa.nivelSecretario || 1;
-                const fechaLimite = calcularFechaLimite(fechaInicio, nivel);
-                const hoy = new Date();
-                const transcurridos = diasHabilesTranscurridos(fechaInicio, hoy);
-                const estado = getEstadoPlazo(fechaLimite);
-                return {
-                    fechaAsignacion: fechaAsig,
-                    fechaInicio: fechaInicio,
-                    fechaLimite: fechaLimite,
-                    diasTranscurridos: transcurridos,
-                    estado: estado,
-                    nivel: nivel
-                };
             }
 
             // ============================================================
