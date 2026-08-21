@@ -615,6 +615,53 @@
             background: #dce5ec;
         }
 
+        /* ===== KPI CARDS ===== */
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 1rem 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 12px rgba(0, 20, 40, 0.04);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 20, 40, 0.08);
+        }
+        .kpi-card .kpi-num {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #0b4b7a;
+            line-height: 1.2;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.75rem;
+            color: #5f7f9f;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
+        }
+        .kpi-card .kpi-detalle {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-top: 6px;
+            font-size: 0.7rem;
+        }
+        .kpi-card .kpi-detalle span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .kpi-card .kpi-detalle .badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+        }
+
         /* ===== MODALES MEJORADOS ===== */
         .modal-modern .modal-content {
             border-radius: 32px;
@@ -1047,6 +1094,11 @@
                 <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
+
+        <!-- ===== KPIs ===== -->
+        <div class="row g-3 mb-4" id="kpiPanel">
+            <!-- Generado por JavaScript -->
+        </div>
 
         <!-- CUERPO -->
         <div class="row g-4">
@@ -2036,6 +2088,43 @@
             }
 
             // ============================================================
+            //  ACTUALIZAR KPIs
+            // ============================================================
+            function actualizarKPIs() {
+                const container = document.getElementById('kpiPanel');
+                if (!container) return;
+
+                const causasOp = state.causas.filter(c => c.operador === currentOperator);
+                const secretarios = CONFIG.secretarios;
+                const orden = CONFIG.ordenSecretarios;
+
+                let html = '';
+                orden.forEach(id => {
+                    const sec = secretarios.find(s => s.id === id);
+                    if (!sec) return;
+                    const causasSecretario = causasOp.filter(c => c.secretarioId === id);
+                    const activas = causasSecretario.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso');
+                    const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
+                    const enProceso = causasSecretario.filter(c => c.estado === 'en_proceso');
+
+                    html += `
+                        <div class="col-md-4">
+                            <div class="kpi-card">
+                                <div class="kpi-num">${activas.length}</div>
+                                <div class="kpi-label">${sec.nombre}</div>
+                                <div class="kpi-detalle">
+                                    <span><span class="badge badge-sec" style="font-size:0.65rem;">${enSecretaria.length}</span> Pendientes</span>
+                                    <span><span class="badge badge-proc" style="font-size:0.65rem;">${enProceso.length}</span> En proceso</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            // ============================================================
             //  CREAR FORMULARIO
             // ============================================================
             function createFormulario() {
@@ -2273,7 +2362,7 @@
             }
 
             // ============================================================
-            //  RENDER TABLA
+            //  RENDER TABLA (incluye llamado a actualizarKPIs)
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
@@ -2505,6 +2594,9 @@
                         if (accion === 'historial') { abrirHistorial(id); }
                     });
                 });
+
+                // ---- Actualizar KPIs ----
+                actualizarKPIs();
             }
 
             // ============================================================
