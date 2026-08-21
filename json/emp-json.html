@@ -10,22 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- ===== CONFIGURACIÓN INICIAL ===== -->
-    <script>
-        let USE_FIRESTORE = false;
-        const JSON_DATA_URL = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
-    </script>
-
-    <!-- Carga condicional de Firebase -->
-    <script>
-        if (USE_FIRESTORE) {
-            document.write('<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"><\/script>');
-            document.write('<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"><\/script>');
-        }
-    </script>
-
     <style>
-        /* ===== ESTILOS (sin cambios) ===== */
+        /* ===== ESTILOS (EXACTO COMO EN empleado.html) ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -92,7 +78,7 @@
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
         .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
-        .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; }
+        .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; cursor:pointer; }
         .crono.vencido { background:#ffebee; color:#c62828 !important; border:2px solid #c62828; }
         .crono.critico { background:#f3e5f5; color:#7b1fa2 !important; border:2px solid #7b1fa2; }
         .crono.medio { background:#e8f5e9; color:#2e7d32 !important; border:2px solid #a5d6a7; }
@@ -419,6 +405,16 @@
         .justif-pendiente { background: #fff3cd; color: #856404; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
         .justif-aprobada { background: #d4edda; color: #155724; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
         .justif-rechazada { background: #f8d7da; color: #721c24; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
+
+        /* Estado actual en tabla */
+        .estado-plazo { color: #2e7d32; font-weight: 700; }
+        .estado-vencido { color: #e67e22; font-weight: 700; }
+        .estado-fueraplazo { color: #c62828; font-weight: 700; }
+
+        /* Modal de detalle de tiempo */
+        .tiempo-detalle { font-size: 0.9rem; }
+        .tiempo-detalle .row { margin-bottom: 0.5rem; }
+        .tiempo-detalle .label { font-weight: 600; color: #5f7f9f; }
     </style>
 </head>
 <body>
@@ -473,7 +469,7 @@
         </footer>
     </div>
 
-    <!-- Modales existentes -->
+    <!-- ===== MODALES (EXACTO COMO EN empleado.html) ===== -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -587,6 +583,78 @@
         </div>
     </div>
 
+    <!-- ===== MODAL DE ENVÍO AL SECRETARIO (INTERFAZ IDÉNTICA A empleado.html PERO CON LÓGICA SIMPLE) ===== -->
+    <div class="modal fade modal-modern" id="modalEnviarSecretario" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-share me-2"></i>Enviar al Secretario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalEnviarSecretarioBody">
+                    <!-- SECCIÓN OPCIONES INICIALES -->
+                    <div id="seccionOpciones">
+                        <p><strong>Usted está por enviar el expediente al Secretario.</strong></p>
+                        <div class="d-flex gap-3 justify-content-center mt-3">
+                            <button class="btn btn-modern btn-modern-success btn-lg" id="btnEnviarFinalizar">
+                                <i class="bi bi-check-circle"></i> Para finalizar
+                            </button>
+                            <button class="btn btn-modern btn-modern-primary btn-lg" id="btnEnviarConsulta">
+                                <i class="bi bi-question-circle"></i> Para Consulta
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN CONSULTA (campo de texto) -->
+                    <div id="seccionConsulta" style="display:none;">
+                        <div class="mb-3">
+                            <label for="txtMotivoConsulta" class="form-label">Motivo de la consulta</label>
+                            <textarea class="form-control" id="txtMotivoConsulta" rows="3" placeholder="Escriba el motivo de la consulta..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary" id="btnVolverOpciones">Volver</button>
+                            <button class="btn btn-modern btn-modern-primary" id="btnConfirmarConsulta">Confirmar consulta</button>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN CONFIRMACIÓN (mensaje + Aceptar/Cancelar) -->
+                    <div id="seccionConfirmacion" style="display:none;">
+                        <div id="mensajeConfirmacion" class="text-center mb-3">
+                            <p><strong id="confirmacionTexto">Tarea finalizada para control del Secretario.</strong></p>
+                            <p><strong>Expediente:</strong> <span id="confirmacionExpediente"></span></p>
+                            <p id="confirmacionDetalle" style="font-size:0.9rem; color:#555;"></p>
+                        </div>
+                        <div class="d-flex gap-3 justify-content-center">
+                            <button class="btn btn-secondary" id="btnConfirmacionCancelar">Cancelar</button>
+                            <button class="btn btn-modern btn-modern-success" id="btnConfirmacionAceptar">Aceptar</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCerrarModalEnviar" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL DETALLE TIEMPO (INTERFAZ) ===== -->
+    <div class="modal fade modal-modern" id="modalDetalleTiempo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clock me-2"></i>Detalle de Tiempo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleTiempoBody">
+                    <div class="text-muted">Cargando...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="logoutAlert">
         <div class="alert-header">
             <i class="bi bi-exclamation-triangle-fill"></i>
@@ -672,12 +740,8 @@
             };
             let filtroMes = '';
             let filtroAnio = '';
-            let unsubscribeCausas = null;
-            let unsubscribeChat = null;
-            let chatUsuarioActual = '';
-            let mensajesNoLeidos = 0;
-            let mensajesContados = new Set();
-            let db = null;  // referencia a Firestore (si está activo)
+            let USE_FIRESTORE = false;  // Siempre false en esta versión
+            let db = null;  // no se usa
 
             // ============================================================
             //  FUNCIONES AUXILIARES
@@ -772,13 +836,13 @@
             }
 
             async function cargarDatosDesdeJSON() {
+                const JSON_DATA_URL = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
                 try {
                     const resp = await fetch(JSON_DATA_URL);
                     if (!resp.ok) throw new Error('Error al cargar JSON desde GitHub');
                     const data = await resp.json();
                     state.causas = data.causas || [];
                     state.empleados = data.empleados || [];
-                    // Asegurar que todos los empleados de CONFIG estén en state.empleados
                     CONFIG.empleados.forEach(emp => {
                         if (!state.empleados.find(e => e.id === emp.id)) {
                             state.empleados.push({ id: emp.id, ausente: false, fechaReintegro: null });
@@ -812,136 +876,9 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE FIRESTORE
-            // ============================================================
-            function inicializarFirebase() {
-                if (typeof firebase === 'undefined') {
-                    const loadScript = (src) => {
-                        return new Promise((resolve, reject) => {
-                            const script = document.createElement('script');
-                            script.src = src;
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                    };
-                    return Promise.all([
-                        loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'),
-                        loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js')
-                    ]).then(() => {
-                        const firebaseConfig = {
-                            apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
-                            authDomain: "pasedefensoria6.firebaseapp.com",
-                            projectId: "pasedefensoria6",
-                            storageBucket: "pasedefensoria6.firebasestorage.app",
-                            messagingSenderId: "785250989941",
-                            appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
-                        };
-                        firebase.initializeApp(firebaseConfig);
-                        db = firebase.firestore();
-                        showToast('Firebase activado correctamente', 'success');
-                        return db;
-                    }).catch((err) => {
-                        console.error('Error cargando Firebase:', err);
-                        showToast('Error al cargar Firebase', 'danger');
-                        throw err;
-                    });
-                } else {
-                    if (!db) {
-                        const firebaseConfig = {
-                            apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
-                            authDomain: "pasedefensoria6.firebaseapp.com",
-                            projectId: "pasedefensoria6",
-                            storageBucket: "pasedefensoria6.firebasestorage.app",
-                            messagingSenderId: "785250989941",
-                            appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
-                        };
-                        if (!firebase.apps.length) {
-                            firebase.initializeApp(firebaseConfig);
-                        }
-                        db = firebase.firestore();
-                    }
-                    return Promise.resolve(db);
-                }
-            }
-
-            async function updateCausaInFirestore(causa) {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc(causa.id).set(causa);
-                } catch (error) {
-                    console.error('Error actualizando causa en Firestore:', error);
-                    showToast('Error al actualizar en Firestore', 'danger');
-                    throw error;
-                }
-            }
-
-            async function saveConfigToFirestore() {
-                if (!USE_FIRESTORE || !db) return;
-                try {
-                    await db.collection('operador').doc('secretario_config').set({ empleados: state.empleados });
-                } catch (error) {
-                    console.error('Error guardando configuración en Firestore:', error);
-                    showToast('Error al guardar configuración', 'danger');
-                }
-            }
-
-            function loadStateFromFirestore() {
-                if (!USE_FIRESTORE || !db) return;
-                if (unsubscribeCausas) unsubscribeCausas();
-                unsubscribeCausas = db.collection('operador').onSnapshot((snapshot) => {
-                    const causas = [];
-                    snapshot.forEach(doc => {
-                        if (doc.id === 'secretario_config') return;
-                        const data = doc.data();
-                        if (!data.id) data.id = doc.id;
-                        if (!data.empleadoAsignado && data.empleadoId) {
-                            data.empleadoAsignado = data.empleadoId;
-                        }
-                        causas.push(data);
-                    });
-                    state.causas = causas;
-                    // Cargar configuración de empleados
-                    db.collection('operador').doc('secretario_config').get().then((doc) => {
-                        if (doc.exists) {
-                            const configData = doc.data();
-                            state.empleados = configData.empleados || CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
-                        } else {
-                            state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
-                            db.collection('operador').doc('secretario_config').set({ empleados: state.empleados });
-                        }
-                    }).catch(err => {
-                        console.error('Error cargando configuración:', err);
-                        state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
-                    });
-                    renderEmpleado();
-                }, (error) => {
-                    console.error('Error en onSnapshot:', error);
-                    showToast('Error al conectar con Firestore', 'danger');
-                });
-            }
-
-            // ============================================================
-            //  FUNCIONES DE GUARDADO UNIFICADAS
+            //  FUNCIÓN DE GUARDADO UNIFICADA (solo local)
             // ============================================================
             async function guardarCausa(causa) {
-                if (USE_FIRESTORE && db) {
-                    await updateCausaInFirestore(causa);
-                } else {
-                    updateCausaInLocal(causa);
-                }
-            }
-
-            async function guardarConfigEmpleados() {
-                if (USE_FIRESTORE && db) {
-                    await saveConfigToFirestore();
-                } else {
-                    guardarEstadoLocal();
-                    renderEmpleado();
-                }
-            }
-
-            function updateCausaInLocal(causa) {
                 const index = state.causas.findIndex(c => c.id === causa.id);
                 if (index !== -1) {
                     state.causas[index] = causa;
@@ -953,74 +890,15 @@
             }
 
             // ============================================================
-            //  CARGA PRINCIPAL (decide según USE_FIRESTORE)
+            //  CARGA PRINCIPAL
             // ============================================================
             async function cargarDatos() {
-                if (unsubscribeCausas) { unsubscribeCausas(); unsubscribeCausas = null; }
-                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
-
-                if (USE_FIRESTORE) {
-                    if (!db) {
-                        try {
-                            await inicializarFirebase();
-                        } catch (e) {
-                            showToast('No se pudo inicializar Firebase, cambiando a modo JSON', 'danger');
-                            USE_FIRESTORE = false;
-                            localStorage.setItem('modo_preferido', 'json');
-                            cargarDatos();
-                            return;
-                        }
-                    }
-                    loadStateFromFirestore();
-                    document.getElementById('modoIndicador').textContent = 'Modo: Firebase (nube)';
-                    document.getElementById('chatWidget').style.display = 'block';
-                    document.getElementById('btnActivarFirestore').style.display = 'none';
-                    document.getElementById('btnActivarJSON').style.display = 'inline-block';
-                    // Inicializar chat si hay empleado logueado
-                    if (currentEmpleadoId) {
-                        inicializarChat(getEmpName(currentEmpleadoId), currentEmpleadoId);
-                    }
-                } else {
-                    await cargarDatosDesdeJSON();
-                    document.getElementById('modoIndicador').textContent = 'Modo: JSON local';
-                    document.getElementById('chatWidget').style.display = 'none';
-                    document.getElementById('btnActivarFirestore').style.display = 'inline-block';
-                    document.getElementById('btnActivarJSON').style.display = 'none';
-                }
-                actualizarBotonesModo();
-            }
-
-            function actualizarBotonesModo() {
-                const btnFire = document.getElementById('btnActivarFirestore');
-                const btnJSON = document.getElementById('btnActivarJSON');
-                if (USE_FIRESTORE) {
-                    btnFire.style.display = 'none';
-                    btnJSON.style.display = 'inline-block';
-                } else {
-                    btnFire.style.display = 'inline-block';
-                    btnJSON.style.display = 'none';
-                }
-            }
-
-            // ============================================================
-            //  CAMBIAR MODO EN TIEMPO REAL
-            // ============================================================
-            function cambiarModo(nuevoModo) {
-                if (nuevoModo === USE_FIRESTORE) {
-                    showToast('Ya estás en ese modo', 'info');
-                    return;
-                }
-                if (state.causas.length > 0 && !USE_FIRESTORE) {
-                    if (!confirm('¿Cambiar a Firestore? Los datos locales se mantendrán, pero se cargarán los de la nube. ¿Continuar?')) {
-                        return;
-                    }
-                }
-                USE_FIRESTORE = nuevoModo;
-                localStorage.setItem('modo_preferido', USE_FIRESTORE ? 'firestore' : 'json');
-                state.causas = [];
-                state.empleados = [];
-                cargarDatos();
-                showToast(`Modo cambiado a ${USE_FIRESTORE ? 'Firestore (nube)' : 'JSON local'}`, 'success');
+                await cargarDatosDesdeJSON();
+                document.getElementById('modoIndicador').textContent = 'Modo: JSON local';
+                document.getElementById('chatWidget').style.display = 'none';
+                document.getElementById('btnActivarFirestore').style.display = 'inline-block';
+                document.getElementById('btnActivarJSON').style.display = 'none';
+                // El chat no está disponible en modo JSON
             }
 
             // ============================================================
@@ -1160,12 +1038,7 @@
                         <div class="table-wrap">
                             <table class="table-modern table">
                                 <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>Fecha envío</th>
-                                        <th>Motivo</th>
-                                        <th>Acción</th>
-                                    </tr>
+                                    <tr><th>Expediente</th><th>Fecha envío</th><th>Motivo</th><th>Acción</th></tr>
                                 </thead>
                                 <tbody>
                     `;
@@ -1173,27 +1046,14 @@
                         let ultimoEnvio = null;
                         if (c.historial) {
                             const envios = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
-                            if (envios.length > 0) {
-                                ultimoEnvio = envios[envios.length - 1];
-                            }
+                            if (envios.length > 0) ultimoEnvio = envios[envios.length - 1];
                         }
                         const fecha = ultimoEnvio ? fmtDt(ultimoEnvio.fecha) : '-';
                         const motivo = ultimoEnvio ? (ultimoEnvio.comentario || '-') : '-';
                         const accion = ultimoEnvio ? ultimoEnvio.accion : '-';
-                        html += `
-                            <tr>
-                                <td><strong>${c.numero}</strong></td>
-                                <td>${fecha}</td>
-                                <td style="font-size:0.75rem; max-width:200px; word-break:break-word;">${motivo}</td>
-                                <td>${accion}</td>
-                            </tr>
-                        `;
+                        html += `<tr><td><strong>${c.numero}</strong></td><td>${fecha}</td><td style="font-size:0.75rem; max-width:200px; word-break:break-word;">${motivo}</td><td>${accion}</td></tr>`;
                     });
-                    html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += `</tbody></table></div>`;
                     body.innerHTML = html;
                 }
                 new bootstrap.Modal(document.getElementById('modalEnSecretaria')).show();
@@ -1208,38 +1068,18 @@
                     let html = `
                         <div class="table-wrap">
                             <table class="table-modern table">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>Fecha asignación a Defensor</th>
-                                        <th>Nivel</th>
-                                        <th>Tipo</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Expediente</th><th>Fecha asignación a Defensor</th><th>Nivel</th><th>Tipo</th></tr></thead>
                                 <tbody>
                     `;
                     lista.forEach(c => {
                         let fechaDef = '-';
                         if (c.historial) {
                             const defs = c.historial.filter(h => h.accion && h.accion.includes('Defensor'));
-                            if (defs.length > 0) {
-                                fechaDef = fmtDt(defs[defs.length - 1].fecha);
-                            }
+                            if (defs.length > 0) fechaDef = fmtDt(defs[defs.length - 1].fecha);
                         }
-                        html += `
-                            <tr>
-                                <td><strong>${c.numero}</strong></td>
-                                <td>${fechaDef}</td>
-                                <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                                <td>${c.tipo || '-'}</td>
-                            </tr>
-                        `;
+                        html += `<tr><td><strong>${c.numero}</strong></td><td>${fechaDef}</td><td>N${c.nivelSecretario || c.nivelOperador || 1}</td><td>${c.tipo || '-'}</td></tr>`;
                     });
-                    html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += `</tbody></table></div>`;
                     body.innerHTML = html;
                 }
                 new bootstrap.Modal(document.getElementById('modalEnDefensor')).show();
@@ -1263,18 +1103,7 @@
                 let html = `
                     <div class="table-wrap">
                         <table class="table-modern table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>N° Expediente</th>
-                                    <th>Tipo</th>
-                                    <th>Nivel</th>
-                                    <th>Estado</th>
-                                    <th>Fecha Asignación</th>
-                                    <th>Fecha Finalización</th>
-                                    <th>Historial</th>
-                                    <th>Justificación</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>N° Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asignación</th><th>Fecha Finalización</th><th>Historial</th><th>Justificación</th></tr></thead>
                             <tbody>
                 `;
                 pasesFinalizados.forEach(c => {
@@ -1286,28 +1115,18 @@
                         const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
                         justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
                     }
-                    html += `
-                        <tr>
-                            <td><strong>${c.numero}</strong></td>
-                            <td>${c.tipo || '-'}</td>
-                            <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                            <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                            <td>${fechaAsig}</td>
-                            <td>${fmtDt(c.fechaFinalizacion)}</td>
-                            <td>
-                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial">
-                                    <i class="bi bi-eye"></i> Ver
-                                </button>
-                            </td>
-                            <td>${justifHtml}</td>
-                        </tr>
-                    `;
+                    html += `<tr>
+                        <td><strong>${c.numero}</strong></td>
+                        <td>${c.tipo || '-'}</td>
+                        <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                        <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
+                        <td>${fechaAsig}</td>
+                        <td>${fmtDt(c.fechaFinalizacion)}</td>
+                        <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial"><i class="bi bi-eye"></i> Ver</button></td>
+                        <td>${justifHtml}</td>
+                    </tr>`;
                 });
-                html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                html += `</tbody></table></div>`;
                 container.innerHTML = html;
             }
 
@@ -1323,8 +1142,7 @@
                     causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
                 }
                 if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes);
-                    const anio = parseInt(filtroAnio);
+                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
                     causasFiltradas = causasFiltradas.filter(c => {
                         if (!c.fechaAsignacion) return false;
                         const d = new Date(c.fechaAsignacion);
@@ -1353,13 +1171,8 @@
                 let html = `
                     <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
-                            <div>
-                                <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Reporte de Actividades</h5>
-                                <p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p>
-                            </div>
-                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;">
-                                <div>${fechaStr}</div>
-                            </div>
+                            <div><h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Reporte de Actividades</h5><p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p></div>
+                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;"><div>${fechaStr}</div></div>
                         </div>
                         <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
                             <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
@@ -1379,16 +1192,14 @@
                         ${activas.length ? `
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px;">
-                                <thead>
-                                    <tr style="background: #f1f6fd; color: #1a4c74;">
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Observación</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Observación</th>
+                                </tr></thead>
                                 <tbody>
                                     ${activas.map(c => {
                                         const cronoHtml = getCronoHtml(c);
@@ -1410,17 +1221,15 @@
                         ${historial.length ? `
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px;">
-                                <thead>
-                                    <tr style="background: #f1f6fd; color: #1a4c74;">
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Asignación</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Finalización</th>
-                                        <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Justificación</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Asignación</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Finalización</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Justificación</th>
+                                </tr></thead>
                                 <tbody>
                                     ${historial.map(c => {
                                         const fechaAsig = getFechaAsignacion(c);
@@ -1475,8 +1284,7 @@
                     causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
                 }
                 if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes);
-                    const anio = parseInt(filtroAnio);
+                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
                     causasFiltradas = causasFiltradas.filter(c => {
                         if (!c.fechaAsignacion) return false;
                         const d = new Date(c.fechaAsignacion);
@@ -1519,9 +1327,7 @@
                     const secId = obtenerSecretarioAsignante(c);
                     if (secId) {
                         const nombre = getSecName(secId);
-                        if (nombre) {
-                            asignadores[nombre] = (asignadores[nombre] || 0) + 1;
-                        }
+                        if (nombre) asignadores[nombre] = (asignadores[nombre] || 0) + 1;
                     }
                 });
                 const ahora = new Date();
@@ -1529,13 +1335,8 @@
                 let html = `
                     <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
-                            <div>
-                                <h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Estadísticas</h5>
-                                <p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p>
-                            </div>
-                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;">
-                                <div>${fechaStr}</div>
-                            </div>
+                            <div><h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Estadísticas</h5><p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p></div>
+                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;"><div>${fechaStr}</div></div>
                         </div>
                         <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
                             <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
@@ -1554,24 +1355,12 @@
                         <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Desglose por Nivel</h6>
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                                <thead>
-                                    <tr style="background:#f1f6fd; color:#1a4c74;">
-                                        <th style="padding:6px 8px; text-align:left;">Nivel</th>
-                                        <th style="padding:6px 8px; text-align:left;">Asignadas</th>
-                                        <th style="padding:6px 8px; text-align:left;">Cumplidas</th>
-                                        <th style="padding:6px 8px; text-align:left;">Promedio días</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Nivel</th><th style="padding:6px 8px; text-align:left;">Asignadas</th><th style="padding:6px 8px; text-align:left;">Cumplidas</th><th style="padding:6px 8px; text-align:left;">Promedio días</th></tr></thead>
                                 <tbody>
                                     ${[1,2,3,4].map(n => {
                                         const s = statsNivel[n];
                                         const prom = s.tiempos.length ? (s.tiempos.reduce((a,b)=>a+b,0)/s.tiempos.length).toFixed(2) : '-';
-                                        return `<tr style="border-bottom:1px solid #eef2f7;">
-                                            <td style="padding:6px 8px; font-weight:600;">N${n}</td>
-                                            <td style="padding:6px 8px;">${s.total}</td>
-                                            <td style="padding:6px 8px;">${s.cumplidas}</td>
-                                            <td style="padding:6px 8px;">${prom}</td>
-                                        </tr>`;
+                                        return `<tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600;">N${n}</td><td style="padding:6px 8px;">${s.total}</td><td style="padding:6px 8px;">${s.cumplidas}</td><td style="padding:6px 8px;">${prom}</td></tr>`;
                                     }).join('')}
                                 </tbody>
                             </table>
@@ -1579,19 +1368,9 @@
                         <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Secretarios que asignaron</h6>
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                                <thead>
-                                    <tr style="background:#f1f6fd; color:#1a4c74;">
-                                        <th style="padding:6px 8px; text-align:left;">Secretario</th>
-                                        <th style="padding:6px 8px; text-align:left;">Cantidad</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Secretario</th><th style="padding:6px 8px; text-align:left;">Cantidad</th></tr></thead>
                                 <tbody>
-                                    ${Object.entries(asignadores).map(([nombre, count]) => `
-                                        <tr style="border-bottom:1px solid #eef2f7;">
-                                            <td style="padding:6px 8px;">${nombre}</td>
-                                            <td style="padding:6px 8px;">${count}</td>
-                                        </tr>
-                                    `).join('')}
+                                    ${Object.entries(asignadores).map(([nombre, count]) => `<tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px;">${nombre}</td><td style="padding:6px 8px;">${count}</td></tr>`).join('')}
                                     ${Object.keys(asignadores).length === 0 ? `<tr><td colspan="2" style="padding:10px; text-align:center; color:#8aa3bc;">Sin datos de asignación</td></tr>` : ''}
                                 </tbody>
                             </table>
@@ -1600,16 +1379,14 @@
                         ${activas.length ? `
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem; min-width:600px;">
-                                <thead>
-                                    <tr style="background:#f1f6fd; color:#1a4c74;">
-                                        <th style="padding:6px 8px; text-align:left;">Expediente</th>
-                                        <th style="padding:6px 8px; text-align:left;">Modo Intervención</th>
-                                        <th style="padding:6px 8px; text-align:left;">Tipo</th>
-                                        <th style="padding:6px 8px; text-align:left;">Tiempo</th>
-                                        <th style="padding:6px 8px; text-align:left;">Nivel</th>
-                                        <th style="padding:6px 8px; text-align:left;">Observación</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;">
+                                    <th style="padding:6px 8px; text-align:left;">Expediente</th>
+                                    <th style="padding:6px 8px; text-align:left;">Modo Intervención</th>
+                                    <th style="padding:6px 8px; text-align:left;">Tipo</th>
+                                    <th style="padding:6px 8px; text-align:left;">Tiempo</th>
+                                    <th style="padding:6px 8px; text-align:left;">Nivel</th>
+                                    <th style="padding:6px 8px; text-align:left;">Observación</th>
+                                </tr></thead>
                                 <tbody>
                                     ${activas.map(c => {
                                         const cronoHtml = getCronoHtml(c);
@@ -1631,17 +1408,15 @@
                         ${historial.length ? `
                         <div class="table-wrap">
                             <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem; min-width:600px;">
-                                <thead>
-                                    <tr style="background:#f1f6fd; color:#1a4c74;">
-                                        <th style="padding:6px 8px; text-align:left;">Expediente</th>
-                                        <th style="padding:6px 8px; text-align:left;">Tipo</th>
-                                        <th style="padding:6px 8px; text-align:left;">Nivel</th>
-                                        <th style="padding:6px 8px; text-align:left;">Estado</th>
-                                        <th style="padding:6px 8px; text-align:left;">Fecha Asignación</th>
-                                        <th style="padding:6px 8px; text-align:left;">Fecha Finalización</th>
-                                        <th style="padding:6px 8px; text-align:left;">Justificación</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;">
+                                    <th style="padding:6px 8px; text-align:left;">Expediente</th>
+                                    <th style="padding:6px 8px; text-align:left;">Tipo</th>
+                                    <th style="padding:6px 8px; text-align:left;">Nivel</th>
+                                    <th style="padding:6px 8px; text-align:left;">Estado</th>
+                                    <th style="padding:6px 8px; text-align:left;">Fecha Asignación</th>
+                                    <th style="padding:6px 8px; text-align:left;">Fecha Finalización</th>
+                                    <th style="padding:6px 8px; text-align:left;">Justificación</th>
+                                </tr></thead>
                                 <tbody>
                                     ${historial.map(c => {
                                         const fechaAsig = getFechaAsignacion(c);
@@ -1767,19 +1542,6 @@
                     showToast(`✅ Justificación registrada para ${causa.numero}. Pendiente de aprobación.`, 'success');
                     bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
                     renderEmpleado();
-                    // Notificar al Secretario por chat si estamos en modo Firestore
-                    if (USE_FIRESTORE && db) {
-                        try {
-                            await db.collection('chat_interno').add({
-                                empleadoId: currentEmpleadoId,
-                                remitente: getEmpName(currentEmpleadoId),
-                                texto: `📢 He enviado una justificación de demora para el expediente ${causa.numero}. Motivo: "${motivo}"`,
-                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        } catch (e) {
-                            console.warn('No se pudo notificar por chat', e);
-                        }
-                    }
                 } catch (error) {
                     console.error('Error al justificar:', error);
                     showToast('Error al guardar la justificación', 'danger');
@@ -1787,12 +1549,10 @@
             }
 
             // ============================================================
-            //  FUNCIÓN PARA CALCULAR KPIs (GLOBALES)
+            //  FUNCIÓN PARA CALCULAR KPIs
             // ============================================================
             function calcularKPIs() {
-                if (!currentEmpleadoObj) {
-                    return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
-                }
+                if (!currentEmpleadoObj) return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
                 const empId = currentEmpleadoObj.id;
                 const empNombre = currentEmpleadoObj.nombre;
                 const todasCausas = state.causas.filter(c => {
@@ -1822,9 +1582,7 @@
                         (c.empleadoOriginal && c.empleadoOriginal === empId)
                     );
                     if (tieneRelacion) return true;
-                    if (c.historial) {
-                        return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
-                    }
+                    if (c.historial) return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
                     return false;
                 }).length;
                 const conDemora = todasCausas.filter(c => {
@@ -1848,8 +1606,7 @@
                     causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
                 }
                 if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes);
-                    const anio = parseInt(filtroAnio);
+                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
                     causasFiltradas = causasFiltradas.filter(c => {
                         if (!c.fechaAsignacion) return false;
                         const d = new Date(c.fechaAsignacion);
@@ -1881,17 +1638,15 @@
                     return `
                         <div class="table-wrap">
                             <table class="table-modern table">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th>
-                                        <th>Modo Intervención</th>
-                                        <th>Tipo</th>
-                                        <th>Tiempo</th>
-                                        <th>Nivel</th>
-                                        <th>Observación</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr>
+                                    <th>Expediente</th>
+                                    <th>Modo Intervención</th>
+                                    <th>Tipo</th>
+                                    <th>Tiempo</th>
+                                    <th>Nivel</th>
+                                    <th>Observación</th>
+                                    <th>Acciones</th>
+                                </tr></thead>
                                 <tbody>
                                     ${items.map(c => {
                                         const cronoHtml = getCronoHtml(c);
@@ -1909,7 +1664,7 @@
                                             <td>N${c.nivelSecretario}</td>
                                             <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
                                             <td>
-                                                <button class="btn btn-modern btn-modern-primary btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
+                                                <button class="btn btn-modern btn-modern-warning btn-modern-sm btn-emp-devolver" data-id="${c.id}">Devolver</button>
                                                 <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
                                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-activa" data-id="${c.id}"><i class="bi bi-eye"></i></button>
                                                 ${estaVencida && !justifPendiente ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
@@ -1934,46 +1689,12 @@
                         </div>
                         <!-- KPIs -->
                         <div class="kpi-grid">
-                            <div class="kpi-item">
-                                <div class="label">Total</div>
-                                <div class="value total">${kpis.total}</div>
-                                <div class="sub">suma todos</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="label">En Proceso</div>
-                                <div class="value proceso">${kpis.enProceso}</div>
-                                <div class="sub">activos</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="label">
-                                    En Secretaría
-                                    <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="value secretaria">${kpis.enSecretaria}</div>
-                                <div class="sub">en secretaría</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="label">
-                                    En Defensor
-                                    <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <div class="value defensor">${kpis.enDefensor}</div>
-                                <div class="sub">con defensor</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="label">Finalizados</div>
-                                <div class="value finalizado">${kpis.finalizados}</div>
-                                <div class="sub">pases terminados</div>
-                            </div>
-                            <div class="kpi-item">
-                                <div class="label">Con Demora</div>
-                                <div class="value demora">${kpis.conDemora}</div>
-                                <div class="sub">vencidos</div>
-                            </div>
+                            <div class="kpi-item"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">suma todos</div></div>
+                            <div class="kpi-item"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
+                            <div class="kpi-item"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
+                            <div class="kpi-item"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
+                            <div class="kpi-item"><div class="label">Finalizados</div><div class="value finalizado">${kpis.finalizados}</div><div class="sub">pases terminados</div></div>
+                            <div class="kpi-item"><div class="label">Con Demora</div><div class="value demora">${kpis.conDemora}</div><div class="sub">vencidos</div></div>
                         </div>
                         <div class="d-flex flex-wrap gap-2 mb-3">
                             <div style="display:flex; align-items:center; gap:4px;">
@@ -2015,7 +1736,6 @@
                         renderEmpleado();
                     });
                 }
-
                 renderTablaHistorialEmpleado();
 
                 // ---------- DELEGACIÓN DE EVENTOS ----------
@@ -2235,159 +1955,6 @@
             }
 
             // ============================================================
-            //  LÓGICA DEL CHAT INDIVIDUAL CON NOTIFICACIONES DE NO LEÍDOS
-            // ============================================================
-            function inicializarChat(nombreUsuario, empleadoId) {
-                if (!USE_FIRESTORE || !db) {
-                    document.getElementById('chatWidget').style.display = 'none';
-                    return;
-                }
-                chatUsuarioActual = nombreUsuario;
-                const chatWidget = document.getElementById('chatWidget');
-                chatWidget.style.display = 'block';
-                if (unsubscribeChat) unsubscribeChat();
-                mensajesNoLeidos = 0;
-                mensajesContados.clear();
-                actualizarBadge();
-
-                unsubscribeChat = db.collection('chat_interno')
-                    .where('empleadoId', '==', empleadoId)
-                    .onSnapshot((snapshot) => {
-                        const chatMessages = document.getElementById('chatMessages');
-                        chatMessages.innerHTML = '';
-                        const mensajes = [];
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            data._id = doc.id;
-                            mensajes.push(data);
-                        });
-                        mensajes.sort((a, b) => {
-                            const ta = a.timestamp?.toMillis?.() || 0;
-                            const tb = b.timestamp?.toMillis?.() || 0;
-                            return ta - tb;
-                        });
-                        const panel = document.getElementById('chatPanel');
-                        const panelOculto = panel.classList.contains('hidden');
-                        if (panelOculto) {
-                            let nuevosNoLeidos = 0;
-                            mensajes.forEach(msg => {
-                                if (msg.remitente !== chatUsuarioActual && !mensajesContados.has(msg._id)) {
-                                    mensajesContados.add(msg._id);
-                                    nuevosNoLeidos++;
-                                }
-                            });
-                            if (nuevosNoLeidos > 0) {
-                                mensajesNoLeidos += nuevosNoLeidos;
-                                actualizarBadge();
-                                showToast(`💬 ${nuevosNoLeidos} mensaje(s) nuevo(s) en el chat`, 'info');
-                            }
-                        } else {
-                            mensajes.forEach(msg => {
-                                if (msg.remitente !== chatUsuarioActual) {
-                                    mensajesContados.add(msg._id);
-                                }
-                            });
-                            mensajesNoLeidos = 0;
-                            actualizarBadge();
-                        }
-                        mensajes.forEach(data => renderizarMensaje(data));
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    }, (error) => {
-                        console.error("Error cargando el chat:", error);
-                        showToast('Error al cargar mensajes: ' + error.message, 'danger');
-                    });
-            }
-
-            function renderizarMensaje(data) {
-                const chatMessages = document.getElementById('chatMessages');
-                const esMio = data.remitente === chatUsuarioActual;
-                const div = document.createElement('div');
-                div.className = `chat-message ${esMio ? 'sent' : 'received'}`;
-                let horaStr = '';
-                if (data.timestamp) {
-                    const d = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
-                    horaStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                } else {
-                    const now = new Date();
-                    horaStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                }
-                div.innerHTML = `
-                    ${!esMio ? `<div class="sender">${data.remitente}</div>` : ''}
-                    <div class="text">${data.texto}</div>
-                    <span class="time">${horaStr}</span>
-                `;
-                chatMessages.appendChild(div);
-            }
-
-            function actualizarBadge() {
-                const badge = document.getElementById('chatBadge');
-                if (mensajesNoLeidos > 0) {
-                    badge.textContent = mensajesNoLeidos > 99 ? '99+' : mensajesNoLeidos;
-                    badge.style.display = 'block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-
-            async function enviarMensaje() {
-                const input = document.getElementById('chatInput');
-                const texto = input.value.trim();
-                if (!texto) return;
-                if (!currentEmpleadoId) {
-                    showToast('No se ha identificado al empleado', 'warning');
-                    return;
-                }
-                input.value = '';
-                const mensajeOptimista = {
-                    remitente: chatUsuarioActual,
-                    texto: texto,
-                    timestamp: new Date(),
-                    empleadoId: currentEmpleadoId,
-                    _id: 'temp_' + Date.now()
-                };
-                renderizarMensaje(mensajeOptimista);
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-                try {
-                    await db.collection('chat_interno').add({
-                        remitente: chatUsuarioActual,
-                        texto: texto,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        empleadoId: currentEmpleadoId
-                    });
-                } catch (error) {
-                    console.error("Error al enviar mensaje:", error);
-                    showToast('Error al enviar mensaje', 'danger');
-                }
-            }
-
-            async function eliminarChatPropio() {
-                if (!currentEmpleadoId) return;
-                try {
-                    const snapshot = await db.collection('chat_interno')
-                        .where('empleadoId', '==', currentEmpleadoId)
-                        .get();
-                    if (snapshot.empty) {
-                        showToast('No hay mensajes para eliminar', 'info');
-                        return;
-                    }
-                    const batch = db.batch();
-                    snapshot.forEach(doc => {
-                        batch.delete(doc.ref);
-                    });
-                    await batch.commit();
-                    showToast('💬 Historial de chat eliminado', 'info');
-                    document.getElementById('chatMessages').innerHTML = '';
-                    mensajesNoLeidos = 0;
-                    mensajesContados.clear();
-                    actualizarBadge();
-                } catch (error) {
-                    console.error('Error al eliminar chat:', error);
-                    showToast('Error al eliminar el historial', 'danger');
-                }
-            }
-
-            // ============================================================
             //  LOGIN
             // ============================================================
             async function handleLogin() {
@@ -2410,34 +1977,18 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('empleadoNombre').textContent = empNombre;
 
-                // Leer preferencia de modo guardada
-                const modoGuardado = localStorage.getItem('modo_preferido');
-                if (modoGuardado === 'firestore') {
-                    USE_FIRESTORE = true;
-                } else if (modoGuardado === 'json') {
-                    USE_FIRESTORE = false;
-                }
-
                 await cargarDatos();
                 renderEmpleado();
                 showToast(`Bienvenido/a ${empNombre}`, 'success');
                 iniciarCronometros();
                 iniciarAutoActualizacion();
-
-                if (USE_FIRESTORE) {
-                    inicializarChat(empNombre, empId);
-                } else {
-                    document.getElementById('chatWidget').style.display = 'none';
-                }
-                actualizarBotonesModo();
+                document.getElementById('chatWidget').style.display = 'none';
             }
 
             function cerrarSesion() {
                 document.getElementById('logoutAlert').style.display = 'none';
                 if (cronoInterval) clearInterval(cronoInterval);
                 if (autoUpdateInterval) clearInterval(autoUpdateInterval);
-                if (unsubscribeCausas) { unsubscribeCausas(); unsubscribeCausas = null; }
-                if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
                 document.getElementById('appWrapper').classList.remove('visible');
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
@@ -2482,65 +2033,9 @@
 
                 document.getElementById('btnActualizarBD').addEventListener('click', actualizarManual);
 
-                // ---- Botones para cambiar modo ----
-                document.getElementById('btnActivarFirestore').addEventListener('click', function() {
-                    if (USE_FIRESTORE) {
-                        showToast('Ya estás en modo Firestore', 'info');
-                        return;
-                    }
-                    if (confirm('¿Activar el modo Firestore? Se conectarán los datos desde la nube. Los datos locales se mantendrán.')) {
-                        cambiarModo(true);
-                    }
-                });
-
-                document.getElementById('btnActivarJSON').addEventListener('click', function() {
-                    if (!USE_FIRESTORE) {
-                        showToast('Ya estás en modo JSON', 'info');
-                        return;
-                    }
-                    if (confirm('¿Cambiar a modo JSON? Se usarán los datos guardados localmente (JSON). Los cambios en la nube no se verán.')) {
-                        cambiarModo(false);
-                    }
-                });
-
-                // ---- Eventos del chat ----
-                const chatToggleBtn = document.getElementById('chatToggleBtn');
-                const chatPanel = document.getElementById('chatPanel');
-                const chatCloseBtn = document.getElementById('chatCloseBtn');
-                const chatSendBtn = document.getElementById('chatSendBtn');
-                const chatInput = document.getElementById('chatInput');
-
-                chatToggleBtn.addEventListener('click', () => {
-                    const isHidden = chatPanel.classList.contains('hidden');
-                    if (isHidden) {
-                        mensajesNoLeidos = 0;
-                        mensajesContados.clear();
-                        actualizarBadge();
-                        chatPanel.classList.remove('hidden');
-                        chatInput.focus();
-                        const chatMessages = document.getElementById('chatMessages');
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    } else {
-                        chatPanel.classList.add('hidden');
-                    }
-                });
-
-                chatCloseBtn.addEventListener('click', () => {
-                    if (confirm('¿Deseas eliminar toda la conversación con el secretario?')) {
-                        eliminarChatPropio();
-                        chatPanel.classList.add('hidden');
-                    } else {
-                        chatPanel.classList.add('hidden');
-                    }
-                });
-
-                chatSendBtn.addEventListener('click', enviarMensaje);
-                chatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        enviarMensaje();
-                    }
-                });
+                // ---- Botones para cambiar modo (solo para interfaz, en JSON siempre falso) ----
+                document.getElementById('btnActivarFirestore').style.display = 'inline-block';
+                document.getElementById('btnActivarJSON').style.display = 'none';
 
                 // ---- Evento para el modal de justificación ----
                 document.getElementById('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
