@@ -1975,10 +1975,11 @@
                 };
             }
 
-            // ---------- FUNCIÓN PARA CALCULAR KPIs DE UN EMPLEADO ----------
+            // ---------- FUNCIÓN PARA CALCULAR KPIs DE UN EMPLEADO (IGUAL QUE EN EMPLEADO.HTML) ----------
             function calcularKPIsEmpleado(empId) {
                 if (!empId) return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
                 const empNombre = getEmpName(empId);
+                // Todas las causas relacionadas con el empleado
                 const todasCausas = state.causas.filter(c => {
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
@@ -1987,36 +1988,67 @@
                     );
                     return esSuPase;
                 });
-                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId).length;
-                const finalizados = obtenerHistorialPasesEmpleado(empId).length;
-                const enSecretaria = todasCausas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (!c.historial) return false;
-                    return c.historial.some(h => {
-                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
-                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
-                        return esAccion && esUsuario;
-                    });
-                }).length;
-                const enDefensor = todasCausas.filter(c => {
-                    if (c.estado !== 'en_defensor') return false;
-                    const tieneRelacion = (
-                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
-                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
-                        (c.empleadoOriginal && c.empleadoOriginal === empId)
-                    );
-                    if (tieneRelacion) return true;
-                    if (c.historial) return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
-                    return false;
-                }).length;
+
+                // Total = todas las causas relacionadas
+                const total = todasCausas.length;
+
+                // Conteo por estado (igual que en empleado.html)
+                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso').length;
+                const enSecretaria = todasCausas.filter(c => c.estado === 'en_secretaria').length;
+                const enDefensor = todasCausas.filter(c => c.estado === 'en_defensor').length;
+                const finalizados = todasCausas.filter(c => c.estado === 'finalizada').length;
+
+                // Con demora (subconjunto de enProceso)
                 const conDemora = todasCausas.filter(c => {
                     if (c.estado !== 'en_proceso') return false;
-                    if (c.empleadoAsignado !== empId) return false;
                     const detalle = getDetalleTiempo(c);
                     return detalle.estado && (detalle.estado.estado === 'vencido' || detalle.estado.estado === 'fueraplazo');
                 }).length;
-                const total = enProceso + enSecretaria + enDefensor + finalizados;
+
                 return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
+            }
+
+            // Función para renderizar la tabla de historial (igual que en empleado.html)
+            function renderTablaHistorialEmpleado(empId) {
+                const container = document.getElementById('tablaHistorialEmpleadoContainer');
+                if (!container) return;
+                const pasesFinalizados = obtenerHistorialPasesEmpleado(empId);
+                if (pasesFinalizados.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="padding: 1.5rem 0; text-align: center; color: #8aa3bc;">
+                            <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                            <p style="margin:0;">No tienes pases finalizados registrados.</p>
+                        </div>`;
+                    return;
+                }
+                let html = `
+                    <div class="table-wrap">
+                        <table class="table-modern table table-sm">
+                            <thead><tr><th>N° Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asignación</th><th>Fecha Finalización</th><th>Historial</th><th>Justificación</th></tr></thead>
+                            <tbody>
+                `;
+                pasesFinalizados.forEach(c => {
+                    const fechaAsig = getFechaAsignacion(c);
+                    let justifHtml = '-';
+                    if (c.justificaciones && c.justificaciones.length > 0) {
+                        const ultima = c.justificaciones[c.justificaciones.length - 1];
+                        const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                        const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                        justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                    }
+                    html += `<tr>
+                        <td><strong>${c.numero}</strong></td>
+                        <td>${c.tipo || '-'}</td>
+                        <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                        <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
+                        <td>${fechaAsig}</td>
+                        <td>${fmtDt(c.fechaFinalizacion)}</td>
+                        <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial"><i class="bi bi-eye"></i> Ver</button></td>
+                        <td>${justifHtml}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
             }
 
             // ============================================================
@@ -2410,7 +2442,7 @@
                 const pStateActivas = paginationState.empleado;
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
 
-                // KPIs
+                // KPIs usando la función actualizada (igual que empleado.html)
                 const kpis = calcularKPIsEmpleado(empSeleccionado);
 
                 // Generar tabla activas (igual a empleado.html)
@@ -2463,47 +2495,7 @@
                     `;
                 }
 
-                // Historial de pases finalizados
-                const historial = obtenerHistorialPasesEmpleado(empSeleccionado);
-                let historialHtml = '';
-                if (historial.length === 0) {
-                    historialHtml = `
-                        <div class="empty-state" style="padding: 1.5rem 0; text-align: center; color: #8aa3bc;">
-                            <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                            <p style="margin:0;">No tienes pases finalizados registrados.</p>
-                        </div>`;
-                } else {
-                    historialHtml = `
-                        <div class="table-wrap">
-                            <table class="table-modern table table-sm">
-                                <thead><tr><th>N° Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asignación</th><th>Fecha Finalización</th><th>Historial</th><th>Justificación</th></tr></thead>
-                                <tbody>
-                                    ${historial.map(c => {
-                                        const fechaAsig = getFechaAsignacion(c);
-                                        let justifHtml = '-';
-                                        if (c.justificaciones && c.justificaciones.length > 0) {
-                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
-                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
-                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
-                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
-                                        }
-                                        return `<tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td>${c.tipo || '-'}</td>
-                                            <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                                            <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                                            <td>${fechaAsig}</td>
-                                            <td>${fmtDt(c.fechaFinalizacion)}</td>
-                                            <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial"><i class="bi bi-eye"></i> Ver</button></td>
-                                            <td>${justifHtml}</td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                }
-
+                // Historial de pases finalizados (se renderiza abajo)
                 const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}" ${e.id===empSeleccionado?'selected':''}>${e.nombre}</option>`).join('');
 
                 const anioOptions = [];
@@ -2521,13 +2513,14 @@
                                 <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
                             </div>
                         </div>
-                        <div class="kpi-grid-empleado">
-                            <div class="kpi-item-empleado"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">suma todos</div></div>
-                            <div class="kpi-item-empleado"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
-                            <div class="kpi-item-empleado"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
-                            <div class="kpi-item-empleado"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
-                            <div class="kpi-item-empleado"><div class="label">Finalizados</div><div class="value finalizado">${kpis.finalizados}</div><div class="sub">pases terminados</div></div>
-                            <div class="kpi-item-empleado"><div class="label">Con Demora</div><div class="value demora">${kpis.conDemora}</div><div class="sub">vencidos / fuera de plazo</div></div>
+                        <!-- KPIs estilo empleado.html -->
+                        <div class="kpi-grid">
+                            <div class="kpi-item"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">histórico completo</div></div>
+                            <div class="kpi-item"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
+                            <div class="kpi-item"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
+                            <div class="kpi-item"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
+                            <div class="kpi-item"><div class="label">Finalizados</div><div class="value finalizado">${kpis.finalizados}</div><div class="sub">pases terminados</div></div>
+                            <div class="kpi-item"><div class="label">Con Demora</div><div class="value demora">${kpis.conDemora}</div><div class="sub">vencidos / fuera de plazo</div></div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2 mb-3">
@@ -2556,7 +2549,7 @@
 
                         <div>
                             <h6><i class="bi bi-clock-history text-secondary"></i> Historial</h6>
-                            <div id="tablaHistorialEmpleadoContainer">${historialHtml}</div>
+                            <div id="tablaHistorialEmpleadoContainer"></div>
                         </div>
                     </div>
                 `;
@@ -2568,6 +2561,9 @@
                         renderEmpleado();
                     });
                 }
+
+                // Renderizar tabla de historial usando la función auxiliar
+                renderTablaHistorialEmpleado(empSeleccionado);
 
                 // ========== EVENTOS ==========
                 // Selector de empleado
@@ -2596,7 +2592,7 @@
                 panelContainer.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
                     btn.addEventListener('click', function() { abrirModalEnviarSecretario(this.dataset.id); });
                 });
-                panelContainer.querySelectorAll('.btn-ver-hist-activa, .btn-ver-hist-historial').forEach(btn => {
+                panelContainer.querySelectorAll('.btn-ver-hist-activa').forEach(btn => {
                     btn.addEventListener('click', function() { abrirHistorial(this.dataset.id); });
                 });
                 panelContainer.querySelectorAll('.btn-justificar-individual').forEach(btn => {
