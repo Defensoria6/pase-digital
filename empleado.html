@@ -348,15 +348,15 @@
         .kpi-grid {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.8rem;
             margin-bottom: 1.5rem;
         }
         .kpi-item {
-            flex: 1 1 150px;
-            min-width: 120px;
+            flex: 1 1 130px;
+            min-width: 100px;
             background: #f9fcff;
             border-radius: 16px;
-            padding: 0.8rem 1rem;
+            padding: 0.6rem 0.8rem;
             border: 1px solid #e2edf7;
             text-align: center;
             transition: box-shadow 0.2s;
@@ -366,30 +366,30 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .kpi-item .label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             color: #5f7f9f;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .kpi-item .label .btn-ver-detalle {
             background: none;
             border: none;
             color: #1976d2;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             cursor: pointer;
-            padding: 0 4px;
+            padding: 0 2px;
             transition: transform 0.2s;
         }
         .kpi-item .label .btn-ver-detalle:hover {
             transform: scale(1.2);
         }
         .kpi-item .value {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 800;
             color: #0a2a44;
             line-height: 1.2;
@@ -401,7 +401,7 @@
         .kpi-item .value.finalizado { color: #2e7d32; }
         .kpi-item .value.demora { color: #c62828; }
         .kpi-item .sub {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #8aa3bc;
             margin-top: 2px;
         }
@@ -797,7 +797,9 @@
                     'finalizada': '<span class="badge-estado badge-fin">✅ Finalizada</span>',
                     'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
                     'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto a SIGED</span>',
-                    'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>'
+                    'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>',
+                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>',
+                    'en_espera': '<span class="badge-estado badge-espera">⏳ En espera</span>'
                 };
                 return map[estado] || `<span class="badge-estado">${estado}</span>`;
             }
@@ -809,7 +811,9 @@
                     'finalizada': 'Finalizada',
                     'en_defensor': 'Defensor',
                     'devuelto_siged': 'Devuelto a SIGED',
-                    'remitido': 'Remitido'
+                    'remitido': 'Remitido',
+                    'rechazado': 'Rechazado',
+                    'en_espera': 'En espera'
                 };
                 return map[estado] || estado;
             }
@@ -1137,16 +1141,22 @@
                 const empNombre = currentEmpleadoObj.nombre;
                 return state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
-                    if (!c.historial) return false;
-                    return c.historial.some(h => {
-                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
-                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
-                        return esAccion && esUsuario;
-                    });
+                    // Relación directa con el empleado
+                    const esSuPase = (
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
+                    );
+                    if (esSuPase) return true;
+                    // También puede estar relacionado por historial
+                    if (c.historial) {
+                        return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
+                    }
+                    return false;
                 }).sort((a, b) => {
                     const getLastSendDate = (c) => {
                         if (!c.historial) return 0;
-                        const sends = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
+                        const sends = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario')));
                         if (sends.length === 0) return 0;
                         return new Date(sends[sends.length - 1].fecha).getTime();
                     };
@@ -1188,20 +1198,21 @@
                 const lista = obtenerEnSecretaria();
                 const body = document.getElementById('modalEnSecretariaBody');
                 if (lista.length === 0) {
-                    body.innerHTML = '<div class="text-muted">No hay expedientes en Secretaría enviados por este empleado.</div>';
+                    body.innerHTML = '<div class="text-muted">No hay expedientes en Secretaría relacionados con este empleado.</div>';
                 } else {
                     let html = `
                         <div class="table-wrap">
                             <table class="table-modern table">
                                 <thead>
-                                    <tr><th>Expediente</th><th>Fecha envío</th><th>Motivo</th><th>Acción</th></tr>
+                                    <tr><th>Expediente</th><th>Fecha envío a Secretaría</th><th>Motivo</th><th>Acción</th></tr>
                                 </thead>
                                 <tbody>
                     `;
                     lista.forEach(c => {
                         let ultimoEnvio = null;
                         if (c.historial) {
-                            const envios = c.historial.filter(h => h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta')));
+                            // Ahora buscamos TODAS las acciones que contengan "Enviado a Secretario" (tanto finalización como consulta)
+                            const envios = c.historial.filter(h => h.accion && h.accion.includes('Enviado a Secretario'));
                             if (envios.length > 0) ultimoEnvio = envios[envios.length - 1];
                         }
                         const fecha = ultimoEnvio ? fmtDt(ultimoEnvio.fecha) : '-';
@@ -1840,12 +1851,16 @@
             }
 
             // ============================================================
-            //  FUNCIÓN PARA CALCULAR KPIs
+            //  FUNCIÓN PARA CALCULAR KPIs (SOLO LOS SELECCIONADOS)
             // ============================================================
             function calcularKPIs() {
-                if (!currentEmpleadoObj) return { total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, finalizados: 0, conDemora: 0 };
+                if (!currentEmpleadoObj) return { 
+                    total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, 
+                    finalizados: 0, conDemora: 0 
+                };
                 const empId = currentEmpleadoObj.id;
                 const empNombre = currentEmpleadoObj.nombre;
+                // Todas las causas relacionadas con el empleado
                 const todasCausas = state.causas.filter(c => {
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
@@ -1854,35 +1869,23 @@
                     );
                     return esSuPase;
                 });
-                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso' && c.empleadoAsignado === empId).length;
-                const finalizados = obtenerHistorialPasesEmpleado().length;
-                const enSecretaria = todasCausas.filter(c => {
-                    if (c.estado !== 'en_secretaria') return false;
-                    if (!c.historial) return false;
-                    return c.historial.some(h => {
-                        const esAccion = h.accion && (h.accion.includes('Devuelto a Secretaría') || h.accion.includes('Enviado a Secretario para consulta'));
-                        const esUsuario = h.usuario && (h.usuario === empNombre || h.usuario === empId);
-                        return esAccion && esUsuario;
-                    });
-                }).length;
-                const enDefensor = todasCausas.filter(c => {
-                    if (c.estado !== 'en_defensor') return false;
-                    const tieneRelacion = (
-                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
-                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
-                        (c.empleadoOriginal && c.empleadoOriginal === empId)
-                    );
-                    if (tieneRelacion) return true;
-                    if (c.historial) return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
-                    return false;
-                }).length;
+
+                // Total = todas las causas relacionadas (coincide con histórico del secretario)
+                const total = todasCausas.length;
+
+                // Conteo por estado (solo los que mostramos)
+                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso').length;
+                const enSecretaria = todasCausas.filter(c => c.estado === 'en_secretaria').length;
+                const enDefensor = todasCausas.filter(c => c.estado === 'en_defensor').length;
+                const finalizados = todasCausas.filter(c => c.estado === 'finalizada').length;
+
+                // Con demora (subconjunto de enProceso)
                 const conDemora = todasCausas.filter(c => {
                     if (c.estado !== 'en_proceso') return false;
-                    if (c.empleadoAsignado !== empId) return false;
                     const detalle = getDetalleTiempo(c);
                     return detalle.estado && (detalle.estado.estado === 'vencido' || detalle.estado.estado === 'fueraplazo');
                 }).length;
-                const total = enProceso + enSecretaria + enDefensor + finalizados;
+
                 return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
             }
 
@@ -1922,6 +1925,7 @@
                 const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
                 const kpis = calcularKPIs();
 
+                // Función para generar la tabla de activas (se mantiene igual)
                 function generarTablaActivas(items) {
                     if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
                     return `
@@ -1971,6 +1975,7 @@
                     `;
                 }
 
+                // Construcción del HTML con los KPIs seleccionados
                 const html = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -1981,7 +1986,7 @@
                             </div>
                         </div>
                         <div class="kpi-grid">
-                            <div class="kpi-item"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">suma todos</div></div>
+                            <div class="kpi-item"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">histórico completo</div></div>
                             <div class="kpi-item"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
                             <div class="kpi-item"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
                             <div class="kpi-item"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
