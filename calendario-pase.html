@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendario de Pases · Defensoría</title>
+
+    <!-- Firebase SDK (misma configuración que operador.html) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --future: #0369a1;
+            --past: #9ca3af;
+            --bg-body: #f9fafb;
+            --border-color: #e5e7eb;
+            --text-main: #1f2937;
+            --white: #ffffff;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+        }
+
+        .controls button:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .month-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: capitalize;
+        }
+
+        /* ===== CALENDARIO ===== */
+        .calendar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--white);
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: 1fr;
+            flex: 1;
+            gap: 4px;
+        }
+
+        .day-cell {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.4rem 0.3rem;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            background-color: var(--white);
+            position: relative;
+            min-height: 70px;
+        }
+
+        .day-cell:hover:not(.empty) {
+            background-color: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .day-cell.empty {
+            background-color: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        .day-number {
+            font-size: 1.1rem;
+            text-align: right;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .past .day-number {
+            color: var(--past);
+        }
+
+        .today {
+            background-color: #f0fdf4;
+            border-color: var(--primary);
+        }
+
+        .today .day-number {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.3rem;
+        }
+
+        .future .day-number {
+            color: var(--future);
+        }
+
+        /* ===== INDICADOR DE CONTEO (más grande) ===== */
+        .count-indicator {
+            background-color: var(--primary);
+            color: white;
+            font-size: 1.2rem;
+            /* más grande */
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 30px;
+            margin-top: auto;
+            text-align: center;
+            align-self: center;
+            min-width: 36px;
+            line-height: 1.4;
+        }
+
+        .count-indicator.zero {
+            background-color: #e5e7eb;
+            color: #6b7280;
+            font-size: 1rem;
+            padding: 4px 8px;
+            min-width: 30px;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .modal-title {
+            color: var(--primary);
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .total-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            /* más grande */
+            font-weight: 800;
+            margin-left: 0.3rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-imprimir {
+            background: #1e293b;
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s;
+        }
+
+        .btn-imprimir:hover {
+            background: #0f172a;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--past);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--text-main);
+        }
+
+        .modal-body {
+            padding: 1.2rem 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .causa-item {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--primary);
+            padding: 0.7rem 1rem;
+            margin-bottom: 0.7rem;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .causa-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .causa-num {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .causa-estado {
+            font-size: 0.75rem;
+            background: #e5e7eb;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .causa-tipo {
+            font-size: 0.8rem;
+            color: #4b5563;
+        }
+
+        .no-causas {
+            text-align: center;
+            color: var(--past);
+            font-style: italic;
+            padding: 2rem 0;
+        }
+
+        /* ===== CONTENEDOR PARA IMPRESIÓN ===== */
+        #printContainer {
+            display: none;
+        }
+
+        /* ===== ESTILOS DE IMPRESIÓN ===== */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printContainer,
+            #printContainer * {
+                visibility: visible;
+            }
+            #printContainer {
+                display: block !important;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: white;
+                padding: 2rem;
+                font-family: 'Inter', sans-serif;
+                z-index: 9999;
+                overflow-y: auto;
+            }
+            #printContainer h1 {
+                font-size: 1.8rem;
+                color: #1f2937;
+                border-bottom: 3px solid #2563eb;
+                padding-bottom: 0.5rem;
+                margin-bottom: 1rem;
+            }
+            #printContainer .fecha-impresion {
+                font-size: 1rem;
+                color: #4b5563;
+                margin-bottom: 1.5rem;
+            }
+            #printContainer table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.9rem;
+            }
+            #printContainer th {
+                background: #f1f5f9;
+                text-align: left;
+                padding: 0.6rem 0.8rem;
+                border-bottom: 2px solid #cbd5e1;
+            }
+            #printContainer td {
+                padding: 0.5rem 0.8rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            #printContainer .no-data {
+                text-align: center;
+                color: #9ca3af;
+                padding: 2rem 0;
+            }
+        }
+
+        /* ===== LOADING ===== */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0.8rem;
+            }
+            .controls {
+                justify-content: center;
+            }
+            .month-display {
+                text-align: center;
+                font-size: 1.2rem;
+            }
+            .day-cell {
+                min-height: 50px;
+                padding: 0.2rem;
+            }
+            .day-number {
+                font-size: 0.9rem;
+            }
+            .count-indicator {
+                font-size: 1rem;
+                padding: 2px 8px;
+                min-width: 28px;
+            }
+            .modal-content {
+                max-width: 95%;
+            }
+            .modal-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .modal-actions {
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING -->
+    <div id="loadingScreen" class="loading-screen">
+        <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom: 1rem;"></i>
+        <p>Cargando pases desde la base de datos...</p>
+    </div>
+
+    <!-- HEADER -->
+    <header>
+        <div class="controls">
+            <button id="btnPrev" title="Mes Anterior"><i class="fas fa-chevron-left"></i> Anterior</button>
+            <button id="btnToday" title="Ir a hoy"><i class="fas fa-calendar-day"></i> Hoy</button>
+            <button id="btnNext" title="Mes Siguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="month-display" id="monthDisplay">Mes Año</div>
+    </header>
+
+    <!-- CALENDARIO -->
+    <div class="calendar-container">
+        <div class="weekdays">
+            <div>Dom</div>
+            <div>Lun</div>
+            <div>Mar</div>
+            <div>Mié</div>
+            <div>Jue</div>
+            <div>Vie</div>
+            <div>Sáb</div>
+        </div>
+        <div class="days-grid" id="calendarGrid">
+            <!-- inyectado por JS -->
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalDateTitle">
+                    Pases del día
+                    <span class="total-badge" id="modalTotalBadge">0</span>
+                </h3>
+                <div class="modal-actions">
+                    <button class="btn-imprimir" id="btnImprimirModal"><i class="fas fa-print"></i> Imprimir profesional</button>
+                    <button class="close-btn" id="closeModalBtn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PARA IMPRESIÓN (oculto) -->
+    <div id="printContainer"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================================
+            // 1. CONFIGURACIÓN FIREBASE (misma que operador.html)
+            // ============================================================
+            const firebaseConfig = {
+                apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+                authDomain: "pasedefensoria6.firebaseapp.com",
+                projectId: "pasedefensoria6",
+                storageBucket: "pasedefensoria6.firebasestorage.app",
+                messagingSenderId: "785250989941",
+                appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+            };
+
+            let db;
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+            } catch (e) {
+                console.error('Error al inicializar Firebase:', e);
+                alert('No se pudo conectar a la base de datos. Verifique su conexión.');
+            }
+
+            // ============================================================
+            // 2. VARIABLES GLOBALES
+            // ============================================================
+            let causas = [];
+            let agrupadas = {};
+            let navDate = new Date();
+            let currentModalCausas = []; // para imprimir
+
+            const calendarGrid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('monthDisplay');
+            const loadingScreen = document.getElementById('loadingScreen');
+            const modalOverlay = document.getElementById('eventModal');
+            const modalBody = document.getElementById('modalBody');
+            const modalDateTitle = document.getElementById('modalDateTitle');
+            const modalTotalBadge = document.getElementById('modalTotalBadge');
+
+            // ============================================================
+            // 3. FUNCIONES AUXILIARES
+            // ============================================================
+            function toDate(val) {
+                if (!val) return null;
+                if (val.toDate) return val.toDate();
+                if (val.seconds) return new Date(val.seconds * 1000);
+                if (val instanceof Date) return val;
+                return new Date(val);
+            }
+
+            function fmtDateKey(date) {
+                const d = new Date(date);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            function esHoy(date) {
+                const hoy = new Date();
+                return date.getFullYear() === hoy.getFullYear() &&
+                    date.getMonth() === hoy.getMonth() &&
+                    date.getDate() === hoy.getDate();
+            }
+
+            function formatearFechaHora(fecha) {
+                const d = new Date(fecha);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yyyy = d.getFullYear();
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+            }
+
+            // ============================================================
+            // 4. CARGA DE DATOS DESDE FIRESTORE
+            // ============================================================
+            async function cargarCausas() {
+                try {
+                    const snapshot = await db.collection('operador').get();
+                    const lista = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        data.id = doc.id;
+                        lista.push(data);
+                    });
+                    return lista;
+                } catch (error) {
+                    console.error('Error cargando causas:', error);
+                    return [];
+                }
+            }
+
+            function agruparPorFecha(causasArray) {
+                const grupos = {};
+                causasArray.forEach(c => {
+                    const fecha = c.fechaPaseSecretario;
+                    if (fecha) {
+                        const key = fmtDateKey(fecha);
+                        if (!grupos[key]) grupos[key] = [];
+                        grupos[key].push(c);
+                    }
+                });
+                return grupos;
+            }
+
+            // ============================================================
+            // 5. RENDERIZADO DEL CALENDARIO
+            // ============================================================
+            function renderizarCalendario() {
+                calendarGrid.innerHTML = '';
+
+                const year = navDate.getFullYear();
+                const month = navDate.getMonth();
+
+                const options = { month: 'long', year: 'numeric' };
+                monthDisplay.textContent = navDate.toLocaleDateString('es-ES', options);
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+
+                for (let i = 0; i < firstDay; i++) {
+                    const empty = document.createElement('div');
+                    empty.className = 'day-cell empty';
+                    calendarGrid.appendChild(empty);
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const cellDate = new Date(year, month, d);
+                    cellDate.setHours(0, 0, 0, 0);
+
+                    const cell = document.createElement('div');
+                    cell.className = 'day-cell';
+
+                    if (esHoy(cellDate)) {
+                        cell.classList.add('today');
+                    } else if (cellDate < hoy) {
+                        cell.classList.add('past');
+                    } else {
+                        cell.classList.add('future');
+                    }
+
+                    const numDiv = document.createElement('div');
+                    numDiv.className = 'day-number';
+                    numDiv.textContent = d;
+                    cell.appendChild(numDiv);
+
+                    const key = fmtDateKey(cellDate);
+                    const causasDelDia = agrupadas[key] || [];
+                    const count = causasDelDia.length;
+
+                    const badge = document.createElement('div');
+                    badge.className = 'count-indicator' + (count === 0 ? ' zero' : '');
+                    badge.textContent = count;
+                    cell.appendChild(badge);
+
+                    cell.addEventListener('click', function() {
+                        abrirModal(cellDate, causasDelDia);
+                    });
+
+                    calendarGrid.appendChild(cell);
+                }
+            }
+
+            // ============================================================
+            // 6. MODAL DE DETALLE
+            // ============================================================
+            function abrirModal(fecha, causasLista) {
+                const fechaStr = fecha.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }).toUpperCase();
+
+                modalDateTitle.innerHTML = `Pases del ${fechaStr}`;
+                modalTotalBadge.textContent = causasLista.length;
+                currentModalCausas = causasLista;
+
+                modalBody.innerHTML = '';
+
+                if (causasLista.length === 0) {
+                    modalBody.innerHTML = '<div class="no-causas">No hay pases registrados en esta fecha.</div>';
+                } else {
+                    const ordenadas = [...causasLista].sort((a, b) => (a.numero || '').localeCompare(b.numero || ''));
+
+                    ordenadas.forEach(c => {
+                        const estadoTexto = c.estado ? c.estado.replace(/_/g, ' ').toUpperCase() : 'SIN ESTADO';
+                        const tipo = c.tipo || 'Otro';
+                        const div = document.createElement('div');
+                        div.className = 'causa-item';
+                        div.innerHTML = `
+                            <span class="causa-num">${c.numero || 'S/N'}</span>
+                            <span class="causa-tipo">${tipo}</span>
+                            <span class="causa-estado">${estadoTexto}</span>
+                        `;
+                        modalBody.appendChild(div);
+                    });
+                }
+
+                modalOverlay.classList.add('active');
+            }
+
+            // ============================================================
+            // 7. IMPRESIÓN PROFESIONAL
+            // ============================================================
+            function imprimirProfesional() {
+                const printContainer = document.getElementById('printContainer');
+                const fechaHora = formatearFechaHora(new Date());
+
+                let filas = '';
+                if (currentModalCausas.length === 0) {
+                    filas = '<tr><td colspan="3" class="no-data">No hay causas para esta fecha.</td></tr>';
+                } else {
+                    const ordenadas = [...currentModalCausas].sort((a, b) => (a.numero || '').localeCompare(b.numero || ''));
+                    ordenadas.forEach(c => {
+                        const estado = c.estado ? c.estado.replace(/_/g, ' ').toUpperCase() : 'SIN ESTADO';
+                        const tipo = c.tipo || 'Otro';
+                        filas += `
+                            <tr>
+                                <td><strong>${c.numero || 'S/N'}</strong></td>
+                                <td>${tipo}</td>
+                                <td>${estado}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // Obtener fecha del día seleccionado (del título del modal)
+                const tituloModal = document.querySelector('#modalDateTitle')?.textContent || 'Pases del día';
+                const fechaTexto = tituloModal.replace('Pases del ', '').trim();
+
+                printContainer.innerHTML = `
+                    <h1>Calendario de Pase Digital</h1>
+                    <div class="fecha-impresion">
+                        <strong>Fecha de impresión:</strong> ${fechaHora}
+                        <br>
+                        <strong>Día consultado:</strong> ${fechaTexto}
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Expediente</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filas}
+                        </tbody>
+                    </table>
+                    <p style="margin-top:1.5rem; font-size:0.8rem; color:#6b7280; text-align:center;">
+                        Total de causas: ${currentModalCausas.length}
+                    </p>
+                `;
+
+                // Forzar a que el contenedor sea visible en impresión
+                printContainer.style.display = 'block';
+
+                // Imprimir
+                window.print();
+
+                // Ocultar después de imprimir (volver a display none)
+                setTimeout(() => {
+                    printContainer.style.display = 'none';
+                }, 500);
+            }
+
+            // ============================================================
+            // 8. CONTROLES DE NAVEGACIÓN Y EVENTOS
+            // ============================================================
+            document.getElementById('btnPrev').addEventListener('click', () => {
+                navDate.setMonth(navDate.getMonth() - 1);
+                renderizarCalendario();
+            });
+
+            document.getElementById('btnNext').addEventListener('click', () => {
+                navDate.setMonth(navDate.getMonth() + 1);
+                renderizarCalendario();
+            });
+
+            document.getElementById('btnToday').addEventListener('click', () => {
+                navDate = new Date();
+                renderizarCalendario();
+            });
+
+            document.getElementById('closeModalBtn').addEventListener('click', () => {
+                modalOverlay.classList.remove('active');
+            });
+
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+            });
+
+            document.getElementById('btnImprimirModal').addEventListener('click', imprimirProfesional);
+
+            // ============================================================
+            // 9. INICIALIZACIÓN
+            // ============================================================
+            document.addEventListener('DOMContentLoaded', async () => {
+                causas = await cargarCausas();
+                agrupadas = agruparPorFecha(causas);
+                loadingScreen.style.display = 'none';
+                renderizarCalendario();
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
