@@ -94,6 +94,26 @@
             text-transform: capitalize;
         }
 
+        /* KPI mensual con borde azul */
+        .month-total-kpi {
+            border: 2px solid var(--primary);
+            background: var(--white);
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.2rem;
+            padding: 0.2rem 0.9rem;
+            border-radius: 30px;
+            line-height: 1.6;
+            min-width: 2.8rem;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .month-total-kpi i {
+            margin-right: 0.3rem;
+            font-size: 0.9rem;
+        }
+
         /* ===== CALENDARIO ===== */
         .calendar-container {
             flex: 1;
@@ -470,6 +490,12 @@
             .modal-actions {
                 justify-content: flex-end;
             }
+            /* Ajuste del KPI en móvil */
+            .month-total-kpi {
+                font-size: 1rem;
+                padding: 0.1rem 0.7rem;
+                min-width: 2.4rem;
+            }
         }
     </style>
 </head>
@@ -488,7 +514,10 @@
             <button id="btnToday" title="Ir a hoy"><i class="fas fa-calendar-day"></i> Hoy</button>
             <button id="btnNext" title="Mes Siguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
         </div>
-        <div class="month-display" id="monthDisplay">Mes Año</div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span id="monthTotalKpi" class="month-total-kpi"><i class="fas fa-list-ul"></i> 0</span>
+            <div class="month-display" id="monthDisplay">Mes Año</div>
+        </div>
     </header>
 
     <!-- CALENDARIO -->
@@ -569,6 +598,7 @@
             const modalBody = document.getElementById('modalBody');
             const modalDateTitle = document.getElementById('modalDateTitle');
             const modalTotalBadge = document.getElementById('modalTotalBadge');
+            const monthTotalKpi = document.getElementById('monthTotalKpi');
 
             // ============================================================
             // 3. FUNCIONES AUXILIARES
@@ -649,6 +679,16 @@
 
                 const options = { month: 'long', year: 'numeric' };
                 monthDisplay.textContent = navDate.toLocaleDateString('es-ES', options);
+
+                // ---- Actualizar KPI mensual ----
+                const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+                let totalMes = 0;
+                for (const key in agrupadas) {
+                    if (key.startsWith(prefix)) {
+                        totalMes += agrupadas[key].length;
+                    }
+                }
+                monthTotalKpi.innerHTML = `<i class="fas fa-list-ul"></i> ${totalMes}`;
 
                 const firstDay = new Date(year, month, 1).getDay();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
