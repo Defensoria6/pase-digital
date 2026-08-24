@@ -931,8 +931,9 @@
             }
         }
 
-        /* ===== PRINT ===== */
+        /* ===== PRINT (MEJORADO PARA REPORTE A4) ===== */
         @media print {
+            /* Ocultar todo excepto el modal de reporte */
             body * {
                 visibility: hidden;
             }
@@ -963,7 +964,9 @@
                 box-shadow: none !important;
                 border: none !important;
                 background: transparent !important;
+                overflow: visible !important;
             }
+            /* Ocultar header, footer y botones del modal */
             #modalReporte .modal-header,
             #modalReporte .modal-footer,
             #modalReporte .btn-close,
@@ -972,21 +975,25 @@
             #modalReporte .pagination-bar {
                 display: none !important;
             }
+            /* Cuerpo del modal: sin scroll, sin max-height, padding reducido */
             #modalReporte .modal-body {
                 padding: 5px !important;
                 overflow: visible !important;
                 max-height: none !important;
             }
+            /* Contenedor de tabla: sin scroll, sin max-height */
             #modalReporte .table-wrap {
                 overflow: visible !important;
                 max-height: none !important;
             }
+            /* Tabla: estilo para impresión, sin scroll, con bordes */
             #modalReporte .table-modern {
                 min-width: 0 !important;
                 width: 100% !important;
                 font-size: 0.6rem !important;
                 border-collapse: collapse !important;
                 table-layout: auto !important;
+                page-break-inside: auto !important;
             }
             #modalReporte .table-modern th,
             #modalReporte .table-modern td {
@@ -999,6 +1006,59 @@
                 background: #f1f6fd !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                position: relative !important;
+                top: 0 !important;
+            }
+            /* Evitar que las filas se corten a la mitad */
+            #modalReporte .table-modern tbody tr {
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
+            }
+            /* Saltos de página entre secciones */
+            .print-section-break {
+                page-break-before: always !important;
+                margin-top: 20px !important;
+                padding-top: 20px !important;
+                border-top: 2px solid #0b4b7a !important;
+            }
+            .print-section-break:first-of-type {
+                page-break-before: avoid !important;
+                border-top: none !important;
+            }
+            /* Títulos de sección en impresión */
+            .print-section-title {
+                font-size: 1.1rem !important;
+                font-weight: 800 !important;
+                color: #0b4b7a !important;
+                margin: 15px 0 8px 0 !important;
+                padding-bottom: 4px !important;
+                border-bottom: 2px solid #0b4b7a !important;
+            }
+            /* Ajustes para el encabezado del reporte */
+            .print-header {
+                margin-bottom: 12px !important;
+                padding-bottom: 8px !important;
+                border-bottom: 2px solid #0b4b7a !important;
+            }
+            .print-header h4 {
+                font-size: 1.2rem !important;
+                font-weight: 800 !important;
+                color: #0b4b7a !important;
+                margin: 0 !important;
+            }
+            .print-header p {
+                font-size: 0.7rem !important;
+                margin: 2px 0 !important;
+                color: #333 !important;
+            }
+            .print-total-badge {
+                font-weight: 700 !important;
+                background: #e3f2fd !important;
+                padding: 2px 10px !important;
+                border-radius: 12px !important;
+                display: inline-block !important;
+                font-size: 0.7rem !important;
+                color: #0b4b7a !important;
             }
             html,
             body {
@@ -1007,8 +1067,12 @@
                 height: auto !important;
                 overflow: visible !important;
             }
-            #modalReporte .table-modern tr {
-                page-break-inside: avoid;
+            /* Forzar que el contenido del modal ocupe toda la página */
+            #modalReporte .modal-dialog,
+            #modalReporte .modal-content,
+            #modalReporte .modal-body {
+                height: auto !important;
+                min-height: 0 !important;
             }
         }
 
@@ -1053,6 +1117,43 @@
         .expediente-devuelto {
             font-weight: 800 !important;
             color: #c62828 !important;
+        }
+
+        /* ===== KPI TOTAL (BOTÓN AZUL) ===== */
+        .kpi-total {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 20px rgba(26, 107, 176, 0.3);
+            text-align: right;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: default;
+            display: inline-block;
+            min-width: 200px;
+        }
+        .kpi-total:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(26, 107, 176, 0.4);
+        }
+        .kpi-total .kpi-num {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+        }
+        .kpi-total .kpi-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-total .kpi-detalle {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -1142,15 +1243,17 @@
         </div>
     </div>
 
-    <!-- REPORTE -->
+    <!-- REPORTE (MODAL MEJORADO) -->
     <div class="modal fade modal-modern" id="modalReporte" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg" style="max-width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Actividad</h5>
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte Completo de Actividad</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando…</div></div>
+                <div class="modal-body" id="modalReporteBody" style="padding: 1.5rem 2rem;">
+                    <div class="text-muted">Cargando…</div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
@@ -1752,10 +1855,34 @@
             }
 
             // ============================================================
-            //  REPORTE
+            //  REPORTE COMPLETO (NUEVO)
             // ============================================================
-            function generarReporte(causasArray, titulo) {
-                const total = causasArray.length;
+            function generarReporteCompleto() {
+                // Obtener datos filtrados (recientes y rechazados) SIN paginación
+                const recientes = obtenerCausasFiltradas();
+
+                let rechazados = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroMes || filtroAnio) {
+                    rechazados = rechazados.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
                 const now = new Date();
                 const fechaStr =
                     `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1771,26 +1898,96 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
+                // --- Construir HTML del reporte ---
                 let html = `
-                    <div class="mb-3">
-                        <p><strong>Operador:</strong> ${currentOperator}</p>
-                        <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
-                        <p><strong>Reporte:</strong> ${titulo}</p>
-                        <p><strong>Registros encontrados:</strong> ${total}</p>
+                    <div class="print-header">
+                        <h4>📄 Reporte Completo de Actividad</h4>
+                        <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
                         <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                        <p>
+                            <span class="print-total-badge">Recientes: ${recientes.length}</span>
+                            <span class="print-total-badge" style="background:#ffebee;color:#c62828;">Rechazados/Devueltos/Remitidos: ${rechazados.length}</span>
+                            <span class="print-total-badge" style="background:#0b4b7a;color:white;">Total: ${recientes.length + rechazados.length}</span>
+                        </p>
                     </div>
-                    <hr />
-                    <h6>Expedientes</h6>
-                    <div class="table-wrap">
-                        <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
-                            <tbody>${causasArray.map(c => `
-                                <tr><td><strong>${c.numero}</strong></td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td></tr>
-                            `).join('')}</tbody>
-                        </table>
-                    </div>
-                    ${total === 0 ? '<div class="text-muted">No hay registros que coincidan con los filtros.</div>' : ''}
                 `;
+
+                // ---- TABLA DE RECIENTES ----
+                html += `<div class="print-section-title">📋 Recientes (${recientes.length})</div>`;
+                if (recientes.length === 0) {
+                    html += `<p class="text-muted">No hay registros recientes con los filtros aplicados.</p>`;
+                } else {
+                    html += `
+                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                            <table class="table-modern" style="font-size:0.65rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${recientes.map(c => {
+                                        const fuentes = [];
+                                        if (c.fuenteSiged) fuentes.push('S');
+                                        if (c.fuenteZimbra) fuentes.push('Z');
+                                        if (c.fuenteDeut) fuentes.push('D');
+                                        const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
+                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${fuenteHtml}</td>
+                                            <td>${getEstadoTexto(c.estado)}</td>
+                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // ---- TABLA DE RECHAZADOS / DEVUELTOS / REMITIDOS (con salto de página en impresión) ----
+                html += `<div class="print-section-break"></div>`;
+                html += `<div class="print-section-title">🚫 Rechazados / Devueltos / Remitidos (${rechazados.length})</div>`;
+                if (rechazados.length === 0) {
+                    html += `<p class="text-muted">No hay registros en esta categoría con los filtros aplicados.</p>`;
+                } else {
+                    html += `
+                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                            <table class="table-modern" style="font-size:0.65rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rechazados.map(c => {
+                                        const esDevuelto = c.estado === 'devuelto_siged';
+                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr class="${claseFila}">
+                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
+                                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${getEstadoTexto(c.estado)}</td>
+                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.6rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
                 document.getElementById('modalReporteBody').innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
@@ -2146,22 +2343,41 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs
+            //  ACTUALIZAR KPIs (MODIFICADO)
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
                 if (!container) return;
 
-                // Solo causas del operador actual
-                const causasOp = state.causas.filter(c => c.operador === currentOperator);
+                // Todas las causas (sin filtrar por operador)
+                const todas = state.causas;
+                const totalGeneral = todas.length;
+                const totalActivas = todas.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
+
                 const secretarios = CONFIG.secretarios;
                 const orden = CONFIG.ordenSecretarios;
 
                 let html = '';
+
+                // ---- Fila superior: KPI TOTAL (alineado a la derecha) ----
+                html += `
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 d-flex justify-content-end">
+                            <div class="kpi-total">
+                                <div class="kpi-num">${totalGeneral}</div>
+                                <div class="kpi-label">Total de Pases Actual:</div>
+                                <div class="kpi-detalle">Activos: ${totalActivas}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // ---- KPIs por secretario (globales) ----
+                html += `<div class="row g-3">`;
                 orden.forEach(id => {
                     const sec = secretarios.find(s => s.id === id);
                     if (!sec) return;
-                    const causasSecretario = causasOp.filter(c => c.secretarioId === id);
+                    const causasSecretario = todas.filter(c => c.secretarioId === id);
                     const activas = causasSecretario.filter(c => c.estado === 'en_secretaria' || c.estado ===
                     'en_proceso');
                     const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
@@ -2180,6 +2396,7 @@
                         </div>
                     `;
                 });
+                html += `</div>`;
 
                 container.innerHTML = html;
             }
@@ -2243,7 +2460,7 @@
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteOperador"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                         </div>
                     </div>
                     <div class="filtros-container">
@@ -2392,16 +2609,18 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                const btnReporteRecientes = container.querySelector('#btnReporteOperador');
-                if (btnReporteRecientes) {
-                    btnReporteRecientes.addEventListener('click', function() {
-                        generarReporte(causasFiltradas, 'Recientes');
+                // --- Botón Reporte Completo ---
+                const btnReporteCompleto = container.querySelector('#btnReporteCompleto');
+                if (btnReporteCompleto) {
+                    btnReporteCompleto.addEventListener('click', function() {
+                        generarReporteCompleto();
                     });
                 }
+                // --- Botón Reporte Rechazados (también usa el completo) ---
                 const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
                 if (btnReporteRechazados) {
                     btnReporteRechazados.addEventListener('click', function() {
-                        generarReporte(causasRechazadas, 'Rechazados/Devueltos/Remitidos');
+                        generarReporteCompleto();
                     });
                 }
 
