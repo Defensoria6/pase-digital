@@ -1434,6 +1434,18 @@
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             }
 
+            // ===== CORRECCIÓN DE FECHAS: parsear como local =====
+            function parseLocalDate(dateStr) {
+                // dateStr puede ser "YYYY-MM-DD" o ISO con hora
+                if (!dateStr) return null;
+                let datePart = dateStr;
+                if (dateStr.includes('T')) {
+                    datePart = dateStr.split('T')[0];
+                }
+                // Forzar interpretación local usando la T y hora 00:00
+                return new Date(datePart + 'T00:00:00');
+            }
+
             function getEstadoBadge(estado) {
                 const map = {
                     'en_secretaria': '<span class="badge-estado badge-sec">📋 Secretaría</span>',
@@ -1479,11 +1491,8 @@
                 if (!num || typeof num !== 'string') return false;
                 const trimmed = num.trim();
                 if (trimmed === '') return false;
-                // Rechazar si contiene "undefined" o "null" o es solo caracteres no numéricos extraños
                 if (trimmed.includes('undefined') || trimmed.includes('null')) return false;
-                // Rechazar si es algo como "undefinedundefinedNundefined—undefined--"
                 if (/^undefined/i.test(trimmed)) return false;
-                // Aceptar cualquier otra cadena que no sea vacía y no sea solo espacios
                 return true;
             }
 
@@ -1503,12 +1512,10 @@
                         } else if (doc.id === 'config') {
                             config = data;
                         } else {
-                            // Solo agregar si el número de expediente es válido
                             if (esNumeroValido(data.numero)) {
                                 if (!data.id) data.id = doc.id;
                                 causas.push(data);
                             }
-                            // Si es inválido, lo omitimos silenciosamente (no se muestra)
                         }
                     });
                     state.causas = causas;
@@ -1575,17 +1582,18 @@
             }
 
             // ============================================================
-            //  AUSENCIAS
+            //  AUSENCIAS (CORREGIDO: parseo local de fechas)
             // ============================================================
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
-                const f = new Date(fecha);
+                const f = parseLocalDate(fecha);
+                if (!f) return false;
                 f.setHours(0, 0, 0, 0);
                 return state.ausencias.some(a => {
                     if (a.secretarioId !== secretarioId) return false;
-                    const inicio = new Date(a.fechaInicio);
+                    const inicio = parseLocalDate(a.fechaInicio);
                     inicio.setHours(0, 0, 0, 0);
-                    const fin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    const fin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
                     fin.setHours(0, 0, 0, 0);
                     return f >= inicio && f <= fin;
                 });
@@ -1594,16 +1602,16 @@
             async function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
                 if (!secretarioId || !fechaInicio) { showToast('Debe seleccionar secretario y fecha de inicio',
                     'warning'); return false; }
-                const inicio = new Date(fechaInicio);
+                const inicio = parseLocalDate(fechaInicio);
                 inicio.setHours(0, 0, 0, 0);
-                const fin = fechaFin ? new Date(fechaFin) : new Date(fechaInicio);
+                const fin = fechaFin ? parseLocalDate(fechaFin) : parseLocalDate(fechaInicio);
                 fin.setHours(0, 0, 0, 0);
                 if (fin < inicio) { showToast('La fecha fin no puede ser anterior a la fecha inicio', 'warning'); return false; }
                 const solapada = state.ausencias.some(a => {
                     if (a.secretarioId !== secretarioId) return false;
-                    const aIni = new Date(a.fechaInicio);
+                    const aIni = parseLocalDate(a.fechaInicio);
                     aIni.setHours(0, 0, 0, 0);
-                    const aFin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    const aFin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
                     aFin.setHours(0, 0, 0, 0);
                     return !(fin < aIni || inicio > aFin);
                 });
@@ -1649,7 +1657,8 @@
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
-                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
+                // Usamos la fecha actual (con hora) y la función estaAusente la ajustará a medianoche
+                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy.toISOString()));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
                         'danger');
@@ -1853,7 +1862,6 @@
             // ============================================================
             function obtenerCausasFiltradas() {
                 let causas = state.causas.filter(c => c.operador === currentOperator);
-                // Además, asegurar que solo se muestren números válidos (por si acaso)
                 causas = causas.filter(c => esNumeroValido(c.numero));
 
                 if (searchTerm) {
@@ -1877,17 +1885,15 @@
             }
 
             // ============================================================
-            //  REPORTE COMPLETO (NUEVO)
+            //  REPORTE COMPLETO
             // ============================================================
             function generarReporteCompleto() {
-                // Obtener datos filtrados (recientes y rechazados) SIN paginación
                 const recientes = obtenerCausasFiltradas();
 
                 let rechazados = state.causas.filter(c =>
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
-                // Aplicar el mismo filtro de número válido
                 rechazados = rechazados.filter(c => esNumeroValido(c.numero));
 
                 if (searchTerm) {
@@ -1923,7 +1929,6 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
-                // --- Construir HTML del reporte ---
                 let html = `
                     <div class="print-header">
                         <h4>📄 Reporte Completo de Actividad</h4>
@@ -1937,7 +1942,6 @@
                     </div>
                 `;
 
-                // ---- TABLA DE RECIENTES ----
                 html += `<div class="print-section-title">📋 Recientes (${recientes.length})</div>`;
                 if (recientes.length === 0) {
                     html += `<p class="text-muted">No hay registros recientes con los filtros aplicados.</p>`;
@@ -1976,7 +1980,6 @@
                     `;
                 }
 
-                // ---- TABLA DE RECHAZADOS / DEVUELTOS / REMITIDOS (con salto de página en impresión) ----
                 html += `<div class="print-section-break"></div>`;
                 html += `<div class="print-section-title">🚫 Rechazados / Devueltos / Remitidos (${rechazados.length})</div>`;
                 if (rechazados.length === 0) {
@@ -2368,13 +2371,12 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs (MODIFICADO: mostrar total, no solo activas)
+            //  ACTUALIZAR KPIs (total, no solo activas)
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
                 if (!container) return;
 
-                // Todas las causas (sin filtrar por operador) y con número válido
                 const todas = state.causas.filter(c => esNumeroValido(c.numero));
                 const totalGeneral = todas.length;
                 const totalActivas = todas.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
@@ -2384,7 +2386,6 @@
 
                 let html = '';
 
-                // ---- Fila superior: KPI TOTAL (alineado a la derecha) ----
                 html += `
                     <div class="row g-3 mb-3">
                         <div class="col-12 d-flex justify-content-end">
@@ -2397,13 +2398,11 @@
                     </div>
                 `;
 
-                // ---- KPIs por secretario (globales) ----
                 html += `<div class="row g-3">`;
                 orden.forEach(id => {
                     const sec = secretarios.find(s => s.id === id);
                     if (!sec) return;
                     const causasSecretario = todas.filter(c => c.secretarioId === id);
-                    // Total de causas asignadas a este secretario (todos los estados)
                     const totalAsignadas = causasSecretario.length;
                     const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
                     const enProceso = causasSecretario.filter(c => c.estado === 'en_proceso');
@@ -2446,7 +2445,6 @@
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
-                // Aplicar filtro de número válido
                 causasRechazadas = causasRechazadas.filter(c => esNumeroValido(c.numero));
 
                 if (searchTerm) {
@@ -2549,7 +2547,6 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 html += `
                     <hr class="my-4" />
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -2637,14 +2634,12 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                // --- Botón Reporte Completo ---
                 const btnReporteCompleto = container.querySelector('#btnReporteCompleto');
                 if (btnReporteCompleto) {
                     btnReporteCompleto.addEventListener('click', function() {
                         generarReporteCompleto();
                     });
                 }
-                // --- Botón Reporte Rechazados (también usa el completo) ---
                 const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
                 if (btnReporteRechazados) {
                     btnReporteRechazados.addEventListener('click', function() {
@@ -2660,7 +2655,6 @@
                     });
                 });
 
-                // Actualizar KPIs después de renderizar la tabla
                 actualizarKPIs();
             }
 
