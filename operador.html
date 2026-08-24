@@ -2368,7 +2368,7 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs (MODIFICADO)
+            //  ACTUALIZAR KPIs (MODIFICADO: mostrar total, no solo activas)
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
@@ -2403,15 +2403,15 @@
                     const sec = secretarios.find(s => s.id === id);
                     if (!sec) return;
                     const causasSecretario = todas.filter(c => c.secretarioId === id);
-                    const activas = causasSecretario.filter(c => c.estado === 'en_secretaria' || c.estado ===
-                    'en_proceso');
+                    // Total de causas asignadas a este secretario (todos los estados)
+                    const totalAsignadas = causasSecretario.length;
                     const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
                     const enProceso = causasSecretario.filter(c => c.estado === 'en_proceso');
 
                     html += `
                         <div class="col-md-4">
                             <div class="kpi-card">
-                                <div class="kpi-num">${activas.length}</div>
+                                <div class="kpi-num">${totalAsignadas}</div>
                                 <div class="kpi-label">${sec.nombre}</div>
                                 <div class="kpi-detalle">
                                     <span><span class="badge badge-sec" style="font-size:0.65rem;">${enSecretaria.length}</span> Pendientes</span>
