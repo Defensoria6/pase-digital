@@ -1473,6 +1473,21 @@
             }
 
             // ============================================================
+            //  VALIDACIÓN DE NÚMERO DE EXPEDIENTE (elimina el registro inválido)
+            // ============================================================
+            function esNumeroValido(num) {
+                if (!num || typeof num !== 'string') return false;
+                const trimmed = num.trim();
+                if (trimmed === '') return false;
+                // Rechazar si contiene "undefined" o "null" o es solo caracteres no numéricos extraños
+                if (trimmed.includes('undefined') || trimmed.includes('null')) return false;
+                // Rechazar si es algo como "undefinedundefinedNundefined—undefined--"
+                if (/^undefined/i.test(trimmed)) return false;
+                // Aceptar cualquier otra cadena que no sea vacía y no sea solo espacios
+                return true;
+            }
+
+            // ============================================================
             //  FIRESTORE OPERATIONS
             // ============================================================
             async function loadState() {
@@ -1488,8 +1503,12 @@
                         } else if (doc.id === 'config') {
                             config = data;
                         } else {
-                            if (!data.id) data.id = doc.id;
-                            causas.push(data);
+                            // Solo agregar si el número de expediente es válido
+                            if (esNumeroValido(data.numero)) {
+                                if (!data.id) data.id = doc.id;
+                                causas.push(data);
+                            }
+                            // Si es inválido, lo omitimos silenciosamente (no se muestra)
                         }
                     });
                     state.causas = causas;
@@ -1834,6 +1853,9 @@
             // ============================================================
             function obtenerCausasFiltradas() {
                 let causas = state.causas.filter(c => c.operador === currentOperator);
+                // Además, asegurar que solo se muestren números válidos (por si acaso)
+                causas = causas.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causas = causas.filter(c => c.numero.toLowerCase().includes(term));
@@ -1865,6 +1887,9 @@
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
+                // Aplicar el mismo filtro de número válido
+                rechazados = rechazados.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
@@ -2349,8 +2374,8 @@
                 const container = document.getElementById('kpiPanel');
                 if (!container) return;
 
-                // Todas las causas (sin filtrar por operador)
-                const todas = state.causas;
+                // Todas las causas (sin filtrar por operador) y con número válido
+                const todas = state.causas.filter(c => esNumeroValido(c.numero));
                 const totalGeneral = todas.length;
                 const totalActivas = todas.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
 
@@ -2421,6 +2446,9 @@
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
+                // Aplicar filtro de número válido
+                causasRechazadas = causasRechazadas.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causasRechazadas = causasRechazadas.filter(c => c.numero.toLowerCase().includes(term));
