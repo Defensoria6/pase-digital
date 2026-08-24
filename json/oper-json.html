@@ -1087,6 +1087,13 @@
             margin-bottom: 0.8rem;
             opacity: 0.5;
         }
+        .tr-devuelto {
+            background-color: #ffebee !important;
+        }
+        .expediente-devuelto {
+            font-weight: 800 !important;
+            color: #c62828 !important;
+        }
     </style>
 </head>
 <body>
@@ -1125,7 +1132,6 @@
                 <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
                 </button>
-                <!-- Botones para cambiar modo (ocultos por defecto, se muestran según el caso) -->
                 <button class="btn-header" id="btnActivarFirestore" style="display:none; background:#1976d2; color:#fff; border-color:#1976d2;"><i class="bi bi-cloud-upload me-1"></i>Activar Base (Firestore)</button>
                 <button class="btn-header" id="btnActivarJSON" style="display:none; background:#6c757d; color:#fff; border-color:#6c757d;"><i class="bi bi-file-earmark me-1"></i>Usar Base Guardada (JSON)</button>
                 <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
@@ -1170,7 +1176,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalHistorialBody">
-                    <!-- Se llena dinámicamente: incluirá el empleado actual y el historial -->
+                    <!-- Se llena dinámicamente -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -1181,13 +1187,15 @@
 
     <!-- REPORTE -->
     <div class="modal fade modal-modern" id="modalReporte" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg" style="max-width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Actividad</h5>
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte Completo de Actividad</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando…</div></div>
+                <div class="modal-body" id="modalReporteBody" style="padding: 1.5rem 2rem;">
+                    <div class="text-muted">Cargando…</div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
@@ -1986,10 +1994,33 @@
             }
 
             // ============================================================
-            //  REPORTE
+            //  REPORTE COMPLETO (igual a operador.html)
             // ============================================================
-            function generarReporte(causasArray, titulo) {
-                const total = causasArray.length;
+            function generarReporteCompleto() {
+                const recientes = obtenerCausasFiltradas();
+
+                let rechazados = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroMes || filtroAnio) {
+                    rechazados = rechazados.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
                 const now = new Date();
                 const fechaStr =
                     `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -2006,25 +2037,92 @@
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
-                    <div class="mb-3">
-                        <p><strong>Operador:</strong> ${currentOperator}</p>
-                        <p><strong>Fecha de impresión:</strong> ${fechaStr}</p>
-                        <p><strong>Reporte:</strong> ${titulo}</p>
-                        <p><strong>Registros encontrados:</strong> ${total}</p>
+                    <div class="print-header">
+                        <h4>📄 Reporte Completo de Actividad</h4>
+                        <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
                         <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                        <p>
+                            <span class="print-total-badge">Recientes: ${recientes.length}</span>
+                            <span class="print-total-badge" style="background:#ffebee;color:#c62828;">Rechazados/Devueltos/Remitidos: ${rechazados.length}</span>
+                            <span class="print-total-badge" style="background:#0b4b7a;color:white;">Total: ${recientes.length + rechazados.length}</span>
+                        </p>
                     </div>
-                    <hr />
-                    <h6>Expedientes</h6>
-                    <div class="table-wrap">
-                        <table class="table-modern table">
-                            <thead><tr><th>Expediente</th><th>Estado</th><th>Fecha Pase</th></tr></thead>
-                            <tbody>${causasArray.map(c => `
-                                <tr><td><strong>${c.numero}</strong></td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:0.75rem;">${fmtDt(c.fechaPaseSecretario)}</td></tr>
-                            `).join('')}</tbody>
-                        </table>
-                    </div>
-                    ${total === 0 ? '<div class="text-muted">No hay registros que coincidan con los filtros.</div>' : ''}
                 `;
+
+                html += `<div class="print-section-title">📋 Recientes (${recientes.length})</div>`;
+                if (recientes.length === 0) {
+                    html += `<p class="text-muted">No hay registros recientes con los filtros aplicados.</p>`;
+                } else {
+                    html += `
+                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                            <table class="table-modern" style="font-size:0.65rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${recientes.map(c => {
+                                        const fuentes = [];
+                                        if (c.fuenteSiged) fuentes.push('S');
+                                        if (c.fuenteZimbra) fuentes.push('Z');
+                                        if (c.fuenteDeut) fuentes.push('D');
+                                        const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
+                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr>
+                                            <td><strong>${c.numero}</strong></td>
+                                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${fuenteHtml}</td>
+                                            <td>${getEstadoTexto(c.estado)}</td>
+                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                html += `<div class="print-section-break"></div>`;
+                html += `<div class="print-section-title">🚫 Rechazados / Devueltos / Remitidos (${rechazados.length})</div>`;
+                if (rechazados.length === 0) {
+                    html += `<p class="text-muted">No hay registros en esta categoría con los filtros aplicados.</p>`;
+                } else {
+                    html += `
+                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                            <table class="table-modern" style="font-size:0.65rem;">
+                                <thead>
+                                    <tr>
+                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th>
+                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rechazados.map(c => {
+                                        const esDevuelto = c.estado === 'devuelto_siged';
+                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        return `
+                                        <tr class="${claseFila}">
+                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
+                                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                                            <td>N${c.nivelOperador}</td>
+                                            <td>${getEstadoTexto(c.estado)}</td>
+                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                                            <td style="font-size:0.6rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                        </tr>
+                                    `}).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
                 document.getElementById('modalReporteBody').innerHTML = html;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
@@ -2056,8 +2154,27 @@
                     empleadoActual = c.empleadoId ? getEmpName(c.empleadoId) : 'Sin asignar';
                 }
 
-                let html = `<div class="mb-3"><strong>Empleado actual:</strong> ${empleadoActual}</div>`;
-                html += `<hr /><h6>Movimientos</h6>`;
+                let datosPersonaHtml = '';
+                if (c.dni || c.datosParte || c.asisteDefensoria || c.modoIntervencion) {
+                    datosPersonaHtml = `
+                        <div class="mb-3 p-3 bg-light rounded-4 border">
+                            <h6 class="fw-600"><i class="bi bi-person-lines-fill me-1"></i> Datos de la persona</h6>
+                            <div class="row g-2">
+                                ${c.dni ? `<div class="col-sm-6"><strong>DNI:</strong> ${c.dni}</div>` : ''}
+                                ${c.datosParte ? `<div class="col-sm-6"><strong>Parte:</strong> ${c.datosParte}</div>` : ''}
+                                ${c.asisteDefensoria ? `<div class="col-sm-6"><strong>Asiste a Defensoría:</strong> ${c.asisteDefensoria}</div>` : ''}
+                                ${c.modoIntervencion ? `<div class="col-sm-6"><strong>Modo de intervención:</strong> ${c.modoIntervencion}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let html = `
+                    <div class="mb-2"><strong>Empleado actual:</strong> ${empleadoActual}</div>
+                    ${datosPersonaHtml}
+                    <hr />
+                    <h6>Movimientos</h6>
+                `;
 
                 if (!c.historial || !c.historial.length) {
                     html += '<div class="text-muted">Sin movimientos registrados.</div>';
@@ -2125,7 +2242,7 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs (VERSIÓN ACTUALIZADA)
+            //  ACTUALIZAR KPIs
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
@@ -2137,7 +2254,6 @@
 
                 let html = '';
 
-                // Total general
                 html += `
                     <div class="row g-3 mb-3">
                         <div class="col-12 d-flex justify-content-end">
@@ -2150,7 +2266,6 @@
                     </div>
                 `;
 
-                // Tarjetas por secretario
                 const secretarios = CONFIG.secretarios;
                 const orden = CONFIG.ordenSecretarios;
 
@@ -2241,13 +2356,7 @@
                     <form id="formIngreso" class="form-modern">
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
-
-                        <!-- Nuevo campo: Datos de la Parte/Cliente -->
-                        <div class="mb-3">
-                            <label class="form-label">Datos de la Parte/Cliente</label>
-                            <input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
-                        </div>
-
+                        <div class="mb-3"><label class="form-label">Datos de la Parte/Cliente</label><input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" /></div>
                         <div class="mb-3">
                             <label class="form-label">DNI</label>
                             <input type="text" id="inpDni" class="form-control" autocomplete="off"
@@ -2255,8 +2364,6 @@
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
                             <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
                         </div>
-
-                        <!-- Nuevo campo: Asiste a la Defensoría -->
                         <div class="mb-3">
                             <label class="form-label">Asiste a la Defensoría</label>
                             <select id="inpAsisteDefensoria" class="form-select">
@@ -2265,7 +2372,6 @@
                                 <option value="Sin citación">Sin citación</option>
                             </select>
                         </div>
-
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
@@ -2282,7 +2388,6 @@
                             <div class="d-flex gap-3">
                                 <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteSiged" /><label class="form-check-label" for="fuenteSiged">SIGED</label></div>
                                 <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteZimbra" /><label class="form-check-label" for="fuenteZimbra">ZIMBRA</label></div>
-                                <!-- Nuevo checkbox DEUT -->
                                 <div class="form-check"><input class="form-check-input" type="checkbox" id="fuenteDeut" /><label class="form-check-label" for="fuenteDeut">DEUT</label></div>
                             </div>
                         </div>
@@ -2419,13 +2524,12 @@
             }
 
             // ============================================================
-            //  RENDER TABLA (incluye llamado a actualizarKPIs)
+            //  RENDER TABLA
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
-                // ---- Tabla de Recientes ----
                 let datosMostrar = causasFiltradas;
                 if (!filtroMes && !filtroAnio) {
                     datosMostrar = datosMostrar.slice(0, 50);
@@ -2435,7 +2539,6 @@
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
                 .perPage);
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 let causasRechazadas = state.causas.filter(c =>
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
@@ -2462,7 +2565,6 @@
                     causasRechazadas, pStateRech.page, pStateRech.perPage
                 );
 
-                // ---- Generar HTML ----
                 const añoOptions = [];
                 for (let y = 2026; y <= 2040; y++) {
                     añoOptions.push(`<option value="${y}" ${filtroAnio == y ? 'selected' : ''}>${y}</option>`);
@@ -2476,7 +2578,6 @@
                 }
 
                 let html = `
-                    <!-- FILTROS -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
@@ -2498,7 +2599,6 @@
                     </div>
                 `;
 
-                // Tabla de Recientes (con columna de acciones)
                 if (total) {
                     html += `
                         <div style="width:100%; border-radius:16px;">
@@ -2542,7 +2642,6 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 html += `
                     <hr class="my-4" />
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -2594,7 +2693,6 @@
 
                 container.innerHTML = html;
 
-                // ---- Paginación ----
                 if (total > 0) {
                     renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
                         paginationState.ingreso.page = newPage;
@@ -2611,7 +2709,6 @@
                     });
                 }
 
-                // ---- Filtros ----
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
@@ -2629,21 +2726,16 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
 
-                // ---- Eventos de los botones de reporte ----
+                // Eventos de reporte: ambos generan el reporte completo
                 const btnReporteRecientes = container.querySelector('#btnReporteOperador');
                 if (btnReporteRecientes) {
-                    btnReporteRecientes.addEventListener('click', function() {
-                        generarReporte(causasFiltradas, 'Recientes');
-                    });
+                    btnReporteRecientes.addEventListener('click', generarReporteCompleto);
                 }
                 const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
                 if (btnReporteRechazados) {
-                    btnReporteRechazados.addEventListener('click', function() {
-                        generarReporte(causasRechazadas, 'Rechazados/Devueltos/Remitidos');
-                    });
+                    btnReporteRechazados.addEventListener('click', generarReporteCompleto);
                 }
 
-                // ---- Acciones de historial (para ambas tablas) ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const id = this.dataset.id;
@@ -2652,7 +2744,6 @@
                     });
                 });
 
-                // ---- Actualizar KPIs ----
                 actualizarKPIs();
             }
 
@@ -2730,7 +2821,6 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('operadorNombre').textContent = operador;
 
-                // Leer preferencia de modo guardada
                 const modoGuardado = localStorage.getItem('modo_preferido');
                 if (modoGuardado === 'firestore') {
                     USE_FIRESTORE = true;
@@ -2813,7 +2903,6 @@
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
 
-                // ---- Botones para cambiar modo ----
                 document.getElementById('btnActivarFirestore').addEventListener('click', function() {
                     if (USE_FIRESTORE) {
                         showToast('Ya estás en modo Firestore', 'info');
