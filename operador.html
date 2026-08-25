@@ -1428,9 +1428,11 @@
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
 
+            // CORREGIDO: interpreta la fecha como local para mostrar exactamente la fecha guardada
             function fmtDateShort(iso) {
                 if (!iso) return '-';
-                const d = new Date(iso);
+                const d = parseLocalDate(iso);
+                if (!d) return '-';
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             }
 
