@@ -76,12 +76,15 @@
             text-align: center;
         }
         .login-card .icon {
-            font-size: 3.6rem;
-            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             display: inline-block;
             margin-bottom: 0.1rem;
+        }
+        .login-card .icon img {
+            width: 80px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            border-radius: 16px;
         }
         .login-card h2 {
             font-weight: 800;
@@ -188,6 +191,13 @@
             color: #fff;
             font-size: 1.4rem;
             box-shadow: 0 4px 12px rgba(26, 107, 176, 0.25);
+            overflow: hidden;
+        }
+        .app-header .brand .brand-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 16px;
         }
         .app-header .brand h1 {
             font-size: 1.25rem;
@@ -948,7 +958,9 @@
     <!-- ===== LOGIN ===== -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card">
-            <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <div class="icon">
+                <img src="https://github.com/Defensoria6/pase-digital/blob/main/ai.png?raw=true" alt="Logo" />
+            </div>
             <h2>Acceso Administrador</h2>
             <p class="sub">Ingrese la contraseña de administrador</p>
             <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
@@ -963,7 +975,9 @@
         <!-- HEADER -->
         <header class="app-header">
             <div class="brand">
-                <div class="brand-icon"><i class="bi bi-balance-scale"></i></div>
+                <div class="brand-icon">
+                    <img src="https://github.com/Defensoria6/pase-digital/blob/main/ai.png?raw=true" alt="Logo" />
+                </div>
                 <div>
                     <h1>Sistema Digital de Pases <small>Defensoría Oficial Civil y Comercial 6</small></h1>
                 </div>
