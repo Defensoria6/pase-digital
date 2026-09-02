@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* ===== ESTILOS (sin cambios) ===== */
+        /* ===== ESTILOS GENERALES ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#eef2f9; min-height:100vh; }
         .login-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#eef2f9; display:flex; justify-content:center; align-items:center; z-index:2000; transition:opacity .4s ease; }
@@ -82,13 +82,33 @@
         .badge-rem { background:#e8eaf6; color:#3949ab; }
         .badge-tipo-nuevo { background:#c8e6c9; color:#1b5e20; font-weight:700; }
         .badge-tipo-seguimiento { background:#fff9c4; color:#f57f17; font-weight:700; }
-        .crono { font-family:'JetBrains Mono','Courier New',monospace; padding:1px 8px; border-radius:30px; font-weight:600; font-size:.65rem; display:inline-block; white-space:nowrap; background:#e3f2fd; color:#1976d2; cursor:pointer; }
-        .crono.vencido { background:#ffebee; color:#c62828 !important; border:2px solid #c62828; }
-        .crono.critico { background:#f3e5f5; color:#7b1fa2 !important; border:2px solid #7b1fa2; }
-        .crono.medio { background:#e8f5e9; color:#2e7d32 !important; border:2px solid #a5d6a7; }
-        .crono.azul { background:#e3f2fd; color:#1976d2 !important; border:2px solid #90caf9; }
+        
+        /* ===== CRONÓMETRO / GLOBO DE TIEMPO ===== */
+        .crono { 
+            font-family:'JetBrains Mono','Courier New',monospace; 
+            padding:4px 14px; 
+            border-radius:30px; 
+            font-weight:700; 
+            font-size:.85rem; 
+            display:inline-block; 
+            white-space:nowrap; 
+            background:#e3f2fd; 
+            color:#1976d2; 
+            cursor:pointer; 
+            border:2px solid #90caf9; 
+            min-width:40px;
+            text-align:center;
+            transition:transform 0.15s;
+        }
+        .crono:hover { transform:scale(1.05); }
+        .crono.verde { background:#a5d6a7; color:#1b5e20; border-color:#388e3c; }
+        .crono.naranja { background:#ffcc80; color:#e65100; border-color:#f57c00; }
+        .crono.rojo { background:#ef9a9a; color:#b71c1c; border-color:#c62828; }
+        .crono.violeta { background:#ce93d8; color:#4a148c; border-color:#6a1b9a; }
+
         .exp-vencido { color:#c62828 !important; font-weight:700; }
         .exp-critico { color:#e67e22 !important; font-weight:600; }
+
         .toast-custom { position:fixed; bottom:24px; right:24px; z-index:3000; background:#1e293b; color:#fff; padding:14px 24px; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.25); font-size:.9rem; display:flex; align-items:center; gap:12px; animation:slideUp .35s ease; max-width:420px; pointer-events:auto; }
         .toast-custom.success { border-left:5px solid #2e7d32; }
         .toast-custom.warning { border-left:5px solid #e67e22; }
@@ -130,44 +150,88 @@
         .gap-2 { gap:.5rem; }
         .fw-600 { font-weight:600; }
 
-        /* ===== ESTILOS PARA IMPRESIÓN (SOLO MODAL REPORTE) ===== */
+        /* ===== ESTILOS PARA IMPRESIÓN (A4 con márgenes) ===== */
+        .print-header { display: none; } /* oculto en pantalla */
+
         @media print {
+            @page { 
+                margin: 3cm 2cm 3cm 3cm; 
+                size: A4;
+            }
+            body { margin: 0; padding: 0; background: #fff; }
+            
+            /* Ocultar todo excepto los modales */
             body * { visibility: hidden; }
-            #modalReporteEmpleado,
-            #modalReporteEmpleado * {
+            
+            /* Mostrar los modales que se imprimen */
+            #modalHistorial, #modalHistorial *,
+            #modalReporteEmpleado, #modalReporteEmpleado *,
+            #modalEstadisticas, #modalEstadisticas *,
+            #modalEnSecretaria, #modalEnSecretaria *,
+            #modalEnDefensor, #modalEnDefensor * {
                 visibility: visible !important;
             }
-            #modalReporteEmpleado {
+            
+            /* Posicionar el modal en la página */
+            #modalHistorial,
+            #modalReporteEmpleado,
+            #modalEstadisticas,
+            #modalEnSecretaria,
+            #modalEnDefensor {
                 position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                background: #fff !important;
-                padding: 10px !important;
-                z-index: 9999 !important;
-                overflow: visible !important;
-                border: none !important;
-                box-shadow: none !important;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: #fff;
+                padding: 0;
+                z-index: 9999;
+                overflow: visible;
+                border: none;
+                box-shadow: none;
+                margin: 0;
             }
-            .modal-dialog {
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            .modal-content {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
-                background: transparent !important;
-            }
-            .modal-header, .modal-footer, .btn-close, .btn-modern, .btn-secondary, .pagination-bar {
+            
+            /* Ocultar headers y footers originales, y botones */
+            .modal-header, .modal-footer, .btn-close, .btn-modern, .btn-secondary,
+            .modal-header *, .modal-footer * {
                 display: none !important;
             }
+            
+            /* Mostrar el encabezado de impresión */
+            .print-header {
+                display: block !important;
+                margin-bottom: 1.5rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid #0a2a44;
+                font-family: 'Inter', sans-serif;
+            }
+            .print-header h4 {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #0a2a44;
+                margin: 0;
+            }
+            .print-header .sub {
+                font-size: 0.9rem;
+                color: #5f7f9f;
+                margin: 0.2rem 0 0;
+            }
+            .print-header .fecha {
+                font-size: 0.8rem;
+                color: #5f7f9f;
+                margin-top: 0.2rem;
+                text-align: right;
+            }
+            
+            /* Ajustar contenido del modal */
             .modal-body {
-                padding: 5px !important;
+                padding: 0 !important;
                 overflow: visible !important;
                 max-height: none !important;
+                background: #fff;
             }
+            
+            /* Tablas */
             .table-wrap {
                 overflow: visible !important;
                 max-height: none !important;
@@ -175,137 +239,69 @@
             .table-modern {
                 min-width: 0 !important;
                 width: 100% !important;
-                font-size: 0.6rem !important;
-                border-collapse: collapse !important;
-                table-layout: auto !important;
+                font-size: 0.7rem !important;
+                border-collapse: collapse;
+                table-layout: auto;
             }
             .table-modern th, .table-modern td {
-                padding: 2px 4px !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                border: 1px solid #ccc !important;
+                padding: 4px 6px !important;
+                white-space: normal;
+                word-break: break-word;
+                border: 1px solid #ccc;
             }
             .table-modern thead th {
                 background: #f1f6fd !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                color: #1a4c74;
             }
+            .table-modern tbody tr {
+                border-bottom: 1px solid #eef2f7;
+            }
+            
+            /* KPIs en reporte/estadísticas */
             .kpi-grid-print {
                 display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 0.3rem !important;
-                margin-bottom: 0.5rem !important;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
             }
             .kpi-item-print {
-                flex: 1 1 auto !important;
-                min-width: 60px !important;
-                padding: 0.2rem 0.5rem !important;
-                border: 1px solid #ddd !important;
-                background: #f9fcff !important;
-                border-radius: 4px !important;
-                text-align: center !important;
+                flex: 1 1 auto;
+                min-width: 80px;
+                padding: 0.3rem 0.6rem;
+                border: 1px solid #ddd;
+                background: #f9fcff;
+                border-radius: 4px;
+                text-align: center;
             }
-            .kpi-item-print .label { font-size: 0.5rem !important; font-weight: 700; color: #5f7f9f; }
-            .kpi-item-print .value { font-size: 0.9rem !important; font-weight: 800; color: #0a2a44; }
-            html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                overflow: visible !important;
+            .kpi-item-print .label {
+                font-size: 0.6rem;
+                font-weight: 700;
+                color: #5f7f9f;
             }
-            #modalEstadisticas, #modalEstadisticas * {
-                visibility: visible !important;
+            .kpi-item-print .value {
+                font-size: 1rem;
+                font-weight: 800;
+                color: #0a2a44;
             }
-            #modalEstadisticas {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                background: #fff !important;
-                padding: 10px !important;
-                z-index: 9999 !important;
-                overflow: visible !important;
-                border: none !important;
-                box-shadow: none !important;
+            
+            /* Pie de página opcional */
+            .print-footer {
+                margin-top: 1rem;
+                font-size: 0.6rem;
+                color: #8aa3bc;
+                border-top: 1px solid #e2edf7;
+                padding-top: 0.5rem;
+                text-align: center;
             }
-            #modalEstadisticas .modal-dialog {
-                max-width: 100% !important;
-                margin: 0 !important;
+            
+            /* Evitar saltos de página dentro de filas */
+            .table-modern tbody tr {
+                page-break-inside: avoid;
             }
-            #modalEstadisticas .modal-content {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                background: transparent !important;
-            }
-            #modalEstadisticas .modal-header, #modalEstadisticas .modal-footer {
-                display: none !important;
-            }
-            #modalEstadisticas .modal-body {
-                padding: 5px !important;
-                overflow: visible !important;
-            }
-            /* Estilos para los modales de detalle */
-            #modalEnSecretaria, #modalEnSecretaria * {
-                visibility: visible !important;
-            }
-            #modalEnSecretaria {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                background: #fff !important;
-                padding: 10px !important;
-                z-index: 9999 !important;
-                overflow: visible !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-            #modalEnSecretaria .modal-dialog {
-                max-width: 100% !important;
-                margin: 0 !important;
-            }
-            #modalEnSecretaria .modal-content {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                background: transparent !important;
-            }
-            #modalEnSecretaria .modal-header, #modalEnSecretaria .modal-footer {
-                display: none !important;
-            }
-            #modalEnSecretaria .modal-body {
-                padding: 5px !important;
-                overflow: visible !important;
-            }
-            #modalEnDefensor, #modalEnDefensor * {
-                visibility: visible !important;
-            }
-            #modalEnDefensor {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                background: #fff !important;
-                padding: 10px !important;
-                z-index: 9999 !important;
-                overflow: visible !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-            #modalEnDefensor .modal-dialog {
-                max-width: 100% !important;
-                margin: 0 !important;
-            }
-            #modalEnDefensor .modal-content {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                background: transparent !important;
-            }
-            #modalEnDefensor .modal-header, #modalEnDefensor .modal-footer {
-                display: none !important;
-            }
-            #modalEnDefensor .modal-body {
-                padding: 5px !important;
-                overflow: visible !important;
+            .table-modern thead {
+                display: table-header-group;
             }
         }
 
@@ -344,7 +340,7 @@
         .chat-input-area button:hover { background:#00695c; }
         @media (max-width:576px) { .chat-panel { width:calc(100vw - 48px); height:400px; } }
 
-        /* Estilos para los KPIs agregados */
+        /* ===== KPIs ===== */
         .kpi-grid {
             display: flex;
             flex-wrap: wrap;
@@ -359,11 +355,13 @@
             padding: 0.6rem 0.8rem;
             border: 1px solid #e2edf7;
             text-align: center;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, transform 0.15s;
+            cursor: pointer;
             position: relative;
         }
         .kpi-item:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
         }
         .kpi-item .label {
             font-size: 0.65rem;
@@ -405,20 +403,54 @@
             color: #8aa3bc;
             margin-top: 2px;
         }
+        .kpi-item.filtro-activo {
+            border: 2px solid #1976d2;
+            background: #e3f0ff;
+            box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+        }
+
         /* Estado de justificación */
         .justif-pendiente { background: #fff3cd; color: #856404; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
         .justif-aprobada { background: #d4edda; color: #155724; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
         .justif-rechazada { background: #f8d7da; color: #721c24; border-radius: 20px; padding: 2px 10px; font-size: 0.6rem; font-weight: 700; }
 
-        /* Estado actual en tabla */
+        /* Estado actual en tabla (oculto) */
         .estado-plazo { color: #2e7d32; font-weight: 700; }
         .estado-vencido { color: #e67e22; font-weight: 700; }
         .estado-fueraplazo { color: #c62828; font-weight: 700; }
+        .estado-exceso { color: #6a1b9a; font-weight: 700; }
 
         /* Modal de detalle de tiempo */
-        .tiempo-detalle { font-size: 0.9rem; }
-        .tiempo-detalle .row { margin-bottom: 0.5rem; }
+        .tiempo-detalle { font-size: 0.95rem; }
+        .tiempo-detalle .row { margin-bottom: 0.6rem; }
         .tiempo-detalle .label { font-weight: 600; color: #5f7f9f; }
+
+        /* ===== GLOBO DE TIEMPO (modal) reducido y responsivo ===== */
+        .globo-tiempo {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 800;
+            padding: 0.2rem 0.8rem;
+            border-radius: 60px;
+            min-width: 50px;
+            text-align: center;
+            border: 3px solid;
+            margin: 0.3rem 0;
+        }
+        .globo-tiempo.verde { background: #a5d6a7; color: #1b5e20; border-color: #388e3c; }
+        .globo-tiempo.naranja { background: #ffcc80; color: #e65100; border-color: #f57c00; }
+        .globo-tiempo.rojo { background: #ef9a9a; color: #b71c1c; border-color: #c62828; }
+        .globo-tiempo.violeta { background: #ce93d8; color: #4a148c; border-color: #6a1b9a; }
+
+        @media (max-width: 480px) {
+            .globo-tiempo {
+                font-size: 1.4rem;
+                padding: 0.15rem 0.6rem;
+                min-width: 40px;
+                border-width: 2px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -469,7 +501,7 @@
         </footer>
     </div>
 
-    <!-- Modales existentes -->
+    <!-- Modales -->
     <div class="modal fade modal-modern" id="modalHistorial" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -482,6 +514,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button class="btn btn-modern btn-modern-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir</button>
                 </div>
             </div>
         </div>
@@ -509,7 +542,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-bar-chart-fill me-2"></i>Historial Detallado · <span id="modalEstadisticasNombre"></span></h5>
+                    <h5 class="modal-title"><i class="bi bi-bar-chart-fill me-2"></i>Estadísticas · <span id="modalEstadisticasNombre"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalEstadisticasBody">
@@ -546,7 +579,7 @@
         </div>
     </div>
 
-    <!-- Nuevos modales para detalle de En Secretaría y En Defensor -->
+    <!-- Modales para detalle de En Secretaría y En Defensor -->
     <div class="modal fade modal-modern" id="modalEnSecretaria" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -583,7 +616,7 @@
         </div>
     </div>
 
-    <!-- ===== MODAL DE ENVÍO AL SECRETARIO (MODIFICADO) ===== -->
+    <!-- Modal de envío al Secretario -->
     <div class="modal fade modal-modern" id="modalEnviarSecretario" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -592,7 +625,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalEnviarSecretarioBody">
-                    <!-- SECCIÓN OPCIONES INICIALES -->
                     <div id="seccionOpciones">
                         <p><strong>Usted está por enviar el expediente al Secretario.</strong></p>
                         <div class="d-flex gap-3 justify-content-center mt-3">
@@ -604,8 +636,6 @@
                             </button>
                         </div>
                     </div>
-
-                    <!-- SECCIÓN CONSULTA (campo de texto) -->
                     <div id="seccionConsulta" style="display:none;">
                         <div class="mb-3">
                             <label for="txtMotivoConsulta" class="form-label">Motivo de la consulta</label>
@@ -616,8 +646,6 @@
                             <button class="btn btn-modern btn-modern-primary" id="btnConfirmarConsulta">Confirmar consulta</button>
                         </div>
                     </div>
-
-                    <!-- SECCIÓN CONFIRMACIÓN (mensaje + Aceptar/Cancelar) -->
                     <div id="seccionConfirmacion" style="display:none;">
                         <div id="mensajeConfirmacion" class="text-center mb-3">
                             <p><strong id="confirmacionTexto">Tarea finalizada para control del Secretario.</strong></p>
@@ -637,7 +665,7 @@
         </div>
     </div>
 
-    <!-- ===== NUEVO MODAL PARA DETALLE DE TIEMPO ===== -->
+    <!-- Modal para detalle de tiempo -->
     <div class="modal fade modal-modern" id="modalDetalleTiempo" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -671,7 +699,7 @@
 
     <div id="toastContainer" style="position:fixed; bottom:24px; right:24px; z-index:3000; display:flex; flex-direction:column; gap:10px; pointer-events:none;"></div>
 
-    <!-- ===== WIDGET DE CHAT ===== -->
+    <!-- Widget de chat -->
     <div id="chatWidget" class="chat-widget" style="display: none;">
         <button id="chatToggleBtn" class="chat-toggle-btn">
             <i class="bi bi-chat-dots-fill"></i>
@@ -683,9 +711,7 @@
                 <h6><i class="bi bi-whatsapp"></i> Chat con Secretario</h6>
                 <button id="chatCloseBtn"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div id="chatMessages" class="chat-messages">
-                <!-- Los mensajes aparecerán aquí -->
-            </div>
+            <div id="chatMessages" class="chat-messages"></div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput" placeholder="Escribe un mensaje..." autocomplete="off" />
                 <button id="chatSendBtn"><i class="bi bi-send-fill"></i></button>
@@ -743,11 +769,13 @@
             let searchTerm = '';
             let cronoInterval = null;
             let autoUpdateInterval = null;
+            let filtroKPI = null; // null, 'total', 'proceso', 'secretaria', 'defensor', 'finalizados', 'demora'
             let paginationState = {
-                activas: { page: 1, perPage: 5 }
+                tablaUnica: { page: 1, perPage: 5 }
             };
             let filtroMes = '';
             let filtroAnio = '';
+            let filtroFecha = '';
 
             // ---------- UTILS ----------
             function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
@@ -829,10 +857,8 @@
             }
 
             // ============================================================
-            //  NUEVA LÓGICA DE DÍAS HÁBILES Y FERIADOS (EXACTA Y ESTRICTA)
+            //  CÁLCULO DE DÍAS HÁBILES Y FERIADOS (EXACTO)
             // ============================================================
-            
-            // Cálculo de Pascua (algoritmo de Gauss)
             function calcularPascua(year) {
                 const a = year % 19;
                 const b = Math.floor(year / 100);
@@ -851,11 +877,9 @@
                 return new Date(year, month - 1, day);
             }
 
-            // Obtener el enésimo día de la semana (0=lunes, 6=domingo) del mes
             function obtenerNesimoDiaSemana(year, month, dayOfWeek, n) {
-                // dayOfWeek: 0=lunes, ..., 6=domingo
                 let firstDay = new Date(year, month, 1);
-                let firstDayOfWeek = (firstDay.getDay() + 6) % 7; // lunes=0
+                let firstDayOfWeek = (firstDay.getDay() + 6) % 7;
                 let diff = (dayOfWeek - firstDayOfWeek + 7) % 7;
                 let day = 1 + diff + (n - 1) * 7;
                 if (day > new Date(year, month + 1, 0).getDate()) return null;
@@ -865,61 +889,40 @@
             function getFeriados(year) {
                 const feriados = [];
                 const pascua = calcularPascua(year);
-                
-                // 1 de enero
                 feriados.push(new Date(year, 0, 1));
-                // 24 de marzo
                 feriados.push(new Date(year, 2, 24));
-                // 2 de abril
                 feriados.push(new Date(year, 3, 2));
-                // 1 de mayo
                 feriados.push(new Date(year, 4, 1));
-                // 25 de mayo
                 feriados.push(new Date(year, 4, 25));
-                // 9 de julio
                 feriados.push(new Date(year, 6, 9));
-                // 8 de diciembre
                 feriados.push(new Date(year, 11, 8));
-                // 25 de diciembre
                 feriados.push(new Date(year, 11, 25));
-                
-                // Carnaval: lunes y martes (47 y 46 días antes de Pascua)
                 const carnavalLunes = new Date(pascua);
                 carnavalLunes.setDate(carnavalLunes.getDate() - 47);
                 feriados.push(carnavalLunes);
                 const carnavalMartes = new Date(pascua);
                 carnavalMartes.setDate(carnavalMartes.getDate() - 46);
                 feriados.push(carnavalMartes);
-                
-                // Jueves Santo (3 días antes) y Viernes Santo (2 días antes)
                 const juevesSanto = new Date(pascua);
                 juevesSanto.setDate(juevesSanto.getDate() - 3);
                 feriados.push(juevesSanto);
                 const viernesSanto = new Date(pascua);
                 viernesSanto.setDate(viernesSanto.getDate() - 2);
                 feriados.push(viernesSanto);
-                
-                // Feriados trasladables a lunes específicos
-                // 20 de junio -> tercer lunes de junio
                 const tercerLunJun = obtenerNesimoDiaSemana(year, 5, 0, 3);
                 if (tercerLunJun) feriados.push(tercerLunJun);
-                // 17 de agosto -> tercer lunes de agosto
                 const tercerLunAgo = obtenerNesimoDiaSemana(year, 7, 0, 3);
                 if (tercerLunAgo) feriados.push(tercerLunAgo);
-                // 12 de octubre -> segundo lunes de octubre
                 const segundoLunOct = obtenerNesimoDiaSemana(year, 9, 0, 2);
                 if (segundoLunOct) feriados.push(segundoLunOct);
-                // 20 de noviembre -> cuarto lunes de noviembre
                 const cuartoLunNov = obtenerNesimoDiaSemana(year, 10, 0, 4);
                 if (cuartoLunNov) feriados.push(cuartoLunNov);
-                
                 return feriados;
             }
 
             function esFeriado(fecha) {
                 const year = fecha.getFullYear();
                 const feriados = getFeriados(year);
-                // Comparar solo mes y día (ignorar año)
                 return feriados.some(f =>
                     f.getMonth() === fecha.getMonth() &&
                     f.getDate() === fecha.getDate()
@@ -938,9 +941,7 @@
                 let diasAgregados = 0;
                 while (diasAgregados < cantidadDias) {
                     fecha.setDate(fecha.getDate() + 1);
-                    if (esDiaHabil(fecha)) {
-                        diasAgregados++;
-                    }
+                    if (esDiaHabil(fecha)) diasAgregados++;
                 }
                 return fecha;
             }
@@ -956,27 +957,20 @@
                     current.setDate(current.getDate() + 1);
                 }
                 while (current <= fin) {
-                    if (esDiaHabil(current)) {
-                        dias++;
-                    }
+                    if (esDiaHabil(current)) dias++;
                     current.setDate(current.getDate() + 1);
                 }
                 return dias;
             }
 
-            // ============================================================
-            //  FUNCIÓN CALCULAR FECHA INICIO (CORREGIDA)
-            // ============================================================
             function calcularFechaInicio(fechaAsignacionISO) {
                 const fechaAsig = new Date(fechaAsignacionISO);
                 let fechaInicio = new Date(fechaAsig);
                 const hora = fechaAsig.getHours();
                 const minutos = fechaAsig.getMinutes();
-                // Si la asignación es después de las 12:00, sumamos un día hábil
                 if (hora > 12 || (hora === 12 && minutos > 0)) {
                     fechaInicio.setDate(fechaInicio.getDate() + 1);
                 }
-                // Asegurar que la fecha de inicio sea un día hábil (si es feriado o fin de semana, avanzar)
                 while (!esDiaHabil(fechaInicio)) {
                     fechaInicio.setDate(fechaInicio.getDate() + 1);
                 }
@@ -1002,8 +996,10 @@
                     return { estado: 'plazo', color: 'verde', label: 'En plazo' };
                 } else if (diffDias <= 2) {
                     return { estado: 'vencido', color: 'naranja', label: 'Vencido' };
-                } else {
+                } else if (diffDias <= 5) {
                     return { estado: 'fueraplazo', color: 'rojo', label: 'Fuera de plazo' };
+                } else {
+                    return { estado: 'exceso', color: 'violeta', label: 'Exceso de demora' };
                 }
             }
 
@@ -1095,60 +1091,64 @@
             }
 
             function obtenerSecretarioAsignante(causa) {
-                if (!causa.historial) return null;
-                for (const entry of causa.historial) {
-                    if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignó')) && entry.usuario) {
-                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
-                        if (sec) return sec.id;
+                if (causa.historial) {
+                    for (const entry of causa.historial) {
+                        if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignó')) && entry.usuario) {
+                            const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
+                            if (sec) return sec.id;
+                        }
                     }
                 }
-                for (const entry of causa.historial) {
-                    if (entry.usuario && entry.usuario !== 'Sistema' && entry.usuario !== getEmpName(causa.empleadoAsignado)) {
-                        const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
-                        if (sec) return sec.id;
-                    }
-                }
+                if (causa.secretarioId) return causa.secretarioId;
                 return null;
             }
 
             // ============================================================
-            //  FUNCIÓN PARA OBTENER HISTORIAL DE PASES FINALIZADOS
+            //  OBTENER LISTAS PARA KPIs
             // ============================================================
-            function obtenerHistorialPasesEmpleado() {
+            function obtenerTodasCausas() {
                 if (!currentEmpleadoObj) return [];
+                const empId = currentEmpleadoObj.id;
+                const empNombre = currentEmpleadoObj.nombre;
                 return state.causas.filter(c => {
-                    const estadoStr = (c.estado || '').toLowerCase();
-                    const esFinalizada = estadoStr === 'finalizada' || estadoStr === 'finalizado';
                     const esSuPase = (
-                        (c.empleadoId && (c.empleadoId === currentEmpleadoObj.id || c.empleadoId === currentEmpleadoObj.nombre)) ||
-                        (c.empleadoAsignado && (c.empleadoAsignado === currentEmpleadoObj.id || c.empleadoAsignado === currentEmpleadoObj.nombre)) ||
-                        (c.empleadoOriginal && c.empleadoOriginal === currentEmpleadoObj.id)
+                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
+                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
+                        (c.empleadoOriginal && c.empleadoOriginal === empId)
                     );
-                    return esFinalizada && esSuPase;
-                }).sort((a, b) => {
-                    const fA = new Date(a.fechaFinalizacion || a.fechaPaseSecretario || 0);
-                    const fB = new Date(b.fechaFinalizacion || b.fechaPaseSecretario || 0);
-                    return fB - fA;
+                    return esSuPase;
                 });
             }
 
-            // ============================================================
-            //  FUNCIONES PARA OBTENER LISTAS DE EN SECRETARÍA Y EN DEFENSOR
-            // ============================================================
+            function obtenerCausasSegunKPI(kpi) {
+                const todas = obtenerTodasCausas();
+                if (!kpi || kpi === 'total') return todas;
+                if (kpi === 'proceso') return todas.filter(c => c.estado === 'en_proceso');
+                if (kpi === 'secretaria') return todas.filter(c => c.estado === 'en_secretaria');
+                if (kpi === 'defensor') return todas.filter(c => c.estado === 'en_defensor');
+                if (kpi === 'finalizados') return todas.filter(c => c.estado === 'finalizada');
+                if (kpi === 'demora') {
+                    return todas.filter(c => {
+                        if (c.estado !== 'en_proceso') return false;
+                        const det = getDetalleTiempo(c);
+                        return det.estado && (det.estado.estado === 'vencido' || det.estado.estado === 'fueraplazo' || det.estado.estado === 'exceso');
+                    });
+                }
+                return todas;
+            }
+
             function obtenerEnSecretaria() {
                 if (!currentEmpleadoObj) return [];
                 const empId = currentEmpleadoObj.id;
                 const empNombre = currentEmpleadoObj.nombre;
                 return state.causas.filter(c => {
                     if (c.estado !== 'en_secretaria') return false;
-                    // Relación directa con el empleado
                     const esSuPase = (
                         (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
                         (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
                         (c.empleadoOriginal && c.empleadoOriginal === empId)
                     );
                     if (esSuPase) return true;
-                    // También puede estar relacionado por historial
                     if (c.historial) {
                         return c.historial.some(h => h.usuario === empNombre || h.usuario === empId);
                     }
@@ -1192,15 +1192,29 @@
             }
 
             // ============================================================
-            //  FUNCIONES PARA ABRIR MODALES DE DETALLE
+            //  FUNCIONES PARA MODALES DE DETALLE
             // ============================================================
             function abrirModalEnSecretaria() {
                 const lista = obtenerEnSecretaria();
                 const body = document.getElementById('modalEnSecretariaBody');
+                const empNombre = currentEmpleadoObj ? currentEmpleadoObj.nombre : '-';
+                const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
                 if (lista.length === 0) {
-                    body.innerHTML = '<div class="text-muted">No hay expedientes en Secretaría relacionados con este empleado.</div>';
+                    body.innerHTML = `
+                        <div class="print-header">
+                            <h4>Expedientes en Secretaría</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                        <div class="text-muted">No hay expedientes en Secretaría relacionados con este empleado.</div>
+                    `;
                 } else {
                     let html = `
+                        <div class="print-header">
+                            <h4>Expedientes en Secretaría</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
                         <div class="table-wrap">
                             <table class="table-modern table">
                                 <thead>
@@ -1211,7 +1225,6 @@
                     lista.forEach(c => {
                         let ultimoEnvio = null;
                         if (c.historial) {
-                            // Ahora buscamos TODAS las acciones que contengan "Enviado a Secretario" (tanto finalización como consulta)
                             const envios = c.historial.filter(h => h.accion && h.accion.includes('Enviado a Secretario'));
                             if (envios.length > 0) ultimoEnvio = envios[envios.length - 1];
                         }
@@ -1229,10 +1242,24 @@
             function abrirModalEnDefensor() {
                 const lista = obtenerEnDefensor();
                 const body = document.getElementById('modalEnDefensorBody');
+                const empNombre = currentEmpleadoObj ? currentEmpleadoObj.nombre : '-';
+                const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
                 if (lista.length === 0) {
-                    body.innerHTML = '<div class="text-muted">No hay expedientes en Defensor relacionados con este empleado.</div>';
+                    body.innerHTML = `
+                        <div class="print-header">
+                            <h4>Expedientes en Defensor</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                        <div class="text-muted">No hay expedientes en Defensor relacionados con este empleado.</div>
+                    `;
                 } else {
                     let html = `
+                        <div class="print-header">
+                            <h4>Expedientes en Defensor</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
                         <div class="table-wrap">
                             <table class="table-modern table">
                                 <thead><tr><th>Expediente</th><th>Fecha asignación a Defensor</th><th>Nivel</th><th>Tipo</th></tr></thead>
@@ -1253,383 +1280,315 @@
             }
 
             // ============================================================
-            //  RENDERIZADO DE LA TABLA DE HISTORIAL DEL EMPLEADO
+            //  RENDERIZADO PRINCIPAL
             // ============================================================
-            function renderTablaHistorialEmpleado() {
-                const container = document.getElementById('tablaHistorialEmpleadoContainer');
-                if (!container) return;
-                const pasesFinalizados = obtenerHistorialPasesEmpleado();
-                if (pasesFinalizados.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state" style="padding: 1.5rem 0; text-align: center; color: #8aa3bc;">
-                            <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
-                            <p style="margin:0;">No tienes pases finalizados registrados.</p>
-                        </div>`;
-                    return;
+            function renderEmpleado() {
+                if (!currentEmpleadoObj) return;
+
+                const todas = obtenerTodasCausas();
+
+                let causasFiltradas = todas;
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
                 }
+                if (filtroFecha) {
+                    const partes = filtroFecha.split('-');
+                    const fYear = parseInt(partes[0]);
+                    const fMonth = parseInt(partes[1]);
+                    const fDay = parseInt(partes[2]);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const dParts = c.fechaAsignacion.split('T')[0].split('-');
+                        const dYear = parseInt(dParts[0]);
+                        const dMonth = parseInt(dParts[1]);
+                        const dDay = parseInt(dParts[2]);
+                        return dYear === fYear && dMonth === fMonth && dDay === fDay;
+                    });
+                }
+                if (filtroMes) {
+                    const mes = parseInt(filtroMes);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getMonth() === mes - 1;
+                    });
+                }
+                if (filtroAnio) {
+                    const anio = parseInt(filtroAnio);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getFullYear() === anio;
+                    });
+                }
+
+                const kpis = {
+                    total: causasFiltradas.length,
+                    proceso: causasFiltradas.filter(c => c.estado === 'en_proceso').length,
+                    secretaria: causasFiltradas.filter(c => c.estado === 'en_secretaria').length,
+                    defensor: causasFiltradas.filter(c => c.estado === 'en_defensor').length,
+                    finalizados: causasFiltradas.filter(c => c.estado === 'finalizada').length,
+                    demora: causasFiltradas.filter(c => {
+                        if (c.estado !== 'en_proceso') return false;
+                        const det = getDetalleTiempo(c);
+                        return det.estado && (det.estado.estado === 'vencido' || det.estado.estado === 'fueraplazo' || det.estado.estado === 'exceso');
+                    }).length
+                };
+
+                let datosMostrar = causasFiltradas;
+                if (filtroKPI && filtroKPI !== 'total') {
+                    if (filtroKPI === 'proceso') datosMostrar = causasFiltradas.filter(c => c.estado === 'en_proceso');
+                    else if (filtroKPI === 'secretaria') datosMostrar = causasFiltradas.filter(c => c.estado === 'en_secretaria');
+                    else if (filtroKPI === 'defensor') datosMostrar = causasFiltradas.filter(c => c.estado === 'en_defensor');
+                    else if (filtroKPI === 'finalizados') datosMostrar = causasFiltradas.filter(c => c.estado === 'finalizada');
+                    else if (filtroKPI === 'demora') {
+                        datosMostrar = causasFiltradas.filter(c => {
+                            if (c.estado !== 'en_proceso') return false;
+                            const det = getDetalleTiempo(c);
+                            return det.estado && (det.estado.estado === 'vencido' || det.estado.estado === 'fueraplazo' || det.estado.estado === 'exceso');
+                        });
+                    }
+                }
+
+                datosMostrar.sort((a, b) => new Date(b.fechaAsignacion || 0) - new Date(a.fechaAsignacion || 0));
+
+                const pState = paginationState.tablaUnica;
+                const { items, total, totalPages, page } = paginateData(datosMostrar, pState.page, pState.perPage);
+
+                const mostrarTiempo = (filtroKPI === 'proceso' || filtroKPI === 'demora');
+
+                const panel = document.getElementById('panelEmpleado');
+                let html = `
+                    <div class="card-modern">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
+                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnEstadisticas"><i class="bi bi-bar-chart"></i> Estadísticas</button>
+                            </div>
+                        </div>
+                        <div class="kpi-grid">
+                            <div class="kpi-item ${filtroKPI === 'total' ? 'filtro-activo' : ''}" data-kpi="total">
+                                <div class="label">Total</div>
+                                <div class="value total">${kpis.total}</div>
+                                <div class="sub">histórico completo</div>
+                            </div>
+                            <div class="kpi-item ${filtroKPI === 'proceso' ? 'filtro-activo' : ''}" data-kpi="proceso">
+                                <div class="label">En Proceso</div>
+                                <div class="value proceso">${kpis.proceso}</div>
+                                <div class="sub">activos</div>
+                            </div>
+                            <div class="kpi-item ${filtroKPI === 'secretaria' ? 'filtro-activo' : ''}" data-kpi="secretaria">
+                                <div class="label">En Secretaría</div>
+                                <div class="value secretaria">${kpis.secretaria}</div>
+                                <div class="sub">en secretaría</div>
+                            </div>
+                            <div class="kpi-item ${filtroKPI === 'defensor' ? 'filtro-activo' : ''}" data-kpi="defensor">
+                                <div class="label">En Defensor</div>
+                                <div class="value defensor">${kpis.defensor}</div>
+                                <div class="sub">con defensor</div>
+                            </div>
+                            <div class="kpi-item ${filtroKPI === 'finalizados' ? 'filtro-activo' : ''}" data-kpi="finalizados">
+                                <div class="label">Finalizados</div>
+                                <div class="value finalizado">${kpis.finalizados}</div>
+                                <div class="sub">pases terminados</div>
+                            </div>
+                            <div class="kpi-item ${filtroKPI === 'demora' ? 'filtro-activo' : ''}" data-kpi="demora">
+                                <div class="label">Con Demora</div>
+                                <div class="value demora">${kpis.demora}</div>
+                                <div class="sub">vencidos / fuera de plazo</div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Fecha:</label>
+                                <input type="date" id="filtroFecha" class="form-control form-control-sm" style="width:160px; border-radius:30px;" value="${filtroFecha}" />
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
+                                <select id="filtroMes" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px;">
+                                <label style="font-size:0.75rem; font-weight:600;">Año:</label>
+                                <select id="filtroAnio" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
+                                    <option value="">Todos</option>
+                                    ${Array.from({length:15}, (_,i) => {
+                                        const y = 2026 + i;
+                                        return `<option value="${y}" ${filtroAnio==y?'selected':''}>${y}</option>`;
+                                    }).join('')}
+                                </select>
+                            </div>
+                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltros"><i class="bi bi-eraser"></i> Limpiar</button>
+                        </div>
+                        <div class="mb-4">
+                            <h6><i class="bi bi-inbox text-primary"></i> Todos los Pases</h6>
+                            ${generarTablaUnica(items, mostrarTiempo)}
+                            <div id="paginationUnica"></div>
+                        </div>
+                    </div>
+                `;
+                panel.innerHTML = html;
+
+                if (total > 0) {
+                    renderPagination('paginationUnica', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
+                        paginationState.tablaUnica = { page: newPage, perPage: newPerPage };
+                        renderEmpleado();
+                    });
+                }
+
+                document.querySelectorAll('.kpi-item').forEach(el => {
+                    el.removeEventListener('click', handleKpiClick);
+                    el.addEventListener('click', handleKpiClick);
+                });
+
+                function handleKpiClick(e) {
+                    const kpi = this.dataset.kpi;
+                    if (filtroKPI === kpi) {
+                        filtroKPI = null;
+                    } else {
+                        filtroKPI = kpi;
+                    }
+                    paginationState.tablaUnica.page = 1;
+                    renderEmpleado();
+                }
+
+                document.querySelectorAll('.expediente-link').forEach(el => {
+                    el.removeEventListener('click', handleExpedienteClick);
+                    el.addEventListener('click', handleExpedienteClick);
+                });
+                function handleExpedienteClick(e) {
+                    const id = this.dataset.id;
+                    abrirHistorial(id);
+                }
+
+                document.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
+                    btn.removeEventListener('click', handleEnviarSec);
+                    btn.addEventListener('click', handleEnviarSec);
+                });
+                function handleEnviarSec(e) { const id = e.currentTarget.dataset.id; abrirModalEnviarSecretario(id); }
+
+                document.querySelectorAll('.btn-justificar-individual').forEach(btn => {
+                    btn.removeEventListener('click', handleJustificar);
+                    btn.addEventListener('click', handleJustificar);
+                });
+                function handleJustificar(e) { const id = e.currentTarget.dataset.id; abrirModalJustificar(id); }
+
+                document.querySelectorAll('.crono[data-id]').forEach(el => {
+                    el.removeEventListener('click', handleCronoClick);
+                    el.addEventListener('click', handleCronoClick);
+                });
+                function handleCronoClick(e) { const id = e.currentTarget.dataset.id; mostrarDetalleTiempo(id); }
+
+                const btnReporte = document.getElementById('btnReporteEmpleado');
+                if (btnReporte) btnReporte.addEventListener('click', function() { if (currentEmpleadoId) generarReporteEmpleado(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); });
+                const btnEst = document.getElementById('btnEstadisticas');
+                if (btnEst) btnEst.addEventListener('click', function() { if (currentEmpleadoId) generarEstadisticas(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); });
+
+                const inputFecha = document.getElementById('filtroFecha');
+                const selectMes = document.getElementById('filtroMes');
+                const selectAnio = document.getElementById('filtroAnio');
+                if (inputFecha) inputFecha.addEventListener('change', function() { filtroFecha = this.value; paginationState.tablaUnica.page = 1; renderEmpleado(); });
+                if (selectMes) selectMes.addEventListener('change', function() { filtroMes = this.value; paginationState.tablaUnica.page = 1; renderEmpleado(); });
+                if (selectAnio) selectAnio.addEventListener('change', function() { filtroAnio = this.value; paginationState.tablaUnica.page = 1; renderEmpleado(); });
+                const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+                if (btnLimpiar) btnLimpiar.addEventListener('click', function() { 
+                    filtroFecha = '';
+                    filtroMes = '';
+                    filtroAnio = '';
+                    paginationState.tablaUnica.page = 1;
+                    renderEmpleado();
+                });
+            }
+
+            // ============================================================
+            //  GENERAR TABLA
+            // ============================================================
+            function generarTablaUnica(items, mostrarTiempo) {
+                if (!items.length) return `<div class="text-muted py-3">No hay pases que coincidan con el filtro.</div>`;
+
+                let headerCols = `
+                    <th>Fecha de Asignación / Finalización</th>
+                    <th>Expediente</th>
+                    <th>Modo Intervención</th>
+                    <th>Tipo</th>
+                `;
+                if (mostrarTiempo) {
+                    headerCols += `<th>Tiempo (Día Hábil)</th>`;
+                }
+                headerCols += `
+                    <th>Nivel</th>
+                    <th>Observación</th>
+                    <th>Acciones</th>
+                `;
+
                 let html = `
                     <div class="table-wrap">
-                        <table class="table-modern table table-sm">
-                            <thead><tr><th>N° Expediente</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asignación</th><th>Fecha Finalización</th><th>Historial</th><th>Justificación</th></tr></thead>
+                        <table class="table-modern table">
+                            <thead><tr>${headerCols}</tr></thead>
                             <tbody>
                 `;
-                pasesFinalizados.forEach(c => {
-                    const fechaAsig = getFechaAsignacion(c);
-                    let justifHtml = '-';
-                    if (c.justificaciones && c.justificaciones.length > 0) {
-                        const ultima = c.justificaciones[c.justificaciones.length - 1];
-                        const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
-                        const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
-                        justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+
+                items.forEach(c => {
+                    let fechaMostrar = '';
+                    let estiloFecha = '';
+                    if (c.estado === 'finalizada' && c.fechaFinalizacion) {
+                        fechaMostrar = fmtDt(c.fechaFinalizacion);
+                        estiloFecha = 'style="color: #2e7d32; font-weight: bold;"';
+                    } else if (c.fechaAsignacion) {
+                        fechaMostrar = fmtDt(c.fechaAsignacion);
+                        estiloFecha = 'style="font-weight: bold;"';
+                    } else {
+                        fechaMostrar = '-';
+                        estiloFecha = '';
                     }
-                    html += `<tr>
-                        <td><strong>${c.numero}</strong></td>
+
+                    const detalle = getDetalleTiempo(c);
+                    const dias = detalle.diasTranscurridos || 0;
+                    const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                    const colorCls = estado.color;
+                    const comentario = getComentarioAsignacion(c);
+                    const estaVencido = estado.estado === 'vencido' || estado.estado === 'fueraplazo' || estado.estado === 'exceso';
+                    let justifPendiente = false;
+                    if (c.justificaciones) justifPendiente = c.justificaciones.some(j => j.estado === 'pendiente');
+
+                    const mostrarBotonEnvio = (c.estado === 'en_proceso') && (filtroKPI === 'proceso' || filtroKPI === 'demora');
+                    let accionesHtml = '';
+                    if (mostrarBotonEnvio) {
+                        accionesHtml = `
+                            <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
+                            ${estaVencido && !justifPendiente ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
+                            ${estaVencido && justifPendiente ? `<span class="badge bg-warning text-dark">Justificación pendiente</span>` : ''}
+                        `;
+                    } else if (c.estado === 'finalizada') {
+                        accionesHtml = `<span class="badge badge-fin">✅ Finalizada</span>`;
+                    } else {
+                        accionesHtml = `<span class="badge badge-sec">${getEstadoBadgePlain(c.estado)}</span>`;
+                    }
+
+                    let rowCols = `
+                        <td ${estiloFecha}>${fechaMostrar}</td>
+                        <td><span class="expediente-link" style="cursor:pointer; color:#1976d2; font-weight:600; text-decoration:underline;" data-id="${c.id}">${c.numero}</span></td>
+                        <td>${c.modoIntervencion || '-'}</td>
                         <td>${c.tipo || '-'}</td>
-                        <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                        <td><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                        <td>${fechaAsig}</td>
-                        <td>${fmtDt(c.fechaFinalizacion)}</td>
-                        <td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-historial" data-id="${c.id}" title="Ver historial"><i class="bi bi-eye"></i> Ver</button></td>
-                        <td>${justifHtml}</td>
-                    </tr>`;
+                    `;
+                    if (mostrarTiempo) {
+                        rowCols += `<td><span class="crono ${colorCls}" data-id="${c.id}">${dias}</span></td>`;
+                    }
+                    rowCols += `
+                        <td>N${c.nivelSecretario || 1}</td>
+                        <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
+                        <td>${accionesHtml}</td>
+                    `;
+
+                    html += `<tr>${rowCols}</tr>`;
                 });
+
                 html += `</tbody></table></div>`;
-                container.innerHTML = html;
-            }
-
-            // ============================================================
-            //  REPORTE DE ACTIVIDADES
-            // ============================================================
-            function generarReporteEmpleado(empId) {
-                const emp = CONFIG.empleados.find(e => e.id === empId);
-                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
-                let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === empId);
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
-                }
-                if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
-                    });
-                } else if (filtroMes) {
-                    const mes = parseInt(filtroMes);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1;
-                    });
-                } else if (filtroAnio) {
-                    const anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getFullYear() === anio;
-                    });
-                }
-                const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
-                activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const historial = obtenerHistorialPasesEmpleado();
-                const ahora = new Date();
-                const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
-                let html = `
-                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
-                            <div><h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Reporte de Actividades</h5><p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p></div>
-                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;"><div>${fechaStr}</div></div>
-                        </div>
-                        <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${activas.length}</div>
-                            </div>
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Finalizadas</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#2e7d32;">${historial.length}</div>
-                            </div>
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Total</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#0a2a44;">${activas.length + historial.length}</div>
-                            </div>
-                        </div>
-                        <h6 style="font-weight: 600; color: #0a2a44; margin: 1rem 0 0.5rem;"><i class="bi bi-inbox"></i> Bandeja Activa (En Proceso)</h6>
-                        ${activas.length ? `
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 700px;">
-                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo (Día Hábil)</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado Actual</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Observación</th>
-                                </tr></thead>
-                                <tbody>
-                                    ${activas.map(c => {
-                                        const detalle = getDetalleTiempo(c);
-                                        const dias = detalle.diasTranscurridos || 0;
-                                        const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
-                                        const estadoColor = estado.color === 'verde' ? 'estado-plazo' : (estado.color === 'naranja' ? 'estado-vencido' : 'estado-fueraplazo');
-                                        const comentario = getComentarioAsignacion(c);
-                                        return `<tr style="border-bottom: 1px solid #eef2f7;">
-                                            <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
-                                            <td style="padding: 6px 8px;">${c.modoIntervencion || '-'}</td>
-                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
-                                            <td style="padding: 6px 8px;">
-                                                <span class="crono azul" style="cursor:pointer;" data-id="${c.id}">${dias}</span>
-                                            </td>
-                                            <td style="padding: 6px 8px;"><span class="${estadoColor}">${estado.label}</span></td>
-                                            <td style="padding: 6px 8px;">N${c.nivelSecretario}</td>
-                                            <td style="padding: 6px 8px; font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ` : `<div class="text-muted py-2">No hay causas activas.</div>`}
-                        <h6 style="font-weight: 600; color: #0a2a44; margin: 1.5rem 0 0.5rem;"><i class="bi bi-clock-history"></i> Historial</h6>
-                        ${historial.length ? `
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px;">
-                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Asignación</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Finalización</th>
-                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Justificación</th>
-                                </tr></thead>
-                                <tbody>
-                                    ${historial.map(c => {
-                                        const fechaAsig = getFechaAsignacion(c);
-                                        let justifHtml = '-';
-                                        if (c.justificaciones && c.justificaciones.length > 0) {
-                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
-                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
-                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
-                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
-                                        }
-                                        return `<tr style="border-bottom: 1px solid #eef2f7;">
-                                            <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
-                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
-                                            <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                                            <td style="padding: 6px 8px;"><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                                            <td style="padding: 6px 8px;">${fechaAsig}</td>
-                                            <td style="padding: 6px 8px;">${fmtDt(c.fechaFinalizacion)}</td>
-                                            <td style="padding: 6px 8px;">${justifHtml}</td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ` : `<div class="text-muted py-2">No hay expedientes finalizados.</div>`}
-                        <div style="margin-top: 0.5rem; font-size: 0.65rem; color: #8aa3bc; border-top: 1px solid #e2edf7; padding-top: 0.5rem;">
-                            Reporte generado el ${fechaStr} · Sistema Digital de Pases
-                        </div>
-                    </div>
-                `;
-                document.getElementById('modalReporteEmpBody').innerHTML = html;
-                document.getElementById('modalReporteEmpNombre').textContent = emp.nombre;
-                new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
-            }
-
-            // ============================================================
-            //  ESTADÍSTICAS
-            // ============================================================
-            function generarEstadisticas(empId) {
-                const emp = CONFIG.empleados.find(e => e.id === empId);
-                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
-                const todasCausas = state.causas.filter(c => {
-                    const esSuPase = (
-                        (c.empleadoId && (c.empleadoId === emp.id || c.empleadoId === emp.nombre)) ||
-                        (c.empleadoAsignado && (c.empleadoAsignado === emp.id || c.empleadoAsignado === emp.nombre)) ||
-                        (c.empleadoOriginal && c.empleadoOriginal === emp.id)
-                    );
-                    return esSuPase;
-                });
-                let causasFiltradas = todasCausas;
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
-                }
-                if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
-                    });
-                } else if (filtroMes) {
-                    const mes = parseInt(filtroMes);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1;
-                    });
-                } else if (filtroAnio) {
-                    const anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getFullYear() === anio;
-                    });
-                }
-                const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
-                activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const historial = obtenerHistorialPasesEmpleado();
-                const statsNivel = { 1: { total: 0, cumplidas: 0, tiempos: [] }, 2: { total: 0, cumplidas: 0, tiempos: [] }, 3: { total: 0, cumplidas: 0, tiempos: [] }, 4: { total: 0, cumplidas: 0, tiempos: [] } };
-                todasCausas.forEach(c => {
-                    let nivel = c.nivelSecretario || c.nivelOperador || 1;
-                    if (nivel >= 1 && nivel <= 4) {
-                        statsNivel[nivel].total++;
-                        if (c.estado === 'finalizada' || c.estado === 'finalizado') {
-                            statsNivel[nivel].cumplidas++;
-                            if (c.fechaAsignacion && c.fechaFinalizacion) {
-                                const dias = (new Date(c.fechaFinalizacion) - new Date(c.fechaAsignacion)) / (1000*60*60*24);
-                                if (dias >= 0) statsNivel[nivel].tiempos.push(dias);
-                            }
-                        }
-                    }
-                });
-                const asignadores = {};
-                todasCausas.forEach(c => {
-                    const secId = obtenerSecretarioAsignante(c);
-                    if (secId) {
-                        const nombre = getSecName(secId);
-                        if (nombre) asignadores[nombre] = (asignadores[nombre] || 0) + 1;
-                    }
-                });
-                const ahora = new Date();
-                const fechaStr = `${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()} ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
-                let html = `
-                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; border-bottom: 2px solid #e2edf7; padding-bottom: 0.8rem;">
-                            <div><h5 style="margin: 0; font-weight: 700; color: #0a2a44;">Estadísticas</h5><p style="margin: 0.25rem 0 0; color: #5f7f9f; font-size: 0.85rem;">Empleado: <strong>${emp.nombre}</strong></p></div>
-                            <div style="text-align: right; font-size: 0.8rem; color: #5f7f9f;"><div>${fechaStr}</div></div>
-                        </div>
-                        <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${activas.length}</div>
-                            </div>
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Finalizadas</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#2e7d32;">${historial.length}</div>
-                            </div>
-                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
-                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Total</div>
-                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#0a2a44;">${activas.length + historial.length}</div>
-                            </div>
-                        </div>
-                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Desglose por Nivel</h6>
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Nivel</th><th style="padding:6px 8px; text-align:left;">Asignadas</th><th style="padding:6px 8px; text-align:left;">Cumplidas</th><th style="padding:6px 8px; text-align:left;">Promedio días</th></tr></thead>
-                                <tbody>
-                                    ${[1,2,3,4].map(n => {
-                                        const s = statsNivel[n];
-                                        const prom = s.tiempos.length ? (s.tiempos.reduce((a,b)=>a+b,0)/s.tiempos.length).toFixed(2) : '-';
-                                        return `<tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600;">N${n}</td><td style="padding:6px 8px;">${s.total}</td><td style="padding:6px 8px;">${s.cumplidas}</td><td style="padding:6px 8px;">${prom}</td></tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Secretarios que asignaron</h6>
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Secretario</th><th style="padding:6px 8px; text-align:left;">Cantidad</th></tr></thead>
-                                <tbody>
-                                    ${Object.entries(asignadores).map(([nombre, count]) => `<tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px;">${nombre}</td><td style="padding:6px 8px;">${count}</td></tr>`).join('')}
-                                    ${Object.keys(asignadores).length === 0 ? `<tr><td colspan="2" style="padding:10px; text-align:center; color:#8aa3bc;">Sin datos de asignación</td></tr>` : ''}
-                                </tbody>
-                            </table>
-                        </div>
-                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1.5rem;"><i class="bi bi-inbox"></i> Bandeja Activa (En Proceso)</h6>
-                        ${activas.length ? `
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem; min-width:700px;">
-                                <thead><tr style="background:#f1f6fd; color:#1a4c74;">
-                                    <th style="padding:6px 8px; text-align:left;">Expediente</th>
-                                    <th style="padding:6px 8px; text-align:left;">Modo Intervención</th>
-                                    <th style="padding:6px 8px; text-align:left;">Tipo</th>
-                                    <th style="padding:6px 8px; text-align:left;">Tiempo (Día Hábil)</th>
-                                    <th style="padding:6px 8px; text-align:left;">Estado Actual</th>
-                                    <th style="padding:6px 8px; text-align:left;">Nivel</th>
-                                    <th style="padding:6px 8px; text-align:left;">Observación</th>
-                                </tr></thead>
-                                <tbody>
-                                    ${activas.map(c => {
-                                        const detalle = getDetalleTiempo(c);
-                                        const dias = detalle.diasTranscurridos || 0;
-                                        const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
-                                        const estadoColor = estado.color === 'verde' ? 'estado-plazo' : (estado.color === 'naranja' ? 'estado-vencido' : 'estado-fueraplazo');
-                                        const comentario = getComentarioAsignacion(c);
-                                        return `<tr style="border-bottom:1px solid #eef2f7;">
-                                            <td style="padding:6px 8px; font-weight:600;">${c.numero}</td>
-                                            <td style="padding:6px 8px;">${c.modoIntervencion || '-'}</td>
-                                            <td style="padding:6px 8px;">${c.tipo || '-'}</td>
-                                            <td style="padding:6px 8px;">
-                                                <span class="crono azul" style="cursor:pointer;" data-id="${c.id}">${dias}</span>
-                                            </td>
-                                            <td style="padding:6px 8px;"><span class="${estadoColor}">${estado.label}</span></td>
-                                            <td style="padding:6px 8px;">N${c.nivelSecretario}</td>
-                                            <td style="padding:6px 8px; font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ` : `<div class="text-muted py-2">No hay causas activas.</div>`}
-                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1.5rem;"><i class="bi bi-clock-history"></i> Historial</h6>
-                        ${historial.length ? `
-                        <div class="table-wrap">
-                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem; min-width:600px;">
-                                <thead><tr style="background:#f1f6fd; color:#1a4c74;">
-                                    <th style="padding:6px 8px; text-align:left;">Expediente</th>
-                                    <th style="padding:6px 8px; text-align:left;">Tipo</th>
-                                    <th style="padding:6px 8px; text-align:left;">Nivel</th>
-                                    <th style="padding:6px 8px; text-align:left;">Estado</th>
-                                    <th style="padding:6px 8px; text-align:left;">Fecha Asignación</th>
-                                    <th style="padding:6px 8px; text-align:left;">Fecha Finalización</th>
-                                    <th style="padding:6px 8px; text-align:left;">Justificación</th>
-                                </tr></thead>
-                                <tbody>
-                                    ${historial.map(c => {
-                                        const fechaAsig = getFechaAsignacion(c);
-                                        let justifHtml = '-';
-                                        if (c.justificaciones && c.justificaciones.length > 0) {
-                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
-                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
-                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
-                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
-                                        }
-                                        return `<tr style="border-bottom:1px solid #eef2f7;">
-                                            <td style="padding:6px 8px; font-weight:600;">${c.numero}</td>
-                                            <td style="padding:6px 8px;">${c.tipo || '-'}</td>
-                                            <td style="padding:6px 8px;">N${c.nivelSecretario || c.nivelOperador || 1}</td>
-                                            <td style="padding:6px 8px;"><span class="badge-estado badge-fin">✅ Finalizada</span></td>
-                                            <td style="padding:6px 8px;">${fechaAsig}</td>
-                                            <td style="padding:6px 8px;">${fmtDt(c.fechaFinalizacion)}</td>
-                                            <td style="padding:6px 8px;">${justifHtml}</td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ` : `<div class="text-muted py-2">No hay expedientes finalizados.</div>`}
-                        <div style="margin-top:0.5rem; font-size:0.65rem; color:#8aa3bc; border-top:1px solid #e2edf7; padding-top:0.5rem;">
-                            Reporte generado el ${fechaStr} · Sistema Digital de Pases
-                        </div>
-                    </div>
-                `;
-                document.getElementById('modalEstadisticasBody').innerHTML = html;
-                document.getElementById('modalEstadisticasNombre').textContent = emp.nombre;
-                new bootstrap.Modal(document.getElementById('modalEstadisticas')).show();
+                return html;
             }
 
             // ---------- PAGINACIÓN ----------
@@ -1674,7 +1633,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES PARA JUSTIFICAR DEMORA INDIVIDUAL
+            //  FUNCIONES PARA JUSTIFICAR DEMORA
             // ============================================================
             let justificarCausaId = null;
 
@@ -1851,239 +1810,7 @@
             }
 
             // ============================================================
-            //  FUNCIÓN PARA CALCULAR KPIs (SOLO LOS SELECCIONADOS)
-            // ============================================================
-            function calcularKPIs() {
-                if (!currentEmpleadoObj) return { 
-                    total: 0, enProceso: 0, enSecretaria: 0, enDefensor: 0, 
-                    finalizados: 0, conDemora: 0 
-                };
-                const empId = currentEmpleadoObj.id;
-                const empNombre = currentEmpleadoObj.nombre;
-                // Todas las causas relacionadas con el empleado
-                const todasCausas = state.causas.filter(c => {
-                    const esSuPase = (
-                        (c.empleadoId && (c.empleadoId === empId || c.empleadoId === empNombre)) ||
-                        (c.empleadoAsignado && (c.empleadoAsignado === empId || c.empleadoAsignado === empNombre)) ||
-                        (c.empleadoOriginal && c.empleadoOriginal === empId)
-                    );
-                    return esSuPase;
-                });
-
-                // Total = todas las causas relacionadas (coincide con histórico del secretario)
-                const total = todasCausas.length;
-
-                // Conteo por estado (solo los que mostramos)
-                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso').length;
-                const enSecretaria = todasCausas.filter(c => c.estado === 'en_secretaria').length;
-                const enDefensor = todasCausas.filter(c => c.estado === 'en_defensor').length;
-                const finalizados = todasCausas.filter(c => c.estado === 'finalizada').length;
-
-                // Con demora (subconjunto de enProceso)
-                const conDemora = todasCausas.filter(c => {
-                    if (c.estado !== 'en_proceso') return false;
-                    const detalle = getDetalleTiempo(c);
-                    return detalle.estado && (detalle.estado.estado === 'vencido' || detalle.estado.estado === 'fueraplazo');
-                }).length;
-
-                return { total, enProceso, enSecretaria, enDefensor, finalizados, conDemora };
-            }
-
-            // ---------- RENDER PRINCIPAL ----------
-            function renderEmpleado() {
-                const panel = document.getElementById('panelEmpleado');
-                let causasFiltradas = state.causas.filter(c => c.empleadoAsignado === currentEmpleadoId);
-                if (searchTerm) {
-                    const term = searchTerm.toLowerCase();
-                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
-                }
-                if (filtroMes && filtroAnio) {
-                    const mes = parseInt(filtroMes), anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1 && d.getFullYear() === anio;
-                    });
-                } else if (filtroMes) {
-                    const mes = parseInt(filtroMes);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getMonth() === mes - 1;
-                    });
-                } else if (filtroAnio) {
-                    const anio = parseInt(filtroAnio);
-                    causasFiltradas = causasFiltradas.filter(c => {
-                        if (!c.fechaAsignacion) return false;
-                        const d = new Date(c.fechaAsignacion);
-                        return d.getFullYear() === anio;
-                    });
-                }
-                const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
-                activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
-                const pStateActivas = paginationState.activas;
-                const { items: itemsAct, total: totalAct, totalPages: totalPagesAct, page: pageAct } = paginateData(activas, pStateActivas.page, pStateActivas.perPage);
-                const kpis = calcularKPIs();
-
-                // Función para generar la tabla de activas (se mantiene igual)
-                function generarTablaActivas(items) {
-                    if (!items.length) return `<div class="text-muted py-3">No hay causas activas.</div>`;
-                    return `
-                        <div class="table-wrap">
-                            <table class="table-modern table">
-                                <thead><tr>
-                                    <th>Expediente</th>
-                                    <th>Modo Intervención</th>
-                                    <th>Tipo</th>
-                                    <th>Tiempo (Día Hábil)</th>
-                                    <th>Estado Actual</th>
-                                    <th>Nivel</th>
-                                    <th>Observación</th>
-                                    <th>Acciones</th>
-                                </tr></thead>
-                                <tbody>
-                                    ${items.map(c => {
-                                        const detalle = getDetalleTiempo(c);
-                                        const dias = detalle.diasTranscurridos || 0;
-                                        const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
-                                        const estadoColor = estado.color === 'verde' ? 'estado-plazo' : (estado.color === 'naranja' ? 'estado-vencido' : 'estado-fueraplazo');
-                                        const comentario = getComentarioAsignacion(c);
-                                        const estaVencido = estado.estado === 'vencido' || estado.estado === 'fueraplazo';
-                                        let justifPendiente = false;
-                                        if (c.justificaciones) justifPendiente = c.justificaciones.some(j => j.estado === 'pendiente');
-                                        return `<tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td>${c.modoIntervencion || '-'}</td>
-                                            <td>${c.tipo || '-'}</td>
-                                            <td>
-                                                <span class="crono azul" style="cursor:pointer;" data-id="${c.id}">${dias}</span>
-                                            </td>
-                                            <td><span class="${estadoColor}">${estado.label}</span></td>
-                                            <td>N${c.nivelSecretario}</td>
-                                            <td style="font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
-                                            <td>
-                                                <button class="btn btn-modern btn-modern-success btn-modern-sm btn-emp-enviar-sec" data-id="${c.id}">Enviar a Secretario</button>
-                                                <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-activa" data-id="${c.id}"><i class="bi bi-eye"></i></button>
-                                                ${estaVencido && !justifPendiente ? `<button class="btn btn-modern btn-modern-warning btn-modern-sm btn-justificar-individual" data-id="${c.id}">Justificar demora</button>` : ''}
-                                                ${estaVencido && justifPendiente ? `<span class="badge bg-warning text-dark">Justificación pendiente</span>` : ''}
-                                            </td>
-                                        </tr>`;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                }
-
-                // Construcción del HTML con los KPIs seleccionados
-                const html = `
-                    <div class="card-modern">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnReporteEmpleado"><i class="bi bi-printer"></i> Imprimir reporte</button>
-                                <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnEstadisticas"><i class="bi bi-bar-chart"></i> Estadísticas</button>
-                            </div>
-                        </div>
-                        <div class="kpi-grid">
-                            <div class="kpi-item"><div class="label">Total</div><div class="value total">${kpis.total}</div><div class="sub">histórico completo</div></div>
-                            <div class="kpi-item"><div class="label">En Proceso</div><div class="value proceso">${kpis.enProceso}</div><div class="sub">activos</div></div>
-                            <div class="kpi-item"><div class="label">En Secretaría <button class="btn-ver-detalle" title="Ver expedientes en Secretaría" onclick="window.abrirModalEnSecretaria && abrirModalEnSecretaria()"><i class="bi bi-eye"></i></button></div><div class="value secretaria">${kpis.enSecretaria}</div><div class="sub">en secretaría</div></div>
-                            <div class="kpi-item"><div class="label">En Defensor <button class="btn-ver-detalle" title="Ver expedientes en Defensor" onclick="window.abrirModalEnDefensor && abrirModalEnDefensor()"><i class="bi bi-eye"></i></button></div><div class="value defensor">${kpis.enDefensor}</div><div class="sub">con defensor</div></div>
-                            <div class="kpi-item"><div class="label">Finalizados</div><div class="value finalizado">${kpis.finalizados}</div><div class="sub">pases terminados</div></div>
-                            <div class="kpi-item"><div class="label">Con Demora</div><div class="value demora">${kpis.conDemora}</div><div class="sub">vencidos / fuera de plazo</div></div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <div style="display:flex; align-items:center; gap:4px;">
-                                <label style="font-size:0.75rem; font-weight:600;">Mes:</label>
-                                <select id="filtroMes" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
-                                    <option value="">Todos</option>
-                                    ${Array.from({length:12}, (_,i) => `<option value="${i+1}" ${filtroMes==i+1?'selected':''}>${i+1}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:4px;">
-                                <label style="font-size:0.75rem; font-weight:600;">Año:</label>
-                                <select id="filtroAnio" class="form-select form-select-sm" style="width:100px; border-radius:30px;">
-                                    <option value="">Todos</option>
-                                    ${Array.from({length:15}, (_,i) => {
-                                        const y = 2026 + i;
-                                        return `<option value="${y}" ${filtroAnio==y?'selected':''}>${y}</option>`;
-                                    }).join('')}
-                                </select>
-                            </div>
-                            <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltros"><i class="bi bi-eraser"></i> Limpiar</button>
-                        </div>
-                        <div class="mb-4">
-                            <h6><i class="bi bi-inbox text-primary"></i> Bandeja Activa (En Proceso)</h6>
-                            ${generarTablaActivas(itemsAct)}
-                            <div id="paginationActivas"></div>
-                        </div>
-                        <div>
-                            <h6><i class="bi bi-clock-history text-secondary"></i> Historial</h6>
-                            <div id="tablaHistorialEmpleadoContainer"></div>
-                        </div>
-                    </div>
-                `;
-
-                panel.innerHTML = html;
-
-                if (totalAct > 0) {
-                    renderPagination('paginationActivas', totalAct, totalPagesAct, pageAct, pStateActivas.perPage, (newPage, newPerPage) => {
-                        paginationState.activas = { page: newPage, perPage: newPerPage };
-                        renderEmpleado();
-                    });
-                }
-                renderTablaHistorialEmpleado();
-
-                // ---- Delegación de eventos (evita listeners duplicados) ----
-                panel.querySelectorAll('.btn-emp-enviar-sec').forEach(btn => {
-                    btn.removeEventListener('click', handleEnviarSec);
-                    btn.addEventListener('click', handleEnviarSec);
-                });
-                panel.querySelectorAll('.btn-ver-hist-activa').forEach(btn => {
-                    btn.removeEventListener('click', handleVerHistorial);
-                    btn.addEventListener('click', handleVerHistorial);
-                });
-                panel.querySelectorAll('.btn-justificar-individual').forEach(btn => {
-                    btn.removeEventListener('click', handleJustificarIndividual);
-                    btn.addEventListener('click', handleJustificarIndividual);
-                });
-                // Click en cronómetro (sin data-bs-toggle, solo JS)
-                panel.querySelectorAll('.crono[data-id]').forEach(el => {
-                    el.removeEventListener('click', handleCronoClick);
-                    el.addEventListener('click', handleCronoClick);
-                });
-
-                const histContainer = document.getElementById('tablaHistorialEmpleadoContainer');
-                if (histContainer) {
-                    histContainer.removeEventListener('click', handleHistorialClick);
-                    histContainer.addEventListener('click', handleHistorialClick);
-                }
-
-                function handleEnviarSec(e) { const id = e.currentTarget.dataset.id; abrirModalEnviarSecretario(id); }
-                function handleVerHistorial(e) { const id = e.currentTarget.dataset.id; abrirHistorial(id); }
-                function handleJustificarIndividual(e) { const id = e.currentTarget.dataset.id; abrirModalJustificar(id); }
-                function handleCronoClick(e) { const id = e.currentTarget.dataset.id; mostrarDetalleTiempo(id); }
-                function handleHistorialClick(e) {
-                    const target = e.target.closest('.btn-ver-hist-historial');
-                    if (target) { const id = target.dataset.id; abrirHistorial(id); }
-                }
-
-                const btnReporte = document.getElementById('btnReporteEmpleado');
-                if (btnReporte) btnReporte.addEventListener('click', function() { if (currentEmpleadoId) generarReporteEmpleado(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); });
-                const btnEst = document.getElementById('btnEstadisticas');
-                if (btnEst) btnEst.addEventListener('click', function() { if (currentEmpleadoId) generarEstadisticas(currentEmpleadoId); else showToast('Seleccione un empleado', 'warning'); });
-
-                const selectMes = document.getElementById('filtroMes');
-                const selectAnio = document.getElementById('filtroAnio');
-                if (selectMes) selectMes.addEventListener('change', function() { filtroMes = this.value; paginationState.activas.page = 1; renderEmpleado(); });
-                if (selectAnio) selectAnio.addEventListener('change', function() { filtroAnio = this.value; paginationState.activas.page = 1; renderEmpleado(); });
-                const btnLimpiar = document.getElementById('btnLimpiarFiltros');
-                if (btnLimpiar) btnLimpiar.addEventListener('click', function() { filtroMes = ''; filtroAnio = ''; paginationState.activas.page = 1; renderEmpleado(); });
-            }
-
-            // ============================================================
-            //  FUNCIÓN PARA MOSTRAR DETALLE DE TIEMPO EN MODAL
+            //  FUNCIÓN PARA MOSTRAR DETALLE DE TIEMPO CON GLOBO
             // ============================================================
             function mostrarDetalleTiempo(causaId) {
                 const causa = state.causas.find(c => c.id === causaId);
@@ -2097,23 +1824,33 @@
                     const fechaInicio = fmtDt(detalle.fechaInicio.toISOString());
                     const fechaLimite = fmtDt(detalle.fechaLimite.toISOString());
                     const dias = detalle.diasTranscurridos;
-                    const estadoLabel = detalle.estado.label;
-                    const estadoColor = detalle.estado.color === 'verde' ? 'text-success' : (detalle.estado.color === 'naranja' ? 'text-warning' : 'text-danger');
+                    const estado = detalle.estado;
+                    const colorCls = estado.color;
+                    const label = estado.label;
                     let html = `
-                        <div class="tiempo-detalle">
-                            <div class="row"><div class="col-5 label">Expediente:</div><div class="col-7"><strong>${causa.numero}</strong></div></div>
-                            <div class="row"><div class="col-5 label">Nivel:</div><div class="col-7">N${detalle.nivel}</div></div>
-                            <div class="row"><div class="col-5 label">Fecha de Asignación:</div><div class="col-7">${fechaAsig}</div></div>
-                            <div class="row"><div class="col-5 label">Fecha de Inicio (regla):</div><div class="col-7">${fechaInicio}</div></div>
-                            <div class="row"><div class="col-5 label">Fecha Límite:</div><div class="col-7">${fechaLimite}</div></div>
-                            <div class="row"><div class="col-5 label">Días hábiles transcurridos:</div><div class="col-7"><strong>${dias}</strong></div></div>
-                            <div class="row"><div class="col-5 label">Estado Actual:</div><div class="col-7"><span class="${estadoColor}">${estadoLabel}</span></div></div>
-                            <div class="row mt-2"><div class="col-12 text-muted" style="font-size:0.7rem;">* La fecha de inicio se calcula según la regla: si la asignación es después de las 12:00, se inicia al siguiente día hábil a las 7:00. La fecha límite se calcula sumando los días hábiles correspondientes al nivel y ajustando a las 12:00.</div></div>
+                        <div class="tiempo-detalle text-center">
+                            <div style="display:flex; justify-content:center; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1rem;">
+                                <div>
+                                    <div class="globo-tiempo ${colorCls}">${dias}</div>
+                                    <div style="font-size:0.8rem; color:#5f7f9f; margin-top:4px;">días hábiles</div>
+                                </div>
+                                <div style="text-align:left;">
+                                    <div><span class="label">Expediente:</span> <strong>${causa.numero}</strong></div>
+                                    <div><span class="label">Nivel:</span> N${detalle.nivel}</div>
+                                    <div><span class="label">Estado:</span> <strong style="color:${estado.color === 'verde' ? '#2e7d32' : (estado.color === 'naranja' ? '#e65100' : (estado.color === 'rojo' ? '#b71c1c' : '#4a148c'))};">${label}</strong></div>
+                                </div>
+                            </div>
+                            <hr />
+                            <div style="text-align:left; font-size:0.9rem;">
+                                <div class="row"><div class="col-5 label">Fecha de Asignación:</div><div class="col-7">${fechaAsig}</div></div>
+                                <div class="row"><div class="col-5 label">Fecha de Inicio (regla):</div><div class="col-7">${fechaInicio}</div></div>
+                                <div class="row"><div class="col-5 label">Fecha Límite:</div><div class="col-7">${fechaLimite}</div></div>
+                                <div class="row mt-2"><div class="col-12 text-muted" style="font-size:0.7rem;">* La fecha de inicio se calcula según la regla: si la asignación es después de las 12:00, se inicia al siguiente día hábil a las 7:00. La fecha límite se calcula sumando los días hábiles correspondientes al nivel y ajustando a las 12:00.</div></div>
+                            </div>
                         </div>
                     `;
                     body.innerHTML = html;
                 }
-                // Asegurarse de que no haya instancias previas
                 const modalEl = document.getElementById('modalDetalleTiempo');
                 let modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.dispose();
@@ -2128,15 +1865,302 @@
                 document.getElementById('modalHistorialExp').textContent = c.numero;
                 document.getElementById('modalHistorialEmpleado').textContent = `(Empleado: ${c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar'})`;
                 const body = document.getElementById('modalHistorialBody');
-                if (!c.historial || !c.historial.length) { body.innerHTML = '<div class="text-muted">Sin movimientos registrados.</div>'; } 
-                else { body.innerHTML = c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join(''); }
+                const empNombre = currentEmpleadoObj ? currentEmpleadoObj.nombre : '-';
+                const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+                if (!c.historial || !c.historial.length) { 
+                    body.innerHTML = `
+                        <div class="print-header">
+                            <h4>Historial del expediente ${c.numero}</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                        <div class="text-muted">Sin movimientos registrados.</div>
+                    `; 
+                } 
+                else { 
+                    let historialHtml = `
+                        <div class="print-header">
+                            <h4>Historial del expediente ${c.numero}</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                    `;
+                    historialHtml += c.historial.slice().reverse().map(m => `<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:0.75rem;color:#5f7f9f;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario || 'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:0.8rem;color:#5f7f9f;width:100%;padding-left:140px;">${m.comentario || '-'}</span></div>`).join('');
+                    body.innerHTML = historialHtml;
+                }
                 const modalElement = document.getElementById('modalHistorial');
                 const modal = new bootstrap.Modal(modalElement);
                 modal.show();
                 modalElement.addEventListener('hidden.bs.modal', function onHidden() {
-                    body.innerHTML = '<div class="text-muted">Cargando...</div>';
                     modalElement.removeEventListener('hidden.bs.modal', onHidden);
                 }, { once: true });
+            }
+
+            // ============================================================
+            //  REPORTE (IMPRIMIR) - respeta filtros aplicados
+            // ============================================================
+            function generarReporteEmpleado(empId) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
+
+                let causasFiltradas = obtenerTodasCausas();
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    causasFiltradas = causasFiltradas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroFecha) {
+                    const partes = filtroFecha.split('-');
+                    const fYear = parseInt(partes[0]);
+                    const fMonth = parseInt(partes[1]);
+                    const fDay = parseInt(partes[2]);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const dParts = c.fechaAsignacion.split('T')[0].split('-');
+                        const dYear = parseInt(dParts[0]);
+                        const dMonth = parseInt(dParts[1]);
+                        const dDay = parseInt(dParts[2]);
+                        return dYear === fYear && dMonth === fMonth && dDay === fDay;
+                    });
+                }
+                if (filtroMes) {
+                    const mes = parseInt(filtroMes);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getMonth() === mes - 1;
+                    });
+                }
+                if (filtroAnio) {
+                    const anio = parseInt(filtroAnio);
+                    causasFiltradas = causasFiltradas.filter(c => {
+                        if (!c.fechaAsignacion) return false;
+                        const d = new Date(c.fechaAsignacion);
+                        return d.getFullYear() === anio;
+                    });
+                }
+
+                if (filtroKPI && filtroKPI !== 'total') {
+                    if (filtroKPI === 'proceso') causasFiltradas = causasFiltradas.filter(c => c.estado === 'en_proceso');
+                    else if (filtroKPI === 'secretaria') causasFiltradas = causasFiltradas.filter(c => c.estado === 'en_secretaria');
+                    else if (filtroKPI === 'defensor') causasFiltradas = causasFiltradas.filter(c => c.estado === 'en_defensor');
+                    else if (filtroKPI === 'finalizados') causasFiltradas = causasFiltradas.filter(c => c.estado === 'finalizada');
+                    else if (filtroKPI === 'demora') {
+                        causasFiltradas = causasFiltradas.filter(c => {
+                            if (c.estado !== 'en_proceso') return false;
+                            const det = getDetalleTiempo(c);
+                            return det.estado && (det.estado.estado === 'vencido' || det.estado.estado === 'fueraplazo' || det.estado.estado === 'exceso');
+                        });
+                    }
+                }
+
+                const activas = causasFiltradas.filter(c => c.estado === 'en_proceso');
+                activas.sort((a, b) => new Date(b.fechaAsignacion) - new Date(a.fechaAsignacion));
+                const historial = causasFiltradas.filter(c => c.estado === 'finalizada');
+                const empNombre = emp.nombre;
+                const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div class="print-header">
+                            <h4>Reporte de Actividades</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                        <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${activas.length}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Finalizadas</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#2e7d32;">${historial.length}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Total</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#0a2a44;">${activas.length + historial.length}</div>
+                            </div>
+                        </div>
+                        <h6 style="font-weight: 600; color: #0a2a44; margin: 1rem 0 0.5rem;"><i class="bi bi-inbox"></i> Bandeja Activa (En Proceso)</h6>
+                        ${activas.length ? `
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 700px;">
+                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Modo Intervención</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tiempo (Día Hábil)</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado Actual</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Observación</th>
+                                </tr></thead>
+                                <tbody>
+                                    ${activas.map(c => {
+                                        const detalle = getDetalleTiempo(c);
+                                        const dias = detalle.diasTranscurridos || 0;
+                                        const estado = detalle.estado || { estado: 'plazo', color: 'verde', label: 'En plazo' };
+                                        const estadoColor = estado.color === 'verde' ? 'estado-plazo' : (estado.color === 'naranja' ? 'estado-vencido' : (estado.color === 'rojo' ? 'estado-fueraplazo' : 'estado-exceso'));
+                                        const comentario = getComentarioAsignacion(c);
+                                        return `<tr style="border-bottom: 1px solid #eef2f7;">
+                                            <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
+                                            <td style="padding: 6px 8px;">${c.modoIntervencion || '-'}</td>
+                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
+                                            <td style="padding: 6px 8px;">
+                                                <span class="crono ${estado.color}" style="cursor:pointer;" data-id="${c.id}">${dias}</span>
+                                            </td>
+                                            <td style="padding: 6px 8px;"><span class="${estadoColor}">${estado.label}</span></td>
+                                            <td style="padding: 6px 8px;">N${c.nivelSecretario}</td>
+                                            <td style="padding: 6px 8px; font-size:0.75rem; max-width:150px; word-break:break-word;">${comentario}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        ` : `<div class="text-muted py-2">No hay causas activas.</div>`}
+                        <h6 style="font-weight: 600; color: #0a2a44; margin: 1.5rem 0 0.5rem;"><i class="bi bi-clock-history"></i> Historial</h6>
+                        ${historial.length ? `
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse: collapse; font-size: 0.75rem; min-width: 600px;">
+                                <thead><tr style="background: #f1f6fd; color: #1a4c74;">
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Expediente</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Tipo</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Nivel</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Estado</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Asignación</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Fecha Finalización</th>
+                                    <th style="padding: 6px 8px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.4px; border-bottom: 1px solid #dce5ec;">Justificación</th>
+                                </tr></thead>
+                                <tbody>
+                                    ${historial.map(c => {
+                                        const fechaAsig = getFechaAsignacion(c);
+                                        let justifHtml = '-';
+                                        if (c.justificaciones && c.justificaciones.length > 0) {
+                                            const ultima = c.justificaciones[c.justificaciones.length - 1];
+                                            const estadoCls = ultima.estado === 'aprobada' ? 'justif-aprobada' : (ultima.estado === 'rechazada' ? 'justif-rechazada' : 'justif-pendiente');
+                                            const estadoLabel = ultima.estado === 'aprobada' ? 'Aprobada' : (ultima.estado === 'rechazada' ? 'Rechazada' : 'Pendiente');
+                                            justifHtml = `<span class="${estadoCls}">${estadoLabel}</span>`;
+                                        }
+                                        return `<tr style="border-bottom: 1px solid #eef2f7;">
+                                            <td style="padding: 6px 8px; font-weight: 600;">${c.numero}</td>
+                                            <td style="padding: 6px 8px;">${c.tipo || '-'}</td>
+                                            <td style="padding: 6px 8px;">N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                                            <td style="padding: 6px 8px;"><span class="badge-estado badge-fin">✅ Finalizada</span></td>
+                                            <td style="padding: 6px 8px;">${fechaAsig}</td>
+                                            <td style="padding: 6px 8px;">${fmtDt(c.fechaFinalizacion)}</td>
+                                            <td style="padding: 6px 8px;">${justifHtml}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        ` : `<div class="text-muted py-2">No hay expedientes finalizados.</div>`}
+                        <div style="margin-top: 0.5rem; font-size: 0.65rem; color: #8aa3bc; border-top: 1px solid #e2edf7; padding-top: 0.5rem;">
+                            Reporte generado el ${ahora} · Sistema Digital de Pases
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modalReporteEmpBody').innerHTML = html;
+                document.getElementById('modalReporteEmpNombre').textContent = emp.nombre;
+                new bootstrap.Modal(document.getElementById('modalReporteEmpleado')).show();
+            }
+
+            // ============================================================
+            //  ESTADÍSTICAS
+            // ============================================================
+            function generarEstadisticas(empId) {
+                const emp = CONFIG.empleados.find(e => e.id === empId);
+                if (!emp) { showToast('Empleado no encontrado', 'danger'); return; }
+
+                const todasCausas = obtenerTodasCausas();
+
+                const plazoStats = {
+                    'plazo': 0,
+                    'vencido': 0,
+                    'fueraplazo': 0,
+                    'exceso': 0
+                };
+                todasCausas.forEach(c => {
+                    if (c.estado === 'en_proceso' || c.estado === 'finalizada') {
+                        const det = getDetalleTiempo(c);
+                        if (det.estado) {
+                            const key = det.estado.estado;
+                            if (plazoStats.hasOwnProperty(key)) plazoStats[key]++;
+                        }
+                    }
+                });
+
+                const enProceso = todasCausas.filter(c => c.estado === 'en_proceso').length;
+                const finalizados = todasCausas.filter(c => c.estado === 'finalizada').length;
+
+                const asignaciones = {};
+                CONFIG.secretarios.forEach(sec => {
+                    asignaciones[sec.nombre] = 0;
+                });
+                todasCausas.forEach(c => {
+                    const secId = obtenerSecretarioAsignante(c);
+                    if (secId) {
+                        const nombre = getSecName(secId);
+                        if (nombre && asignaciones.hasOwnProperty(nombre)) {
+                            asignaciones[nombre]++;
+                        }
+                    }
+                });
+
+                const empNombre = emp.nombre;
+                const ahora = new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+
+                let html = `
+                    <div style="font-family: 'Inter', sans-serif; color: #1f384f;">
+                        <div class="print-header">
+                            <h4>Estadísticas Globales</h4>
+                            <div class="sub">Empleado: ${empNombre}</div>
+                            <div class="fecha">Impreso el: ${ahora}</div>
+                        </div>
+                        <div class="kpi-grid-print" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">En Proceso</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#1976d2;">${enProceso}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Finalizados</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#2e7d32;">${finalizados}</div>
+                            </div>
+                            <div class="kpi-item-print" style="flex:1; min-width:80px; background:#f9fcff; border-radius:8px; padding:0.5rem; border:1px solid #ddd;">
+                                <div class="label" style="font-size:0.65rem; font-weight:700; color:#5f7f9f;">Total</div>
+                                <div class="value" style="font-size:1.2rem; font-weight:800; color:#0a2a44;">${todasCausas.length}</div>
+                            </div>
+                        </div>
+
+                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1rem;">Estado de Plazo (sobre pases en proceso y finalizados)</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Estado</th><th style="padding:6px 8px; text-align:left;">Cantidad</th></tr></thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600; color:#2e7d32;">En plazo</td><td style="padding:6px 8px;">${plazoStats.plazo}</td></tr>
+                                    <tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600; color:#e65100;">Vencido</td><td style="padding:6px 8px;">${plazoStats.vencido}</td></tr>
+                                    <tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600; color:#b71c1c;">Fuera de plazo</td><td style="padding:6px 8px;">${plazoStats.fueraplazo}</td></tr>
+                                    <tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px; font-weight:600; color:#4a148c;">Exceso de demora</td><td style="padding:6px 8px;">${plazoStats.exceso}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 style="font-weight:600; color:#0a2a44; margin-top:1.5rem;">Asignaciones por Secretario</h6>
+                        <div class="table-wrap">
+                            <table class="table-modern table" style="width:100%; border-collapse:collapse; font-size:0.75rem;">
+                                <thead><tr style="background:#f1f6fd; color:#1a4c74;"><th style="padding:6px 8px; text-align:left;">Secretario</th><th style="padding:6px 8px; text-align:left;">Cantidad de pases asignados</th></tr></thead>
+                                <tbody>
+                                    ${Object.entries(asignaciones).map(([nombre, count]) => `<tr style="border-bottom:1px solid #eef2f7;"><td style="padding:6px 8px;">${nombre}</td><td style="padding:6px 8px;">${count}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-top:0.5rem; font-size:0.65rem; color:#8aa3bc; border-top:1px solid #e2edf7; padding-top:0.5rem;">
+                            Reporte generado el ${ahora} · Sistema Digital de Pases
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modalEstadisticasBody').innerHTML = html;
+                document.getElementById('modalEstadisticasNombre').textContent = emp.nombre;
+                new bootstrap.Modal(document.getElementById('modalEstadisticas')).show();
             }
 
             // ---------- CRONOMETROS Y ACTUALIZACIÓN ----------
@@ -2360,7 +2384,7 @@
 
                 document.getElementById('globalSearch').addEventListener('input', function() {
                     searchTerm = this.value.trim();
-                    paginationState.activas.page = 1;
+                    paginationState.tablaUnica.page = 1;
                     renderEmpleado();
                 });
 
