@@ -579,7 +579,9 @@
             letter-spacing: 0.4px;
             margin-right: 2px;
         }
-        .filtros-container select {
+        .filtros-container select,
+        .filtros-container input[type="text"],
+        .filtros-container input[type="date"] {
             padding: 4px 10px;
             border-radius: 30px;
             border: 1px solid #dce5ec;
@@ -588,7 +590,8 @@
             max-width: 110px;
             transition: 0.15s;
         }
-        .filtros-container select:focus {
+        .filtros-container select:focus,
+        .filtros-container input:focus {
             border-color: #1a6bb0;
             outline: none;
         }
@@ -605,6 +608,12 @@
         }
         .filtros-container .btn-limpiar:hover {
             background: #dce5ec;
+        }
+        .filtros-container input[type="text"] {
+            max-width: 160px;
+        }
+        .filtros-container input[type="date"] {
+            max-width: 130px;
         }
 
         /* ===== MODALES MEJORADOS ===== */
@@ -1193,6 +1202,10 @@
                 <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
                 </button>
+                <!-- NUEVO BOTÓN REPORTE TOTAL -->
+                <button class="btn-header primary" id="btnReporteTotal">
+                    <i class="bi bi-file-earmark-text"></i> Reporte Total
+                </button>
                 <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
@@ -1248,7 +1261,7 @@
         <div class="modal-dialog modal-lg" style="max-width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte Completo de Actividad</h5>
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalReporteBody" style="padding: 1.5rem 2rem;">
@@ -1412,6 +1425,8 @@
             let formularioInicializado = false;
             let filtroMes = '';
             let filtroAnio = '';
+            let filtroTexto = '';
+            let filtroFecha = '';
 
             // ============================================================
             //  UTILS
@@ -1428,7 +1443,6 @@
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
 
-            // CORREGIDO: interpreta la fecha como local para mostrar exactamente la fecha guardada
             function fmtDateShort(iso) {
                 if (!iso) return '-';
                 const d = parseLocalDate(iso);
@@ -1436,15 +1450,12 @@
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             }
 
-            // ===== CORRECCIÓN DE FECHAS: parsear como local =====
             function parseLocalDate(dateStr) {
-                // dateStr puede ser "YYYY-MM-DD" o ISO con hora
                 if (!dateStr) return null;
                 let datePart = dateStr;
                 if (dateStr.includes('T')) {
                     datePart = dateStr.split('T')[0];
                 }
-                // Forzar interpretación local usando la T y hora 00:00
                 return new Date(datePart + 'T00:00:00');
             }
 
@@ -1487,7 +1498,7 @@
             }
 
             // ============================================================
-            //  VALIDACIÓN DE NÚMERO DE EXPEDIENTE (elimina el registro inválido)
+            //  VALIDACIÓN DE NÚMERO DE EXPEDIENTE
             // ============================================================
             function esNumeroValido(num) {
                 if (!num || typeof num !== 'string') return false;
@@ -1584,7 +1595,7 @@
             }
 
             // ============================================================
-            //  AUSENCIAS (CORREGIDO: parseo local de fechas)
+            //  AUSENCIAS
             // ============================================================
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
@@ -1659,7 +1670,6 @@
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
-                // Usamos la fecha actual (con hora) y la función estaAusente la ajustará a medianoche
                 const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy.toISOString()));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
@@ -1870,6 +1880,56 @@
                     const term = searchTerm.toLowerCase();
                     causas = causas.filter(c => c.numero.toLowerCase().includes(term));
                 }
+
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    causas = causas.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    causas = causas.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
+                }
+
                 if (filtroMes || filtroAnio) {
                     causas = causas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -1882,25 +1942,80 @@
                         return match;
                     });
                 }
+
                 causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 return causas;
             }
 
             // ============================================================
-            //  REPORTE COMPLETO
+            //  FUNCIONES DE REPORTE (INDIVIDUALES Y TOTAL)
             // ============================================================
-            function generarReporteCompleto() {
-                const recientes = obtenerCausasFiltradas();
 
+            // Reporte solo de Recientes (usando obtenerCausasFiltradas)
+            function generarReporteRecientes() {
+                const recientes = obtenerCausasFiltradas();
+                mostrarReporte('Recientes', recientes, '📋 Recientes', '#0b4b7a');
+            }
+
+            // Reporte solo de Rechazados/Devueltos/Remitidos
+            function generarReporteRechazados() {
                 let rechazados = state.causas.filter(c =>
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
                 rechazados = rechazados.filter(c => esNumeroValido(c.numero));
 
+                // Aplicar filtros
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    rechazados = rechazados.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    rechazados = rechazados.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
                 }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
@@ -1916,6 +2031,86 @@
                 }
                 rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
 
+                mostrarReporte('Rechazados/Devueltos/Remitidos', rechazados, '🚫 Rechazados / Devueltos / Remitidos', '#c62828');
+            }
+
+            // Reporte Total (ambas secciones)
+            function generarReporteCompleto() {
+                const recientes = obtenerCausasFiltradas();
+
+                let rechazados = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                rechazados = rechazados.filter(c => esNumeroValido(c.numero));
+
+                // Aplicar filtros a rechazados
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    rechazados = rechazados.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    rechazados = rechazados.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
+                }
+                if (filtroMes || filtroAnio) {
+                    rechazados = rechazados.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
+                // Mostrar modal con ambas secciones
                 const now = new Date();
                 const fechaStr =
                     `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1928,12 +2123,14 @@
                     filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
                 }
                 if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
-                if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
+                if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
+                if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
                     <div class="print-header">
-                        <h4>📄 Reporte Completo de Actividad</h4>
+                        <h4>📄 Reporte Total de Actividad</h4>
                         <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
                         <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
                         <p>
@@ -1948,38 +2145,7 @@
                 if (recientes.length === 0) {
                     html += `<p class="text-muted">No hay registros recientes con los filtros aplicados.</p>`;
                 } else {
-                    html += `
-                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
-                            <table class="table-modern" style="font-size:0.65rem;">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${recientes.map(c => {
-                                        const fuentes = [];
-                                        if (c.fuenteSiged) fuentes.push('S');
-                                        if (c.fuenteZimbra) fuentes.push('Z');
-                                        if (c.fuenteDeut) fuentes.push('D');
-                                        const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
-                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
-                                        return `
-                                        <tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td style="font-size:0.6rem;">${c.tipo}</td>
-                                            <td>N${c.nivelOperador}</td>
-                                            <td>${fuenteHtml}</td>
-                                            <td>${getEstadoTexto(c.estado)}</td>
-                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                        </tr>
-                                    `}).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += generarTablaReporte(recientes);
                 }
 
                 html += `<div class="print-section-break"></div>`;
@@ -1987,38 +2153,95 @@
                 if (rechazados.length === 0) {
                     html += `<p class="text-muted">No hay registros en esta categoría con los filtros aplicados.</p>`;
                 } else {
-                    html += `
-                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
-                            <table class="table-modern" style="font-size:0.65rem;">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rechazados.map(c => {
-                                        const esDevuelto = c.estado === 'devuelto_siged';
-                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
-                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
-                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
-                                        return `
-                                        <tr class="${claseFila}">
-                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
-                                            <td style="font-size:0.6rem;">${c.tipo}</td>
-                                            <td>N${c.nivelOperador}</td>
-                                            <td>${getEstadoTexto(c.estado)}</td>
-                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                            <td style="font-size:0.6rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                        </tr>
-                                    `}).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += generarTablaReporte(rechazados, true);
                 }
 
                 document.getElementById('modalReporteBody').innerHTML = html;
+                document.querySelector('#modalReporte .modal-title').innerHTML = '<i class="bi bi-printer me-2"></i>Reporte Total de Actividad';
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
+            }
+
+            // Función auxiliar para generar tabla de reporte
+            function generarTablaReporte(causas, esRechazados = false) {
+                let html = `
+                    <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                        <table class="table-modern" style="font-size:0.65rem;">
+                            <thead>
+                                <tr>
+                                    <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                    <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                causas.forEach(c => {
+                    const fuentes = [];
+                    if (c.fuenteSiged) fuentes.push('S');
+                    if (c.fuenteZimbra) fuentes.push('Z');
+                    if (c.fuenteDeut) fuentes.push('D');
+                    const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
+                    const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c
+                        .estado === 'rechazado' ? c.historial[c.historial.length - 1]?.comentario || '' : '');
+                    const esDevuelto = c.estado === 'devuelto_siged';
+                    const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                    const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                    html += `
+                        <tr class="${claseFila}">
+                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
+                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                            <td>N${c.nivelOperador}</td>
+                            <td>${fuenteHtml}</td>
+                            <td>${getEstadoTexto(c.estado)}</td>
+                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                        </tr>
+                    `;
+                });
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                return html;
+            }
+
+            // Función genérica para mostrar un reporte de una sola sección
+            function mostrarReporte(tituloSeccion, datos, tituloModal, color) {
+                const now = new Date();
+                const fechaStr =
+                    `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                let filtrosTexto = [];
+                if (filtroMes) {
+                    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
+                        'Octubre', 'Noviembre', 'Diciembre'
+                    ];
+                    filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
+                }
+                if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
+                if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
+                if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
+
+                let html = `
+                    <div class="print-header">
+                        <h4>📄 Reporte de ${tituloSeccion}</h4>
+                        <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
+                        <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                        <p><span class="print-total-badge" style="background:${color};color:white;">Total: ${datos.length}</span></p>
+                    </div>
+                    <div class="print-section-title">${tituloModal} (${datos.length})</div>
+                `;
+
+                if (datos.length === 0) {
+                    html += `<p class="text-muted">No hay registros con los filtros aplicados.</p>`;
+                } else {
+                    html += generarTablaReporte(datos, tituloSeccion.includes('Rechazados'));
+                }
+
+                document.getElementById('modalReporteBody').innerHTML = html;
+                document.querySelector('#modalReporte .modal-title').innerHTML = `<i class="bi bi-printer me-2"></i>Reporte de ${tituloSeccion}`;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
@@ -2386,7 +2609,7 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs (total, no solo activas)
+            //  ACTUALIZAR KPIs
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
@@ -2448,7 +2671,7 @@
                 let causasFiltradas = obtenerCausasFiltradas();
 
                 let datosMostrar = causasFiltradas;
-                if (!filtroMes && !filtroAnio) {
+                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
 
@@ -2465,6 +2688,53 @@
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causasRechazadas = causasRechazadas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
                 }
                 if (filtroMes || filtroAnio) {
                     causasRechazadas = causasRechazadas.filter(c => {
@@ -2501,7 +2771,7 @@
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteCompleto"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteRecientes"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                         </div>
                     </div>
                     <div class="filtros-container">
@@ -2514,8 +2784,12 @@
                             <option value="">Año</option>
                             ${añoOptions}
                         </select>
+                        <label>Texto:</label>
+                        <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTexto}" />
+                        <label>Fecha exacta:</label>
+                        <input type="date" id="filtroFechaExacta" value="${filtroFecha}" />
                         <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
-                        ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
                     </div>
                 `;
 
@@ -2632,9 +2906,13 @@
                     });
                 }
 
+                // Eventos de filtros
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
+                const textoInput = document.getElementById('filtroTextoGeneral');
+                const fechaInput = document.getElementById('filtroFechaExacta');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+
                 if (mesSelect) { mesSelect.addEventListener('change', function() { filtroMes = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
@@ -2643,22 +2921,55 @@
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
-                if (limpiarBtn) { limpiarBtn.addEventListener('click', function() { filtroMes = '';
-                        filtroAnio = '';
+
+                if (textoInput) {
+                    textoInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            filtroTexto = this.value;
+                            paginationState.ingreso.page = 1;
+                            paginationState.rechazados.page = 1;
+                            renderTabla();
+                        }
+                    });
+                }
+
+                if (fechaInput) {
+                    fechaInput.addEventListener('change', function() {
+                        filtroFecha = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
-                        renderTabla(); }); }
+                        renderTabla();
+                    });
+                }
 
-                const btnReporteCompleto = container.querySelector('#btnReporteCompleto');
-                if (btnReporteCompleto) {
-                    btnReporteCompleto.addEventListener('click', function() {
-                        generarReporteCompleto();
+                if (limpiarBtn) {
+                    limpiarBtn.addEventListener('click', function() {
+                        filtroMes = '';
+                        filtroAnio = '';
+                        filtroTexto = '';
+                        filtroFecha = '';
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        if (mesSelect) mesSelect.value = '';
+                        if (anioSelect) anioSelect.value = '';
+                        if (textoInput) textoInput.value = '';
+                        if (fechaInput) fechaInput.value = '';
+                        renderTabla();
+                    });
+                }
+
+                // Listeners para los botones de reporte (individuales)
+                const btnReporteRecientes = container.querySelector('#btnReporteRecientes');
+                if (btnReporteRecientes) {
+                    btnReporteRecientes.addEventListener('click', function() {
+                        generarReporteRecientes();
                     });
                 }
                 const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
                 if (btnReporteRechazados) {
                     btnReporteRechazados.addEventListener('click', function() {
-                        generarReporteCompleto();
+                        generarReporteRechazados();
                     });
                 }
 
@@ -2774,6 +3085,8 @@
                 formularioInicializado = false;
                 filtroMes = '';
                 filtroAnio = '';
+                filtroTexto = '';
+                filtroFecha = '';
                 state.causas = [];
                 state.ausencias = [];
                 state.lastIndex = 0;
@@ -2817,6 +3130,11 @@
                 });
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
+
+                // Botón Reporte Total (en el header)
+                document.getElementById('btnReporteTotal').addEventListener('click', function() {
+                    generarReporteCompleto();
+                });
             });
 
         })();
