@@ -9,7 +9,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js">
+    </script>
     <!-- Firebase SDK (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
     </script>
@@ -285,6 +287,15 @@
         .btn-header.primary:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(26, 107, 176, 0.3);
+        }
+        .btn-header.success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            color: #fff;
+            border: none;
+        }
+        .btn-header.success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(46, 155, 74, 0.3);
         }
         .btn-header.danger-outline {
             color: #b71c1c;
@@ -942,7 +953,6 @@
 
         /* ===== PRINT (MEJORADO PARA REPORTE A4) ===== */
         @media print {
-            /* Ocultar todo excepto el modal de reporte */
             body * {
                 visibility: hidden;
             }
@@ -975,7 +985,6 @@
                 background: transparent !important;
                 overflow: visible !important;
             }
-            /* Ocultar header, footer y botones del modal */
             #modalReporte .modal-header,
             #modalReporte .modal-footer,
             #modalReporte .btn-close,
@@ -984,18 +993,15 @@
             #modalReporte .pagination-bar {
                 display: none !important;
             }
-            /* Cuerpo del modal: sin scroll, sin max-height, padding reducido */
             #modalReporte .modal-body {
                 padding: 5px !important;
                 overflow: visible !important;
                 max-height: none !important;
             }
-            /* Contenedor de tabla: sin scroll, sin max-height */
             #modalReporte .table-wrap {
                 overflow: visible !important;
                 max-height: none !important;
             }
-            /* Tabla: estilo para impresión, sin scroll, con bordes */
             #modalReporte .table-modern {
                 min-width: 0 !important;
                 width: 100% !important;
@@ -1018,12 +1024,10 @@
                 position: relative !important;
                 top: 0 !important;
             }
-            /* Evitar que las filas se corten a la mitad */
             #modalReporte .table-modern tbody tr {
                 page-break-inside: avoid !important;
                 page-break-after: auto !important;
             }
-            /* Saltos de página entre secciones */
             .print-section-break {
                 page-break-before: always !important;
                 margin-top: 20px !important;
@@ -1034,7 +1038,6 @@
                 page-break-before: avoid !important;
                 border-top: none !important;
             }
-            /* Títulos de sección en impresión */
             .print-section-title {
                 font-size: 1.1rem !important;
                 font-weight: 800 !important;
@@ -1043,7 +1046,6 @@
                 padding-bottom: 4px !important;
                 border-bottom: 2px solid #0b4b7a !important;
             }
-            /* Ajustes para el encabezado del reporte */
             .print-header {
                 margin-bottom: 12px !important;
                 padding-bottom: 8px !important;
@@ -1076,7 +1078,6 @@
                 height: auto !important;
                 overflow: visible !important;
             }
-            /* Forzar que el contenido del modal ocupe toda la página */
             #modalReporte .modal-dialog,
             #modalReporte .modal-content,
             #modalReporte .modal-body {
@@ -1164,6 +1165,39 @@
             color: rgba(255, 255, 255, 0.7);
             margin-top: 4px;
         }
+
+        /* ===== PANEL SIGED ===== */
+        .siged-panel {
+            margin-top: 1rem;
+        }
+        .siged-panel .table-wrap {
+            max-height: 400px;
+        }
+        .siged-panel .registrados {
+            opacity: 0.6;
+            background: #e9eef5;
+        }
+        .siged-panel .registrados .form-check-input {
+            pointer-events: none;
+        }
+
+        /* ===== FILE INPUT ===== */
+        .file-drop-zone {
+            border: 2px dashed #b8cce0;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .file-drop-zone:hover {
+            background: rgba(26, 107, 176, 0.05);
+            border-color: #1a6bb0;
+        }
+        .file-drop-zone input[type="file"] {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -1202,7 +1236,9 @@
                 <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
                 </button>
-                <!-- NUEVO BOTÓN REPORTE TOTAL -->
+                <button class="btn-header success" id="btnCargarSiged">
+                    <i class="bi bi-file-earmark-pdf"></i> Cargar SIGED
+                </button>
                 <button class="btn-header primary" id="btnReporteTotal">
                     <i class="bi bi-file-earmark-text"></i> Reporte Total
                 </button>
@@ -1213,6 +1249,20 @@
         <!-- ===== KPIs ===== -->
         <div class="row g-3 mb-4" id="kpiPanel">
             <!-- Generado por JavaScript -->
+        </div>
+
+        <!-- ===== PANEL SIGED ===== -->
+        <div class="glass-card siged-panel" id="sigedPanel" style="display:none;">
+            <div class="card-title">
+                <i class="bi bi-arrow-down-circle"></i> Entradas desde SIGED
+                <span class="badge bg-secondary ms-2" id="sigedCount">0</span>
+                <button class="btn btn-modern btn-modern-outline btn-modern-sm ms-auto" id="btnCerrarSiged">
+                    <i class="bi bi-x"></i> Cerrar
+                </button>
+            </div>
+            <div id="sigedTablaContainer">
+                <div class="text-muted">Cargue un archivo PDF con el listado de entrada de SIGED para visualizar los expedientes.</div>
+            </div>
         </div>
 
         <!-- CUERPO -->
@@ -1338,6 +1388,35 @@
         </div>
     </div>
 
+    <!-- MODAL CARGAR SIGED -->
+    <div class="modal fade modal-modern" id="modalCargarSiged" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2"></i>Cargar listado SIGED (PDF)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <i class="bi bi-cloud-upload" style="font-size:3rem; color:#1a6bb0;"></i>
+                        <p class="mt-2">Arrastre el archivo PDF aquí o haga clic para seleccionarlo</p>
+                        <input type="file" id="fileInput" accept=".pdf" />
+                    </div>
+                    <div id="progresoCarga" style="display:none;" class="mt-3">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%"></div>
+                        </div>
+                        <p class="text-muted small mt-1">Procesando PDF...</p>
+                    </div>
+                    <div id="resultadoParseo" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGOUT ALERT -->
     <div id="logoutAlert">
         <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
@@ -1412,7 +1491,9 @@
             let state = {
                 causas: [],
                 ausencias: [],
-                lastIndex: 0
+                lastIndex: 0,
+                sigedEntries: [],
+                sigedRegistrados: []
             };
             let currentOperator = '';
             let searchTerm = '';
@@ -1426,6 +1507,7 @@
             let filtroMes = '';
             let filtroAnio = '';
             let filtroTexto = '';
+            let filtroTextoInput = ''; // variable para mantener el valor en el input
             let filtroFecha = '';
 
             // ============================================================
@@ -1497,9 +1579,6 @@
                     setTimeout(() => div.remove(), 300); }, 3800);
             }
 
-            // ============================================================
-            //  VALIDACIÓN DE NÚMERO DE EXPEDIENTE
-            // ============================================================
             function esNumeroValido(num) {
                 if (!num || typeof num !== 'string') return false;
                 const trimmed = num.trim();
@@ -1703,9 +1782,10 @@
             }
 
             // ============================================================
-            //  REGISTRO DE CAUSA
+            //  REGISTRO DE CAUSA (con fecha opcional)
             // ============================================================
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut) {
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia,
+                dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, fechaPaseCustom) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -1741,6 +1821,8 @@
                     }
                 }
 
+                const fechaPase = fechaPaseCustom ? new Date(fechaPaseCustom).toISOString() : new Date().toISOString();
+
                 const nueva = {
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
@@ -1759,7 +1841,7 @@
                     empleadoOriginal: null,
                     tipoAsignacion: null,
                     esReingreso: false,
-                    fechaPaseSecretario: new Date().toISOString(),
+                    fechaPaseSecretario: fechaPase,
                     fechaAsignacion: null,
                     fechaFinalizacion: null,
                     fechaLimite: null,
@@ -1948,16 +2030,14 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE REPORTE (INDIVIDUALES Y TOTAL)
+            //  FUNCIONES DE REPORTE
             // ============================================================
 
-            // Reporte solo de Recientes (usando obtenerCausasFiltradas)
             function generarReporteRecientes() {
                 const recientes = obtenerCausasFiltradas();
                 mostrarReporte('Recientes', recientes, '📋 Recientes', '#0b4b7a');
             }
 
-            // Reporte solo de Rechazados/Devueltos/Remitidos
             function generarReporteRechazados() {
                 let rechazados = state.causas.filter(c =>
                     c.operador === currentOperator &&
@@ -1965,7 +2045,6 @@
                 );
                 rechazados = rechazados.filter(c => esNumeroValido(c.numero));
 
-                // Aplicar filtros
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
@@ -2034,7 +2113,6 @@
                 mostrarReporte('Rechazados/Devueltos/Remitidos', rechazados, '🚫 Rechazados / Devueltos / Remitidos', '#c62828');
             }
 
-            // Reporte Total (ambas secciones)
             function generarReporteCompleto() {
                 const recientes = obtenerCausasFiltradas();
 
@@ -2044,7 +2122,6 @@
                 );
                 rechazados = rechazados.filter(c => esNumeroValido(c.numero));
 
-                // Aplicar filtros a rechazados
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
@@ -2110,7 +2187,6 @@
                 }
                 rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
 
-                // Mostrar modal con ambas secciones
                 const now = new Date();
                 const fechaStr =
                     `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -2161,7 +2237,6 @@
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
-            // Función auxiliar para generar tabla de reporte
             function generarTablaReporte(causas, esRechazados = false) {
                 let html = `
                     <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
@@ -2205,7 +2280,6 @@
                 return html;
             }
 
-            // Función genérica para mostrar un reporte de una sola sección
             function mostrarReporte(tituloSeccion, datos, tituloModal, color) {
                 const now = new Date();
                 const fechaStr =
@@ -2368,47 +2442,47 @@
                 const operadorOptions = `<option value="${currentOperator}" selected>${currentOperator}</option>`;
                 const tipos = [
                     'Nuevo patrocinio',
-            'Nuevo patrocinio Violencia Familiar',
-            'Amparo',
-            'Acción de protección de persona',
-            'Alimentos',
-            'Autorización de viaje',
-            'Cambio de residencia',
-            'Causa Penal',
-            'CEJUME Formulario',
-            'Cuidado personal',
-            'Curatela',            
-            'Daños y Perjuicios',
-            'Declaración de incapacidad',
-            'Delegación de responsabilidad parental',            
-            'Desalojo',
-            'Determinación de capacidad',
-            'Diligencia preliminar',            
-            'Divorcio',
-            'Evaluación Art 42 C.C.C.N.',
-            'Filiación',
-            'Filiación y Daño',
-            'Guarda',
-            'Guarda con fines de adopción',            
-            'Homologación Acuerdo CEJUME',
-            'Impugnación de paternidad',
-            'Insania',
-            'Laboral',
-            'Medida autosatisfactiva',
-            'Medida excepcional de protección integral de persona Art 648 inc b',
-            'Penal (cámara gesell)',
-            'Prescripción Adquisitiva',
-            'Protección de personas',
-            'Rectificación de datos',
-            'Régimen de comunicación y contacto',
-            'Restitución de menores',
-            'Restricción de capacidad',
-            'Sucesión',
-            'Supresión de apellido paterno',            
-            'Tutela',
-            'Venia judicial',            
-            'Violencia Familiar',
-            'Otro'
+                    'Nuevo patrocinio Violencia Familiar',
+                    'Amparo',
+                    'Acción de protección de persona',
+                    'Alimentos',
+                    'Autorización de viaje',
+                    'Cambio de residencia',
+                    'Causa Penal',
+                    'CEJUME Formulario',
+                    'Cuidado personal',
+                    'Curatela',
+                    'Daños y Perjuicios',
+                    'Declaración de incapacidad',
+                    'Delegación de responsabilidad parental',
+                    'Desalojo',
+                    'Determinación de capacidad',
+                    'Diligencia preliminar',
+                    'Divorcio',
+                    'Evaluación Art 42 C.C.C.N.',
+                    'Filiación',
+                    'Filiación y Daño',
+                    'Guarda',
+                    'Guarda con fines de adopción',
+                    'Homologación Acuerdo CEJUME',
+                    'Impugnación de paternidad',
+                    'Insania',
+                    'Laboral',
+                    'Medida autosatisfactiva',
+                    'Medida excepcional de protección integral de persona Art 648 inc b',
+                    'Penal (cámara gesell)',
+                    'Prescripción Adquisitiva',
+                    'Protección de personas',
+                    'Rectificación de datos',
+                    'Régimen de comunicación y contacto',
+                    'Restitución de menores',
+                    'Restricción de capacidad',
+                    'Sucesión',
+                    'Supresión de apellido paterno',
+                    'Tutela',
+                    'Venia judicial',
+                    'Violencia Familiar',
+                    'Otro'
                 ];
                 const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
                 const modoIntervencionOptions = [
@@ -2555,7 +2629,7 @@
                                 'warning'); return; }
                     }
                     const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion,
-                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut);
+                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, null);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -2604,6 +2678,61 @@
                         document.getElementById('ausenciaFechaFin').value = '';
                     }
                 });
+
+                // Función para autocompletar desde SIGED
+                window.autocompletarFormularioDesdeSiged = function(entry) {
+                    const inpExpediente = document.getElementById('inpExpediente');
+                    const inpObs = document.getElementById('inpObs');
+                    const fuenteSiged = document.getElementById('fuenteSiged');
+                    const inpDatosParte = document.getElementById('inpDatosParte');
+                    const inpDni = document.getElementById('inpDni');
+                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
+                    const inpTipo = document.getElementById('inpTipo');
+                    const inpNivel = document.getElementById('inpNivel');
+                    const inpModo = document.getElementById('inpModoIntervencion');
+
+                    if (inpExpediente) inpExpediente.value = entry.numero;
+                    // Usar el origen exacto extraído del PDF
+                    if (inpObs) inpObs.value = `Ingreso desde SIGED - Origen: ${entry.origen || entry.juzgado || ''}`;
+                    if (fuenteSiged) fuenteSiged.checked = true;
+                    // Dejar los demás campos como están (el usuario los completa)
+                    if (inpDatosParte) inpDatosParte.value = '';
+                    if (inpDni) inpDni.value = '';
+                    if (inpAsiste) inpAsiste.value = '';
+                    if (inpTipo) inpTipo.value = 'Otro';
+                    // No forzamos el nivel
+                };
+
+                window.limpiarFormulario = function() {
+                    const inpExpediente = document.getElementById('inpExpediente');
+                    const inpObs = document.getElementById('inpObs');
+                    const fuenteSiged = document.getElementById('fuenteSiged');
+                    const inpDatosParte = document.getElementById('inpDatosParte');
+                    const inpDni = document.getElementById('inpDni');
+                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
+                    const inpTipo = document.getElementById('inpTipo');
+                    const inpNivel = document.getElementById('inpNivel');
+                    const inpModo = document.getElementById('inpModoIntervencion');
+                    const inpAccion = document.getElementById('inpAccion');
+                    const inpMotivo = document.getElementById('inpMotivo');
+                    const inpDependencia = document.getElementById('inpDependencia');
+
+                    if (inpExpediente) inpExpediente.value = '';
+                    if (inpObs) inpObs.value = '';
+                    if (fuenteSiged) fuenteSiged.checked = false;
+                    if (inpDatosParte) inpDatosParte.value = '';
+                    if (inpDni) inpDni.value = '';
+                    if (inpAsiste) inpAsiste.value = '';
+                    if (inpTipo) inpTipo.value = '';
+                    if (inpNivel) inpNivel.value = '2';
+                    if (inpModo) inpModo.value = '';
+                    if (inpAccion) inpAccion.value = 'asignar';
+                    if (inpMotivo) inpMotivo.value = '';
+                    if (inpDependencia) inpDependencia.value = '';
+                    // Ocultar campos de acción si es necesario
+                    const camposAccionDiv = document.getElementById('camposAccion');
+                    if (camposAccionDiv) camposAccionDiv.style.display = 'none';
+                };
 
                 formularioInicializado = true;
             }
@@ -2785,7 +2914,7 @@
                             ${añoOptions}
                         </select>
                         <label>Texto:</label>
-                        <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTexto}" />
+                        <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTextoInput}" />
                         <label>Fecha exacta:</label>
                         <input type="date" id="filtroFechaExacta" value="${filtroFecha}" />
                         <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
@@ -2906,7 +3035,6 @@
                     });
                 }
 
-                // Eventos de filtros
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
                 const textoInput = document.getElementById('filtroTextoGeneral');
@@ -2923,10 +3051,14 @@
                         renderTabla(); }); }
 
                 if (textoInput) {
+                    textoInput.addEventListener('input', function() {
+                        // Actualizar el valor temporal mientras escribe
+                        filtroTextoInput = this.value;
+                    });
                     textoInput.addEventListener('keydown', function(e) {
                         if (e.key === 'Enter') {
                             e.preventDefault();
-                            filtroTexto = this.value;
+                            filtroTexto = filtroTextoInput;
                             paginationState.ingreso.page = 1;
                             paginationState.rechazados.page = 1;
                             renderTabla();
@@ -2948,6 +3080,7 @@
                         filtroMes = '';
                         filtroAnio = '';
                         filtroTexto = '';
+                        filtroTextoInput = '';
                         filtroFecha = '';
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
@@ -2959,7 +3092,6 @@
                     });
                 }
 
-                // Listeners para los botones de reporte (individuales)
                 const btnReporteRecientes = container.querySelector('#btnReporteRecientes');
                 if (btnReporteRecientes) {
                     btnReporteRecientes.addEventListener('click', function() {
@@ -2982,6 +3114,264 @@
                 });
 
                 actualizarKPIs();
+            }
+
+            // ============================================================
+            //  PANEL SIGED
+            // ============================================================
+            function mostrarPanelSiged() {
+                const panel = document.getElementById('sigedPanel');
+                panel.style.display = 'block';
+                renderSigedTabla();
+            }
+
+            function ocultarPanelSiged() {
+                document.getElementById('sigedPanel').style.display = 'none';
+                state.sigedEntries = [];
+            }
+
+            function renderSigedTabla() {
+                const container = document.getElementById('sigedTablaContainer');
+                const entries = state.sigedEntries;
+
+                if (!entries || entries.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            <p>No se cargaron expedientes. Cargue un PDF de SIGED.</p>
+                        </div>
+                    `;
+                    document.getElementById('sigedCount').textContent = '0';
+                    return;
+                }
+
+                const numerosExistentes = new Set(
+                    state.causas.filter(c => c.operador === currentOperator).map(c => c.numero.toUpperCase())
+                );
+                const entriesFiltradas = entries.map(e => {
+                    const registrado = numerosExistentes.has(e.numero.toUpperCase());
+                    return { ...e, registrado };
+                });
+
+                const countPendientes = entriesFiltradas.filter(e => !e.registrado).length;
+                document.getElementById('sigedCount').textContent = entriesFiltradas.length;
+
+                let html = `
+                    <div class="table-wrap">
+                        <table class="table-modern table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="width:15%;">Fecha y Hora Entrada</th>
+                                    <th style="width:20%;">Expediente</th>
+                                    <th style="width:45%;">Origen</th>
+                                    <th style="width:15%;">Marcar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                entriesFiltradas.forEach((e, idx) => {
+                    const checked = e.marcado ? 'checked' : '';
+                    const disabled = e.registrado ? 'disabled' : '';
+                    const claseRegistrado = e.registrado ? 'registrados' : '';
+                    // Mostrar el origen completo extraído del PDF
+                    const origenMostrar = e.origen || e.juzgado || '-';
+                    html += `
+                        <tr class="${claseRegistrado}">
+                            <td>${e.fecha}</td>
+                            <td><strong>${e.numero}</strong></td>
+                            <td style="font-size:0.75rem;">${origenMostrar}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input siged-checkbox" type="checkbox" id="sigedCheck_${idx}" data-idx="${idx}" ${checked} ${disabled} />
+                                    <label class="form-check-label" for="sigedCheck_${idx}">
+                                        ${e.registrado ? '✅ Registrado' : 'Marcar'}
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-muted" style="font-size:0.7rem;">
+                        <i class="bi bi-info-circle"></i> Los expedientes ya registrados aparecen con fondo gris y no se pueden marcar.
+                        ${countPendientes > 0 ? `Hay <strong>${countPendientes}</strong> pendientes para registrar.` : 'Todos los expedientes ya están registrados.'}
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                // Comportamiento exclusivo y autocompletado
+                const checkboxes = container.querySelectorAll('.siged-checkbox:not([disabled])');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        if (this.checked) {
+                            // Desmarcar los demás
+                            checkboxes.forEach(other => {
+                                if (other !== this) {
+                                    other.checked = false;
+                                    const otherIdx = parseInt(other.dataset.idx);
+                                    if (state.sigedEntries[otherIdx]) {
+                                        state.sigedEntries[otherIdx].marcado = false;
+                                    }
+                                }
+                            });
+                            // Marcar este
+                            if (state.sigedEntries[idx]) {
+                                state.sigedEntries[idx].marcado = true;
+                                // Autocompletar formulario
+                                const entry = state.sigedEntries[idx];
+                                if (window.autocompletarFormularioDesdeSiged) {
+                                    window.autocompletarFormularioDesdeSiged(entry);
+                                }
+                            }
+                        } else {
+                            // Desmarcar
+                            if (state.sigedEntries[idx]) {
+                                state.sigedEntries[idx].marcado = false;
+                            }
+                            // Limpiar formulario
+                            if (window.limpiarFormulario) {
+                                window.limpiarFormulario();
+                            }
+                        }
+                        actualizarContadorSeleccionados();
+                    });
+                });
+
+                actualizarContadorSeleccionados();
+            }
+
+            function actualizarContadorSeleccionados() {
+                const seleccionados = state.sigedEntries.filter(e => e.marcado && !e.registrado).length;
+                const countSpan = document.getElementById('sigedCount');
+                if (countSpan) {
+                    const total = state.sigedEntries.length;
+                    countSpan.textContent = `${total} (${seleccionados} marcado${seleccionados !== 1 ? 's' : ''})`;
+                }
+            }
+
+            // ============================================================
+            //  PROCESAR PDF SIGED
+            // ============================================================
+            async function procesarPDF(file) {
+                const progressBar = document.querySelector('#progresoCarga .progress-bar');
+                const progresoDiv = document.getElementById('progresoCarga');
+                const resultadoDiv = document.getElementById('resultadoParseo');
+
+                progresoDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                resultadoDiv.innerHTML = '';
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + '\n';
+                        progressBar.style.width = Math.round((i / pdf.numPages) * 100) + '%';
+                    }
+
+                    const entries = parsearTextoSiged(fullText);
+                    if (entries.length === 0) {
+                        resultadoDiv.innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> No se pudieron extraer expedientes del PDF. 
+                                Verifique que el formato sea similar al listado de SIGED (movimientos EN + fecha + número).
+                                <br><small class="text-muted">Texto extraído (primeros 500 caracteres):</small>
+                                <pre class="bg-light p-2 mt-1" style="font-size:0.7rem; border-radius:8px; max-height:150px; overflow:auto;">${fullText.substring(0, 500)}...</pre>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const numerosExistentes = new Set(
+                        state.causas.filter(c => c.operador === currentOperator).map(c => c.numero.toUpperCase())
+                    );
+                    const nuevos = entries.filter(e => !numerosExistentes.has(e.numero.toUpperCase()));
+                    const duplicados = entries.filter(e => numerosExistentes.has(e.numero.toUpperCase()));
+
+                    state.sigedEntries = nuevos.map(e => ({ ...e, marcado: false, registrado: false }));
+                    duplicados.forEach(e => {
+                        state.sigedEntries.push({ ...e, marcado: false, registrado: true });
+                    });
+
+                    resultadoDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Se extrajeron <strong>${entries.length}</strong> expedientes.
+                            ${nuevos.length > 0 ? `${nuevos.length} pendientes para registrar.` : 'Todos ya están registrados.'}
+                            ${duplicados.length > 0 ? `<br><span class="text-muted">(${duplicados.length} ya existentes, no se pueden marcar)</span>` : ''}
+                        </div>
+                    `;
+
+                    mostrarPanelSiged();
+
+                } catch (error) {
+                    console.error('Error procesando PDF:', error);
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">Error al procesar el PDF: ${error.message}</div>`;
+                } finally {
+                    progresoDiv.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }
+            }
+
+            function parsearTextoSiged(text) {
+                const cleanText = text.replace(/\s+/g, ' ').trim();
+                const entries = [];
+                const regex = /EN\s*(\d{2}\/\d{2}\/\d{4})\s*(\d+\/\d{4})/g;
+                let match;
+
+                while ((match = regex.exec(cleanText)) !== null) {
+                    const fecha = match[1];
+                    const numero = match[2];
+                    const startIdx = match.index + match[0].length;
+                    const destinoRegex = /DEFENSORIA 1RA\. INSTANCIA EN LO CIVIL Y COMERCIAL(?: Y C\.)? N° 6/i;
+                    const resto = cleanText.substring(startIdx);
+                    const destinoMatch = resto.match(destinoRegex);
+                    let origen = '';
+                    let juzgado = '';
+                    if (destinoMatch) {
+                        const origenText = resto.substring(0, destinoMatch.index).trim();
+                        // Guardamos el origen completo
+                        origen = origenText;
+                        // Adicionalmente, extraemos el juzgado para referencia (pero mostramos origen)
+                        const juzgadoMatch = origenText.match(/(DEFENSORIAS OFICIALES|DEFENSORIA 1RA\. INSTANCIA EN LO CIVIL Y COMERCIAL N° \d+)/i);
+                        if (juzgadoMatch) {
+                            juzgado = juzgadoMatch[1].trim();
+                        } else {
+                            const nMatch = origenText.match(/N° (\d+)/);
+                            if (nMatch) {
+                                juzgado = `N° ${nMatch[1]}`;
+                            } else {
+                                juzgado = origenText.substring(0, 60);
+                            }
+                        }
+                    } else {
+                        origen = resto.substring(0, 200);
+                        const nMatch = origen.match(/N° (\d+)/);
+                        if (nMatch) {
+                            juzgado = `N° ${nMatch[1]}`;
+                        } else {
+                            juzgado = 'Origen desconocido';
+                        }
+                    }
+                    entries.push({
+                        fecha: fecha,
+                        numero: numero,
+                        origen: origen,
+                        juzgado: juzgado
+                    });
+                }
+                return entries;
             }
 
             // ============================================================
@@ -3086,10 +3476,13 @@
                 filtroMes = '';
                 filtroAnio = '';
                 filtroTexto = '';
+                filtroTextoInput = '';
                 filtroFecha = '';
                 state.causas = [];
                 state.ausencias = [];
                 state.lastIndex = 0;
+                state.sigedEntries = [];
+                ocultarPanelSiged();
                 showToast('Sesión cerrada', 'warning');
             }
 
@@ -3130,11 +3523,45 @@
                 });
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
-
-                // Botón Reporte Total (en el header)
                 document.getElementById('btnReporteTotal').addEventListener('click', function() {
                     generarReporteCompleto();
                 });
+
+                // SIGED
+                document.getElementById('btnCargarSiged').addEventListener('click', function() {
+                    const modal = new bootstrap.Modal(document.getElementById('modalCargarSiged'));
+                    modal.show();
+                });
+
+                const dropZone = document.getElementById('fileDropZone');
+                const fileInput = document.getElementById('fileInput');
+
+                dropZone.addEventListener('click', () => fileInput.click());
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.style.borderColor = '#1a6bb0';
+                    dropZone.style.background = 'rgba(26,107,176,0.05)';
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.style.borderColor = '#b8cce0';
+                    dropZone.style.background = 'rgba(255,255,255,0.3)';
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.style.borderColor = '#b8cce0';
+                    dropZone.style.background = 'rgba(255,255,255,0.3)';
+                    if (e.dataTransfer.files.length) {
+                        fileInput.files = e.dataTransfer.files;
+                        procesarPDF(fileInput.files[0]);
+                    }
+                });
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length) {
+                        procesarPDF(this.files[0]);
+                    }
+                });
+
+                document.getElementById('btnCerrarSiged').addEventListener('click', ocultarPanelSiged);
             });
 
         })();
