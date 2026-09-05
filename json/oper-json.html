@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js">
+    </script>
 
     <!-- ===== CONFIGURACIÓN INICIAL ===== -->
     <script>
@@ -294,6 +297,15 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(26, 107, 176, 0.3);
         }
+        .btn-header.success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            color: #fff;
+            border: none;
+        }
+        .btn-header.success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(46, 155, 74, 0.3);
+        }
         .btn-header.danger-outline {
             color: #b71c1c;
             border-color: #ffcdd2;
@@ -302,6 +314,16 @@
         .btn-header.danger-outline:hover {
             background: #ffebee;
             border-color: #ef9a9a;
+        }
+        .btn-header.modo-json {
+            background: #6c757d;
+            color: #fff;
+            border-color: #6c757d;
+        }
+        .btn-header.modo-fire {
+            background: #1976d2;
+            color: #fff;
+            border-color: #1976d2;
         }
 
         /* ===== CARDS ===== */
@@ -587,7 +609,9 @@
             letter-spacing: 0.4px;
             margin-right: 2px;
         }
-        .filtros-container select {
+        .filtros-container select,
+        .filtros-container input[type="text"],
+        .filtros-container input[type="date"] {
             padding: 4px 10px;
             border-radius: 30px;
             border: 1px solid #dce5ec;
@@ -596,7 +620,8 @@
             max-width: 110px;
             transition: 0.15s;
         }
-        .filtros-container select:focus {
+        .filtros-container select:focus,
+        .filtros-container input:focus {
             border-color: #1a6bb0;
             outline: none;
         }
@@ -614,89 +639,11 @@
         .filtros-container .btn-limpiar:hover {
             background: #dce5ec;
         }
-
-        /* ===== KPI CARDS ===== */
-        .kpi-card {
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(8px);
-            border-radius: 24px;
-            padding: 1rem 1.2rem;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 2px 12px rgba(0, 20, 40, 0.04);
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            height: 100%;
+        .filtros-container input[type="text"] {
+            max-width: 160px;
         }
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 20, 40, 0.08);
-        }
-        .kpi-card .kpi-num {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #0b4b7a;
-            line-height: 1.2;
-        }
-        .kpi-card .kpi-label {
-            font-size: 0.75rem;
-            color: #5f7f9f;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-top: 2px;
-        }
-        .kpi-card .kpi-detalle {
-            display: flex;
-            justify-content: center;
-            gap: 1.2rem;
-            margin-top: 6px;
-            font-size: 0.7rem;
-        }
-        .kpi-card .kpi-detalle span {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .kpi-card .kpi-detalle .badge {
-            font-size: 0.65rem;
-            padding: 2px 8px;
-        }
-
-        /* ===== KPI TOTAL (BOTÓN AZUL) ===== */
-        .kpi-total {
-            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
-            color: white;
-            border: none;
-            border-radius: 24px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 4px 20px rgba(26, 107, 176, 0.3);
-            text-align: right;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: default;
-            display: inline-block;
-            min-width: 200px;
-        }
-        .kpi-total:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(26, 107, 176, 0.4);
-        }
-        .kpi-total .kpi-num {
-            font-size: 2.8rem;
-            font-weight: 800;
-            color: white;
-            line-height: 1;
-        }
-        .kpi-total .kpi-label {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.85);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .kpi-total .kpi-detalle {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-top: 4px;
+        .filtros-container input[type="date"] {
+            max-width: 130px;
         }
 
         /* ===== MODALES MEJORADOS ===== */
@@ -901,6 +848,301 @@
             color: #2e7d32;
         }
 
+        /* ===== KPI CARDS ===== */
+        .kpi-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 1rem 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 12px rgba(0, 20, 40, 0.04);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 20, 40, 0.08);
+        }
+        .kpi-card .kpi-num {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #0b4b7a;
+            line-height: 1.2;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.75rem;
+            color: #5f7f9f;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
+        }
+        .kpi-card .kpi-detalle {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-top: 6px;
+            font-size: 0.7rem;
+        }
+        .kpi-card .kpi-detalle span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .kpi-card .kpi-detalle .badge {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+        }
+
+        /* ===== KPI TOTAL (BOTÓN AZUL) ===== */
+        .kpi-total {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 20px rgba(26, 107, 176, 0.3);
+            text-align: right;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: default;
+            display: inline-block;
+            min-width: 200px;
+        }
+        .kpi-total:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(26, 107, 176, 0.4);
+        }
+        .kpi-total .kpi-num {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1;
+        }
+        .kpi-total .kpi-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.85);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-total .kpi-detalle {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 4px;
+        }
+
+        /* ===== PANEL SIGED ===== */
+        .siged-panel {
+            margin-top: 1rem;
+        }
+        .siged-panel .table-wrap {
+            max-height: 400px;
+        }
+        .siged-panel .registrados {
+            opacity: 0.6;
+            background: #e9eef5;
+        }
+        .siged-panel .registrados .form-check-input {
+            pointer-events: none;
+        }
+
+        /* ===== FILE INPUT ===== */
+        .file-drop-zone {
+            border: 2px dashed #b8cce0;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .file-drop-zone:hover {
+            background: rgba(26, 107, 176, 0.05);
+            border-color: #1a6bb0;
+        }
+        .file-drop-zone input[type="file"] {
+            display: none;
+        }
+
+        /* ===== PRINT (MEJORADO PARA REPORTE A4) ===== */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #modalReporte,
+            #modalReporte * {
+                visibility: visible !important;
+            }
+            #modalReporte {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: white !important;
+                padding: 10px !important;
+                z-index: 9999 !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            #modalReporte .modal-dialog {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #modalReporte .modal-content {
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: transparent !important;
+                overflow: visible !important;
+            }
+            #modalReporte .modal-header,
+            #modalReporte .modal-footer,
+            #modalReporte .btn-close,
+            #modalReporte .btn-modern,
+            #modalReporte .btn-secondary,
+            #modalReporte .pagination-bar {
+                display: none !important;
+            }
+            #modalReporte .modal-body {
+                padding: 5px !important;
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            #modalReporte .table-wrap {
+                overflow: visible !important;
+                max-height: none !important;
+            }
+            #modalReporte .table-modern {
+                min-width: 0 !important;
+                width: 100% !important;
+                font-size: 0.6rem !important;
+                border-collapse: collapse !important;
+                table-layout: auto !important;
+                page-break-inside: auto !important;
+            }
+            #modalReporte .table-modern th,
+            #modalReporte .table-modern td {
+                padding: 3px 4px !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+                border: 1px solid #ccc !important;
+            }
+            #modalReporte .table-modern thead th {
+                background: #f1f6fd !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                position: relative !important;
+                top: 0 !important;
+            }
+            #modalReporte .table-modern tbody tr {
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
+            }
+            .print-section-break {
+                page-break-before: always !important;
+                margin-top: 20px !important;
+                padding-top: 20px !important;
+                border-top: 2px solid #0b4b7a !important;
+            }
+            .print-section-break:first-of-type {
+                page-break-before: avoid !important;
+                border-top: none !important;
+            }
+            .print-section-title {
+                font-size: 1.1rem !important;
+                font-weight: 800 !important;
+                color: #0b4b7a !important;
+                margin: 15px 0 8px 0 !important;
+                padding-bottom: 4px !important;
+                border-bottom: 2px solid #0b4b7a !important;
+            }
+            .print-header {
+                margin-bottom: 12px !important;
+                padding-bottom: 8px !important;
+                border-bottom: 2px solid #0b4b7a !important;
+            }
+            .print-header h4 {
+                font-size: 1.2rem !important;
+                font-weight: 800 !important;
+                color: #0b4b7a !important;
+                margin: 0 !important;
+            }
+            .print-header p {
+                font-size: 0.7rem !important;
+                margin: 2px 0 !important;
+                color: #333 !important;
+            }
+            .print-total-badge {
+                font-weight: 700 !important;
+                background: #e3f2fd !important;
+                padding: 2px 10px !important;
+                border-radius: 12px !important;
+                display: inline-block !important;
+                font-size: 0.7rem !important;
+                color: #0b4b7a !important;
+            }
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            #modalReporte .modal-dialog,
+            #modalReporte .modal-content,
+            #modalReporte .modal-body {
+                height: auto !important;
+                min-height: 0 !important;
+            }
+        }
+
+        /* ===== UTILITY ===== */
+        .text-muted-light {
+            color: #8aa3bc;
+        }
+        .gap-2 {
+            gap: 0.5rem;
+        }
+        .fw-600 {
+            font-weight: 600;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .bg-soft-primary {
+            background: rgba(26, 107, 176, 0.06);
+        }
+        .rounded-4 {
+            border-radius: 20px;
+        }
+        .border-dash {
+            border: 1px dashed #d2e0ed;
+        }
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: #8aa3bc;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.8rem;
+            opacity: 0.5;
+        }
+
+        /* ===== RESALTADO PARA CAUSAS DEVUELTAS ===== */
+        .tr-devuelto {
+            background-color: #ffebee !important;
+        }
+        .expediente-devuelto {
+            font-weight: 800 !important;
+            color: #c62828 !important;
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 992px) {
             .app-header {
@@ -971,128 +1213,9 @@
                 max-width: 80px;
                 font-size: 0.65rem;
             }
-        }
-
-        /* ===== PRINT ===== */
-        @media print {
-            body * {
-                visibility: hidden;
+            .kpi-card .kpi-num {
+                font-size: 1.8rem;
             }
-            #modalReporte,
-            #modalReporte * {
-                visibility: visible !important;
-            }
-            #modalReporte {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                background: white !important;
-                padding: 10px !important;
-                z-index: 9999 !important;
-                overflow: visible !important;
-                border: none !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-            }
-            #modalReporte .modal-dialog {
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            #modalReporte .modal-content {
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                border: none !important;
-                background: transparent !important;
-            }
-            #modalReporte .modal-header,
-            #modalReporte .modal-footer,
-            #modalReporte .btn-close,
-            #modalReporte .btn-modern,
-            #modalReporte .btn-secondary,
-            #modalReporte .pagination-bar {
-                display: none !important;
-            }
-            #modalReporte .modal-body {
-                padding: 5px !important;
-                overflow: visible !important;
-                max-height: none !important;
-            }
-            #modalReporte .table-wrap {
-                overflow: visible !important;
-                max-height: none !important;
-            }
-            #modalReporte .table-modern {
-                min-width: 0 !important;
-                width: 100% !important;
-                font-size: 0.6rem !important;
-                border-collapse: collapse !important;
-                table-layout: auto !important;
-            }
-            #modalReporte .table-modern th,
-            #modalReporte .table-modern td {
-                padding: 3px 4px !important;
-                white-space: normal !important;
-                word-break: break-word !important;
-                border: 1px solid #ccc !important;
-            }
-            #modalReporte .table-modern thead th {
-                background: #f1f6fd !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-            html,
-            body {
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                overflow: visible !important;
-            }
-            #modalReporte .table-modern tr {
-                page-break-inside: avoid;
-            }
-        }
-
-        /* ===== UTILITY ===== */
-        .text-muted-light {
-            color: #8aa3bc;
-        }
-        .gap-2 {
-            gap: 0.5rem;
-        }
-        .fw-600 {
-            font-weight: 600;
-        }
-        .cursor-pointer {
-            cursor: pointer;
-        }
-        .bg-soft-primary {
-            background: rgba(26, 107, 176, 0.06);
-        }
-        .rounded-4 {
-            border-radius: 20px;
-        }
-        .border-dash {
-            border: 1px dashed #d2e0ed;
-        }
-        .empty-state {
-            padding: 3rem 1rem;
-            text-align: center;
-            color: #8aa3bc;
-        }
-        .empty-state i {
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 0.8rem;
-            opacity: 0.5;
-        }
-        .tr-devuelto {
-            background-color: #ffebee !important;
-        }
-        .expediente-devuelto {
-            font-weight: 800 !important;
-            color: #c62828 !important;
         }
     </style>
 </head>
@@ -1102,7 +1225,7 @@
     <div id="loginOverlay" class="login-overlay">
         <div class="login-card">
             <div class="icon"><i class="bi bi-shield-lock-fill"></i></div>
-            <h2>Operador-Respaldo</h2>
+            <h2>Acceso Operador</h2>
             <p class="sub">Seleccione su usuario e ingrese su clave</p>
             <select id="loginOperador" class="form-select"><option value="">Seleccione un operador…</option></select>
             <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
@@ -1129,11 +1252,17 @@
                     <i class="bi bi-search"></i>
                     <input type="text" id="globalSearch" placeholder="Buscar expediente…" autocomplete="off" />
                 </div>
-                <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos desde Firestore">
+                <button class="btn-header" id="btnActualizarDatos" title="Actualizar datos">
                     <i class="bi bi-arrow-repeat"></i> Actualizar
                 </button>
-                <button class="btn-header" id="btnActivarFirestore" style="display:none; background:#1976d2; color:#fff; border-color:#1976d2;"><i class="bi bi-cloud-upload me-1"></i>Activar Base (Firestore)</button>
-                <button class="btn-header" id="btnActivarJSON" style="display:none; background:#6c757d; color:#fff; border-color:#6c757d;"><i class="bi bi-file-earmark me-1"></i>Usar Base Guardada (JSON)</button>
+                <button class="btn-header success" id="btnCargarSiged">
+                    <i class="bi bi-file-earmark-pdf"></i> Cargar SIGED
+                </button>
+                <button class="btn-header primary" id="btnReporteTotal">
+                    <i class="bi bi-file-earmark-text"></i> Reporte Total
+                </button>
+                <button class="btn-header modo-json" id="btnModoJson" style="display:none;"><i class="bi bi-file-earmark"></i> JSON</button>
+                <button class="btn-header modo-fire" id="btnModoFire" style="display:none;"><i class="bi bi-cloud-upload"></i> Firestore</button>
                 <button class="btn-header danger-outline" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
             </div>
         </header>
@@ -1141,6 +1270,20 @@
         <!-- ===== KPIs ===== -->
         <div class="row g-3 mb-4" id="kpiPanel">
             <!-- Generado por JavaScript -->
+        </div>
+
+        <!-- ===== PANEL SIGED ===== -->
+        <div class="glass-card siged-panel" id="sigedPanel" style="display:none;">
+            <div class="card-title">
+                <i class="bi bi-arrow-down-circle"></i> Entradas desde SIGED
+                <span class="badge bg-secondary ms-2" id="sigedCount">0</span>
+                <button class="btn btn-modern btn-modern-outline btn-modern-sm ms-auto" id="btnCerrarSiged">
+                    <i class="bi bi-x"></i> Cerrar
+                </button>
+            </div>
+            <div id="sigedTablaContainer">
+                <div class="text-muted">Cargue un archivo PDF con el listado de entrada de SIGED para visualizar los expedientes.</div>
+            </div>
         </div>
 
         <!-- CUERPO -->
@@ -1160,8 +1303,8 @@
         </div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:0.65rem; border-top:1px solid #e2edf7; padding-top:1rem;">
-            <i class="bi bi-cloud-check"></i> 
-            <span id="modoIndicador">Modo: JSON local</span> · Datos almacenados localmente · Cronómetros en tiempo real · Alertas >48h
+            <i class="bi bi-clock-history"></i> Cronómetros en tiempo real · Alertas >48h · Datos almacenados localmente
+            <span id="modoIndicador" class="ms-2 badge bg-secondary">Modo: JSON local</span>
         </footer>
     </div>
 
@@ -1185,12 +1328,12 @@
         </div>
     </div>
 
-    <!-- REPORTE -->
+    <!-- REPORTE (MODAL MEJORADO) -->
     <div class="modal fade modal-modern" id="modalReporte" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg" style="max-width: 95%;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte Completo de Actividad</h5>
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalReporteBody" style="padding: 1.5rem 2rem;">
@@ -1262,6 +1405,35 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-modern btn-modern-primary" id="btnConfirmarAccion"><i class="bi bi-check2"></i> Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CARGAR SIGED -->
+    <div class="modal fade modal-modern" id="modalCargarSiged" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2"></i>Cargar listado SIGED (PDF)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <i class="bi bi-cloud-upload" style="font-size:3rem; color:#1a6bb0;"></i>
+                        <p class="mt-2">Arrastre el archivo PDF aquí o haga clic para seleccionarlo</p>
+                        <input type="file" id="fileInput" accept=".pdf" />
+                    </div>
+                    <div id="progresoCarga" style="display:none;" class="mt-3">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%"></div>
+                        </div>
+                        <p class="text-muted small mt-1">Procesando PDF...</p>
+                    </div>
+                    <div id="resultadoParseo" class="mt-3"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -1340,24 +1512,45 @@
             let formularioInicializado = false;
             let filtroMes = '';
             let filtroAnio = '';
-            let db = null; // referencia a Firestore (si está activo)
+            let filtroTexto = '';
+            let filtroTextoInput = '';
+            let filtroFecha = '';
+            let db = null;
             let unsubscribeCausas = null;
+
+            // === SIGED state ===
+            let sigedEntries = [];
+            let sigedRegistrados = [];
 
             // ============================================================
             //  FUNCIONES AUXILIARES
             // ============================================================
             function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 6); }
+
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
+
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
+
             function fmtDt(iso) {
                 if (!iso) return '-';
                 const d = new Date(iso);
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
+
             function fmtDateShort(iso) {
                 if (!iso) return '-';
-                const d = new Date(iso);
+                const d = parseLocalDate(iso);
+                if (!d) return '-';
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            }
+
+            function parseLocalDate(dateStr) {
+                if (!dateStr) return null;
+                let datePart = dateStr;
+                if (dateStr.includes('T')) {
+                    datePart = dateStr.split('T')[0];
+                }
+                return new Date(datePart + 'T00:00:00');
             }
 
             function getEstadoBadge(estado) {
@@ -1398,6 +1591,15 @@
                     setTimeout(() => div.remove(), 300); }, 3800);
             }
 
+            function esNumeroValido(num) {
+                if (!num || typeof num !== 'string') return false;
+                const trimmed = num.trim();
+                if (trimmed === '') return false;
+                if (trimmed.includes('undefined') || trimmed.includes('null')) return false;
+                if (/^undefined/i.test(trimmed)) return false;
+                return true;
+            }
+
             // ============================================================
             //  PERSISTENCIA LOCAL (JSON + localStorage)
             // ============================================================
@@ -1424,7 +1626,6 @@
                     state.causas = data.causas || [];
                     state.ausencias = data.ausencias || [];
                     state.lastIndex = data.lastIndex || 0;
-                    // Asegurar que no haya duplicados por ID
                     const ids = new Set();
                     state.causas = state.causas.filter(c => {
                         if (!c.id) { c.id = generateId(); return true; }
@@ -1656,29 +1857,16 @@
                     }
                     await loadStateFromFirestore();
                     document.getElementById('modoIndicador').textContent = 'Modo: Firebase (nube)';
-                    document.getElementById('btnActivarFirestore').style.display = 'none';
-                    document.getElementById('btnActivarJSON').style.display = 'inline-block';
+                    document.getElementById('btnModoJson').style.display = 'inline-block';
+                    document.getElementById('btnModoFire').style.display = 'none';
                 } else {
                     await cargarDatosDesdeJSON();
                     document.getElementById('modoIndicador').textContent = 'Modo: JSON local';
-                    document.getElementById('btnActivarFirestore').style.display = 'inline-block';
-                    document.getElementById('btnActivarJSON').style.display = 'none';
+                    document.getElementById('btnModoJson').style.display = 'none';
+                    document.getElementById('btnModoFire').style.display = 'inline-block';
                 }
-                actualizarBotonesModo();
                 createFormulario();
                 renderTabla();
-            }
-
-            function actualizarBotonesModo() {
-                const btnFire = document.getElementById('btnActivarFirestore');
-                const btnJSON = document.getElementById('btnActivarJSON');
-                if (USE_FIRESTORE) {
-                    btnFire.style.display = 'none';
-                    btnJSON.style.display = 'inline-block';
-                } else {
-                    btnFire.style.display = 'inline-block';
-                    btnJSON.style.display = 'none';
-                }
             }
 
             // ============================================================
@@ -1708,13 +1896,14 @@
             // ============================================================
             function estaAusente(secretarioId, fecha) {
                 if (!state.ausencias || state.ausencias.length === 0) return false;
-                const f = new Date(fecha);
+                const f = parseLocalDate(fecha);
+                if (!f) return false;
                 f.setHours(0, 0, 0, 0);
                 return state.ausencias.some(a => {
                     if (a.secretarioId !== secretarioId) return false;
-                    const inicio = new Date(a.fechaInicio);
+                    const inicio = parseLocalDate(a.fechaInicio);
                     inicio.setHours(0, 0, 0, 0);
-                    const fin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    const fin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
                     fin.setHours(0, 0, 0, 0);
                     return f >= inicio && f <= fin;
                 });
@@ -1722,17 +1911,17 @@
 
             async function agregarAusencia(secretarioId, fechaInicio, fechaFin) {
                 if (!secretarioId || !fechaInicio) { showToast('Debe seleccionar secretario y fecha de inicio',
-                    'warning'); return false; }
-                const inicio = new Date(fechaInicio);
+                        'warning'); return false; }
+                const inicio = parseLocalDate(fechaInicio);
                 inicio.setHours(0, 0, 0, 0);
-                const fin = fechaFin ? new Date(fechaFin) : new Date(fechaInicio);
+                const fin = fechaFin ? parseLocalDate(fechaFin) : parseLocalDate(fechaInicio);
                 fin.setHours(0, 0, 0, 0);
                 if (fin < inicio) { showToast('La fecha fin no puede ser anterior a la fecha inicio', 'warning'); return false; }
                 const solapada = state.ausencias.some(a => {
                     if (a.secretarioId !== secretarioId) return false;
-                    const aIni = new Date(a.fechaInicio);
+                    const aIni = parseLocalDate(a.fechaInicio);
                     aIni.setHours(0, 0, 0, 0);
-                    const aFin = a.fechaFin ? new Date(a.fechaFin) : new Date(a.fechaInicio);
+                    const aFin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
                     aFin.setHours(0, 0, 0, 0);
                     return !(fin < aIni || inicio > aFin);
                 });
@@ -1778,7 +1967,7 @@
             // ============================================================
             function obtenerSecretarioAsignado() {
                 const hoy = new Date();
-                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy));
+                const disponibles = CONFIG.secretarios.filter(s => !estaAusente(s.id, hoy.toISOString()));
                 if (disponibles.length === 0) {
                     showToast('No hay secretarios disponibles hoy (todos ausentes). La causa quedará sin asignar.',
                         'danger');
@@ -1803,9 +1992,10 @@
             }
 
             // ============================================================
-            //  REGISTRO DE CAUSA
+            //  REGISTRO DE CAUSA (con fecha opcional)
             // ============================================================
-            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut) {
+            async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia,
+                dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, fechaPaseCustom) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -1841,6 +2031,8 @@
                     }
                 }
 
+                const fechaPase = fechaPaseCustom ? new Date(fechaPaseCustom).toISOString() : new Date().toISOString();
+
                 const nueva = {
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
@@ -1859,7 +2051,7 @@
                     empleadoOriginal: null,
                     tipoAsignacion: null,
                     esReingreso: false,
-                    fechaPaseSecretario: new Date().toISOString(),
+                    fechaPaseSecretario: fechaPase,
                     fechaAsignacion: null,
                     fechaFinalizacion: null,
                     fechaLimite: null,
@@ -1900,7 +2092,6 @@
                             showToast(`✅ Pase registrado: ${nueva.numero} (sin asignar por ausencias)`);
                         }
                     }
-                    renderTabla();
                     return true;
                 } catch (error) {
                     return false;
@@ -1973,10 +2164,62 @@
             // ============================================================
             function obtenerCausasFiltradas() {
                 let causas = state.causas.filter(c => c.operador === currentOperator);
+                causas = causas.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causas = causas.filter(c => c.numero.toLowerCase().includes(term));
                 }
+
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    causas = causas.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    causas = causas.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
+                }
+
                 if (filtroMes || filtroAnio) {
                     causas = causas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -1989,13 +2232,95 @@
                         return match;
                     });
                 }
+
                 causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 return causas;
             }
 
             // ============================================================
-            //  REPORTE COMPLETO (igual a operador.html)
+            //  FUNCIONES DE REPORTE (igual a operador.html)
             // ============================================================
+
+            function generarReporteRecientes() {
+                const recientes = obtenerCausasFiltradas();
+                mostrarReporte('Recientes', recientes, '📋 Recientes', '#0b4b7a');
+            }
+
+            function generarReporteRechazados() {
+                let rechazados = state.causas.filter(c =>
+                    c.operador === currentOperator &&
+                    (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
+                );
+                rechazados = rechazados.filter(c => esNumeroValido(c.numero));
+
+                if (searchTerm) {
+                    const term = searchTerm.toLowerCase();
+                    rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    rechazados = rechazados.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    rechazados = rechazados.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
+                }
+                if (filtroMes || filtroAnio) {
+                    rechazados = rechazados.filter(c => {
+                        if (!c.fechaPaseSecretario) return false;
+                        const fecha = new Date(c.fechaPaseSecretario);
+                        const mes = fecha.getMonth() + 1;
+                        const anio = fecha.getFullYear();
+                        let match = true;
+                        if (filtroMes) match = match && (mes === parseInt(filtroMes));
+                        if (filtroAnio) match = match && (anio === parseInt(filtroAnio));
+                        return match;
+                    });
+                }
+                rechazados.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+
+                mostrarReporte('Rechazados/Devueltos/Remitidos', rechazados, '🚫 Rechazados / Devueltos / Remitidos', '#c62828');
+            }
+
             function generarReporteCompleto() {
                 const recientes = obtenerCausasFiltradas();
 
@@ -2003,9 +2328,58 @@
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
+                rechazados = rechazados.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     rechazados = rechazados.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    rechazados = rechazados.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    rechazados = rechazados.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
                 }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
@@ -2033,12 +2407,14 @@
                     filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
                 }
                 if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
-                if (searchTerm) filtrosTexto.push(`Búsqueda: "${searchTerm}"`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
+                if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
+                if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
                     <div class="print-header">
-                        <h4>📄 Reporte Completo de Actividad</h4>
+                        <h4>📄 Reporte Total de Actividad</h4>
                         <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
                         <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
                         <p>
@@ -2053,38 +2429,7 @@
                 if (recientes.length === 0) {
                     html += `<p class="text-muted">No hay registros recientes con los filtros aplicados.</p>`;
                 } else {
-                    html += `
-                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
-                            <table class="table-modern" style="font-size:0.65rem;">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${recientes.map(c => {
-                                        const fuentes = [];
-                                        if (c.fuenteSiged) fuentes.push('S');
-                                        if (c.fuenteZimbra) fuentes.push('Z');
-                                        if (c.fuenteDeut) fuentes.push('D');
-                                        const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
-                                        const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
-                                        return `
-                                        <tr>
-                                            <td><strong>${c.numero}</strong></td>
-                                            <td style="font-size:0.6rem;">${c.tipo}</td>
-                                            <td>N${c.nivelOperador}</td>
-                                            <td>${fuenteHtml}</td>
-                                            <td>${getEstadoTexto(c.estado)}</td>
-                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                        </tr>
-                                    `}).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += generarTablaReporte(recientes);
                 }
 
                 html += `<div class="print-section-break"></div>`;
@@ -2092,38 +2437,93 @@
                 if (rechazados.length === 0) {
                     html += `<p class="text-muted">No hay registros en esta categoría con los filtros aplicados.</p>`;
                 } else {
-                    html += `
-                        <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
-                            <table class="table-modern" style="font-size:0.65rem;">
-                                <thead>
-                                    <tr>
-                                        <th>Expediente</th><th>Tipo</th><th>Nivel</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rechazados.map(c => {
-                                        const esDevuelto = c.estado === 'devuelto_siged';
-                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
-                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
-                                        const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
-                                        return `
-                                        <tr class="${claseFila}">
-                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
-                                            <td style="font-size:0.6rem;">${c.tipo}</td>
-                                            <td>N${c.nivelOperador}</td>
-                                            <td>${getEstadoTexto(c.estado)}</td>
-                                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
-                                            <td style="font-size:0.6rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
-                                        </tr>
-                                    `}).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
+                    html += generarTablaReporte(rechazados, true);
                 }
 
                 document.getElementById('modalReporteBody').innerHTML = html;
+                document.querySelector('#modalReporte .modal-title').innerHTML = '<i class="bi bi-printer me-2"></i>Reporte Total de Actividad';
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
+            }
+
+            function generarTablaReporte(causas, esRechazados = false) {
+                let html = `
+                    <div class="table-wrap" style="overflow:visible !important; max-height:none !important;">
+                        <table class="table-modern" style="font-size:0.65rem;">
+                            <thead>
+                                <tr>
+                                    <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
+                                    <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                causas.forEach(c => {
+                    const fuentes = [];
+                    if (c.fuenteSiged) fuentes.push('S');
+                    if (c.fuenteZimbra) fuentes.push('Z');
+                    if (c.fuenteDeut) fuentes.push('D');
+                    const fuenteHtml = fuentes.length === 0 ? '—' : fuentes.join('/');
+                    const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c
+                        .estado === 'rechazado' ? c.historial[c.historial.length - 1]?.comentario || '' : '');
+                    const esDevuelto = c.estado === 'devuelto_siged';
+                    const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                    const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                    html += `
+                        <tr class="${claseFila}">
+                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
+                            <td style="font-size:0.6rem;">${c.tipo}</td>
+                            <td>N${c.nivelOperador}</td>
+                            <td>${fuenteHtml}</td>
+                            <td>${getEstadoTexto(c.estado)}</td>
+                            <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
+                            <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                        </tr>
+                    `;
+                });
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                return html;
+            }
+
+            function mostrarReporte(tituloSeccion, datos, tituloModal, color) {
+                const now = new Date();
+                const fechaStr =
+                    `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+                let filtrosTexto = [];
+                if (filtroMes) {
+                    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre',
+                        'Octubre', 'Noviembre', 'Diciembre'
+                    ];
+                    filtrosTexto.push(`Mes: ${meses[parseInt(filtroMes)-1]}`);
+                }
+                if (filtroAnio) filtrosTexto.push(`Año: ${filtroAnio}`);
+                if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
+                if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
+                if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
+
+                let html = `
+                    <div class="print-header">
+                        <h4>📄 Reporte de ${tituloSeccion}</h4>
+                        <p><strong>Operador:</strong> ${currentOperator} &nbsp;|&nbsp; <strong>Fecha:</strong> ${fechaStr}</p>
+                        <p><strong>Filtros aplicados:</strong> ${filtrosStr}</p>
+                        <p><span class="print-total-badge" style="background:${color};color:white;">Total: ${datos.length}</span></p>
+                    </div>
+                    <div class="print-section-title">${tituloModal} (${datos.length})</div>
+                `;
+
+                if (datos.length === 0) {
+                    html += `<p class="text-muted">No hay registros con los filtros aplicados.</p>`;
+                } else {
+                    html += generarTablaReporte(datos, tituloSeccion.includes('Rechazados'));
+                }
+
+                document.getElementById('modalReporteBody').innerHTML = html;
+                document.querySelector('#modalReporte .modal-title').innerHTML = `<i class="bi bi-printer me-2"></i>Reporte de ${tituloSeccion}`;
                 new bootstrap.Modal(document.getElementById('modalReporte')).show();
             }
 
@@ -2248,9 +2648,12 @@
                 const container = document.getElementById('kpiPanel');
                 if (!container) return;
 
-                const causasOp = state.causas.filter(c => c.operador === currentOperator);
-                const totalGeneral = causasOp.length;
-                const totalActivas = causasOp.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
+                const todas = state.causas.filter(c => esNumeroValido(c.numero));
+                const totalGeneral = todas.length;
+                const totalActivas = todas.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
+
+                const secretarios = CONFIG.secretarios;
+                const orden = CONFIG.ordenSecretarios;
 
                 let html = '';
 
@@ -2266,14 +2669,11 @@
                     </div>
                 `;
 
-                const secretarios = CONFIG.secretarios;
-                const orden = CONFIG.ordenSecretarios;
-
                 html += `<div class="row g-3">`;
                 orden.forEach(id => {
                     const sec = secretarios.find(s => s.id === id);
                     if (!sec) return;
-                    const causasSecretario = causasOp.filter(c => c.secretarioId === id);
+                    const causasSecretario = todas.filter(c => c.secretarioId === id);
                     const totalAsignadas = causasSecretario.length;
                     const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
                     const enProceso = causasSecretario.filter(c => c.estado === 'en_proceso');
@@ -2309,25 +2709,42 @@
                     'Amparo',
                     'Acción de protección de persona',
                     'Alimentos',
+                    'Art 583',
+                    'Autorización de viaje',
+                    'Cambio de residencia',
+                    'Causa Penal',
                     'CEJUME Formulario',
                     'Cuidado personal',
+                    'Curatela',
+                    'Daños y Perjuicios',
                     'Declaración de incapacidad',
+                    'Delegación de responsabilidad parental',
                     'Desalojo',
                     'Determinación de capacidad',
+                    'Diligencia preliminar',
                     'Divorcio',
                     'Evaluación Art 42 C.C.C.N.',
                     'Filiación',
                     'Filiación y Daño',
                     'Guarda',
+                    'Guarda con fines de adopción',
                     'Homologación Acuerdo CEJUME',
+                    'Impugnación de paternidad',
+                    'Insania',
                     'Laboral',
                     'Medida autosatisfactiva',
-                    'Medida de protección integral',
+                    'Medida excepcional de protección integral de persona Art 648 inc b',
                     'Penal (cámara gesell)',
                     'Prescripción Adquisitiva',
+                    'Protección de personas',
+                    'Rectificación de datos',
                     'Régimen de comunicación y contacto',
                     'Restitución de menores',
                     'Restricción de capacidad',
+                    'Sucesión',
+                    'Supresión de apellido paterno',
+                    'Tutela',
+                    'Venia judicial',
                     'Violencia Familiar',
                     'Otro'
                 ];
@@ -2356,7 +2773,12 @@
                     <form id="formIngreso" class="form-modern">
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
-                        <div class="mb-3"><label class="form-label">Datos de la Parte/Cliente</label><input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" /></div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Datos de la Parte/Cliente</label>
+                            <input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label">DNI</label>
                             <input type="text" id="inpDni" class="form-control" autocomplete="off"
@@ -2364,6 +2786,7 @@
                                    oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
                             <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
                         </div>
+
                         <div class="mb-3">
                             <label class="form-label">Asiste a la Defensoría</label>
                             <select id="inpAsisteDefensoria" class="form-select">
@@ -2372,6 +2795,7 @@
                                 <option value="Sin citación">Sin citación</option>
                             </select>
                         </div>
+
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
@@ -2422,7 +2846,6 @@
                     </form>
                 `;
 
-                // Campos condicionales
                 const accionSelect = document.getElementById('inpAccion');
                 const camposAccionDiv = document.getElementById('camposAccion');
                 const campoDependencia = document.getElementById('campoDependenciaForm');
@@ -2470,7 +2893,7 @@
                                 'warning'); return; }
                     }
                     const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion,
-                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut);
+                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, null);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -2520,18 +2943,363 @@
                     }
                 });
 
+                // Funciones para autocompletar desde SIGED
+                window.autocompletarFormularioDesdeSiged = function(entry) {
+                    const inpExpediente = document.getElementById('inpExpediente');
+                    const inpObs = document.getElementById('inpObs');
+                    const fuenteSiged = document.getElementById('fuenteSiged');
+                    const inpDatosParte = document.getElementById('inpDatosParte');
+                    const inpDni = document.getElementById('inpDni');
+                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
+                    const inpTipo = document.getElementById('inpTipo');
+                    const inpNivel = document.getElementById('inpNivel');
+                    const inpModo = document.getElementById('inpModoIntervencion');
+
+                    if (inpExpediente) inpExpediente.value = entry.numero;
+                    if (inpObs) inpObs.value = `Ingreso desde SIGED - Origen: ${entry.origen || entry.juzgado || ''}`;
+                    if (fuenteSiged) fuenteSiged.checked = true;
+                    if (inpDatosParte) inpDatosParte.value = '';
+                    if (inpDni) inpDni.value = '';
+                    if (inpAsiste) inpAsiste.value = '';
+                    if (inpTipo) inpTipo.value = 'Otro';
+                };
+
+                window.limpiarFormulario = function() {
+                    const inpExpediente = document.getElementById('inpExpediente');
+                    const inpObs = document.getElementById('inpObs');
+                    const fuenteSiged = document.getElementById('fuenteSiged');
+                    const inpDatosParte = document.getElementById('inpDatosParte');
+                    const inpDni = document.getElementById('inpDni');
+                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
+                    const inpTipo = document.getElementById('inpTipo');
+                    const inpNivel = document.getElementById('inpNivel');
+                    const inpModo = document.getElementById('inpModoIntervencion');
+                    const inpAccion = document.getElementById('inpAccion');
+                    const inpMotivo = document.getElementById('inpMotivo');
+                    const inpDependencia = document.getElementById('inpDependencia');
+
+                    if (inpExpediente) inpExpediente.value = '';
+                    if (inpObs) inpObs.value = '';
+                    if (fuenteSiged) fuenteSiged.checked = false;
+                    if (inpDatosParte) inpDatosParte.value = '';
+                    if (inpDni) inpDni.value = '';
+                    if (inpAsiste) inpAsiste.value = '';
+                    if (inpTipo) inpTipo.value = '';
+                    if (inpNivel) inpNivel.value = '2';
+                    if (inpModo) inpModo.value = '';
+                    if (inpAccion) inpAccion.value = 'asignar';
+                    if (inpMotivo) inpMotivo.value = '';
+                    if (inpDependencia) inpDependencia.value = '';
+                    const camposAccionDiv = document.getElementById('camposAccion');
+                    if (camposAccionDiv) camposAccionDiv.style.display = 'none';
+                };
+
                 formularioInicializado = true;
             }
 
             // ============================================================
-            //  RENDER TABLA
+            //  PANEL SIGED
+            // ============================================================
+            function mostrarPanelSiged() {
+                const panel = document.getElementById('sigedPanel');
+                panel.style.display = 'block';
+                renderSigedTabla();
+            }
+
+            function ocultarPanelSiged() {
+                document.getElementById('sigedPanel').style.display = 'none';
+                sigedEntries = [];
+            }
+
+            function renderSigedTabla() {
+                const container = document.getElementById('sigedTablaContainer');
+                const entries = sigedEntries;
+
+                if (!entries || entries.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            <p>No se cargaron expedientes. Cargue un PDF de SIGED.</p>
+                        </div>
+                    `;
+                    document.getElementById('sigedCount').textContent = '0';
+                    return;
+                }
+
+                const numerosExistentes = new Set(
+                    state.causas.filter(c => c.operador === currentOperator).map(c => c.numero.toUpperCase())
+                );
+                const entriesFiltradas = entries.map(e => {
+                    const registrado = numerosExistentes.has(e.numero.toUpperCase());
+                    return { ...e, registrado };
+                });
+
+                const countPendientes = entriesFiltradas.filter(e => !e.registrado).length;
+                document.getElementById('sigedCount').textContent = entriesFiltradas.length;
+
+                let html = `
+                    <div class="table-wrap">
+                        <table class="table-modern table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="width:15%;">Fecha y Hora Entrada</th>
+                                    <th style="width:20%;">Expediente</th>
+                                    <th style="width:45%;">Origen</th>
+                                    <th style="width:15%;">Marcar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                entriesFiltradas.forEach((e, idx) => {
+                    const checked = e.marcado ? 'checked' : '';
+                    const disabled = e.registrado ? 'disabled' : '';
+                    const claseRegistrado = e.registrado ? 'registrados' : '';
+                    const origenMostrar = e.origen || e.juzgado || '-';
+                    html += `
+                        <tr class="${claseRegistrado}">
+                            <td>${e.fecha}</td>
+                            <td><strong>${e.numero}</strong></td>
+                            <td style="font-size:0.75rem;">${origenMostrar}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input siged-checkbox" type="checkbox" id="sigedCheck_${idx}" data-idx="${idx}" ${checked} ${disabled} />
+                                    <label class="form-check-label" for="sigedCheck_${idx}">
+                                        ${e.registrado ? '✅ Registrado' : 'Marcar'}
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-muted" style="font-size:0.7rem;">
+                        <i class="bi bi-info-circle"></i> Los expedientes ya registrados aparecen con fondo gris y no se pueden marcar.
+                        ${countPendientes > 0 ? `Hay <strong>${countPendientes}</strong> pendientes para registrar.` : 'Todos los expedientes ya están registrados.'}
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                const checkboxes = container.querySelectorAll('.siged-checkbox:not([disabled])');
+                checkboxes.forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const idx = parseInt(this.dataset.idx);
+                        if (this.checked) {
+                            checkboxes.forEach(other => {
+                                if (other !== this) {
+                                    other.checked = false;
+                                    const otherIdx = parseInt(other.dataset.idx);
+                                    if (sigedEntries[otherIdx]) {
+                                        sigedEntries[otherIdx].marcado = false;
+                                    }
+                                }
+                            });
+                            if (sigedEntries[idx]) {
+                                sigedEntries[idx].marcado = true;
+                                const entry = sigedEntries[idx];
+                                if (window.autocompletarFormularioDesdeSiged) {
+                                    window.autocompletarFormularioDesdeSiged(entry);
+                                }
+                            }
+                        } else {
+                            if (sigedEntries[idx]) {
+                                sigedEntries[idx].marcado = false;
+                            }
+                            if (window.limpiarFormulario) {
+                                window.limpiarFormulario();
+                            }
+                        }
+                        actualizarContadorSeleccionados();
+                    });
+                });
+
+                actualizarContadorSeleccionados();
+            }
+
+            function actualizarContadorSeleccionados() {
+                const seleccionados = sigedEntries.filter(e => e.marcado && !e.registrado).length;
+                const countSpan = document.getElementById('sigedCount');
+                if (countSpan) {
+                    const total = sigedEntries.length;
+                    countSpan.textContent = `${total} (${seleccionados} marcado${seleccionados !== 1 ? 's' : ''})`;
+                }
+            }
+
+            // ============================================================
+            //  PROCESAR PDF SIGED
+            // ============================================================
+            async function procesarPDF(file) {
+                const progressBar = document.querySelector('#progresoCarga .progress-bar');
+                const progresoDiv = document.getElementById('progresoCarga');
+                const resultadoDiv = document.getElementById('resultadoParseo');
+
+                progresoDiv.style.display = 'block';
+                progressBar.style.width = '0%';
+                resultadoDiv.innerHTML = '';
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + '\n';
+                        progressBar.style.width = Math.round((i / pdf.numPages) * 100) + '%';
+                    }
+
+                    const entries = parsearTextoSiged(fullText);
+                    if (entries.length === 0) {
+                        resultadoDiv.innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> No se pudieron extraer expedientes del PDF. 
+                                Verifique que el formato sea similar al listado de SIGED (movimientos EN + fecha + número).
+                                <br><small class="text-muted">Texto extraído (primeros 500 caracteres):</small>
+                                <pre class="bg-light p-2 mt-1" style="font-size:0.7rem; border-radius:8px; max-height:150px; overflow:auto;">${fullText.substring(0, 500)}...</pre>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const numerosExistentes = new Set(
+                        state.causas.filter(c => c.operador === currentOperator).map(c => c.numero.toUpperCase())
+                    );
+                    const nuevos = entries.filter(e => !numerosExistentes.has(e.numero.toUpperCase()));
+                    const duplicados = entries.filter(e => numerosExistentes.has(e.numero.toUpperCase()));
+
+                    sigedEntries = nuevos.map(e => ({ ...e, marcado: false, registrado: false }));
+                    duplicados.forEach(e => {
+                        sigedEntries.push({ ...e, marcado: false, registrado: true });
+                    });
+
+                    resultadoDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i> Se extrajeron <strong>${entries.length}</strong> expedientes.
+                            ${nuevos.length > 0 ? `${nuevos.length} pendientes para registrar.` : 'Todos ya están registrados.'}
+                            ${duplicados.length > 0 ? `<br><span class="text-muted">(${duplicados.length} ya existentes, no se pueden marcar)</span>` : ''}
+                        </div>
+                    `;
+
+                    mostrarPanelSiged();
+
+                } catch (error) {
+                    console.error('Error procesando PDF:', error);
+                    resultadoDiv.innerHTML = `<div class="alert alert-danger">Error al procesar el PDF: ${error.message}</div>`;
+                } finally {
+                    progresoDiv.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }
+            }
+
+            function parsearTextoSiged(text) {
+                const cleanText = text.replace(/\s+/g, ' ').trim();
+                const entries = [];
+                const regex = /EN\s*(\d{2}\/\d{2}\/\d{4})\s*(\d+\/\d{4})/g;
+                let match;
+
+                while ((match = regex.exec(cleanText)) !== null) {
+                    const fecha = match[1];
+                    const numero = match[2];
+                    const startIdx = match.index + match[0].length;
+                    const destinoRegex = /DEFENSORIA 1RA\. INSTANCIA EN LO CIVIL Y COMERCIAL(?: Y C\.)? N° 6/i;
+                    const resto = cleanText.substring(startIdx);
+                    const destinoMatch = resto.match(destinoRegex);
+                    let origen = '';
+                    let juzgado = '';
+                    if (destinoMatch) {
+                        const origenText = resto.substring(0, destinoMatch.index).trim();
+                        origen = origenText;
+                        const juzgadoMatch = origenText.match(/(DEFENSORIAS OFICIALES|DEFENSORIA 1RA\. INSTANCIA EN LO CIVIL Y COMERCIAL N° \d+)/i);
+                        if (juzgadoMatch) {
+                            juzgado = juzgadoMatch[1].trim();
+                        } else {
+                            const nMatch = origenText.match(/N° (\d+)/);
+                            if (nMatch) {
+                                juzgado = `N° ${nMatch[1]}`;
+                            } else {
+                                juzgado = origenText.substring(0, 60);
+                            }
+                        }
+                    } else {
+                        origen = resto.substring(0, 200);
+                        const nMatch = origen.match(/N° (\d+)/);
+                        if (nMatch) {
+                            juzgado = `N° ${nMatch[1]}`;
+                        } else {
+                            juzgado = 'Origen desconocido';
+                        }
+                    }
+                    entries.push({
+                        fecha: fecha,
+                        numero: numero,
+                        origen: origen,
+                        juzgado: juzgado
+                    });
+                }
+                return entries;
+            }
+
+            // ============================================================
+            //  MODAL ACCIÓN
+            // ============================================================
+            function abrirModalAccion(id, tipoAccion) {
+                const modal = new bootstrap.Modal(document.getElementById('modalAccion'));
+                document.getElementById('accionCausaId').value = id;
+                document.getElementById('accionTipo').value = tipoAccion;
+
+                const titulo = document.getElementById('modalAccionTitulo');
+                const campoDependencia = document.getElementById('campoDependencia');
+                const inpDependencia = document.getElementById('accionDependencia');
+                const inpMotivo = document.getElementById('accionMotivo');
+
+                if (tipoAccion === 'devolver') {
+                    titulo.innerHTML = '<i class="bi bi-arrow-return-left me-2"></i>Devolver a SIGED';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                } else if (tipoAccion === 'remitir') {
+                    titulo.innerHTML = '<i class="bi bi-send me-2"></i>Remitir a otra dependencia';
+                    campoDependencia.style.display = 'block';
+                } else if (tipoAccion === 'rechazar') {
+                    titulo.innerHTML = '<i class="bi bi-x-circle me-2"></i>Rechazar causa';
+                    campoDependencia.style.display = 'none';
+                    inpDependencia.value = '';
+                }
+                inpMotivo.value = '';
+                modal.show();
+            }
+
+            document.getElementById('btnConfirmarAccion').addEventListener('click', async function() {
+                const id = document.getElementById('accionCausaId').value;
+                const tipo = document.getElementById('accionTipo').value;
+                const motivo = document.getElementById('accionMotivo').value.trim();
+                const dependencia = document.getElementById('accionDependencia').value.trim();
+
+                if (!motivo) { showToast('Debe ingresar un motivo', 'warning'); return; }
+                if (tipo === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
+
+                if (tipo === 'devolver') { await devolverSIGED(id, currentOperator, motivo); } else if (tipo ===
+                    'remitir') { await remitirDependencia(id, currentOperator, dependencia, motivo); } else if (tipo ===
+                    'rechazar') { await rechazarCausa(id, currentOperator, motivo); }
+                bootstrap.Modal.getInstance(document.getElementById('modalAccion')).hide();
+                renderTabla();
+            });
+
+            // ============================================================
+            //  RENDER TABLA (con filtros avanzados)
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
                 let datosMostrar = causasFiltradas;
-                if (!filtroMes && !filtroAnio) {
+                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
 
@@ -2543,9 +3311,58 @@
                     c.operador === currentOperator &&
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
+                causasRechazadas = causasRechazadas.filter(c => esNumeroValido(c.numero));
+
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase();
                     causasRechazadas = causasRechazadas.filter(c => c.numero.toLowerCase().includes(term));
+                }
+                if (filtroTexto) {
+                    const texto = filtroTexto.toLowerCase().trim();
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        const campos = [
+                            c.numero,
+                            c.tipo,
+                            c.observaciones,
+                            c.motivoAccion,
+                            c.dependenciaRemision,
+                            c.datosParte,
+                            c.asisteDefensoria,
+                            c.modoIntervencion,
+                            c.dni
+                        ];
+                        let historialText = '';
+                        if (c.historial && c.historial.length) {
+                            historialText = c.historial.map(h => h.comentario || '').join(' ');
+                        }
+                        const allText = campos.concat(historialText).filter(Boolean).join(' ').toLowerCase();
+                        return allText.includes(texto);
+                    });
+                }
+                if (filtroFecha) {
+                    const fechaBuscada = filtroFecha;
+                    causasRechazadas = causasRechazadas.filter(c => {
+                        const fechas = [];
+                        if (c.fechaPaseSecretario) fechas.push(c.fechaPaseSecretario);
+                        if (c.fechaFinalizacion) fechas.push(c.fechaFinalizacion);
+                        if (c.fechaAsignacion) fechas.push(c.fechaAsignacion);
+                        if (c.fechaLimite) fechas.push(c.fechaLimite);
+                        if (c.fechaResolucionEmpleado) fechas.push(c.fechaResolucionEmpleado);
+                        if (c.historial && c.historial.length) {
+                            c.historial.forEach(h => {
+                                if (h.fecha) fechas.push(h.fecha);
+                            });
+                        }
+                        return fechas.some(iso => {
+                            if (!iso) return false;
+                            const d = parseLocalDate(iso);
+                            if (!d) return false;
+                            const ymd = d.getFullYear() + '-' +
+                                String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                String(d.getDate()).padStart(2, '0');
+                            return ymd === fechaBuscada;
+                        });
+                    });
                 }
                 if (filtroMes || filtroAnio) {
                     causasRechazadas = causasRechazadas.filter(c => {
@@ -2578,10 +3395,11 @@
                 }
 
                 let html = `
+                    <!-- FILTROS -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteOperador"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+                            <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteRecientes"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                         </div>
                     </div>
                     <div class="filtros-container">
@@ -2594,8 +3412,12 @@
                             <option value="">Año</option>
                             ${añoOptions}
                         </select>
+                        <label>Texto:</label>
+                        <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTextoInput}" />
+                        <label>Fecha exacta:</label>
+                        <input type="date" id="filtroFechaExacta" value="${filtroFecha}" />
                         <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
-                        ${ (filtroMes || filtroAnio) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
                     </div>
                 `;
 
@@ -2668,10 +3490,13 @@
                                 </thead>
                                 <tbody>
                                     ${itemsRech.map(c => {
+                                        const esDevuelto = c.estado === 'devuelto_siged';
+                                        const claseFila = esDevuelto ? 'tr-devuelto' : '';
+                                        const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
                                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
                                         return `
-                                        <tr>
-                                            <td><strong>${c.numero}</strong></td>
+                                        <tr class="${claseFila}">
+                                            <td><strong class="${claseExpediente}">${c.numero}</strong></td>
                                             <td style="font-size:0.65rem;">${c.tipo}</td>
                                             <td>N${c.nivelOperador}</td>
                                             <td>${getEstadoBadge(c.estado)}</td>
@@ -2711,7 +3536,10 @@
 
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
+                const textoInput = document.getElementById('filtroTextoGeneral');
+                const fechaInput = document.getElementById('filtroFechaExacta');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
+
                 if (mesSelect) { mesSelect.addEventListener('change', function() { filtroMes = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
@@ -2720,20 +3548,59 @@
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
-                if (limpiarBtn) { limpiarBtn.addEventListener('click', function() { filtroMes = '';
-                        filtroAnio = '';
+
+                if (textoInput) {
+                    textoInput.addEventListener('input', function() {
+                        filtroTextoInput = this.value;
+                    });
+                    textoInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            filtroTexto = filtroTextoInput;
+                            paginationState.ingreso.page = 1;
+                            paginationState.rechazados.page = 1;
+                            renderTabla();
+                        }
+                    });
+                }
+
+                if (fechaInput) {
+                    fechaInput.addEventListener('change', function() {
+                        filtroFecha = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
-                        renderTabla(); }); }
+                        renderTabla();
+                    });
+                }
 
-                // Eventos de reporte: ambos generan el reporte completo
-                const btnReporteRecientes = container.querySelector('#btnReporteOperador');
+                if (limpiarBtn) {
+                    limpiarBtn.addEventListener('click', function() {
+                        filtroMes = '';
+                        filtroAnio = '';
+                        filtroTexto = '';
+                        filtroTextoInput = '';
+                        filtroFecha = '';
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        if (mesSelect) mesSelect.value = '';
+                        if (anioSelect) anioSelect.value = '';
+                        if (textoInput) textoInput.value = '';
+                        if (fechaInput) fechaInput.value = '';
+                        renderTabla();
+                    });
+                }
+
+                const btnReporteRecientes = container.querySelector('#btnReporteRecientes');
                 if (btnReporteRecientes) {
-                    btnReporteRecientes.addEventListener('click', generarReporteCompleto);
+                    btnReporteRecientes.addEventListener('click', function() {
+                        generarReporteRecientes();
+                    });
                 }
                 const btnReporteRechazados = container.querySelector('#btnReporteRechazados');
                 if (btnReporteRechazados) {
-                    btnReporteRechazados.addEventListener('click', generarReporteCompleto);
+                    btnReporteRechazados.addEventListener('click', function() {
+                        generarReporteRechazados();
+                    });
                 }
 
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
@@ -2746,51 +3613,6 @@
 
                 actualizarKPIs();
             }
-
-            // ============================================================
-            //  MODAL ACCIÓN
-            // ============================================================
-            function abrirModalAccion(id, tipoAccion) {
-                const modal = new bootstrap.Modal(document.getElementById('modalAccion'));
-                document.getElementById('accionCausaId').value = id;
-                document.getElementById('accionTipo').value = tipoAccion;
-
-                const titulo = document.getElementById('modalAccionTitulo');
-                const campoDependencia = document.getElementById('campoDependencia');
-                const inpDependencia = document.getElementById('accionDependencia');
-                const inpMotivo = document.getElementById('accionMotivo');
-
-                if (tipoAccion === 'devolver') {
-                    titulo.innerHTML = '<i class="bi bi-arrow-return-left me-2"></i>Devolver a SIGED';
-                    campoDependencia.style.display = 'none';
-                    inpDependencia.value = '';
-                } else if (tipoAccion === 'remitir') {
-                    titulo.innerHTML = '<i class="bi bi-send me-2"></i>Remitir a otra dependencia';
-                    campoDependencia.style.display = 'block';
-                } else if (tipoAccion === 'rechazar') {
-                    titulo.innerHTML = '<i class="bi bi-x-circle me-2"></i>Rechazar causa';
-                    campoDependencia.style.display = 'none';
-                    inpDependencia.value = '';
-                }
-                inpMotivo.value = '';
-                modal.show();
-            }
-
-            document.getElementById('btnConfirmarAccion').addEventListener('click', async function() {
-                const id = document.getElementById('accionCausaId').value;
-                const tipo = document.getElementById('accionTipo').value;
-                const motivo = document.getElementById('accionMotivo').value.trim();
-                const dependencia = document.getElementById('accionDependencia').value.trim();
-
-                if (!motivo) { showToast('Debe ingresar un motivo', 'warning'); return; }
-                if (tipo === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino', 'warning'); return; }
-
-                if (tipo === 'devolver') { await devolverSIGED(id, currentOperator, motivo); } else if (tipo ===
-                    'remitir') { await remitirDependencia(id, currentOperator, dependencia, motivo); } else if (tipo ===
-                    'rechazar') { await rechazarCausa(id, currentOperator, motivo); }
-                bootstrap.Modal.getInstance(document.getElementById('modalAccion')).hide();
-                renderTabla();
-            });
 
             // ============================================================
             //  CRONOMETROS Y ACTUALIZACIÓN AUTOMÁTICA
@@ -2859,9 +3681,14 @@
                 formularioInicializado = false;
                 filtroMes = '';
                 filtroAnio = '';
+                filtroTexto = '';
+                filtroTextoInput = '';
+                filtroFecha = '';
                 state.causas = [];
                 state.ausencias = [];
                 state.lastIndex = 0;
+                sigedEntries = [];
+                ocultarPanelSiged();
                 showToast('Sesión cerrada', 'warning');
             }
 
@@ -2903,7 +3730,7 @@
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
 
-                document.getElementById('btnActivarFirestore').addEventListener('click', function() {
+                document.getElementById('btnModoFire').addEventListener('click', function() {
                     if (USE_FIRESTORE) {
                         showToast('Ya estás en modo Firestore', 'info');
                         return;
@@ -2913,7 +3740,7 @@
                     }
                 });
 
-                document.getElementById('btnActivarJSON').addEventListener('click', function() {
+                document.getElementById('btnModoJson').addEventListener('click', function() {
                     if (!USE_FIRESTORE) {
                         showToast('Ya estás en modo JSON', 'info');
                         return;
@@ -2921,6 +3748,46 @@
                     if (confirm('¿Cambiar a modo JSON? Se usarán los datos guardados localmente (JSON). Los cambios en la nube no se verán.')) {
                         cambiarModo(false);
                     }
+                });
+
+                // SIGED
+                document.getElementById('btnCargarSiged').addEventListener('click', function() {
+                    const modal = new bootstrap.Modal(document.getElementById('modalCargarSiged'));
+                    modal.show();
+                });
+
+                const dropZone = document.getElementById('fileDropZone');
+                const fileInput = document.getElementById('fileInput');
+
+                dropZone.addEventListener('click', () => fileInput.click());
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.style.borderColor = '#1a6bb0';
+                    dropZone.style.background = 'rgba(26,107,176,0.05)';
+                });
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.style.borderColor = '#b8cce0';
+                    dropZone.style.background = 'rgba(255,255,255,0.3)';
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.style.borderColor = '#b8cce0';
+                    dropZone.style.background = 'rgba(255,255,255,0.3)';
+                    if (e.dataTransfer.files.length) {
+                        fileInput.files = e.dataTransfer.files;
+                        procesarPDF(fileInput.files[0]);
+                    }
+                });
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length) {
+                        procesarPDF(this.files[0]);
+                    }
+                });
+
+                document.getElementById('btnCerrarSiged').addEventListener('click', ocultarPanelSiged);
+
+                document.getElementById('btnReporteTotal').addEventListener('click', function() {
+                    generarReporteCompleto();
                 });
             });
 
