@@ -333,7 +333,7 @@
         ::-webkit-scrollbar-thumb { background: #b0c8dd; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #8aaec9; }
 
-        /* Contenedor del iframe para puntaje */
+        /* Contenedor del iframe para puntaje y resumen procesos */
         .iframe-container {
             width: 100%;
             height: calc(100vh - 180px);
@@ -621,13 +621,15 @@
                 <small>Defensoría Civil y Comercial 6</small>
             </div>
             <nav class="nav-modulos">
-                <!-- Nuevo módulo Puntaje de Actividad (primero) -->
-                <button class="modulo-btn active" data-modulo="puntaje"><i class="bi bi-bar-chart-fill"></i> Puntaje de Actividad</button>
-                <button class="modulo-btn" data-modulo="resumen"><i class="bi bi-pie-chart-fill"></i> Resumen Global</button>
-                <button class="modulo-btn" data-modulo="operador"><i class="bi bi-person-badge"></i> Reporte Operador</button>
-                <button class="modulo-btn" data-modulo="secretario"><i class="bi bi-person-lock"></i> Reporte Secretario</button>
-                <button class="modulo-btn" data-modulo="empleado"><i class="bi bi-person-check"></i> Reporte Empleados</button>
-                <button class="modulo-btn" data-modulo="defensor"><i class="bi bi-gavel"></i> Reporte Defensor</button>
+                <!-- Módulos sin emojis, solo texto -->
+                <button class="modulo-btn active" data-modulo="puntaje">Puntaje de Actividad</button>
+                <button class="modulo-btn" data-modulo="resumen">Resumen Global</button>
+                <!-- Nuevo módulo: Resumen Procesos -->
+                <button class="modulo-btn" data-modulo="resumen-procesos">Resumen Procesos</button>
+                <button class="modulo-btn" data-modulo="operador">Reporte Operador</button>
+                <button class="modulo-btn" data-modulo="secretario">Reporte Secretario</button>
+                <button class="modulo-btn" data-modulo="empleado">Reporte Empleados</button>
+                <button class="modulo-btn" data-modulo="defensor">Reporte Defensor</button>
             </nav>
             <div class="footer-sidebar">
                 <span>Sistema Digital de Pases 2026</span>
@@ -700,7 +702,7 @@
 
             // ---------- ESTADO ----------
             let causas = [];
-            let currentModulo = 'puntaje'; // Ahora el módulo inicial es puntaje
+            let currentModulo = 'puntaje';
             let chartInstances = {};
             let empleadoSeleccionado = CONFIG.empleados[0]?.id || '';
             let filtroMes = '';
@@ -816,6 +818,14 @@
                         cont.innerHTML = `
                             <div class="iframe-container">
                                 <iframe src="https://defensoria6.github.io/pase-digital/puntaje" title="Puntaje de Actividad"></iframe>
+                            </div>
+                        `;
+                        break;
+                    case 'resumen-procesos':
+                        titulo.textContent = 'Resumen Procesos';
+                        cont.innerHTML = `
+                            <div class="iframe-container">
+                                <iframe src="https://defensoria6.github.io/pase-digital/estadisticas_tipos" title="Resumen Procesos"></iframe>
                             </div>
                         `;
                         break;
@@ -1067,17 +1077,17 @@
 
                     <div class="destacados-grid">
                         <div class="destacado-item">
-                            <div class="dest-label">🏆 Mejor Cumplimiento</div>
+                            <div class="dest-label">Mejor Cumplimiento</div>
                             <div class="dest-nombre">${mejorCumplimiento.nombre}</div>
                             <div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div>
                         </div>
                         <div class="destacado-item">
-                            <div class="dest-label">📊 Mayor Carga</div>
+                            <div class="dest-label">Mayor Carga</div>
                             <div class="dest-nombre">${mayorCarga.nombre}</div>
                             <div class="dest-detalle">${mayorCarga.count} expedientes en total</div>
                         </div>
                         <div class="destacado-item">
-                            <div class="dest-label">⏳ Mayor Demora</div>
+                            <div class="dest-label">Mayor Demora</div>
                             <div class="dest-nombre text-danger">${mayorDemora.nombre}</div>
                             <div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días de retraso' : 'Sin retrasos'}</div>
                         </div>
@@ -2013,9 +2023,6 @@
                     canvas.parentNode.replaceChild(img, canvas);
                 });
 
-                // Si es el módulo puntaje, no incluimos el iframe (se oculta con CSS)
-                // Pero si queremos mostrar algo, dejamos que se oculte con .iframe-container { display:none; }
-
                 printArea.innerHTML = `
                     <div style="max-width: 1000px; margin: 0 auto;">
                         <h2 style="font-weight: 700; color: #0a2a44;">${titulo}</h2>
@@ -2055,7 +2062,7 @@
                 crearModalHistorial();
 
                 loadCausas().then(() => {
-                    renderModulo('puntaje'); // Ahora inicia con puntaje
+                    renderModulo('puntaje');
                 });
             });
 
