@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estadísticas · Tipo de Proceso</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<style>
+  :root{
+    --azul-950:#081b2e;
+    --azul-900:#0a2a44;
+    --azul-800:#0b4b7a;
+    --azul-600:#1a6bb0;
+    --azul-400:#4f9fdb;
+    --azul-200:#bcdcf5;
+    --azul-100:#e3effa;
+    --texto-suave:#5f7f9f;
+    --fondo:#eef4fb;
+    --superficie:rgba(255,255,255,.82);
+    --borde:rgba(11,75,122,.12);
+    --ok:#1f8a5f;
+    --radio-l:26px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    color:var(--azul-900);
+    background:
+      radial-gradient(circle at 12% 0%, #dcebfb 0%, transparent 45%),
+      radial-gradient(circle at 88% 12%, #e6f0fb 0%, transparent 40%),
+      var(--fondo);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:#e5edf7;border-radius:10px;}
+  ::-webkit-scrollbar-thumb{background:#a9c6de;border-radius:10px;}
+  ::-webkit-scrollbar-thumb:hover{background:#7fabce;}
+
+  a{color:inherit;}
+
+  /* ---------- Layout ---------- */
+  .wrap{max-width:1440px;margin:0 auto;padding:22px 24px 60px;}
+
+  .topbar{
+    display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:14px;}
+  .topbar .brand .mark{
+    width:46px;height:46px;border-radius:15px;
+    background:linear-gradient(135deg,var(--azul-800),var(--azul-400));
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;font-weight:800;
+    letter-spacing:-.3px;
+    box-shadow:0 8px 18px -6px rgba(11,75,122,.45);
+  }
+  .topbar h1{font-size:1.32rem;font-weight:800;margin:0;color:var(--azul-900);letter-spacing:-.4px;line-height:1.15;}
+  .topbar h1 span{display:block;font-size:.74rem;font-weight:600;color:var(--texto-suave);letter-spacing:.2px;margin-top:2px;}
+  .topbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--superficie);border:1px solid var(--borde);border-radius:40px;
+    padding:7px 16px;font-size:.75rem;font-weight:600;color:var(--azul-800);
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(31,138,95,.18);}
+  .btn{
+    border:1px solid var(--borde);background:var(--superficie);color:var(--azul-800);
+    border-radius:40px;padding:8px 18px;font-weight:700;font-size:.78rem;cursor:pointer;
+    font-family:inherit;transition:.18s;
+  }
+  .btn:hover{background:#fff;border-color:#b9d2e6;transform:translateY(-1px);}
+  .btn.primary{background:linear-gradient(135deg,var(--azul-800),var(--azul-600));color:#fff;border:none;}
+  .btn.primary:hover{box-shadow:0 10px 20px -8px rgba(26,107,176,.5);}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--superficie);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.7);border-radius:var(--radio-l);
+    box-shadow:0 6px 26px rgba(9,30,50,.05);
+    padding:1.5rem 1.7rem;margin-bottom:1.3rem;
+    position:relative;
+  }
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.1rem;}
+  .card-head h2{font-size:.98rem;font-weight:800;color:var(--azul-900);margin:0;}
+  .card-head .sub{font-size:.74rem;color:var(--texto-suave);font-weight:500;margin-top:2px;}
+
+  /* ---------- Filters ---------- */
+  .filters{display:flex;flex-wrap:wrap;gap:.7rem;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:150px;}
+  .field label{font-size:.68rem;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.4px;}
+  .field select, .field input{
+    padding:9px 13px;border-radius:12px;border:1px solid #d3e2ef;background:#f8fbfd;
+    font-family:inherit;font-size:.83rem;color:var(--azul-900);min-width:150px;transition:.2s;
+  }
+  .field select:focus, .field input:focus{outline:none;border-color:var(--azul-600);box-shadow:0 0 0 3px rgba(26,107,176,.12);background:#fff;}
+  .field.grow{flex:1;min-width:200px;}
+  .chip-group{display:flex;gap:6px;background:#eef3fa;padding:4px;border-radius:14px;}
+  .chip-group button{
+    border:none;background:transparent;padding:7px 15px;border-radius:10px;font-family:inherit;
+    font-size:.78rem;font-weight:700;color:var(--texto-suave);cursor:pointer;transition:.15s;
+  }
+  .chip-group button.active{background:var(--azul-800);color:#fff;box-shadow:0 4px 10px rgba(11,75,122,.3);}
+  .btn-clear{align-self:stretch;}
+
+  /* ---------- Calendar date field ---------- */
+  .cal-field{position:relative;display:flex;flex-direction:column;gap:5px;}
+  .cal-input{
+    display:flex;align-items:center;gap:9px;
+    padding:9px 13px;border-radius:12px;border:1px solid #d3e2ef;background:#f8fbfd;
+    font-family:inherit;font-size:.83rem;color:var(--azul-900);min-width:170px;cursor:pointer;
+    transition:.2s;text-align:left;
+  }
+  .cal-input:hover{border-color:#b9d2e6;}
+  .cal-input.open, .cal-input:focus{outline:none;border-color:var(--azul-600);box-shadow:0 0 0 3px rgba(26,107,176,.12);background:#fff;}
+  .cal-input svg{flex:none;color:var(--azul-600);}
+  .cal-input span{color:var(--azul-900);font-weight:600;}
+  .cal-input span.placeholder{color:#9fb4c8;font-weight:500;}
+
+  .cal-popover{
+    position:fixed;top:0;left:0;z-index:9999;
+    background:#fff;border:1px solid var(--borde);border-radius:20px;
+    box-shadow:0 20px 44px -14px rgba(9,30,50,.28);
+    padding:14px;width:280px;
+    display:none;
+  }
+  .cal-popover.open{display:block;animation:calIn .15s ease;}
+  @keyframes calIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-head .cal-title{font-weight:800;font-size:.86rem;color:var(--azul-900);}
+  .cal-head button{
+    border:none;background:var(--azul-100);color:var(--azul-800);width:28px;height:28px;border-radius:9px;
+    font-size:.85rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .cal-head button:hover{background:var(--azul-200);}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:4px;}
+  .cal-weekdays span{font-size:.62rem;font-weight:800;color:var(--texto-suave);text-transform:uppercase;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+  .cal-day{
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:9px;
+    font-size:.78rem;font-weight:600;color:var(--azul-900);cursor:pointer;border:none;background:transparent;
+    font-family:inherit;
+  }
+  .cal-day:hover{background:var(--azul-100);}
+  .cal-day.muted{color:#c3d2e0;}
+  .cal-day.today{box-shadow:inset 0 0 0 1.5px var(--azul-400);}
+  .cal-day.selected{background:var(--azul-800);color:#fff;}
+  .cal-day:disabled{opacity:.3;cursor:default;}
+  .cal-day:disabled:hover{background:transparent;}
+  .cal-foot{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid #eef2f7;}
+  .cal-foot button{
+    border:none;background:transparent;color:var(--azul-600);font-weight:700;font-size:.75rem;cursor:pointer;
+    font-family:inherit;padding:4px 6px;
+  }
+  .cal-foot button:hover{text-decoration:underline;}
+
+  /* ---------- KPIs ---------- */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;}
+  @media(max-width:980px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.kpi-grid{grid-template-columns:1fr;}}
+  .kpi{
+    background:var(--superficie);border:1px solid rgba(255,255,255,.7);border-radius:22px;
+    padding:1.25rem 1.4rem;box-shadow:0 4px 18px rgba(9,30,50,.05);position:relative;overflow:hidden;
+  }
+  .kpi::after{content:'';position:absolute;right:-20px;top:-20px;width:90px;height:90px;border-radius:50%;
+    background:radial-gradient(circle,rgba(26,107,176,.10),transparent 70%);}
+  .kpi .label{font-size:.72rem;font-weight:700;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.4px;}
+  .kpi .value{font-size:1.9rem;font-weight:800;color:var(--azul-900);margin-top:.35rem;letter-spacing:-.5px;line-height:1;}
+  .kpi .foot{font-size:.72rem;color:var(--azul-600);font-weight:600;margin-top:.5rem;}
+
+  /* ---------- Chart wrap ---------- */
+  .chart-box{position:relative;height:360px;}
+  .chart-box.small{height:320px;}
+  .legend-note{font-size:.7rem;color:var(--texto-suave);margin-top:.6rem;}
+
+  @media print{
+    .topbar-actions, .filters, .btn{display:none!important;}
+    .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="appWrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">TP</div>
+      <h1>Estadísticas por Tipo de Proceso
+        <span>Cantidad de expedientes por tipo, día, mes y año</span>
+      </h1>
+    </div>
+    <div class="topbar-actions">
+      <span class="pill"><span class="dot"></span> <span id="liveInfo">Conectando…</span></span>
+      <button class="btn primary" id="btnPrint">Imprimir reporte</button>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Filtros</h2>
+      <div class="chip-group" id="granChips">
+        <button data-g="dia">Día</button>
+        <button data-g="mes" class="active">Mes</button>
+        <button data-g="anio">Año</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="cal-field" id="campoDesde">
+        <label>Desde</label>
+        <button type="button" class="cal-input" id="btnDesde">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="4"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+          <span class="placeholder" id="lblDesde">Cualquier fecha</span>
+        </button>
+        <div class="cal-popover" id="popDesde"></div>
+      </div>
+      <div class="cal-field" id="campoHasta">
+        <label>Hasta</label>
+        <button type="button" class="cal-input" id="btnHasta">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="4"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+          <span class="placeholder" id="lblHasta">Cualquier fecha</span>
+        </button>
+        <div class="cal-popover" id="popHasta"></div>
+      </div>
+      <div class="field">
+        <label>Tipo de proceso</label>
+        <select id="fTipo"><option value="">Todos</option></select>
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="fEstado"><option value="">Todos</option></select>
+      </div>
+      <div class="field grow">
+        <label>Buscar (n.º de expediente)</label>
+        <input type="text" id="fBusca" placeholder="Ej: 12345/2026" />
+      </div>
+      <button class="btn btn-clear" id="btnLimpiar">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- GRAFICO PRINCIPAL -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Evolución de expedientes en el tiempo</h2>
+        <div class="sub" id="chartSub">Cantidad total por período seleccionado</div>
+      </div>
+      <div class="chip-group" id="modoChips">
+        <button data-m="total" class="active">Total</button>
+        <button data-m="tipos">Por tipo</button>
+      </div>
+    </div>
+    <div class="chart-box"><canvas id="chartLinea"></canvas></div>
+    <div class="legend-note">Cuando se muestra "Por tipo" se grafican los 6 tipos más frecuentes del período filtrado; el resto se agrupa como "Otros".</div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <h2>Ranking por tipo de proceso</h2>
+        <div class="sub">Cantidad total de expedientes por cada tipo, dentro del período filtrado</div>
+      </div>
+    </div>
+    <div class="chart-box small"><canvas id="chartRanking"></canvas></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+  authDomain: "pasedefensoria6.firebaseapp.com",
+  projectId: "pasedefensoria6",
+  storageBucket: "pasedefensoria6.firebasestorage.app",
+  messagingSenderId: "785250989941",
+  appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const TIPOS = [
+  'Nuevo patrocinio','Nuevo patrocinio Violencia Familiar','Amparo','Acción de protección de persona',
+  'Alimentos','Art 583','Autorización de viaje','Cambio de residencia','Causa Penal','CEJUME Formulario',
+  'Cuidado personal','Curatela','Daños y Perjuicios','Declaración de incapacidad',
+  'Delegación de responsabilidad parental','Desalojo','Determinación de capacidad','Diligencia preliminar',
+  'Divorcio','Evaluación Art 42 C.C.C.N.','Filiación','Filiación y Daño','Guarda',
+  'Guarda con fines de adopción','Homologación Acuerdo CEJUME','Impugnación de paternidad','Insania',
+  'Laboral','Medida autosatisfactiva','Medida excepcional de protección integral de persona Art 648 inc b',
+  'Penal (cámara gesell)','Prescripción Adquisitiva','Protección de personas','Rectificación de datos',
+  'Régimen de comunicación y contacto','Restitución de menores','Restricción de capacidad','Sucesión',
+  'Supresión de apellido paterno','Tutela','Venia judicial','Violencia Familiar','Otro'
+];
+
+const ESTADOS = {
+  en_secretaria:'Secretaría', en_proceso:'En proceso', finalizada:'Finalizada', en_defensor:'Defensor',
+  devuelto_siged:'Devuelto SIGED', remitido:'Remitido', rechazado:'Rechazado', en_espera:'En espera'
+};
+
+const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_SEMANA = ['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+
+const PALETA = ['#0b4b7a','#1a6bb0','#2f9e77','#c77c1f','#7b4fae','#c62839','#1597a5','#4f6d8c','#8a5a2e','#3d5a80'];
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let causas = [];
+let filtros = { desde:null, hasta:null, tipo:'', estado:'', busca:'' };
+let granularidad = 'mes';
+let modoChart = 'total';
+
+let chartLinea = null;
+let chartRanking = null;
+
+/* ============================================================
+   UTILIDADES DE FECHA
+   ============================================================ */
+function getFechaCausa(c){
+  const raw = c.fechaPaseSecretario || c.fechaAsignacion || c.fechaCreacion || c.fechaIngreso || c.fechaFinalizacion || null;
+  if(!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+function getTipoCausa(c){ return c.tipo || 'Sin especificar'; }
+
+function inicioDeDia(d){ const x = new Date(d); x.setHours(0,0,0,0); return x; }
+function finDeDia(d){ const x = new Date(d); x.setHours(23,59,59,999); return x; }
+
+function bucketKey(fecha, g){
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth()+1).padStart(2,'0');
+  const d = String(fecha.getDate()).padStart(2,'0');
+  if(g === 'dia') return `${y}-${m}-${d}`;
+  if(g === 'mes') return `${y}-${m}`;
+  return `${y}`;
+}
+function bucketLabel(key, g){
+  const parts = key.split('-');
+  if(g === 'dia') return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  if(g === 'mes') return `${MESES[parseInt(parts[1],10)-1]} ${parts[0]}`;
+  return parts[0];
+}
+function formatFechaCorta(d){
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+/* ============================================================
+   FIRESTORE
+   ============================================================ */
+function iniciarEscucha(){
+  db.collection('operador').onSnapshot((snapshot) => {
+    const out = [];
+    snapshot.forEach(doc => {
+      if(doc.id === 'secretario_config') return;
+      const data = doc.data();
+      if(!data.id) data.id = doc.id;
+      out.push(data);
+    });
+    causas = out;
+    document.getElementById('liveInfo').textContent = `En vivo · ${causas.length} expedientes`;
+    renderTodo();
+  }, (error) => {
+    console.error(error);
+    document.getElementById('liveInfo').textContent = 'Error de conexión';
+  });
+}
+
+/* ============================================================
+   FILTRADO
+   ============================================================ */
+function causasFiltradas(){
+  return causas.filter(c => {
+    const fecha = getFechaCausa(c);
+    if(!fecha) return false;
+    if(filtros.desde && fecha < inicioDeDia(filtros.desde)) return false;
+    if(filtros.hasta && fecha > finDeDia(filtros.hasta)) return false;
+    if(filtros.tipo && getTipoCausa(c) !== filtros.tipo) return false;
+    if(filtros.estado && c.estado !== filtros.estado) return false;
+    if(filtros.busca){
+      const q = filtros.busca.toLowerCase();
+      if(!(c.numero || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* ============================================================
+   AGREGACION
+   ============================================================ */
+function agrupar(lista, g){
+  const buckets = {};
+  const totalesTipo = {};
+  lista.forEach(c => {
+    const fecha = getFechaCausa(c);
+    const tipo = getTipoCausa(c);
+    const key = bucketKey(fecha, g);
+    if(!buckets[key]) buckets[key] = { total:0, porTipo:{} };
+    buckets[key].total++;
+    buckets[key].porTipo[tipo] = (buckets[key].porTipo[tipo] || 0) + 1;
+    totalesTipo[tipo] = (totalesTipo[tipo] || 0) + 1;
+  });
+  return { buckets, totalesTipo };
+}
+
+/* ============================================================
+   SELECTS DE FILTROS
+   ============================================================ */
+function poblarSelectTipo(){
+  const sel = document.getElementById('fTipo');
+  sel.innerHTML = '<option value="">Todos</option>' + TIPOS.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+function poblarSelectEstado(){
+  const sel = document.getElementById('fEstado');
+  sel.innerHTML = '<option value="">Todos</option>' + Object.entries(ESTADOS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('');
+}
+
+/* ============================================================
+   KPIs
+   ============================================================ */
+function renderKpis(lista){
+  const grid = document.getElementById('kpiGrid');
+  const total = lista.length;
+  const { totalesTipo, buckets } = agrupar(lista, granularidad);
+  const tiposDistintos = Object.keys(totalesTipo).length;
+  let tipoTop = '—', tipoTopCant = 0;
+  Object.entries(totalesTipo).forEach(([t,c]) => { if(c > tipoTopCant){ tipoTop = t; tipoTopCant = c; } });
+
+  const nBuckets = Object.keys(buckets).length || 1;
+  const promedio = (total / nBuckets);
+
+  const etiquetaPeriodo = granularidad === 'dia' ? 'por día' : granularidad === 'mes' ? 'por mes' : 'por año';
+
+  grid.innerHTML = `
+    <div class="kpi">
+      <div class="label">Total de expedientes</div>
+      <div class="value">${total.toLocaleString('es-AR')}</div>
+      <div class="foot">según filtros aplicados</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Tipos de proceso distintos</div>
+      <div class="value">${tiposDistintos}</div>
+      <div class="foot">de ${TIPOS.length} tipos posibles</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Tipo más frecuente</div>
+      <div class="value" style="font-size:1.15rem; line-height:1.25;">${tipoTop}</div>
+      <div class="foot">${tipoTopCant.toLocaleString('es-AR')} expedientes</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Promedio ${etiquetaPeriodo}</div>
+      <div class="value">${promedio.toFixed(1)}</div>
+      <div class="foot">expedientes ${etiquetaPeriodo}</div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   GRAFICO LINEAL
+   ============================================================ */
+function renderChartLinea(lista){
+  const { buckets, totalesTipo } = agrupar(lista, granularidad);
+  const keys = Object.keys(buckets).sort();
+  const labels = keys.map(k => bucketLabel(k, granularidad));
+
+  document.getElementById('chartSub').textContent =
+    modoChart === 'total'
+      ? `Cantidad total de expedientes por ${granularidad === 'dia' ? 'día' : granularidad === 'mes' ? 'mes' : 'año'}`
+      : `Cantidad por ${granularidad === 'dia' ? 'día' : granularidad === 'mes' ? 'mes' : 'año'}, desglosada por tipo (top 6)`;
+
+  let datasets = [];
+
+  if(modoChart === 'total'){
+    datasets = [{
+      label: 'Expedientes',
+      data: keys.map(k => buckets[k].total),
+      borderColor: '#0b4b7a',
+      backgroundColor: 'rgba(11,75,122,.12)',
+      borderWidth: 3,
+      pointRadius: keys.length > 40 ? 0 : 3,
+      pointBackgroundColor: '#0b4b7a',
+      tension: .3,
+      fill: true
+    }];
+  } else {
+    const topTipos = Object.entries(totalesTipo).sort((a,b) => b[1]-a[1]).slice(0,6).map(e => e[0]);
+    topTipos.forEach((tipo, i) => {
+      datasets.push({
+        label: tipo,
+        data: keys.map(k => buckets[k].porTipo[tipo] || 0),
+        borderColor: PALETA[i % PALETA.length],
+        backgroundColor: PALETA[i % PALETA.length] + '22',
+        borderWidth: 2.4,
+        pointRadius: keys.length > 40 ? 0 : 2.5,
+        tension: .3,
+        fill: false
+      });
+    });
+    const otros = keys.map(k => {
+      let s = 0;
+      Object.entries(buckets[k].porTipo).forEach(([t,c]) => { if(!topTipos.includes(t)) s += c; });
+      return s;
+    });
+    if(otros.some(v => v > 0)){
+      datasets.push({
+        label:'Otros',
+        data: otros,
+        borderColor:'#9aa9b8',
+        backgroundColor:'#9aa9b822',
+        borderWidth:2,
+        borderDash:[5,4],
+        pointRadius: keys.length > 40 ? 0 : 2.5,
+        tension:.3,
+        fill:false
+      });
+    }
+  }
+
+  const ctx = document.getElementById('chartLinea').getContext('2d');
+  if(chartLinea) chartLinea.destroy();
+  chartLinea = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display: modoChart === 'tipos', position:'bottom', labels:{ color:'#0a2a44', font:{ family:'Inter', weight:'600', size:11 }, boxWidth:12, padding:14 } },
+        tooltip:{ backgroundColor:'#0a2a44', titleColor:'#fff', bodyColor:'#dceafc', padding:10, cornerRadius:10, boxPadding:4 }
+      },
+      scales:{
+        x:{ ticks:{ color:'#5f7f9f', font:{ family:'Inter', size:10.5 }, maxRotation:0, autoSkip:true }, grid:{ display:false } },
+        y:{ beginAtZero:true, ticks:{ color:'#5f7f9f', font:{ family:'Inter', size:10.5 }, precision:0 }, grid:{ color:'#e9eef5' } }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   RANKING (BARRA)
+   ============================================================ */
+function renderChartRanking(lista){
+  const { totalesTipo } = agrupar(lista, granularidad);
+  let entries = Object.entries(totalesTipo).sort((a,b) => b[1]-a[1]);
+  let top = entries.slice(0, 12);
+  const resto = entries.slice(12).reduce((s,e) => s + e[1], 0);
+  if(resto > 0) top.push(['Otros', resto]);
+
+  const ctx = document.getElementById('chartRanking').getContext('2d');
+  if(chartRanking) chartRanking.destroy();
+  chartRanking = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: top.map(e => e[0]),
+      datasets:[{
+        label:'Cantidad',
+        data: top.map(e => e[1]),
+        backgroundColor: top.map((_,i) => PALETA[i % PALETA.length]),
+        borderRadius:8,
+        maxBarThickness:26
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:'#0a2a44', padding:10, cornerRadius:10 } },
+      scales:{
+        x:{ beginAtZero:true, ticks:{ color:'#5f7f9f', precision:0, font:{ family:'Inter', size:10.5 } }, grid:{ color:'#e9eef5' } },
+        y:{ ticks:{ color:'#0a2a44', font:{ family:'Inter', size:11, weight:'600' } }, grid:{ display:false } }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   RENDER GENERAL
+   ============================================================ */
+function renderTodo(){
+  const lista = causasFiltradas();
+  renderKpis(lista);
+  renderChartLinea(lista);
+  renderChartRanking(lista);
+}
+
+/* ============================================================
+   CALENDARIO (Desde / Hasta)
+   ============================================================ */
+function crearCalendario(campo){
+  const btn = document.getElementById('btn' + campo);
+  const pop = document.getElementById('pop' + campo);
+  const lbl = document.getElementById('lbl' + campo);
+  const key = campo.toLowerCase(); // 'desde' | 'hasta'
+
+  // Se mueve el popover al final del <body> para que no quede atrapado
+  // dentro del stacking context que genera el backdrop-filter de la tarjeta.
+  document.body.appendChild(pop);
+
+  let vista = new Date();
+
+  function posicionar(){
+    const rect = btn.getBoundingClientRect();
+    const anchoPop = 280;
+    let left = rect.left;
+    if(left + anchoPop > window.innerWidth - 12) left = Math.max(12, rect.right - anchoPop);
+    let top = rect.bottom + 8;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+  }
+
+  function pintar(){
+    const y = vista.getFullYear();
+    const m = vista.getMonth();
+    const primerDia = new Date(y, m, 1);
+    const offset = (primerDia.getDay() + 6) % 7; // lunes = 0
+    const diasEnMes = new Date(y, m+1, 0).getDate();
+    const hoy = inicioDeDia(new Date());
+    const seleccionado = filtros[key];
+
+    let celdas = '';
+    for(let i=0;i<offset;i++) celdas += `<span></span>`;
+    for(let d=1; d<=diasEnMes; d++){
+      const fecha = new Date(y, m, d);
+      const esHoy = fecha.getTime() === hoy.getTime();
+      const esSel = seleccionado && inicioDeDia(seleccionado).getTime() === fecha.getTime();
+      const clases = ['cal-day'];
+      if(esHoy) clases.push('today');
+      if(esSel) clases.push('selected');
+      celdas += `<button type="button" class="${clases.join(' ')}" data-d="${d}">${d}</button>`;
+    }
+
+    pop.innerHTML = `
+      <div class="cal-head">
+        <button type="button" id="calPrev${campo}">‹</button>
+        <div class="cal-title">${MESES_LARGO[m]} ${y}</div>
+        <button type="button" id="calNext${campo}">›</button>
+      </div>
+      <div class="cal-weekdays">${DIAS_SEMANA.map(d => `<span>${d}</span>`).join('')}</div>
+      <div class="cal-grid">${celdas}</div>
+      <div class="cal-foot">
+        <button type="button" id="calHoy${campo}">Hoy</button>
+        <button type="button" id="calLimpiar${campo}">Limpiar</button>
+      </div>
+    `;
+
+    document.getElementById('calPrev' + campo).addEventListener('click', () => { vista = new Date(y, m-1, 1); pintar(); });
+    document.getElementById('calNext' + campo).addEventListener('click', () => { vista = new Date(y, m+1, 1); pintar(); });
+    document.getElementById('calHoy' + campo).addEventListener('click', () => { seleccionar(new Date()); });
+    document.getElementById('calLimpiar' + campo).addEventListener('click', () => { seleccionar(null); });
+    pop.querySelectorAll('.cal-day').forEach(b => {
+      b.addEventListener('click', () => seleccionar(new Date(y, m, parseInt(b.getAttribute('data-d'),10))));
+    });
+  }
+
+  function seleccionar(fecha){
+    filtros[key] = fecha;
+    if(fecha){
+      lbl.textContent = formatFechaCorta(fecha);
+      lbl.classList.remove('placeholder');
+      vista = new Date(fecha);
+    } else {
+      lbl.textContent = 'Cualquier fecha';
+      lbl.classList.add('placeholder');
+    }
+    cerrar();
+    renderTodo();
+  }
+
+  function abrir(){
+    document.querySelectorAll('.cal-popover.open').forEach(p => { if(p !== pop) p.classList.remove('open'); });
+    document.querySelectorAll('.cal-input.open').forEach(b => { if(b !== btn) b.classList.remove('open'); });
+    posicionar();
+    pintar();
+    pop.classList.add('open');
+    btn.classList.add('open');
+  }
+  function cerrar(){
+    pop.classList.remove('open');
+    btn.classList.remove('open');
+  }
+  function alternar(){
+    if(pop.classList.contains('open')) cerrar(); else abrir();
+  }
+
+  btn.addEventListener('click', (e) => { e.stopPropagation(); alternar(); });
+  pop.addEventListener('click', (e) => e.stopPropagation());
+  window.addEventListener('scroll', () => { if(pop.classList.contains('open')) posicionar(); }, true);
+  window.addEventListener('resize', () => { if(pop.classList.contains('open')) posicionar(); });
+
+  return { cerrar };
+}
+
+const calendarios = [];
+document.addEventListener('click', () => { calendarios.forEach(c => c.cerrar()); });
+
+/* ============================================================
+   EVENTOS UI
+   ============================================================ */
+document.getElementById('fTipo').addEventListener('change', e => { filtros.tipo = e.target.value; renderTodo(); });
+document.getElementById('fEstado').addEventListener('change', e => { filtros.estado = e.target.value; renderTodo(); });
+document.getElementById('fBusca').addEventListener('input', e => { filtros.busca = e.target.value; renderTodo(); });
+
+document.getElementById('btnLimpiar').addEventListener('click', () => {
+  filtros = { desde:null, hasta:null, tipo:'', estado:'', busca:'' };
+  document.getElementById('fTipo').value = '';
+  document.getElementById('fEstado').value = '';
+  document.getElementById('fBusca').value = '';
+  const lblD = document.getElementById('lblDesde');
+  lblD.textContent = 'Cualquier fecha'; lblD.classList.add('placeholder');
+  const lblH = document.getElementById('lblHasta');
+  lblH.textContent = 'Cualquier fecha'; lblH.classList.add('placeholder');
+  renderTodo();
+});
+
+document.getElementById('granChips').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-g]');
+  if(!btn) return;
+  granularidad = btn.getAttribute('data-g');
+  document.querySelectorAll('#granChips button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTodo();
+});
+
+document.getElementById('modoChips').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-m]');
+  if(!btn) return;
+  modoChart = btn.getAttribute('data-m');
+  document.querySelectorAll('#modoChips button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderChartLinea(causasFiltradas());
+});
+
+document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+/* ============================================================
+   INICIO
+   ============================================================ */
+poblarSelectTipo();
+poblarSelectEstado();
+calendarios.push(crearCalendario('Desde'));
+calendarios.push(crearCalendario('Hasta'));
+iniciarEscucha();
+
+})();
+</script>
+</body>
+</html>
