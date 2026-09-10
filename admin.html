@@ -844,6 +844,10 @@
             background: #e3f2fd;
             color: #1565c0;
         }
+        .btn-accion-tabla.edit:hover {
+            background: #fff3e0;
+            color: #e67e22;
+        }
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 992px) {
@@ -1119,6 +1123,88 @@
         </div>
     </div>
 
+    <!-- ===== MODAL EDITAR REGISTRO FINALIZADO (NUEVO) ===== -->
+    <div class="modal fade modal-modern" id="modalEditar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar expediente finalizado · <span id="modalEditarExp"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditar" class="form-modern">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Tipo *</label>
+                                <select id="editTipo" class="form-select" required></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Complejidad *</label>
+                                <select id="editNivel" class="form-select" required>
+                                    <option value="1">Nivel 1</option>
+                                    <option value="2">Nivel 2</option>
+                                    <option value="3">Nivel 3</option>
+                                    <option value="4">Nivel 4</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 mt-3">
+                            <label class="form-label">Datos de la Parte/Cliente</label>
+                            <input type="text" id="editDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">DNI</label>
+                            <input type="text" id="editDni" class="form-control" autocomplete="off"
+                                   placeholder="Ingrese el DNI (opcional)" maxlength="8"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Asiste a la Defensoría</label>
+                            <select id="editAsisteDefensoria" class="form-select">
+                                <option value="">Seleccione…</option>
+                                <option value="Por citación">Por citación</option>
+                                <option value="Sin citación">Sin citación</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Modo de Intervención</label>
+                            <select id="editModoIntervencion" class="form-select">
+                                <option value="">Seleccione…</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Fuente</label>
+                            <div class="d-flex gap-3 flex-wrap">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="editFuenteSiged" /><label class="form-check-label" for="editFuenteSiged">SIGED</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="editFuenteZimbra" /><label class="form-check-label" for="editFuenteZimbra">ZIMBRA</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="editFuenteDeut" /><label class="form-check-label" for="editFuenteDeut">DEUT</label></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Observaciones</label>
+                            <textarea id="editObservaciones" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="alert alert-info" style="font-size:0.78rem; border-radius:16px;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Solo se modifican los datos del expediente. El cambio quedará registrado en el historial con fecha y usuario.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="btnGuardarEdicion"><i class="bi bi-check-lg"></i> Guardar cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGOUT ALERT -->
     <div id="logoutAlert">
         <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
@@ -1181,6 +1267,40 @@
             };
 
             // ============================================================
+            //  CATÁLOGOS (usados en formulario y edición)
+            // ============================================================
+            const TIPOS_CAUSA = [
+                'Nuevo patrocinio',
+                'Nuevo patrocinio Violencia Familiar',
+                'Amparo',
+                'Acción de protección de persona',
+                'Alimentos',
+                'Cuidado personal',
+                'Desalojo',
+                'Divorcio',
+                'Evaluación Art 42 C.C.C.N.',
+                'Filiación',
+                'Filiación y Daño',
+                'Guarda',
+                'Homologación Acuerdo CEJUME',
+                'Laboral',
+                'Penal (cámara gesell)',
+                'Prescripción Adquisitiva',
+                'Régimen de comunicación y contacto',
+                'Violencia Familiar',
+                'Otro'
+            ];
+
+            const MODOS_INTERVENCION = [
+                'Defensor Oficial', 'Ministerio Principal', 'Ministerio Complementario',
+                'Patrocinante Actor', 'Patrocinante Demandado', 'Patrocinante Tercero',
+                'Defensor de Ausente', 'Patrocinante presunto incapaz', 'Asistencia Letrada del incapaz',
+                'Ministerio Público del incapaz', 'Ministerio Público en turno Abril',
+                'Ministerio Público en turno Agosto', 'Ministerio Público en turno Diciembre',
+                'Tutor Ad Litem', 'Defensor Oficial Art 329 CPCC', 'Defensor Oficial Art 626 CPCC'
+            ];
+
+            // ============================================================
             //  ESTADO
             // ============================================================
             let state = { causas: [], ausencias: [] };
@@ -1202,6 +1322,9 @@
 
             // Variable para almacenar el ID de la causa a eliminar (modal individual)
             let pendingDeleteId = null;
+
+            // Variable para almacenar el ID de la causa en edición
+            let pendingEditId = null;
 
             // ============================================================
             //  UTILS
@@ -1400,6 +1523,140 @@
                 } finally {
                     pendingDeleteId = null;
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEliminar'));
+                    if (modal) modal.hide();
+                }
+            }
+
+            // ============================================================
+            //  EDITAR REGISTRO FINALIZADO (NUEVO)
+            // ============================================================
+            function poblarSelectsEdicion() {
+                // Poblar tipos
+                const selTipo = document.getElementById('editTipo');
+                if (selTipo && selTipo.options.length <= 1) {
+                    selTipo.innerHTML = '<option value="">Seleccione…</option>' +
+                        TIPOS_CAUSA.map(t => `<option value="${t}">${t}</option>`).join('');
+                }
+                // Poblar modos de intervención
+                const selModo = document.getElementById('editModoIntervencion');
+                if (selModo && selModo.options.length <= 1) {
+                    selModo.innerHTML = '<option value="">Seleccione…</option>' +
+                        MODOS_INTERVENCION.map(m => `<option value="${m}">${m}</option>`).join('');
+                }
+            }
+
+            function abrirModalEditar(id) {
+                const causa = state.causas.find(c => c.id === id);
+                if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
+
+                // Solo permitir editar registros finalizados
+                if (causa.estado !== 'finalizada') {
+                    showToast('Solo se pueden editar expedientes finalizados', 'warning');
+                    return;
+                }
+
+                pendingEditId = id;
+                poblarSelectsEdicion();
+
+                document.getElementById('modalEditarExp').textContent = causa.numero;
+
+                // Rellenar campos
+                document.getElementById('editTipo').value = causa.tipo || '';
+                document.getElementById('editNivel').value = String(causa.nivelOperador || 2);
+                document.getElementById('editDni').value = causa.dni || '';
+                document.getElementById('editDatosParte').value = causa.datosParte || '';
+                document.getElementById('editAsisteDefensoria').value = causa.asisteDefensoria || '';
+                document.getElementById('editModoIntervencion').value = causa.modoIntervencion || '';
+                document.getElementById('editObservaciones').value = causa.observaciones || '';
+                document.getElementById('editFuenteSiged').checked = !!causa.fuenteSiged;
+                document.getElementById('editFuenteZimbra').checked = !!causa.fuenteZimbra;
+                document.getElementById('editFuenteDeut').checked = !!causa.fuenteDeut;
+
+                new bootstrap.Modal(document.getElementById('modalEditar')).show();
+            }
+
+            async function guardarEdicion() {
+                if (!pendingEditId) return;
+                const causa = state.causas.find(c => c.id === pendingEditId);
+                if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
+
+                const nuevoTipo = document.getElementById('editTipo').value;
+                const nuevoNivel = parseInt(document.getElementById('editNivel').value) || 2;
+                const nuevoDni = document.getElementById('editDni').value.trim();
+                const nuevoDatosParte = document.getElementById('editDatosParte').value.trim();
+                const nuevoAsiste = document.getElementById('editAsisteDefensoria').value;
+                const nuevoModo = document.getElementById('editModoIntervencion').value;
+                const nuevoObs = document.getElementById('editObservaciones').value;
+                const nuevoSiged = document.getElementById('editFuenteSiged').checked;
+                const nuevoZimbra = document.getElementById('editFuenteZimbra').checked;
+                const nuevoDeut = document.getElementById('editFuenteDeut').checked;
+
+                if (!nuevoTipo) {
+                    showToast('Debe seleccionar un tipo', 'warning');
+                    return;
+                }
+                if (nuevoDni && !/^\d{7,8}$/.test(nuevoDni)) {
+                    showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
+                    return;
+                }
+
+                // Detectar cambios para registrar en historial
+                const cambios = [];
+                if ((causa.tipo || '') !== nuevoTipo) cambios.push(`Tipo: "${causa.tipo || ''}" → "${nuevoTipo}"`);
+                if ((causa.nivelOperador || 0) !== nuevoNivel) cambios.push(`Nivel: ${causa.nivelOperador || 0} → ${nuevoNivel}`);
+                if ((causa.dni || '') !== nuevoDni) cambios.push(`DNI: "${causa.dni || ''}" → "${nuevoDni}"`);
+                if ((causa.datosParte || '') !== nuevoDatosParte) cambios.push(`Datos Parte: "${causa.datosParte || ''}" → "${nuevoDatosParte}"`);
+                if ((causa.asisteDefensoria || '') !== nuevoAsiste) cambios.push(`Asiste Defensoría: "${causa.asisteDefensoria || ''}" → "${nuevoAsiste}"`);
+                if ((causa.modoIntervencion || '') !== nuevoModo) cambios.push(`Modo Intervención: "${causa.modoIntervencion || ''}" → "${nuevoModo}"`);
+                if ((causa.observaciones || '') !== nuevoObs) cambios.push(`Observaciones modificadas`);
+                if (!!causa.fuenteSiged !== nuevoSiged) cambios.push(`Fuente SIGED: ${!!causa.fuenteSiged} → ${nuevoSiged}`);
+                if (!!causa.fuenteZimbra !== nuevoZimbra) cambios.push(`Fuente ZIMBRA: ${!!causa.fuenteZimbra} → ${nuevoZimbra}`);
+                if (!!causa.fuenteDeut !== nuevoDeut) cambios.push(`Fuente DEUT: ${!!causa.fuenteDeut} → ${nuevoDeut}`);
+
+                if (cambios.length === 0) {
+                    showToast('No se realizaron cambios', 'info');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
+                    if (modal) modal.hide();
+                    pendingEditId = null;
+                    return;
+                }
+
+                const historialEntry = {
+                    fecha: new Date().toISOString(),
+                    accion: 'Edición de datos del expediente finalizado',
+                    usuario: 'Administrador',
+                    comentario: cambios.join(' · ')
+                };
+
+                const updates = {
+                    tipo: nuevoTipo,
+                    nivelOperador: nuevoNivel,
+                    dni: nuevoDni,
+                    datosParte: nuevoDatosParte,
+                    asisteDefensoria: nuevoAsiste,
+                    modoIntervencion: nuevoModo,
+                    observaciones: nuevoObs,
+                    fuenteSiged: nuevoSiged,
+                    fuenteZimbra: nuevoZimbra,
+                    fuenteDeut: nuevoDeut,
+                    historial: [...(causa.historial || []), historialEntry]
+                };
+
+                try {
+                    await updateCausa(pendingEditId, updates);
+                    // Actualizar estado local
+                    const idx = state.causas.findIndex(c => c.id === pendingEditId);
+                    if (idx >= 0) {
+                        state.causas[idx] = { ...state.causas[idx], ...updates };
+                    }
+                    showToast(`✅ Expediente ${causa.numero} actualizado correctamente`, 'success');
+                    renderTabla();
+                } catch (error) {
+                    console.error('Error al actualizar:', error);
+                    showToast('Error al actualizar en Firestore', 'danger');
+                } finally {
+                    pendingEditId = null;
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditar'));
                     if (modal) modal.hide();
                 }
             }
@@ -1781,37 +2038,8 @@
                 if (formularioInicializado) return;
                 const container = document.getElementById('formularioContainer');
                 const operadorOptions = CONFIG.operadores.map(op => `<option value="${op}">${op}</option>`).join('');
-                // Tipos igual que en operador
-                const tipos = [
-                    'Nuevo patrocinio',
-                    'Nuevo patrocinio Violencia Familiar',
-                    'Amparo',
-                    'Acción de protección de persona',
-                    'Alimentos',
-                    'Cuidado personal',
-                    'Desalojo',
-                    'Divorcio',
-                    'Evaluación Art 42 C.C.C.N.',
-                    'Filiación',
-                    'Filiación y Daño',
-                    'Guarda',
-                    'Homologación Acuerdo CEJUME',
-                    'Laboral',
-                    'Penal (cámara gesell)',
-                    'Prescripción Adquisitiva',
-                    'Régimen de comunicación y contacto',
-                    'Violencia Familiar',
-                    'Otro'
-                ];
-                const tipoOptions = tipos.map(t => `<option value="${t}">${t}</option>`).join('');
-                const modoIntervencionOptions = [
-                    'Defensor Oficial', 'Ministerio Principal', 'Ministerio Complementario',
-                    'Patrocinante Actor', 'Patrocinante Demandado', 'Patrocinante Tercero',
-                    'Defensor de Ausente', 'Patrocinante presunto incapaz', 'Asistencia Letrada del incapaz',
-                    'Ministerio Público del incapaz', 'Ministerio Público en turno Abril',
-                    'Ministerio Público en turno Agosto', 'Ministerio Público en turno Diciembre',
-                    'Tutor Ad Litem', 'Defensor Oficial Art 329 CPCC', 'Defensor Oficial Art 626 CPCC'
-                ].map(m => `<option value="${m}">${m}</option>`).join('');
+                const tipoOptions = TIPOS_CAUSA.map(t => `<option value="${t}">${t}</option>`).join('');
+                const modoIntervencionOptions = MODOS_INTERVENCION.map(m => `<option value="${m}">${m}</option>`).join('');
 
                 container.innerHTML = `
                     <div class="card-title"><i class="bi bi-file-earmark-plus"></i> Nueva Causa</div>
@@ -2119,7 +2347,7 @@
                     </div>
                 `;
 
-                // Tabla de Recientes (con acciones: historial y eliminar)
+                // Tabla de Recientes (con acciones: historial, editar y eliminar)
                 if (total) {
                     html += `
                         <div style="width:100%; border-radius:16px;">
@@ -2128,7 +2356,7 @@
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
                                         <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                        <th style="width:80px;">Acciones</th>
+                                        <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2141,6 +2369,7 @@
                                             fuentes.length > 1 ? '<span class="badge-fuente ambas">' + fuentes.join('/') + '</span>' :
                                             `<span class="badge-fuente">${fuentes[0]}</span>`;
                                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        const esFinalizada = c.estado === 'finalizada';
                                         return `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
@@ -2152,6 +2381,7 @@
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
                                             <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                                ${esFinalizada ? `<button class="btn-accion-tabla edit" data-id="${c.id}" data-accion="editar" title="Editar expediente finalizado"><i class="bi bi-pencil"></i></button>` : ''}
                                                 <button class="btn-accion-tabla danger" data-id="${c.id}" data-accion="eliminar" title="Eliminar"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
@@ -2186,7 +2416,7 @@
                                         <th>Estado</th>
                                         <th>Fecha Pase</th>
                                         <th>Motivo</th>
-                                        <th style="width:80px;">Acciones</th>
+                                        <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2234,7 +2464,7 @@
                     });
                 }
 
-                // ---- Acciones: historial y eliminar (con modal) ----
+                // ---- Acciones: historial, editar y eliminar ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         const id = this.dataset.id;
@@ -2243,6 +2473,8 @@
                             abrirHistorial(id);
                         } else if (accion === 'eliminar') {
                             mostrarModalConfirmacion(id);
+                        } else if (accion === 'editar') {
+                            abrirModalEditar(id);
                         }
                     });
                 });
@@ -2459,29 +2691,7 @@
                 const container = document.getElementById('filtrosContainer');
                 if (!container) return;
 
-                // Tipos (igual que en el formulario)
-                const tipos = [
-                    'Nuevo patrocinio',
-                    'Nuevo patrocinio Violencia Familiar',
-                    'Amparo',
-                    'Acción de protección de persona',
-                    'Alimentos',
-                    'Cuidado personal',
-                    'Desalojo',
-                    'Divorcio',
-                    'Evaluación Art 42 C.C.C.N.',
-                    'Filiación',
-                    'Filiación y Daño',
-                    'Guarda',
-                    'Homologación Acuerdo CEJUME',
-                    'Laboral',
-                    'Penal (cámara gesell)',
-                    'Prescripción Adquisitiva',
-                    'Régimen de comunicación y contacto',
-                    'Violencia Familiar',
-                    'Otro'
-                ];
-                const tipoOptions = '<option value="">Todos</option>' + tipos.map(t =>
+                const tipoOptions = '<option value="">Todos</option>' + TIPOS_CAUSA.map(t =>
                     `<option value="${t}">${t}</option>`
                 ).join('');
 
@@ -2599,6 +2809,7 @@
                 await loadState();
                 createFormulario();
                 initFiltros();
+                poblarSelectsEdicion();
                 renderTabla();
                 showToast('Bienvenido Administrador', 'success');
                 iniciarCronometros();
@@ -2709,6 +2920,14 @@
                     confirmCheckbox.checked = false;
                     btnConfirmarEliminacionMasiva.disabled = true;
                     confirmCheckbox.disabled = false;
+                });
+
+                // ---- NUEVO: Guardar edición ----
+                document.getElementById('btnGuardarEdicion').addEventListener('click', guardarEdicion);
+                // Guardar con Enter en el modal de edición (opcional)
+                document.getElementById('formEditar').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    guardarEdicion();
                 });
 
             });
