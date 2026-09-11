@@ -10,8 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- PDF.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js">
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 
     <!-- ===== CONFIGURACIÓN INICIAL ===== -->
     <script>
@@ -315,6 +314,7 @@
             background: #ffebee;
             border-color: #ef9a9a;
         }
+        /* Botones modo JSON/Firestore (específicos de oper-json) */
         .btn-header.modo-json {
             background: #6c757d;
             color: #fff;
@@ -341,19 +341,28 @@
         .glass-card:hover {
             box-shadow: 0 8px 32px rgba(0, 20, 40, 0.07);
         }
+
+        /* ===== TÍTULOS DESTACADOS Y RESPONSIVOS ===== */
         .glass-card .card-title {
-            font-weight: 700;
-            font-size: 1rem;
+            font-weight: 800;
+            font-size: 1.05rem;
             color: #0a2a44;
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
             margin-bottom: 1.2rem;
-            padding-bottom: 0.6rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            padding: 0.7rem 1rem 0.7rem 1.1rem;
+            background: linear-gradient(135deg, rgba(11, 75, 122, 0.12), rgba(26, 107, 176, 0.04));
+            border-left: 5px solid #1a6bb0;
+            border-radius: 10px;
+            letter-spacing: -0.2px;
+            line-height: 1.3;
         }
         .glass-card .card-title i {
             color: #1a6bb0;
+            font-size: 1.25rem;
+            flex-shrink: 0;
         }
 
         /* ===== FORM ===== */
@@ -368,17 +377,18 @@
         .form-modern .form-control,
         .form-modern .form-select {
             border-radius: 16px;
-            border: 1px solid #dce5ec;
-            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid #4b5563;
+            background: rgba(255, 255, 255, 0.75);
             padding: 10px 16px;
             font-size: 0.88rem;
             transition: 0.2s;
             backdrop-filter: blur(4px);
+            color: #0b1e33;
         }
         .form-modern .form-control:focus,
         .form-modern .form-select:focus {
             border-color: #1a6bb0;
-            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.1);
+            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.15);
             background: #fff;
         }
         .btn-modern {
@@ -431,6 +441,29 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(211, 47, 47, 0.3);
             color: #fff;
+        }
+
+        /* ===== BOTÓN GESTIONAR AUSENCIAS DESTACADO ===== */
+        .btn-gestion-ausencias {
+            background: #ffffff;
+            border: 2px solid #1a6bb0;
+            color: #0b4b7a !important;
+            font-weight: 800;
+            box-shadow: 0 3px 12px rgba(26, 107, 176, 0.25);
+            letter-spacing: 0.3px;
+            padding: 7px 18px;
+            font-size: 0.75rem;
+        }
+        .btn-gestion-ausencias i {
+            color: #1a6bb0;
+            font-size: 0.9rem;
+        }
+        .btn-gestion-ausencias:hover {
+            background: #e3f2fd;
+            border-color: #0b4b7a;
+            color: #0b4b7a !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 107, 176, 0.4);
         }
 
         /* ===== TABLA ===== */
@@ -820,149 +853,253 @@
             color: #2c5a7a;
         }
 
-        /* ===== BOTONES ACCIÓN TABLA ===== */
+        /* ===== BOTONES ACCIÓN TABLA (MÁS DESTACADOS) ===== */
         .btn-accion-tabla {
-            padding: 3px 8px;
-            font-size: 0.6rem;
+            padding: 6px 14px;
+            font-size: 0.72rem;
             border-radius: 30px;
-            border: none;
-            background: transparent;
-            color: #5f7f9f;
-            transition: 0.15s;
+            border: 1px solid #0b4b7a;
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: #fff;
+            transition: 0.18s;
             cursor: pointer;
-        }
-        .btn-accion-tabla:hover {
-            background: #e9eff6;
-            color: #0a2a44;
-        }
-        .btn-accion-tabla.danger:hover {
-            background: #ffebee;
-            color: #c62828;
-        }
-        .btn-accion-tabla.primary:hover {
-            background: #e3f2fd;
-            color: #1565c0;
-        }
-        .btn-accion-tabla.success:hover {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        /* ===== KPI CARDS ===== */
-        .kpi-card {
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(8px);
-            border-radius: 24px;
-            padding: 1rem 1.2rem;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 2px 12px rgba(0, 20, 40, 0.04);
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            height: 100%;
-        }
-        .kpi-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 20, 40, 0.08);
-        }
-        .kpi-card .kpi-num {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: #0b4b7a;
-            line-height: 1.2;
-        }
-        .kpi-card .kpi-label {
-            font-size: 0.75rem;
-            color: #5f7f9f;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-top: 2px;
-        }
-        .kpi-card .kpi-detalle {
-            display: flex;
-            justify-content: center;
-            gap: 1.2rem;
-            margin-top: 6px;
-            font-size: 0.7rem;
-        }
-        .kpi-card .kpi-detalle span {
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-        }
-        .kpi-card .kpi-detalle .badge {
-            font-size: 0.65rem;
-            padding: 2px 8px;
-        }
-
-        /* ===== KPI TOTAL (BOTÓN AZUL) ===== */
-        .kpi-total {
-            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
-            color: white;
-            border: none;
-            border-radius: 24px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 4px 20px rgba(26, 107, 176, 0.3);
-            text-align: right;
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: default;
-            display: inline-block;
-            min-width: 200px;
-        }
-        .kpi-total:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(26, 107, 176, 0.4);
-        }
-        .kpi-total .kpi-num {
-            font-size: 2.8rem;
-            font-weight: 800;
-            color: white;
+            gap: 5px;
+            box-shadow: 0 3px 8px rgba(26, 107, 176, 0.28);
             line-height: 1;
         }
-        .kpi-total .kpi-label {
+        .btn-accion-tabla:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(26, 107, 176, 0.45);
+            background: linear-gradient(135deg, #0a3d63, #155a94);
+            color: #fff;
+        }
+        .btn-accion-tabla i {
             font-size: 0.85rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.85);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
-        .kpi-total .kpi-detalle {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-top: 4px;
+        .btn-accion-tabla.danger {
+            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+            border-color: #b71c1c;
+            box-shadow: 0 3px 8px rgba(211, 47, 47, 0.3);
+        }
+        .btn-accion-tabla.danger:hover {
+            background: linear-gradient(135deg, #8e1010, #b71c1c);
+            box-shadow: 0 6px 16px rgba(211, 47, 47, 0.45);
+        }
+        .btn-accion-tabla.primary {
+            background: linear-gradient(135deg, #1565c0, #2196f3);
+            border-color: #1565c0;
+        }
+        .btn-accion-tabla.primary:hover {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+        }
+        .btn-accion-tabla.success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            border-color: #1e7e34;
+        }
+        .btn-accion-tabla.success:hover {
+            background: linear-gradient(135deg, #145c23, #1e7e34);
         }
 
-        /* ===== PANEL SIGED ===== */
-        .siged-panel {
-            margin-top: 1rem;
+        /* ===== KPI STRIP (UNA SOLA LÍNEA, COMPACTO) ===== */
+        .kpi-strip {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 4px 2px 8px;
         }
-        .siged-panel .table-wrap {
-            max-height: 400px;
-        }
-        .siged-panel .registrados {
-            opacity: 0.6;
-            background: #e9eef5;
-        }
-        .siged-panel .registrados .form-check-input {
-            pointer-events: none;
-        }
-
-        /* ===== FILE INPUT ===== */
-        .file-drop-zone {
-            border: 2px dashed #b8cce0;
-            border-radius: 20px;
-            padding: 2rem;
+        .kpi-mini {
+            flex: 1 1 0;
+            min-width: 82px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 14px;
+            padding: 8px 5px;
             text-align: center;
-            cursor: pointer;
-            transition: 0.2s;
-            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 2px 10px rgba(0, 20, 40, 0.05);
+            transition: transform 0.18s, box-shadow 0.18s;
+            border-top: 3px solid #1a6bb0;
         }
-        .file-drop-zone:hover {
-            background: rgba(26, 107, 176, 0.05);
-            border-color: #1a6bb0;
+        .kpi-mini:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 20, 40, 0.1);
         }
-        .file-drop-zone input[type="file"] {
-            display: none;
+        .kpi-mini-num {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0b4b7a;
+            line-height: 1.05;
+        }
+        .kpi-mini-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: #5f7f9f;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ===== KPI SECRETARIOS (celeste negrita) ===== */
+        .kpi-mini.kpi-mini-sec {
+            border-top-color: #03a9f4;
+        }
+        .kpi-mini.kpi-mini-sec .kpi-mini-num {
+            color: #0277bd;
+        }
+        .kpi-mini.kpi-mini-sec .kpi-mini-label {
+            color: #03a9f4;
+            font-weight: 800;
+        }
+
+        /* ===== KPI REMITIDOS / DEVUELTOS / RECHAZADOS (número rojo) ===== */
+        .kpi-mini.kpi-mini-rem {
+            border-top-color: #c62828;
+        }
+        .kpi-mini.kpi-mini-rem .kpi-mini-num {
+            color: #c62828;
+        }
+        .kpi-mini.kpi-mini-dev {
+            border-top-color: #c62828;
+        }
+        .kpi-mini.kpi-mini-dev .kpi-mini-num {
+            color: #c62828;
+        }
+        .kpi-mini.kpi-mini-rech {
+            border-top-color: #c62828;
+        }
+        .kpi-mini.kpi-mini-rech .kpi-mini-num {
+            color: #c62828;
+        }
+        .kpi-mini.kpi-mini-rem .kpi-mini-label,
+        .kpi-mini.kpi-mini-dev .kpi-mini-label,
+        .kpi-mini.kpi-mini-rech .kpi-mini-label {
+            color: #b71c1c;
+            font-weight: 800;
+        }
+
+        /* ===== KPI TOTAL ===== */
+        .kpi-mini.kpi-mini-total {
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            border-top-color: #0b4b7a;
+            box-shadow: 0 4px 16px rgba(26, 107, 176, 0.35);
+        }
+        .kpi-mini.kpi-mini-total .kpi-mini-num {
+            color: #fff;
+            font-size: 1.65rem;
+        }
+        .kpi-mini.kpi-mini-total .kpi-mini-label {
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .kpi-mini.kpi-mini-total:hover {
+            box-shadow: 0 8px 24px rgba(26, 107, 176, 0.5);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+            .app-header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+            }
+            .header-actions {
+                justify-content: stretch;
+            }
+            .search-box {
+                max-width: 100%;
+                flex: 1;
+            }
+            .glass-card {
+                padding: 1rem;
+            }
+            .filtros-container {
+                border-radius: 20px;
+                padding: 8px 12px;
+            }
+        }
+        @media (max-width: 576px) {
+            .login-card {
+                padding: 1.8rem 1.2rem;
+                border-radius: 32px;
+                margin: 0 12px;
+            }
+            .app-wrapper {
+                padding: 10px 8px;
+            }
+            .app-header .brand h1 {
+                font-size: 1rem;
+            }
+            .glass-card {
+                padding: 0.8rem;
+                border-radius: 20px;
+            }
+            .glass-card .card-title {
+                font-size: 0.92rem;
+                padding: 0.55rem 0.75rem 0.55rem 0.85rem;
+                border-left-width: 4px;
+                gap: 7px;
+            }
+            .glass-card .card-title i {
+                font-size: 1.05rem;
+            }
+            .table-modern {
+                font-size: 0.7rem;
+            }
+            .table-modern thead th,
+            .table-modern tbody td {
+                padding: 6px 4px;
+            }
+            .btn-accion-tabla {
+                padding: 5px 10px;
+                font-size: 0.65rem;
+            }
+            .modal-modern .modal-body {
+                padding: 1rem;
+            }
+            #toastContainer {
+                bottom: 12px;
+                right: 12px;
+                max-width: calc(100% - 24px);
+            }
+            .toast-custom {
+                padding: 12px 16px;
+                font-size: 0.8rem;
+            }
+            .pagination-bar {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .filtros-container {
+                flex-wrap: wrap;
+                border-radius: 16px;
+            }
+            .filtros-container select {
+                max-width: 80px;
+                font-size: 0.65rem;
+            }
+            .kpi-mini {
+                min-width: 72px;
+                padding: 6px 4px;
+            }
+            .kpi-mini-num {
+                font-size: 1.15rem;
+            }
+            .kpi-mini.kpi-mini-total .kpi-mini-num {
+                font-size: 1.3rem;
+            }
+            .kpi-mini-label {
+                font-size: 0.55rem;
+            }
         }
 
         /* ===== PRINT (MEJORADO PARA REPORTE A4) ===== */
@@ -1143,79 +1280,37 @@
             color: #c62828 !important;
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 992px) {
-            .app-header {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 1rem;
-            }
-            .header-actions {
-                justify-content: stretch;
-            }
-            .search-box {
-                max-width: 100%;
-                flex: 1;
-            }
-            .glass-card {
-                padding: 1rem;
-            }
-            .filtros-container {
-                border-radius: 20px;
-                padding: 8px 12px;
-            }
+        /* ===== PANEL SIGED ===== */
+        .siged-panel {
+            margin-top: 1rem;
         }
-        @media (max-width: 576px) {
-            .login-card {
-                padding: 1.8rem 1.2rem;
-                border-radius: 32px;
-                margin: 0 12px;
-            }
-            .app-wrapper {
-                padding: 10px 8px;
-            }
-            .app-header .brand h1 {
-                font-size: 1rem;
-            }
-            .glass-card {
-                padding: 0.8rem;
-                border-radius: 20px;
-            }
-            .table-modern {
-                font-size: 0.7rem;
-            }
-            .table-modern thead th,
-            .table-modern tbody td {
-                padding: 6px 4px;
-            }
-            .modal-modern .modal-body {
-                padding: 1rem;
-            }
-            #toastContainer {
-                bottom: 12px;
-                right: 12px;
-                max-width: calc(100% - 24px);
-            }
-            .toast-custom {
-                padding: 12px 16px;
-                font-size: 0.8rem;
-            }
-            .pagination-bar {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-            .filtros-container {
-                flex-wrap: wrap;
-                border-radius: 16px;
-            }
-            .filtros-container select {
-                max-width: 80px;
-                font-size: 0.65rem;
-            }
-            .kpi-card .kpi-num {
-                font-size: 1.8rem;
-            }
+        .siged-panel .table-wrap {
+            max-height: 400px;
+        }
+        .siged-panel .registrados {
+            opacity: 0.6;
+            background: #e9eef5;
+        }
+        .siged-panel .registrados .form-check-input {
+            pointer-events: none;
+        }
+
+        /* ===== FILE INPUT ===== */
+        .file-drop-zone {
+            border: 2px dashed #b8cce0;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .file-drop-zone:hover {
+            background: rgba(26, 107, 176, 0.05);
+            border-color: #1a6bb0;
+        }
+        .file-drop-zone input[type="file"] {
+            display: none;
         }
     </style>
 </head>
@@ -1267,8 +1362,8 @@
             </div>
         </header>
 
-        <!-- ===== KPIs ===== -->
-        <div class="row g-3 mb-4" id="kpiPanel">
+        <!-- ===== KPIs (una sola línea) ===== -->
+        <div id="kpiPanel">
             <!-- Generado por JavaScript -->
         </div>
 
@@ -2238,7 +2333,7 @@
             }
 
             // ============================================================
-            //  FUNCIONES DE REPORTE (igual a operador.html)
+            //  FUNCIONES DE REPORTE
             // ============================================================
 
             function generarReporteRecientes() {
@@ -2642,7 +2737,7 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs
+            //  ACTUALIZAR KPIs (estilo tira compacta, idéntico a operador)
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
@@ -2650,54 +2745,54 @@
 
                 const todas = state.causas.filter(c => esNumeroValido(c.numero));
                 const totalGeneral = todas.length;
-                const totalActivas = todas.filter(c => c.estado === 'en_secretaria' || c.estado === 'en_proceso').length;
+
+                const remitidos = todas.filter(c => c.estado === 'remitido').length;
+                const devueltos = todas.filter(c => c.estado === 'devuelto_siged').length;
+                const rechazados = todas.filter(c => c.estado === 'rechazado').length;
 
                 const secretarios = CONFIG.secretarios;
                 const orden = CONFIG.ordenSecretarios;
 
-                let html = '';
+                let html = `<div class="kpi-strip">`;
 
-                html += `
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 d-flex justify-content-end">
-                            <div class="kpi-total">
-                                <div class="kpi-num">${totalGeneral}</div>
-                                <div class="kpi-label">Total de Pases Actual:</div>
-                                <div class="kpi-detalle">Activos: ${totalActivas}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                html += `<div class="row g-3">`;
                 orden.forEach(id => {
                     const sec = secretarios.find(s => s.id === id);
                     if (!sec) return;
-                    const causasSecretario = todas.filter(c => c.secretarioId === id);
-                    const totalAsignadas = causasSecretario.length;
-                    const enSecretaria = causasSecretario.filter(c => c.estado === 'en_secretaria');
-                    const enProceso = causasSecretario.filter(c => c.estado === 'en_proceso');
-
+                    const totalAsignadas = todas.filter(c => c.secretarioId === id).length;
+                    const nombreCorto = sec.nombre.split(' ')[0];
                     html += `
-                        <div class="col-md-4">
-                            <div class="kpi-card">
-                                <div class="kpi-num">${totalAsignadas}</div>
-                                <div class="kpi-label">${sec.nombre}</div>
-                                <div class="kpi-detalle">
-                                    <span><span class="badge badge-sec" style="font-size:0.65rem;">${enSecretaria.length}</span> Pendientes</span>
-                                    <span><span class="badge badge-proc" style="font-size:0.65rem;">${enProceso.length}</span> En proceso</span>
-                                </div>
-                            </div>
+                        <div class="kpi-mini kpi-mini-sec" title="${sec.nombre}">
+                            <div class="kpi-mini-num">${totalAsignadas}</div>
+                            <div class="kpi-mini-label">${nombreCorto}</div>
                         </div>
                     `;
                 });
-                html += `</div>`;
 
+                html += `
+                    <div class="kpi-mini kpi-mini-rem" title="Remitidos">
+                        <div class="kpi-mini-num">${remitidos}</div>
+                        <div class="kpi-mini-label">Remitidos</div>
+                    </div>
+                    <div class="kpi-mini kpi-mini-dev" title="Devueltos">
+                        <div class="kpi-mini-num">${devueltos}</div>
+                        <div class="kpi-mini-label">Devueltos</div>
+                    </div>
+                    <div class="kpi-mini kpi-mini-rech" title="Rechazados">
+                        <div class="kpi-mini-num">${rechazados}</div>
+                        <div class="kpi-mini-label">Rechazados</div>
+                    </div>
+                    <div class="kpi-mini kpi-mini-total" title="Total general de la base de datos">
+                        <div class="kpi-mini-num">${totalGeneral}</div>
+                        <div class="kpi-mini-label">Total</div>
+                    </div>
+                `;
+
+                html += `</div>`;
                 container.innerHTML = html;
             }
 
             // ============================================================
-            //  CREAR FORMULARIO
+            //  CREAR FORMULARIO (con todos los campos de oper-json)
             // ============================================================
             function createFormulario() {
                 if (formularioInicializado) return;
@@ -2800,7 +2895,7 @@
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
                             <div class="col-md-6"><label class="form-label">Complejidad *</label><select id="inpNivel" class="form-select" required><option value="1">Nivel 1</option><option value="2" selected>Nivel 2</option><option value="3">Nivel 3</option><option value="4">Nivel 4</option></select></div>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 mt-3">
                             <label class="form-label">Modo de Intervención</label>
                             <select id="inpModoIntervencion" class="form-select">
                                 <option value="">Seleccione…</option>
@@ -2837,7 +2932,7 @@
                         <div class="mb-2">
                             <label class="form-label">Gestión de Ausencias de Secretarios</label>
                             <div class="d-flex gap-2 flex-wrap">
-                                <button type="button" class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
+                                <button type="button" class="btn btn-modern btn-gestion-ausencias" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
                                 <span class="text-muted" style="font-size:0.7rem; align-self:center;">La asignación es automática entre los presentes.</span>
                             </div>
                         </div>
@@ -3429,7 +3524,7 @@
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
                                         <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
-                                        <th style="width:80px;">Acciones</th>
+                                        <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -3451,7 +3546,7 @@
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
                                             <td>
-                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i> Ver</button>
                                             </td>
                                         </tr>
                                     `}).join('')}
@@ -3485,7 +3580,7 @@
                                         <th>Estado</th>
                                         <th>Fecha Pase</th>
                                         <th>Motivo</th>
-                                        <th style="width:80px;">Acciones</th>
+                                        <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -3503,7 +3598,7 @@
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
                                             <td>
-                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                                <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i> Ver</button>
                                             </td>
                                         </tr>
                                     `}).join('')}
