@@ -294,6 +294,15 @@
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(26, 107, 176, 0.3);
         }
+        .btn-header.success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            color: #fff;
+            border: none;
+        }
+        .btn-header.success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(46, 155, 74, 0.3);
+        }
         .btn-header.danger-outline {
             color: #b71c1c;
             border-color: #ffcdd2;
@@ -346,19 +355,28 @@
         .glass-card:hover {
             box-shadow: 0 8px 32px rgba(0, 20, 40, 0.07);
         }
+
+        /* ===== TÍTULOS DESTACADOS Y RESPONSIVOS (APLICADO DE OPERADOR) ===== */
         .glass-card .card-title {
-            font-weight: 700;
-            font-size: 1rem;
+            font-weight: 800;
+            font-size: 1.05rem;
             color: #0a2a44;
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
             margin-bottom: 1.2rem;
-            padding-bottom: 0.6rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            padding: 0.7rem 1rem 0.7rem 1.1rem;
+            background: linear-gradient(135deg, rgba(11, 75, 122, 0.12), rgba(26, 107, 176, 0.04));
+            border-left: 5px solid #1a6bb0;
+            border-radius: 10px;
+            letter-spacing: -0.2px;
+            line-height: 1.3;
         }
         .glass-card .card-title i {
             color: #1a6bb0;
+            font-size: 1.25rem;
+            flex-shrink: 0;
         }
 
         /* ===== FORM ===== */
@@ -373,17 +391,18 @@
         .form-modern .form-control,
         .form-modern .form-select {
             border-radius: 16px;
-            border: 1px solid #dce5ec;
-            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid #4b5563;
+            background: rgba(255, 255, 255, 0.75);
             padding: 10px 16px;
             font-size: 0.88rem;
             transition: 0.2s;
             backdrop-filter: blur(4px);
+            color: #0b1e33;
         }
         .form-modern .form-control:focus,
         .form-modern .form-select:focus {
             border-color: #1a6bb0;
-            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.1);
+            box-shadow: 0 0 0 4px rgba(26, 107, 176, 0.15);
             background: #fff;
         }
         .btn-modern {
@@ -427,6 +446,38 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 24px rgba(211, 47, 47, 0.3);
             color: #fff;
+        }
+        .btn-modern-success {
+            background: linear-gradient(135deg, #1e7e34, #2e9b4a);
+            color: #fff;
+        }
+        .btn-modern-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(46, 155, 74, 0.3);
+            color: #fff;
+        }
+
+        /* ===== BOTÓN GESTIONAR AUSENCIAS DESTACADO (APLICADO DE OPERADOR) ===== */
+        .btn-gestion-ausencias {
+            background: #ffffff;
+            border: 2px solid #1a6bb0;
+            color: #0b4b7a !important;
+            font-weight: 800;
+            box-shadow: 0 3px 12px rgba(26, 107, 176, 0.25);
+            letter-spacing: 0.3px;
+            padding: 7px 18px;
+            font-size: 0.75rem;
+        }
+        .btn-gestion-ausencias i {
+            color: #1a6bb0;
+            font-size: 0.9rem;
+        }
+        .btn-gestion-ausencias:hover {
+            background: #e3f2fd;
+            border-color: #0b4b7a;
+            color: #0b4b7a !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 107, 176, 0.4);
         }
 
         /* ===== TABLA ===== */
@@ -821,32 +872,65 @@
             color: #2c5a7a;
         }
 
-        /* ===== BOTONES ACCIÓN TABLA ===== */
+        /* ===== BOTONES ACCIÓN TABLA (APLICADO DE OPERADOR) ===== */
         .btn-accion-tabla {
-            padding: 3px 8px;
-            font-size: 0.6rem;
+            padding: 6px 14px;
+            font-size: 0.72rem;
             border-radius: 30px;
-            border: none;
-            background: transparent;
-            color: #5f7f9f;
-            transition: 0.15s;
+            border: 1px solid #0b4b7a;
+            background: linear-gradient(135deg, #0b4b7a, #1a6bb0);
+            color: #fff;
+            transition: 0.18s;
             cursor: pointer;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 3px 8px rgba(26, 107, 176, 0.28);
+            line-height: 1;
         }
         .btn-accion-tabla:hover {
-            background: #e9eff6;
-            color: #0a2a44;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(26, 107, 176, 0.45);
+            background: linear-gradient(135deg, #0a3d63, #155a94);
+            color: #fff;
+        }
+        .btn-accion-tabla i {
+            font-size: 0.85rem;
+        }
+        .btn-accion-tabla.danger {
+            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+            border-color: #b71c1c;
+            box-shadow: 0 3px 8px rgba(211, 47, 47, 0.3);
         }
         .btn-accion-tabla.danger:hover {
-            background: #ffebee;
-            color: #c62828;
+            background: linear-gradient(135deg, #8e1010, #b71c1c);
+            box-shadow: 0 6px 16px rgba(211, 47, 47, 0.45);
+        }
+        .btn-accion-tabla.primary {
+            background: linear-gradient(135deg, #1565c0, #2196f3);
+            border-color: #1565c0;
         }
         .btn-accion-tabla.primary:hover {
-            background: #e3f2fd;
-            color: #1565c0;
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+        }
+        .btn-accion-tabla.edit {
+            background: linear-gradient(135deg, #e67e22, #f39c12);
+            border-color: #e67e22;
+            box-shadow: 0 3px 8px rgba(230, 126, 34, 0.3);
         }
         .btn-accion-tabla.edit:hover {
-            background: #fff3e0;
-            color: #e67e22;
+            background: linear-gradient(135deg, #b35f0e, #e67e22);
+            box-shadow: 0 6px 16px rgba(230, 126, 34, 0.45);
+        }
+
+        /* ===== RESALTADO PARA CAUSAS DEVUELTAS (APLICADO DE OPERADOR) ===== */
+        .tr-devuelto {
+            background-color: #ffebee !important;
+        }
+        .expediente-devuelto {
+            font-weight: 800 !important;
+            color: #c62828 !important;
         }
 
         /* ===== RESPONSIVE ===== */
@@ -887,12 +971,25 @@
                 padding: 0.8rem;
                 border-radius: 20px;
             }
+            .glass-card .card-title {
+                font-size: 0.92rem;
+                padding: 0.55rem 0.75rem 0.55rem 0.85rem;
+                border-left-width: 4px;
+                gap: 7px;
+            }
+            .glass-card .card-title i {
+                font-size: 1.05rem;
+            }
             .table-modern {
                 font-size: 0.7rem;
             }
             .table-modern thead th,
             .table-modern tbody td {
                 padding: 6px 4px;
+            }
+            .btn-accion-tabla {
+                padding: 5px 10px;
+                font-size: 0.65rem;
             }
             .modal-modern .modal-body {
                 padding: 1rem;
@@ -1315,15 +1412,12 @@
 
             // Variables para filtros adicionales
             let filtroTipo = '';
-            let filtroFuente = ''; // puede ser: '', 'siged', 'zimbra', 'deut', 'siged+zimbra', 'siged+deut', 'zimbra+deut', 'todas', 'ninguna'
+            let filtroFuente = '';
             let filtroEstado = '';
             let filtroFechaDesde = '';
             let filtroFechaHasta = '';
 
-            // Variable para almacenar el ID de la causa a eliminar (modal individual)
             let pendingDeleteId = null;
-
-            // Variable para almacenar el ID de la causa en edición
             let pendingEditId = null;
 
             // ============================================================
@@ -1457,7 +1551,6 @@
             // ============================================================
             async function eliminarTodosLosRegistros() {
                 try {
-                    // Obtener todos los documentos de la colección 'operador'
                     const snapshot = await db.collection('operador').get();
                     const batchSize = 500;
                     let deletedCount = 0;
@@ -1473,18 +1566,15 @@
                         return;
                     }
 
-                    // Eliminar en lotes de 500
                     for (let i = 0; i < docsToDelete.length; i += batchSize) {
                         const batch = db.batch();
                         const chunk = docsToDelete.slice(i, i + batchSize);
                         chunk.forEach(ref => batch.delete(ref));
                         await batch.commit();
                         deletedCount += chunk.length;
-                        // Mostrar progreso (opcional)
                         showToast(`Eliminados ${deletedCount} de ${docsToDelete.length} registros...`, 'info');
                     }
 
-                    // Actualizar estado local (vaciar causas)
                     state.causas = [];
                     renderTabla();
                     showToast(`✅ Eliminación masiva completada: ${deletedCount} registros eliminados.`, 'success');
@@ -1495,7 +1585,7 @@
             }
 
             // ============================================================
-            //  ELIMINAR INDIVIDUAL (con confirmación vía modal)
+            //  ELIMINAR INDIVIDUAL
             // ============================================================
             function mostrarModalConfirmacion(id) {
                 const causa = state.causas.find(c => c.id === id);
@@ -1528,16 +1618,14 @@
             }
 
             // ============================================================
-            //  EDITAR REGISTRO (permite editar CUALQUIER estado) - MODIFICADO
+            //  EDITAR REGISTRO
             // ============================================================
             function poblarSelectsEdicion() {
-                // Poblar tipos
                 const selTipo = document.getElementById('editTipo');
                 if (selTipo && selTipo.options.length <= 1) {
                     selTipo.innerHTML = '<option value="">Seleccione…</option>' +
                         TIPOS_CAUSA.map(t => `<option value="${t}">${t}</option>`).join('');
                 }
-                // Poblar modos de intervención
                 const selModo = document.getElementById('editModoIntervencion');
                 if (selModo && selModo.options.length <= 1) {
                     selModo.innerHTML = '<option value="">Seleccione…</option>' +
@@ -1549,14 +1637,11 @@
                 const causa = state.causas.find(c => c.id === id);
                 if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
 
-                // ⬇⬇⬇ SE ELIMINÓ LA RESTRICCIÓN QUE SOLO PERMITÍA EDITAR FINALIZADOS ⬇⬇⬇
-
                 pendingEditId = id;
                 poblarSelectsEdicion();
 
                 document.getElementById('modalEditarExp').textContent = causa.numero;
 
-                // Rellenar campos
                 document.getElementById('editTipo').value = causa.tipo || '';
                 document.getElementById('editNivel').value = String(causa.nivelOperador || 2);
                 document.getElementById('editDni').value = causa.dni || '';
@@ -1596,7 +1681,6 @@
                     return;
                 }
 
-                // Detectar cambios para registrar en historial
                 const cambios = [];
                 if ((causa.tipo || '') !== nuevoTipo) cambios.push(`Tipo: "${causa.tipo || ''}" → "${nuevoTipo}"`);
                 if ((causa.nivelOperador || 0) !== nuevoNivel) cambios.push(`Nivel: ${causa.nivelOperador || 0} → ${nuevoNivel}`);
@@ -1640,7 +1724,6 @@
 
                 try {
                     await updateCausa(pendingEditId, updates);
-                    // Actualizar estado local
                     const idx = state.causas.findIndex(c => c.id === pendingEditId);
                     if (idx >= 0) {
                         state.causas[idx] = { ...state.causas[idx], ...updates };
@@ -1748,7 +1831,7 @@
             }
 
             // ============================================================
-            //  REGISTRO DE CAUSA (actualizado con nuevos campos)
+            //  REGISTRO DE CAUSA
             // ============================================================
             async function registrarCausa(
                 num, tipo, obs, nivel, op,
@@ -1857,16 +1940,14 @@
             }
 
             // ============================================================
-            //  FILTRADO (búsqueda avanzada + historial + fuente mejorada)
+            //  FILTRADO
             // ============================================================
             function obtenerCausasFiltradas() {
                 let causas = state.causas;
 
-                // --- Filtro de búsqueda global (texto) ---
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase().trim();
                     causas = causas.filter(c => {
-                        // Datos directos
                         const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado).toLowerCase() : '';
                         const secNombre = c.secretarioId ? getSecName(c.secretarioId).toLowerCase() : '';
                         const textoDirecto =
@@ -1881,7 +1962,6 @@
                             (c.asisteDefensoria || '').toLowerCase() +
                             empNombre + secNombre;
 
-                        // Historial completo (acción + comentario)
                         let historialTexto = '';
                         if (c.historial && c.historial.length) {
                             historialTexto = c.historial.map(h =>
@@ -1893,12 +1973,10 @@
                     });
                 }
 
-                // --- Filtro por Tipo ---
                 if (filtroTipo) {
                     causas = causas.filter(c => c.tipo === filtroTipo);
                 }
 
-                // --- Filtro por Fuente (mejorado con DEUT) ---
                 if (filtroFuente) {
                     switch (filtroFuente) {
                         case 'siged':
@@ -1930,12 +2008,10 @@
                     }
                 }
 
-                // --- Filtro por Estado ---
                 if (filtroEstado) {
                     causas = causas.filter(c => c.estado === filtroEstado);
                 }
 
-                // --- Filtro por rango de fechas (fechaPaseSecretario) ---
                 if (filtroFechaDesde) {
                     const desde = new Date(filtroFechaDesde);
                     desde.setHours(0, 0, 0, 0);
@@ -1955,7 +2031,6 @@
                     });
                 }
 
-                // Ordenar por fecha descendente
                 causas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 return causas;
             }
@@ -2028,7 +2103,7 @@
             }
 
             // ============================================================
-            //  CREAR FORMULARIO (actualizado con nuevos campos y tipos)
+            //  CREAR FORMULARIO
             // ============================================================
             function createFormulario() {
                 if (formularioInicializado) return;
@@ -2108,7 +2183,7 @@
                         <div class="mb-2">
                             <label class="form-label">Gestión de Ausencias de Secretarios</label>
                             <div class="d-flex gap-2 flex-wrap">
-                                <button type="button" class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
+                                <button type="button" class="btn btn-modern btn-gestion-ausencias" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias</button>
                                 <span class="text-muted" style="font-size:0.7rem; align-self:center;">La asignación es automática entre los presentes.</span>
                             </div>
                         </div>
@@ -2117,7 +2192,6 @@
                     </form>
                 `;
 
-                // Campos condicionales
                 const accionSelect = document.getElementById('inpAccion');
                 const camposAccionDiv = document.getElementById('camposAccion');
                 const campoDependencia = document.getElementById('campoDependenciaForm');
@@ -2223,15 +2297,13 @@
             }
 
             // ============================================================
-            //  RENDER TABLA (con botón editar disponible en TODOS los estados)
+            //  RENDER TABLA
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
-                // ---- Tabla de Recientes (todas las filtradas) ----
                 let datosMostrar = causasFiltradas;
-                // Si no hay filtro de fechas, mostrar hasta 50 registros para no saturar
                 if (!filtroFechaDesde && !filtroFechaHasta) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
@@ -2240,11 +2312,9 @@
                 const { items, total, totalPages, page, start, end } = paginateData(datosMostrar, pState.page, pState
                 .perPage);
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 let causasRechazadas = state.causas.filter(c =>
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
-                // Aplicar los mismos filtros (excepto el de estado, porque ya estamos en esa sección)
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase().trim();
                     causasRechazadas = causasRechazadas.filter(c => {
@@ -2335,7 +2405,6 @@
                     causasRechazadas, pStateRech.page, pStateRech.perPage
                 );
 
-                // ---- Generar HTML ----
                 let html = `
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
@@ -2343,7 +2412,6 @@
                     </div>
                 `;
 
-                // Tabla de Recientes (con acciones: historial, editar y eliminar)
                 if (total) {
                     html += `
                         <div style="width:100%; border-radius:16px;">
@@ -2390,7 +2458,6 @@
                     html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros</div>`;
                 }
 
-                // ---- Tabla de Rechazados / Devueltos / Remitidos ----
                 html += `
                     <hr class="my-4" />
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -2443,7 +2510,6 @@
 
                 container.innerHTML = html;
 
-                // ---- Paginación ----
                 if (total > 0) {
                     renderPagination('paginationIngreso', total, totalPages, page, pState.perPage, (newPage, newPerPage) => {
                         paginationState.ingreso.page = newPage;
@@ -2460,7 +2526,6 @@
                     });
                 }
 
-                // ---- Acciones: historial, editar y eliminar ----
                 container.querySelectorAll('.btn-accion-tabla').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         const id = this.dataset.id;
@@ -2477,20 +2542,15 @@
             }
 
             // ============================================================
-            //  REPORTE (IMPRESIÓN) - actualizado con DEUT
+            //  REPORTE (IMPRESIÓN)
             // ============================================================
             function generarReporte() {
-                // Obtener datos filtrados (igual que en la tabla)
                 let causasFiltradas = obtenerCausasFiltradas();
-
-                // Para la tabla de "Recientes" usamos todas las filtradas (sin límite de 50)
                 let datosMostrar = causasFiltradas;
 
-                // Para la tabla de "Rechazados/Devueltos/Remitidos"
                 let causasRechazadas = state.causas.filter(c =>
                     (c.estado === 'rechazado' || c.estado === 'devuelto_siged' || c.estado === 'remitido')
                 );
-                // Aplicar mismos filtros (excluyendo estado)
                 if (searchTerm) {
                     const term = searchTerm.toLowerCase().trim();
                     causasRechazadas = causasRechazadas.filter(c => {
@@ -2577,7 +2637,6 @@
                 }
                 causasRechazadas.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
 
-                // Construir HTML para impresión
                 const now = new Date();
                 const fechaReporte = fmtDt(now.toISOString());
 
@@ -2668,7 +2727,6 @@
                     </html>
                 `;
 
-                // Abrir nueva ventana e imprimir
                 const win = window.open('', '_blank', 'width=1200,height=800');
                 if (win) {
                     win.document.write(htmlContent);
@@ -2681,7 +2739,7 @@
             }
 
             // ============================================================
-            //  INICIALIZACIÓN DE FILTROS (fijos) - actualizado con DEUT y tipos
+            //  INICIALIZACIÓN DE FILTROS
             // ============================================================
             function initFiltros() {
                 const container = document.getElementById('filtrosContainer');
@@ -2691,7 +2749,6 @@
                     `<option value="${t}">${t}</option>`
                 ).join('');
 
-                // Estados
                 const estados = [
                     { value: 'en_secretaria', label: 'En Secretaría' },
                     { value: 'en_proceso', label: 'En Proceso' },
@@ -2705,7 +2762,6 @@
                     `<option value="${e.value}">${e.label}</option>`
                 ).join('');
 
-                // Fuente mejorada con DEUT
                 const fuenteOptions = `
                     <option value="">Todas</option>
                     <option value="siged">SIGED</option>
@@ -2728,7 +2784,6 @@
                     <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
                 `;
 
-                // Asignar event listeners
                 document.getElementById('filtroTipoSelect').addEventListener('change', function() {
                     filtroTipo = this.value;
                     paginationState.ingreso.page = 1;
@@ -2823,7 +2878,6 @@
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
                 formularioInicializado = false;
-                // Resetear filtros
                 filtroTipo = '';
                 filtroFuente = '';
                 filtroEstado = '';
@@ -2838,7 +2892,6 @@
             //  INICIALIZACIÓN
             // ============================================================
             document.addEventListener('DOMContentLoaded', function() {
-                // Búsqueda global (avanzada)
                 document.getElementById('globalSearch').addEventListener('input', function() {
                     searchTerm = this.value.trim();
                     paginationState.ingreso.page = 1;
@@ -2865,19 +2918,15 @@
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
 
-                // Botón Reporte
                 document.getElementById('btnReporte').addEventListener('click', generarReporte);
 
-                // Botón confirmar eliminación (individual)
                 document.getElementById('btnConfirmarEliminar').addEventListener('click', ejecutarEliminacion);
 
                 // ---- NUEVOS BOTONES ----
-                // Sistema de Respaldo
                 document.getElementById('btnRespaldo').addEventListener('click', function() {
                     window.open('https://defensoria6.github.io/pase-digital/exportar', '_blank');
                 });
 
-                // Eliminación Masiva
                 const btnEliminacionMasiva = document.getElementById('btnEliminacionMasiva');
                 const modalEliminacionMasiva = new bootstrap.Modal(document.getElementById(
                 'modalEliminacionMasiva'));
@@ -2885,7 +2934,6 @@
                 const btnConfirmarEliminacionMasiva = document.getElementById('btnConfirmarEliminacionMasiva');
 
                 btnEliminacionMasiva.addEventListener('click', function() {
-                    // Actualizar contador de registros
                     const total = state.causas.length;
                     document.getElementById('totalRegistrosAEliminar').textContent = total;
                     confirmCheckbox.checked = false;
@@ -2899,28 +2947,21 @@
 
                 btnConfirmarEliminacionMasiva.addEventListener('click', async function() {
                     if (!confirmCheckbox.checked) return;
-                    // Deshabilitar botón y checkbox para evitar doble clic
                     this.disabled = true;
                     confirmCheckbox.disabled = true;
-                    // Cerrar modal
                     modalEliminacionMasiva.hide();
-                    // Ejecutar eliminación
                     await eliminarTodosLosRegistros();
-                    // Habilitar nuevamente (por si se vuelve a abrir)
                     confirmCheckbox.disabled = false;
                     this.disabled = false;
                 });
 
-                // Limpiar estado del checkbox cuando se cierra el modal
                 document.getElementById('modalEliminacionMasiva').addEventListener('hidden.bs.modal', function() {
                     confirmCheckbox.checked = false;
                     btnConfirmarEliminacionMasiva.disabled = true;
                     confirmCheckbox.disabled = false;
                 });
 
-                // ---- NUEVO: Guardar edición ----
                 document.getElementById('btnGuardarEdicion').addEventListener('click', guardarEdicion);
-                // Guardar con Enter en el modal de edición (opcional)
                 document.getElementById('formEditar').addEventListener('submit', function(e) {
                     e.preventDefault();
                     guardarEdicion();
