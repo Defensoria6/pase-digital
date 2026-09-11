@@ -1123,12 +1123,12 @@
         </div>
     </div>
 
-    <!-- ===== MODAL EDITAR REGISTRO FINALIZADO (NUEVO) ===== -->
+    <!-- ===== MODAL EDITAR REGISTRO (NUEVO) ===== -->
     <div class="modal fade modal-modern" id="modalEditar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar expediente finalizado · <span id="modalEditarExp"></span></h5>
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar expediente · <span id="modalEditarExp"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -1528,7 +1528,7 @@
             }
 
             // ============================================================
-            //  EDITAR REGISTRO FINALIZADO (NUEVO)
+            //  EDITAR REGISTRO (permite editar CUALQUIER estado) - MODIFICADO
             // ============================================================
             function poblarSelectsEdicion() {
                 // Poblar tipos
@@ -1549,11 +1549,7 @@
                 const causa = state.causas.find(c => c.id === id);
                 if (!causa) { showToast('Causa no encontrada', 'warning'); return; }
 
-                // Solo permitir editar registros finalizados
-                if (causa.estado !== 'finalizada') {
-                    showToast('Solo se pueden editar expedientes finalizados', 'warning');
-                    return;
-                }
+                // ⬇⬇⬇ SE ELIMINÓ LA RESTRICCIÓN QUE SOLO PERMITÍA EDITAR FINALIZADOS ⬇⬇⬇
 
                 pendingEditId = id;
                 poblarSelectsEdicion();
@@ -1623,7 +1619,7 @@
 
                 const historialEntry = {
                     fecha: new Date().toISOString(),
-                    accion: 'Edición de datos del expediente finalizado',
+                    accion: 'Edición de datos del expediente',
                     usuario: 'Administrador',
                     comentario: cambios.join(' · ')
                 };
@@ -2227,7 +2223,7 @@
             }
 
             // ============================================================
-            //  RENDER TABLA (con botón eliminar que abre modal)
+            //  RENDER TABLA (con botón editar disponible en TODOS los estados)
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
@@ -2369,7 +2365,6 @@
                                             fuentes.length > 1 ? '<span class="badge-fuente ambas">' + fuentes.join('/') + '</span>' :
                                             `<span class="badge-fuente">${fuentes[0]}</span>`;
                                         const motivoMostrar = c.motivoAccion || (c.historial && c.historial.length ? c.historial[c.historial.length-1]?.comentario || '' : '');
-                                        const esFinalizada = c.estado === 'finalizada';
                                         return `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
@@ -2381,7 +2376,7 @@
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
                                             <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
-                                                ${esFinalizada ? `<button class="btn-accion-tabla edit" data-id="${c.id}" data-accion="editar" title="Editar expediente finalizado"><i class="bi bi-pencil"></i></button>` : ''}
+                                                <button class="btn-accion-tabla edit" data-id="${c.id}" data-accion="editar" title="Editar expediente"><i class="bi bi-pencil"></i></button>
                                                 <button class="btn-accion-tabla danger" data-id="${c.id}" data-accion="eliminar" title="Eliminar"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
@@ -2432,6 +2427,7 @@
                                             <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${motivoMostrar || '-'}</td>
                                             <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i></button>
+                                                <button class="btn-accion-tabla edit" data-id="${c.id}" data-accion="editar" title="Editar expediente"><i class="bi bi-pencil"></i></button>
                                                 <button class="btn-accion-tabla danger" data-id="${c.id}" data-accion="eliminar" title="Eliminar"><i class="bi bi-trash"></i></button>
                                             </td>
                                         </tr>
