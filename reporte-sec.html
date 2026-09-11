@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reporte de Trabajo por Empleado · Defensoría 6</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        font-family:'Inter',sans-serif;
+        background:#f0f4fc;
+        min-height:100vh;
+        color:#0b1e33;
+    }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#e9eef5; border-radius:10px; }
+    ::-webkit-scrollbar-thumb { background:#b0c8dd; border-radius:10px; }
+    ::-webkit-scrollbar-thumb:hover { background:#8aaec9; }
+
+    /* ============ APP ============ */
+    .app-wrapper {
+        max-width:1600px; margin:0 auto; padding:18px 20px 40px;
+        display:block; animation:fadeIn .5s ease;
+    }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+    .app-header {
+        background:rgba(255,255,255,.82);
+        backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+        border-radius:32px; padding:.9rem 1.8rem;
+        box-shadow:0 4px 24px rgba(0,20,40,.06);
+        border:1px solid rgba(255,255,255,.7);
+        display:flex; flex-wrap:wrap; justify-content:space-between;
+        align-items:center; gap:1rem; margin-bottom:1.2rem;
+    }
+    .app-header .brand { display:flex; align-items:center; gap:14px; }
+    .app-header .brand .brand-icon {
+        width:46px; height:46px;
+        background:linear-gradient(135deg,#0b4b7a,#1a6bb0);
+        border-radius:16px; display:flex; align-items:center; justify-content:center;
+        color:#fff; font-size:1.4rem; box-shadow:0 4px 12px rgba(26,107,176,.25);
+    }
+    .app-header .brand h1 {
+        font-size:1.25rem; font-weight:800; margin:0; color:#0a2a44;
+        letter-spacing:-.3px; line-height:1.2;
+    }
+    .app-header .brand h1 small {
+        display:block; font-size:.7rem; font-weight:500;
+        color:#5f7f9f; letter-spacing:.2px;
+    }
+    .header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .badge-role {
+        background:#e3effa; color:#0b4b7a; padding:6px 18px; border-radius:40px;
+        font-weight:600; font-size:.75rem; display:flex; align-items:center; gap:6px;
+        border:1px solid rgba(26,107,176,.12);
+    }
+    .btn-header {
+        padding:7px 18px; border-radius:60px; font-weight:600; font-size:.78rem;
+        border:none; transition:.2s; display:inline-flex; align-items:center; gap:6px;
+        background:rgba(255,255,255,.6); border:1px solid #dce5ec; color:#1a3a5a;
+    }
+    .btn-header:hover { background:#e9eff6; border-color:#b8cce0; }
+    .btn-header.primary {
+        background:linear-gradient(135deg,#0b4b7a,#1a6bb0); color:#fff; border:none;
+    }
+    .btn-header.primary:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(26,107,176,.3); }
+    .btn-header.danger-outline { color:#b71c1c; border-color:#ffcdd2; background:rgba(255,235,238,.5); }
+    .btn-header.danger-outline:hover { background:#ffebee; border-color:#ef9a9a; }
+
+    /* ============ CARDS ============ */
+    .glass-card {
+        background:rgba(255,255,255,.78);
+        backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+        border-radius:28px; border:1px solid rgba(255,255,255,.7);
+        box-shadow:0 4px 20px rgba(0,20,40,.04);
+        padding:1.4rem 1.6rem; margin-bottom:1.4rem;
+        transition:box-shadow .25s;
+    }
+    .glass-card:hover { box-shadow:0 8px 32px rgba(0,20,40,.07); }
+    .card-title {
+        font-weight:700; font-size:1rem; color:#0a2a44;
+        display:flex; align-items:center; gap:10px;
+        margin-bottom:1rem; padding-bottom:.6rem;
+        border-bottom:1px solid rgba(0,0,0,.05);
+    }
+    .card-title i { color:#1a6bb0; }
+
+    /* ============ FILTROS ============ */
+    .filtros-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+        gap:.8rem; align-items:end;
+    }
+    .filtros-grid label {
+        font-size:.68rem; font-weight:700; text-transform:uppercase;
+        color:#5f7f9f; letter-spacing:.4px; margin-bottom:.25rem; display:block;
+    }
+    .filtros-grid select {
+        border-radius:60px; padding:8px 16px; border:1px solid #dce5ec;
+        background:rgba(255,255,255,.85); font-size:.82rem; width:100%;
+        transition:.2s; font-weight:500; color:#1a344a;
+    }
+    .filtros-grid select:focus {
+        border-color:#1a6bb0; box-shadow:0 0 0 4px rgba(26,107,176,.12);
+        outline:none; background:#fff;
+    }
+    .btn-limpiar {
+        border-radius:60px; padding:8px 16px; border:1px solid #dce5ec;
+        background:rgba(255,255,255,.85); font-size:.8rem; font-weight:600;
+        color:#2c5a7a; width:100%; transition:.2s;
+    }
+    .btn-limpiar:hover { background:#f1f6fd; border-color:#b8cce0; }
+
+    /* ============ KPIs ============ */
+    .kpi-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+        gap:.9rem; margin-bottom:1.4rem;
+    }
+    .kpi-item {
+        background:rgba(255,255,255,.82);
+        border-radius:22px; padding:.9rem .7rem; text-align:center;
+        border:1px solid #e2edf7; transition:.18s;
+        box-shadow:0 3px 14px rgba(0,20,40,.04);
+        position:relative;
+    }
+    .kpi-item:hover { background:#f7fbff; border-color:#b8cce0; transform:translateY(-2px); }
+    .kpi-item .kpi-label {
+        font-size:.6rem; font-weight:700; text-transform:uppercase;
+        color:#5f7f9f; letter-spacing:.4px;
+    }
+    .kpi-item .kpi-value {
+        font-size:1.7rem; font-weight:800; color:#0a2a44; line-height:1.15;
+    }
+    .kpi-item .kpi-sub {
+        font-size:.62rem; color:#8aa3bc; font-weight:600;
+        line-height:1.35; margin-top:2px;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+        overflow:hidden;
+    }
+    .kpi-item .kpi-sub.gris { color:#8aa3bc; font-style:italic; }
+    .kpi-item.azul  .kpi-value { color:#0d6efd; }
+    .kpi-item.verde .kpi-value { color:#2e7d32; }
+    .kpi-item.naranja .kpi-value { color:#e67e22; }
+    .kpi-item.rojo  .kpi-value { color:#c62828; }
+    .kpi-item.morado .kpi-value { color:#7b1fa2; }
+    .kpi-item.gris-kpi .kpi-value { color:#455a64; }
+
+    /* Tooltip nativo para los KPIs con detalle */
+    .kpi-item[data-tip]:hover::after {
+        content: attr(data-tip);
+        position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+        background:rgba(10,42,68,.96); color:#fff;
+        padding:8px 12px; border-radius:12px; font-size:.7rem; font-weight:500;
+        white-space:pre-line; text-align:left; line-height:1.5;
+        z-index:20; box-shadow:0 8px 24px rgba(0,0,0,.2);
+        pointer-events:none; min-width:180px; max-width:280px;
+        opacity:0; animation:tipFade .18s ease forwards;
+    }
+    .kpi-item[data-tip]:hover::before {
+        content:''; position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%);
+        border:6px solid transparent; border-top-color:rgba(10,42,68,.96);
+        z-index:21; pointer-events:none;
+    }
+    @keyframes tipFade { to { opacity:1; } }
+
+    /* ============ GRÁFICOS ============ */
+    .charts-grid {
+        display:grid;
+        grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));
+        gap:1.2rem; margin-bottom:1.4rem;
+    }
+    .chart-box { position:relative; height:330px; width:100%; }
+    .chart-legend-note {
+        font-size:.68rem; color:#8aa3bc; text-align:center;
+        margin-top:.5rem; font-weight:500;
+    }
+
+    /* ============ TABLAS ============ */
+    .table-wrap {
+        overflow-x:auto; border-radius:18px;
+        scrollbar-width:thin; max-height:60vh;
+    }
+    .table-modern {
+        margin:0; font-size:.78rem; min-width:640px;
+        width:100%; border-collapse:separate; border-spacing:0;
+    }
+    .table-modern thead th {
+        background:#e9f0f8; color:#1a3a5a; font-weight:700;
+        font-size:.6rem; text-transform:uppercase; letter-spacing:.5px;
+        padding:10px 10px; border-bottom:2px solid #d2e0ed;
+        position:sticky; top:0; z-index:5; white-space:nowrap;
+    }
+    .table-modern tbody td {
+        padding:9px 10px; vertical-align:middle;
+        border-bottom:1px solid #e9eef5; color:#1a344a; font-size:.78rem;
+        transition:background .15s;
+    }
+    .table-modern tbody tr:hover { background:rgba(26,107,176,.045); }
+    .table-modern tbody tr:last-child td { border-bottom:none; }
+    .table-modern tfoot td {
+        padding:10px; font-weight:800; background:#f4f8fd;
+        border-top:2px solid #d2e0ed; color:#0a2a44;
+    }
+    .num-col { text-align:center; font-weight:700; }
+
+    .pill {
+        display:inline-block; padding:3px 12px; border-radius:40px;
+        font-weight:700; font-size:.6rem; letter-spacing:.2px; white-space:nowrap;
+    }
+    .pill-total { background:#e3f2fd; color:#1565c0; }
+    .pill-fin   { background:#e8f5e9; color:#2e7d32; }
+    .pill-proc  { background:#fff3e0; color:#e67e22; }
+    .pill-sec   { background:#f3e5f5; color:#7b1fa2; }
+    .pill-otros { background:#eceff1; color:#455a64; }
+
+    .bar-mini {
+        height:7px; border-radius:20px; background:#e9eef5; overflow:hidden;
+        min-width:70px; display:inline-block; vertical-align:middle;
+    }
+    .bar-mini > span {
+        display:block; height:100%;
+        background:linear-gradient(90deg,#1a6bb0,#4a9fe0);
+        border-radius:20px; transition:width .5s ease;
+    }
+    .tipo-name { font-weight:600; color:#0a2a44; }
+    .sec-chips { display:flex; flex-wrap:wrap; gap:4px; }
+    .sec-chip {
+        background:#e3effa; color:#0b4b7a; border-radius:30px;
+        padding:2px 10px; font-size:.6rem; font-weight:700;
+        border:1px solid rgba(26,107,176,.12); white-space:nowrap;
+    }
+
+    .empty-state { padding:2.5rem 1rem; text-align:center; color:#8aa3bc; }
+    .empty-state i { font-size:2.6rem; display:block; margin-bottom:.6rem; opacity:.5; }
+
+    /* ============ TOASTS ============ */
+    #toastContainer {
+        position:fixed; bottom:24px; right:24px; z-index:9999;
+        display:flex; flex-direction:column; gap:10px;
+        pointer-events:none; max-width:400px; width:100%;
+    }
+    .toast-custom {
+        background:rgba(30,43,59,.92); backdrop-filter:blur(16px);
+        color:#fff; padding:14px 22px; border-radius:20px;
+        box-shadow:0 12px 40px rgba(0,0,0,.2); font-size:.9rem;
+        display:flex; align-items:center; gap:14px;
+        animation:slideUp .4s cubic-bezier(.16,1,.3,1);
+        pointer-events:auto; border-left:5px solid transparent;
+    }
+    .toast-custom.success { border-left-color:#4caf50; }
+    .toast-custom.warning { border-left-color:#ff9800; }
+    .toast-custom.danger  { border-left-color:#f44336; }
+    .toast-custom.info    { border-left-color:#2196f3; }
+    @keyframes slideUp { from{opacity:0; transform:translateY(30px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
+    .toast-custom.removing { animation:fadeOut .3s forwards; }
+    @keyframes fadeOut { to{opacity:0; transform:translateY(20px) scale(.94);} }
+
+    /* ============ FOOTER ============ */
+    .app-footer {
+        text-align:center; color:#8aa3bc; font-size:.65rem;
+        border-top:1px solid #e2edf7; padding-top:1rem; margin-top:1rem;
+    }
+
+    .loading-shim {
+        display:flex; align-items:center; justify-content:center;
+        gap:10px; color:#8aa3bc; font-size:.85rem; padding:2rem 0;
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width:992px) {
+        .app-header { flex-direction:column; align-items:stretch; padding:1rem; }
+        .header-actions { justify-content:stretch; }
+        .charts-grid { grid-template-columns:1fr; }
+        .chart-box { height:290px; }
+    }
+    @media (max-width:576px) {
+        .app-wrapper { padding:10px 8px 30px; }
+        .app-header .brand h1 { font-size:1rem; }
+        .glass-card { padding:.9rem; border-radius:22px; }
+        .kpi-grid { grid-template-columns:1fr 1fr; }
+        .kpi-item .kpi-value { font-size:1.35rem; }
+        .table-modern { font-size:.68rem; min-width:520px; }
+        #toastContainer { bottom:12px; right:12px; max-width:calc(100% - 24px); }
+    }
+
+    @media print {
+        .no-print { display:none !important; }
+        body { background:#fff; }
+        .glass-card { box-shadow:none; border:1px solid #ddd; break-inside:avoid; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ==================== APP ==================== -->
+<div id="appWrapper" class="app-wrapper">
+
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div>
+                <h1>Reporte de Trabajo por Empleado
+                    <small>Defensoría Oficial Civil y Comercial 6</small>
+                </h1>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span class="badge-role"><i class="bi bi-clipboard-data"></i> Estadísticas</span>
+            <span class="badge-role" id="badgeSync"><i class="bi bi-cloud-check"></i> En línea</span>
+            <button class="btn-header primary" id="btnImprimir"><i class="bi bi-printer"></i> Imprimir reporte</button>
+        </div>
+    </header>
+
+    <!-- FILTROS -->
+    <div class="glass-card no-print">
+        <div class="card-title"><i class="bi bi-funnel-fill"></i> Filtros del reporte</div>
+        <div class="filtros-grid">
+            <div>
+                <label for="selEmpleado">Empleado</label>
+                <select id="selEmpleado"><option value="">Todos los empleados</option></select>
+            </div>
+            <div>
+                <label for="selSecretario">Secretario asignante</label>
+                <select id="selSecretario"><option value="">Todos</option></select>
+            </div>
+            <div>
+                <label for="selTipo">Tipo de proceso</label>
+                <select id="selTipo"><option value="">Todos los tipos</option></select>
+            </div>
+            <div>
+                <label for="selAnio">Año</label>
+                <select id="selAnio"></select>
+            </div>
+            <div>
+                <label for="selMes">Mes</label>
+                <select id="selMes"></select>
+            </div>
+            <div>
+                <label for="selOrden">Ordenar tipos por</label>
+                <select id="selOrden">
+                    <option value="total">Cantidad total</option>
+                    <option value="finalizadas">Cantidad finalizada</option>
+                    <option value="alfabetico">Alfabético</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn-limpiar" id="btnLimpiar"><i class="bi bi-eraser"></i> Limpiar filtros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-item azul">
+            <div class="kpi-label">Total causas</div>
+            <div class="kpi-value">0</div>
+            <div class="kpi-sub">&nbsp;</div>
+        </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="charts-grid">
+        <div class="glass-card">
+            <div class="card-title" id="pieTitle"><i class="bi bi-pie-chart-fill"></i> Distribución por tipo de proceso</div>
+            <div class="chart-box"><canvas id="pieChart"></canvas></div>
+            <div class="chart-legend-note" id="pieNote">—</div>
+        </div>
+        <div class="glass-card">
+            <div class="card-title"><i class="bi bi-activity"></i> Evolución mensual · Asignadas vs Finalizadas</div>
+            <div class="chart-box"><canvas id="lineChart"></canvas></div>
+            <div class="chart-legend-note" id="lineNote">Últimos 12 meses del período seleccionado</div>
+        </div>
+    </div>
+
+    <!-- TABLA POR TIPO -->
+    <div class="glass-card">
+        <div class="card-title"><i class="bi bi-list-columns-reverse"></i> Desglose por tipo de proceso
+            <span class="pill pill-total" id="pillTipos" style="margin-left:auto;">0 tipos</span>
+        </div>
+        <div id="tablaTiposContainer">
+            <div class="loading-shim"><span class="spinner-border spinner-border-sm"></span> Cargando datos…</div>
+        </div>
+    </div>
+
+    <!-- TABLA POR SECRETARIO -->
+    <div class="glass-card">
+        <div class="card-title"><i class="bi bi-person-badge-fill"></i> Aporte por Secretario asignante</div>
+        <div id="tablaSecretariosContainer">
+            <div class="loading-shim"><span class="spinner-border spinner-border-sm"></span> Cargando datos…</div>
+        </div>
+    </div>
+
+    <!-- TABLA POR EMPLEADO (sólo cuando no hay empleado seleccionado) -->
+    <div class="glass-card" id="cardEmpleados">
+        <div class="card-title"><i class="bi bi-people-fill"></i> Comparativo por empleado</div>
+        <div id="tablaEmpleadosContainer">
+            <div class="loading-shim"><span class="spinner-border spinner-border-sm"></span> Cargando datos…</div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <i class="bi bi-cloud-check"></i> Datos en la nube · Actualización automática en tiempo real
+    </footer>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ==========================================================
+       CONFIGURACIÓN
+       ========================================================== */
+    const CONFIG = {
+        empleados: [
+            { id: 'emp1',  nombre: 'Bazante Nadia Romina' },
+            { id: 'emp3',  nombre: 'Cardozo Maria Raquel' },
+            { id: 'emp4',  nombre: 'Cedron Noelia' },
+            { id: 'emp5',  nombre: 'Escobar Monica Graciela' },
+            { id: 'emp6',  nombre: 'Fioravante Rómulo' },
+            { id: 'emp7',  nombre: 'Gonzalez Alberto Misael' },
+            { id: 'emp8',  nombre: 'Gonzalez Juan Jose' },
+            { id: 'emp9',  nombre: 'Gudiño Natalia Esther' },
+            { id: 'emp14', nombre: 'Ortega Lucia Noemi' },
+            { id: 'emp11', nombre: 'Pablos Patricia Tamara' },
+            { id: 'emp12', nombre: 'Palacios Ana Gabriela' },
+            { id: 'emp13', nombre: 'Sosa Rita Cecilia' }
+        ],
+        secretarios: [
+            { id: 'sec1', nombre: 'Corrales A.Mariela' },
+            { id: 'sec2', nombre: 'Riveros Patricia' },
+            { id: 'sec3', nombre: 'Magnani Enzo' }
+        ],
+        tipos: [
+            'Nuevo patrocinio',
+            'Nuevo patrocinio Violencia Familiar',
+            'Amparo',
+            'Acción de protección de persona',
+            'Alimentos',
+            'Art 583',
+            'Autorización de viaje',
+            'Cambio de residencia',
+            'Causa Penal',
+            'CEJUME Formulario',
+            'Cuidado personal',
+            'Curatela',
+            'Daños y Perjuicios',
+            'Declaración de incapacidad',
+            'Delegación de responsabilidad parental',
+            'Desalojo',
+            'Determinación de capacidad',
+            'Diligencia preliminar',
+            'Divorcio',
+            'Evaluación Art 42 C.C.C.N.',
+            'Filiación',
+            'Filiación y Daño',
+            'Guarda',
+            'Guarda con fines de adopción',
+            'Homologación Acuerdo CEJUME',
+            'Impugnación de paternidad',
+            'Insania',
+            'Laboral',
+            'Medida autosatisfactiva',
+            'Medida excepcional de protección integral de persona Art 648 inc b',
+            'Penal (cámara gesell)',
+            'Prescripción Adquisitiva',
+            'Protección de personas',
+            'Rectificación de datos',
+            'Régimen de comunicación y contacto',
+            'Restitución de menores',
+            'Restricción de capacidad',
+            'Sucesión',
+            'Supresión de apellido paterno',
+            'Tutela',
+            'Venia judicial',
+            'Violencia Familiar',
+            'Otro'
+        ]
+    };
+
+    const ESTADOS_FINALIZADOS = ['finalizada'];
+    const ESTADOS_PROCESO    = ['en_proceso'];
+    const ESTADOS_PENDIENTES = ['en_secretaria', 'en_espera'];
+    const ESTADOS_DERIVADOS  = ['en_defensor', 'remitido', 'devuelto_siged', 'rechazado'];
+
+    const PALETA = [
+        '#1a6bb0', '#0b4b7a', '#4a9fe0', '#7bc0f0', '#2e9b4a',
+        '#e67e22', '#c62828', '#7b1fa2', '#00897b', '#f57f17',
+        '#3949ab', '#8aaec9', '#26a69a', '#ec407a', '#5c6bc0'
+    ];
+
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    /* ==========================================================
+       FIREBASE
+       ========================================================== */
+    const firebaseConfig = {
+        apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+        authDomain: "pasedefensoria6.firebaseapp.com",
+        projectId: "pasedefensoria6",
+        storageBucket: "pasedefensoria6.firebasestorage.app",
+        messagingSenderId: "785250989941",
+        appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    /* ==========================================================
+       ESTADO GLOBAL
+       ========================================================== */
+    const state = { causas: [] };
+    const filters = { empleado: '', secretario: '', tipo: '', anio: null, mes: null, orden: 'total' };
+    let unsubscribeCausas = null;
+    let chartPie = null;
+    let chartLine = null;
+    let datosListos = false;
+
+    /* ==========================================================
+       UTILIDADES
+       ========================================================== */
+    function getEmpName(id) {
+        const e = CONFIG.empleados.find(x => x.id === id);
+        return e ? e.nombre : 'Sin asignar';
+    }
+    function getSecName(id) {
+        const s = CONFIG.secretarios.find(x => x.id === id);
+        return s ? s.nombre : 'Sin secretario';
+    }
+    function parseDate(iso) {
+        if (!iso) return null;
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    function fmtFecha(iso) {
+        const d = parseDate(iso);
+        if (!d) return '—';
+        return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    }
+    function num(v) { return (typeof v === 'number' && isFinite(v)) ? v : 0; }
+
+    function showToast(msg, type) {
+        type = type || 'success';
+        const icons = {
+            success: 'bi-check-circle-fill',
+            warning: 'bi-exclamation-triangle-fill',
+            danger:  'bi-x-circle-fill',
+            info:    'bi-info-circle-fill'
+        };
+        const container = document.getElementById('toastContainer');
+        const div = document.createElement('div');
+        div.className = 'toast-custom ' + type;
+        div.innerHTML = '<i class="bi ' + (icons[type] || icons.info) + '"></i> ' + msg;
+        container.appendChild(div);
+        setTimeout(() => {
+            div.classList.add('removing');
+            setTimeout(() => div.remove(), 300);
+        }, 3600);
+    }
+
+    /* Fecha de referencia de una causa */
+    function getFechaRef(c) {
+        let d = parseDate(c.fechaAsignacion);
+        if (d) return d;
+        d = parseDate(c.fechaPaseSecretario);
+        if (d) return d;
+        if (Array.isArray(c.historial) && c.historial.length) {
+            for (let i = 0; i < c.historial.length; i++) {
+                const f = parseDate(c.historial[i].fecha);
+                if (f) return f;
+            }
+        }
+        return null;
+    }
+    function getFechaFinalizacion(c) {
+        return parseDate(c.fechaFinalizacion) || parseDate(c.fechaResolucionEmpleado) || null;
+    }
+
+    /* ¿La causa tiene empleado asignado? */
+    function tieneEmpleado(c) {
+        return !!(c.empleadoAsignado || c.empleadoId || c.empleadoOriginal);
+    }
+
+    /* ==========================================================
+       CARGA DE DATOS
+       ========================================================== */
+    function cargarDatos() {
+        if (unsubscribeCausas) unsubscribeCausas();
+        unsubscribeCausas = db.collection('operador').onSnapshot(function (snapshot) {
+            const causas = [];
+            snapshot.forEach(function (doc) {
+                if (doc.id === 'secretario_config') return;
+                const data = doc.data();
+                if (!data.id) data.id = doc.id;
+                if (!data.empleadoAsignado && data.empleadoId) data.empleadoAsignado = data.empleadoId;
+                causas.push(data);
+            });
+            state.causas = causas;
+            datosListos = true;
+            renderTodo();
+        }, function (error) {
+            console.error('Error Firestore:', error);
+            showToast('Error al conectar con la base de datos', 'danger');
+        });
+    }
+
+    /* ==========================================================
+       FILTRADO
+       ========================================================== */
+    function pasaFiltroFecha(c) {
+        if (filters.anio === null && filters.mes === null) return true;
+        const d = getFechaRef(c);
+        if (!d) return false;
+        if (filters.anio !== null && d.getFullYear() !== filters.anio) return false;
+        if (filters.mes !== null && (d.getMonth() + 1) !== filters.mes) return false;
+        return true;
+    }
+
+    function getCausasFiltradas() {
+        return state.causas.filter(function (c) {
+            if (filters.empleado) {
+                const asignado = c.empleadoAsignado || c.empleadoId;
+                const original = c.empleadoOriginal;
+                if (asignado !== filters.empleado && original !== filters.empleado) return false;
+            }
+            if (filters.secretario && c.secretarioId !== filters.secretario) return false;
+            if (filters.tipo && (c.tipo || 'Sin tipo') !== filters.tipo) return false;
+            return pasaFiltroFecha(c);
+        });
+    }
+
+    function esFinalizada(c) { return ESTADOS_FINALIZADOS.indexOf(c.estado) !== -1; }
+    function esEnProceso(c)  { return ESTADOS_PROCESO.indexOf(c.estado) !== -1; }
+    function esPendiente(c)  { return ESTADOS_PENDIENTES.indexOf(c.estado) !== -1; }
+    function esDerivada(c)   { return ESTADOS_DERIVADOS.indexOf(c.estado) !== -1; }
+
+    /* ==========================================================
+       RENDER PRINCIPAL
+       ========================================================== */
+    function renderTodo() {
+        if (!datosListos) return;
+        const lista = getCausasFiltradas();
+        renderKPIs(lista);
+        renderPie(lista);
+        renderLinea();
+        renderTablaTipos(lista);
+        renderTablaSecretarios(lista);
+        renderTablaEmpleados();
+    }
+
+    /* ---------------- KPIs (discriminados) ---------------- */
+    function renderKPIs(lista) {
+        const total       = lista.length;
+        const finalizadas = lista.filter(esFinalizada).length;
+        const enProceso   = lista.filter(esEnProceso).length;
+        const pendientes  = lista.filter(esPendiente).length;
+        const derivadas   = lista.filter(esDerivada).length;
+        const tasa        = total ? Math.round((finalizadas / total) * 100) : 0;
+
+        /* Tipos distintos */
+        const tiposUnicos = {};
+        lista.forEach(function (c) { tiposUnicos[c.tipo || 'Sin tipo'] = true; });
+        const cantidadTipos = Object.keys(tiposUnicos).length;
+
+        /* Empleados con causas */
+        const empleadosInvolucrados = {};
+        lista.forEach(function (c) {
+            const id = c.empleadoAsignado || c.empleadoId;
+            if (id) empleadosInvolucrados[id] = true;
+        });
+        const cantEmpleados = Object.keys(empleadosInvolucrados).length;
+
+        /* === NUEVO: causas SIN ASIGNAR (discriminadas por tipo) === */
+        const sinAsignar = lista.filter(function (c) { return !tieneEmpleado(c); });
+        const sinAsignarPorTipo = {};
+        sinAsignar.forEach(function (c) {
+            const t = c.tipo || 'Sin tipo';
+            sinAsignarPorTipo[t] = (sinAsignarPorTipo[t] || 0) + 1;
+        });
+        const topSinAsignar = Object.keys(sinAsignarPorTipo)
+            .map(function (k) { return { tipo: k, n: sinAsignarPorTipo[k] }; })
+            .sort(function (a, b) { return b.n - a.n; });
+
+        const subSinAsignar = topSinAsignar.length
+            ? topSinAsignar.slice(0, 2).map(function (p) { return p.tipo + ' (' + p.n + ')'; }).join(' · ')
+            : 'todas tienen empleado asignado';
+
+        const tooltipSinAsignar = topSinAsignar.length
+            ? 'Tipos de las causas sin asignar:\n' +
+              topSinAsignar.map(function (p) { return '• ' + p.tipo + ': ' + p.n; }).join('\n')
+            : 'No hay causas sin empleado asignado en este período.';
+
+        /* Desglose de PENDIENTES por estado (para tooltip) */
+        const pendEnSecretaria = lista.filter(function (c) { return c.estado === 'en_secretaria'; }).length;
+        const pendEnEspera     = lista.filter(function (c) { return c.estado === 'en_espera'; }).length;
+        const tooltipPendientes =
+            'Desglose de pendientes:\n' +
+            '• En secretaría: ' + pendEnSecretaria + '\n' +
+            '• En espera: ' + pendEnEspera;
+
+        /* Desglose de DERIVADAS por estado (para tooltip) */
+        const derDefensor   = lista.filter(function (c) { return c.estado === 'en_defensor'; }).length;
+        const derRemitido   = lista.filter(function (c) { return c.estado === 'remitido'; }).length;
+        const derDevuelto   = lista.filter(function (c) { return c.estado === 'devuelto_siged'; }).length;
+        const derRechazado  = lista.filter(function (c) { return c.estado === 'rechazado'; }).length;
+        const tooltipDerivadas =
+            'Desglose de derivadas:\n' +
+            '• En defensor: ' + derDefensor + '\n' +
+            '• Remitidas: ' + derRemitido + '\n' +
+            '• Devueltas SIGED: ' + derDevuelto + '\n' +
+            '• Rechazadas: ' + derRechazado;
+
+        /* Desglose de EN PROCESO (activas) - sin subdivisión extra */
+        const tooltipProceso = 'Causas actualmente activas en proceso del empleado asignado.';
+
+        /* Empleados involucrados con sus conteos */
+        const empCount = {};
+        lista.forEach(function (c) {
+            const id = c.empleadoAsignado || c.empleadoId;
+            if (id) empCount[id] = (empCount[id] || 0) + 1;
+        });
+        const topEmpleados = Object.keys(empCount)
+            .map(function (k) { return { nombre: getEmpName(k), n: empCount[k] }; })
+            .sort(function (a, b) { return b.n - a.n; });
+        const tooltipEmpleados = topEmpleados.length
+            ? 'Causas por empleado:\n' +
+              topEmpleados.slice(0, 8).map(function (p) { return '• ' + p.nombre + ': ' + p.n; }).join('\n') +
+              (topEmpleados.length > 8 ? '\n… y ' + (topEmpleados.length - 8) + ' más' : '')
+            : 'Sin empleados con causas en el período.';
+
+        const grid = document.getElementById('kpiGrid');
+        grid.innerHTML =
+            kpiCard('Total causas', total, cantidadTipos + ' tipos distintos', 'azul',
+                    'Incluye todas las causas del período seleccionado.') +
+            kpiCard('Finalizadas', finalizadas, tasa + '% del total', 'verde',
+                    'Causas con estado "finalizada".\nTasa de resolución: ' + tasa + '%.') +
+            kpiCard('En proceso', enProceso, 'activas actualmente', 'naranja', tooltipProceso) +
+            kpiCard('Pendientes / Espera', pendientes, 'en secretaría o espera', 'morado', tooltipPendientes) +
+            kpiCard('Derivadas', derivadas, 'defensor / remitidas', 'rojo', tooltipDerivadas) +
+            kpiCard('Sin asignar', sinAsignar.length, subSinAsignar, 'gris-kpi', tooltipSinAsignar) +
+            kpiCard('Empleados', cantEmpleados, 'con causas en el período', 'azul', tooltipEmpleados);
+    }
+
+    function kpiCard(label, value, sub, cls, tooltip) {
+        const tip = tooltip ? ' data-tip="' + String(tooltip).replace(/"/g, '&quot;') + '"' : '';
+        return '<div class="kpi-item ' + cls + '"' + tip + '>' +
+                   '<div class="kpi-label">' + label + '</div>' +
+                   '<div class="kpi-value">' + value + '</div>' +
+                   '<div class="kpi-sub">' + sub + '</div>' +
+               '</div>';
+    }
+
+    /* ==========================================================
+       PLUGIN: Muestra el valor dentro de cada porción del doughnut
+       ========================================================== */
+    const doughnutValuePlugin = {
+        id: 'doughnutValuePlugin',
+        afterDatasetsDraw: function (chart) {
+            const ctx = chart.ctx;
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data) return;
+            const data = chart.data.datasets[0].data;
+            const total = data.reduce(function (a, b) { return a + b; }, 0);
+            if (!total) return;
+
+            meta.data.forEach(function (arc, i) {
+                const value = data[i];
+                if (!value) return;
+                const pct = (value / total) * 100;
+                if (pct < 4) return; /* no mostrar si la porción es muy pequeña */
+
+                const pos = arc.tooltipPosition();
+                const radioExterno = arc.outerRadius;
+                const radioInterno = arc.innerRadius;
+                const radioMedio = (radioExterno + radioInterno) / 2;
+
+                const angle = (arc.startAngle + arc.endAngle) / 2;
+                const x = arc.x + Math.cos(angle) * radioMedio;
+                const y = arc.y + Math.sin(angle) * radioMedio;
+
+                ctx.save();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '800 12px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,.35)';
+                ctx.shadowBlur = 3;
+                ctx.fillText(String(value), x, y);
+                ctx.restore();
+            });
+        }
+    };
+
+    /* ==========================================================
+       PLUGIN: Muestra el valor encima de cada punto del line chart
+       ========================================================== */
+    const lineValuePlugin = {
+        id: 'lineValuePlugin',
+        afterDatasetsDraw: function (chart) {
+            const ctx = chart.ctx;
+            chart.data.datasets.forEach(function (ds, di) {
+                const meta = chart.getDatasetMeta(di);
+                if (!meta || !meta.data) return;
+                meta.data.forEach(function (pt, i) {
+                    const val = ds.data[i];
+                    if (!val) return;
+                    ctx.save();
+                    ctx.fillStyle = ds.borderColor;
+                    ctx.font = '800 10px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.shadowColor = 'rgba(255,255,255,.9)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(String(val), pt.x, pt.y - 7);
+                    ctx.restore();
+                });
+            });
+        }
+    };
+
+    /* ---------------- GRÁFICO CIRCULAR ---------------- */
+    function renderPie(lista) {
+        const canvas = document.getElementById('pieChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let etiquetas = [];
+        let valores = [];
+        let titulo = '';
+        let nota = '';
+
+        if (filters.empleado) {
+            /* Un solo empleado → distribución por tipo de proceso */
+            titulo = 'Distribución por tipo de proceso · ' + getEmpName(filters.empleado);
+            const conteo = {};
+            lista.forEach(function (c) {
+                const t = c.tipo || 'Sin tipo';
+                conteo[t] = (conteo[t] || 0) + 1;
+            });
+            const pares = Object.keys(conteo)
+                .map(function (k) { return { k: k, v: conteo[k] }; })
+                .sort(function (a, b) { return b.v - a.v; });
+
+            const top = pares.slice(0, 9);
+            const resto = pares.slice(9).reduce(function (s, p) { return s + p.v; }, 0);
+            etiquetas = top.map(function (p) { return p.k; });
+            valores   = top.map(function (p) { return p.v; });
+            if (resto > 0) { etiquetas.push('Otros tipos'); valores.push(resto); }
+            nota = pares.length + ' tipos de proceso distintos en el período';
+        } else {
+            /* Todos → distribución por empleado (discriminando "Sin asignar") */
+            titulo = 'Distribución de causas por empleado';
+            const conteo = {};
+            lista.forEach(function (c) {
+                const id = c.empleadoAsignado || c.empleadoId || c.empleadoOriginal;
+                const n = id ? getEmpName(id) : 'Sin asignar (sin empleado)';
+                conteo[n] = (conteo[n] || 0) + 1;
+            });
+            const pares = Object.keys(conteo)
+                .map(function (k) { return { k: k, v: conteo[k] }; })
+                .sort(function (a, b) { return b.v - a.v; });
+
+            const top = pares.slice(0, 10);
+            const resto = pares.slice(10).reduce(function (s, p) { return s + p.v; }, 0);
+            etiquetas = top.map(function (p) { return p.k; });
+            valores   = top.map(function (p) { return p.v; });
+            if (resto > 0) { etiquetas.push('Otros empleados'); valores.push(resto); }
+            nota = pares.length + ' grupos (empleados / sin asignar) en el período';
+        }
+
+        document.getElementById('pieTitle').innerHTML =
+            '<i class="bi bi-pie-chart-fill"></i> ' + titulo;
+        document.getElementById('pieNote').textContent = nota;
+
+        if (chartPie) { chartPie.destroy(); chartPie = null; }
+
+        if (!valores.length) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            dibujarVacio(ctx, canvas, 'Sin datos para el período seleccionado');
+            return;
+        }
+
+        const totalPie = valores.reduce(function (a, b) { return a + b; }, 0);
+
+        chartPie = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    data: valores,
+                    backgroundColor: etiquetas.map(function (_, i) { return PALETA[i % PALETA.length]; }),
+                    borderColor: '#ffffff',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '55%',
+                layout: { padding: { top: 6, right: 6, bottom: 6, left: 6 } },
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            color: '#1a344a',
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 8,
+                            /* === Cantidades destacadas en la leyenda === */
+                            generateLabels: function (chart) {
+                                const data = chart.data;
+                                const ds = data.datasets[0];
+                                const tot = ds.data.reduce(function (a, b) { return a + b; }, 0);
+                                return data.labels.map(function (label, i) {
+                                    const v = ds.data[i];
+                                    const pct = tot ? ((v / tot) * 100).toFixed(0) : 0;
+                                    return {
+                                        text: label + ' — ' + v + ' (' + pct + '%)',
+                                        fillStyle: ds.backgroundColor[i],
+                                        strokeStyle: ds.backgroundColor[i],
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: i,
+                                        pointStyle: 'circle'
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(10,42,68,.94)',
+                        titleFont: { family: 'Inter', size: 12, weight: '700' },
+                        bodyFont: { family: 'Inter', size: 12 },
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            label: function (ctxItem) {
+                                const v = ctxItem.parsed;
+                                const pct = totalPie ? ((v / totalPie) * 100).toFixed(1) : 0;
+                                return '  ' + v + ' causas (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [doughnutValuePlugin]
+        });
+    }
+
+    function dibujarVacio(ctx, canvas, texto) {
+        const w = canvas.width, h = canvas.height;
+        ctx.save();
+        ctx.fillStyle = '#8aa3bc';
+        ctx.font = '600 13px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(texto, w / 2, h / 2);
+        ctx.restore();
+    }
+
+    /* ---------------- GRÁFICO LINEAL ---------------- */
+    function renderLinea() {
+        const canvas = document.getElementById('lineChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const hoy = new Date();
+        let endY, endM;
+        if (filters.anio !== null) {
+            endY = filters.anio;
+            endM = (filters.mes !== null) ? filters.mes : 12;
+        } else {
+            endY = hoy.getFullYear();
+            endM = hoy.getMonth() + 1;
+        }
+
+        const meses = [];
+        let y = endY, m = endM;
+        for (let i = 0; i < 12; i++) {
+            meses.unshift({ y: y, m: m });
+            m--;
+            if (m === 0) { m = 12; y--; }
+        }
+
+        const base = state.causas.filter(function (c) {
+            if (filters.empleado) {
+                const asignado = c.empleadoAsignado || c.empleadoId;
+                const original = c.empleadoOriginal;
+                if (asignado !== filters.empleado && original !== filters.empleado) return false;
+            }
+            if (filters.secretario && c.secretarioId !== filters.secretario) return false;
+            if (filters.tipo && (c.tipo || 'Sin tipo') !== filters.tipo) return false;
+            return true;
+        });
+
+        const asignadas = new Array(12).fill(0);
+        const finalizadas = new Array(12).fill(0);
+
+        base.forEach(function (c) {
+            const fA = getFechaRef(c);
+            if (fA) {
+                const idx = meses.findIndex(function (mm) {
+                    return mm.y === fA.getFullYear() && mm.m === (fA.getMonth() + 1);
+                });
+                if (idx !== -1) asignadas[idx]++;
+            }
+            if (esFinalizada(c)) {
+                const fF = getFechaFinalizacion(c);
+                if (fF) {
+                    const idx = meses.findIndex(function (mm) {
+                        return mm.y === fF.getFullYear() && mm.m === (fF.getMonth() + 1);
+                    });
+                    if (idx !== -1) finalizadas[idx]++;
+                }
+            }
+        });
+
+        const labels = meses.map(function (mm) {
+            return MESES_CORTOS[mm.m - 1] + ' ' + String(mm.y).slice(2);
+        });
+
+        document.getElementById('lineNote').textContent =
+            'Período: ' + MESES[meses[0].m - 1] + ' ' + meses[0].y + '  →  ' +
+            MESES[meses[11].m - 1] + ' ' + meses[11].y +
+            (filters.empleado ? '  ·  ' + getEmpName(filters.empleado) : '  ·  Todos los empleados') +
+            (filters.tipo ? '  ·  ' + filters.tipo : '');
+
+        if (chartLine) { chartLine.destroy(); chartLine = null; }
+
+        chartLine = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Asignadas',
+                        data: asignadas,
+                        borderColor: '#1a6bb0',
+                        backgroundColor: 'rgba(26,107,176,.12)',
+                        pointBackgroundColor: '#1a6bb0',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        borderWidth: 3,
+                        tension: 0.38,
+                        fill: true
+                    },
+                    {
+                        label: 'Finalizadas',
+                        data: finalizadas,
+                        borderColor: '#2e9b4a',
+                        backgroundColor: 'rgba(46,155,74,.10)',
+                        pointBackgroundColor: '#2e9b4a',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        borderWidth: 3,
+                        tension: 0.38,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 22 } },
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            font: { family: 'Inter', size: 11, weight: '600' },
+                            color: '#1a344a',
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 9,
+                            padding: 14
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(10,42,68,.94)',
+                        titleFont: { family: 'Inter', size: 12, weight: '700' },
+                        bodyFont: { family: 'Inter', size: 12 },
+                        padding: 12,
+                        cornerRadius: 12
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            color: '#5f7f9f'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0,
+                            font: { family: 'Inter', size: 10, weight: '600' },
+                            color: '#5f7f9f'
+                        },
+                        grid: { color: 'rgba(210,224,237,.6)' }
+                    }
+                }
+            },
+            plugins: [lineValuePlugin]
+        });
+    }
+
+    /* ---------------- TABLA POR TIPO ---------------- */
+    function renderTablaTipos(lista) {
+        const cont = document.getElementById('tablaTiposContainer');
+        const pill = document.getElementById('pillTipos');
+
+        if (!lista.length) {
+            pill.textContent = '0 tipos';
+            cont.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas para los filtros seleccionados.</div>';
+            return;
+        }
+
+        const mapa = {};
+        lista.forEach(function (c) {
+            const t = c.tipo || 'Sin tipo';
+            if (!mapa[t]) {
+                mapa[t] = {
+                    tipo: t,
+                    total: 0,
+                    finalizadas: 0,
+                    enProceso: 0,
+                    pendientes: 0,
+                    derivadas: 0,
+                    sinAsignar: 0,
+                    secretarios: {}
+                };
+            }
+            const m = mapa[t];
+            m.total++;
+            if (!tieneEmpleado(c)) m.sinAsignar++;
+            if (esFinalizada(c)) m.finalizadas++;
+            else if (esEnProceso(c)) m.enProceso++;
+            else if (esPendiente(c)) m.pendientes++;
+            else if (esDerivada(c)) m.derivadas++;
+
+            if (c.secretarioId) m.secretarios[getSecName(c.secretarioId)] = true;
+        });
+
+        let filas = Object.keys(mapa).map(function (k) { return mapa[k]; });
+
+        if (filters.orden === 'alfabetico') {
+            filas.sort(function (a, b) { return a.tipo.localeCompare(b.tipo); });
+        } else if (filters.orden === 'finalizadas') {
+            filas.sort(function (a, b) { return b.finalizadas - a.finalizadas || b.total - a.total; });
+        } else {
+            filas.sort(function (a, b) { return b.total - a.total || b.finalizadas - a.finalizadas; });
+        }
+
+        const maxTotal = filas.reduce(function (s, f) { return Math.max(s, f.total); }, 1);
+
+        let totalGeneral = 0, finGeneral = 0, procGeneral = 0, pendGeneral = 0, derGeneral = 0, sinGeneral = 0;
+
+        let html = '<div class="table-wrap"><table class="table-modern">' +
+            '<thead><tr>' +
+                '<th style="min-width:220px;">Tipo de proceso</th>' +
+                '<th class="num-col">Total</th>' +
+                '<th class="num-col">Finalizadas</th>' +
+                '<th class="num-col">En proceso</th>' +
+                '<th class="num-col">Pendientes</th>' +
+                '<th class="num-col">Derivadas</th>' +
+                '<th class="num-col">Sin asignar</th>' +
+                '<th style="min-width:110px;">% Finalización</th>' +
+                '<th style="min-width:180px;">Secretario(s) asignante(s)</th>' +
+            '</tr></thead><tbody>';
+
+        filas.forEach(function (f) {
+            totalGeneral += f.total;
+            finGeneral   += f.finalizadas;
+            procGeneral  += f.enProceso;
+            pendGeneral  += f.pendientes;
+            derGeneral   += f.derivadas;
+            sinGeneral   += f.sinAsignar;
+
+            const pct = f.total ? Math.round((f.finalizadas / f.total) * 100) : 0;
+            const anchoBarra = Math.round((f.total / maxTotal) * 100);
+
+            const secs = Object.keys(f.secretarios);
+            const chips = secs.length
+                ? '<div class="sec-chips">' + secs.map(function (s) {
+                      return '<span class="sec-chip">' + s + '</span>';
+                  }).join('') + '</div>'
+                : '<span style="color:#8aa3bc;font-size:.7rem;">—</span>';
+
+            const pillSin = f.sinAsignar > 0
+                ? '<span class="pill" style="background:#eceff1;color:#37474f;">' + f.sinAsignar + '</span>'
+                : '<span style="color:#b0c8dd;font-weight:700;">0</span>';
+
+            html += '<tr>' +
+                '<td><span class="tipo-name">' + f.tipo + '</span>' +
+                    '<div style="margin-top:4px;"><span class="bar-mini"><span style="width:' + anchoBarra + '%"></span></span></div>' +
+                '</td>' +
+                '<td class="num-col"><span class="pill pill-total">' + f.total + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-fin">' + f.finalizadas + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-proc">' + f.enProceso + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-sec">' + f.pendientes + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-otros">' + f.derivadas + '</span></td>' +
+                '<td class="num-col">' + pillSin + '</td>' +
+                '<td><strong style="color:#0a2a44;">' + pct + '%</strong></td>' +
+                '<td>' + chips + '</td>' +
+            '</tr>';
+        });
+
+        const pctGen = totalGeneral ? Math.round((finGeneral / totalGeneral) * 100) : 0;
+        html += '</tbody><tfoot><tr>' +
+            '<td>TOTAL GENERAL</td>' +
+            '<td class="num-col">' + totalGeneral + '</td>' +
+            '<td class="num-col">' + finGeneral + '</td>' +
+            '<td class="num-col">' + procGeneral + '</td>' +
+            '<td class="num-col">' + pendGeneral + '</td>' +
+            '<td class="num-col">' + derGeneral + '</td>' +
+            '<td class="num-col">' + sinGeneral + '</td>' +
+            '<td>' + pctGen + '%</td>' +
+            '<td>' + filas.length + ' tipos</td>' +
+        '</tr></tfoot></table></div>';
+
+        cont.innerHTML = html;
+        pill.textContent = filas.length + (filas.length === 1 ? ' tipo' : ' tipos');
+    }
+
+    /* ---------------- TABLA POR SECRETARIO ---------------- */
+    function renderTablaSecretarios(lista) {
+        const cont = document.getElementById('tablaSecretariosContainer');
+
+        if (!lista.length) {
+            cont.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Sin datos para el período.</div>';
+            return;
+        }
+
+        const mapa = {};
+        CONFIG.secretarios.forEach(function (s) {
+            mapa[s.id] = { id: s.id, nombre: s.nombre, total: 0, finalizadas: 0, enProceso: 0, pendientes: 0, derivadas: 0, tipos: {} };
+        });
+        mapa['__sin__'] = { id: '__sin__', nombre: 'Sin secretario asignado', total: 0, finalizadas: 0, enProceso: 0, pendientes: 0, derivadas: 0, tipos: {} };
+
+        lista.forEach(function (c) {
+            const key = (c.secretarioId && mapa[c.secretarioId]) ? c.secretarioId : '__sin__';
+            const m = mapa[key];
+            m.total++;
+            if (esFinalizada(c)) m.finalizadas++;
+            else if (esEnProceso(c)) m.enProceso++;
+            else if (esPendiente(c)) m.pendientes++;
+            else if (esDerivada(c)) m.derivadas++;
+            const t = c.tipo || 'Sin tipo';
+            m.tipos[t] = (m.tipos[t] || 0) + 1;
+        });
+
+        const filas = Object.keys(mapa)
+            .map(function (k) { return mapa[k]; })
+            .filter(function (f) { return f.total > 0; })
+            .sort(function (a, b) { return b.total - a.total; });
+
+        if (!filas.length) {
+            cont.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Sin datos para el período.</div>';
+            return;
+        }
+
+        const maxTotal = filas.reduce(function (s, f) { return Math.max(s, f.total); }, 1);
+
+        let html = '<div class="table-wrap"><table class="table-modern">' +
+            '<thead><tr>' +
+                '<th style="min-width:190px;">Secretario</th>' +
+                '<th class="num-col">Total</th>' +
+                '<th class="num-col">Finalizadas</th>' +
+                '<th class="num-col">En proceso</th>' +
+                '<th class="num-col">Pendientes</th>' +
+                '<th class="num-col">Derivadas</th>' +
+                '<th style="min-width:130px;">Tipo más frecuente</th>' +
+            '</tr></thead><tbody>';
+
+        filas.forEach(function (f) {
+            const anchoBarra = Math.round((f.total / maxTotal) * 100);
+            let tipoTop = '—';
+            let maxT = 0;
+            Object.keys(f.tipos).forEach(function (t) {
+                if (f.tipos[t] > maxT) { maxT = f.tipos[t]; tipoTop = t; }
+            });
+
+            html += '<tr>' +
+                '<td>' +
+                    '<div style="font-weight:700;color:#0a2a44;">' + f.nombre + '</div>' +
+                    '<div style="margin-top:4px;"><span class="bar-mini"><span style="width:' + anchoBarra + '%"></span></span></div>' +
+                '</td>' +
+                '<td class="num-col"><span class="pill pill-total">' + f.total + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-fin">' + f.finalizadas + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-proc">' + f.enProceso + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-sec">' + f.pendientes + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-otros">' + f.derivadas + '</span></td>' +
+                '<td style="font-size:.72rem;color:#5f7f9f;">' + tipoTop + '</td>' +
+            '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        cont.innerHTML = html;
+    }
+
+    /* ---------------- TABLA POR EMPLEADO ---------------- */
+    function renderTablaEmpleados() {
+        const card = document.getElementById('cardEmpleados');
+        const cont = document.getElementById('tablaEmpleadosContainer');
+
+        if (filters.empleado) {
+            card.style.display = 'none';
+            return;
+        }
+        card.style.display = '';
+
+        const lista = getCausasFiltradas();
+
+        const filas = CONFIG.empleados.map(function (emp) {
+            const propias = lista.filter(function (c) {
+                const asignado = c.empleadoAsignado || c.empleadoId;
+                return asignado === emp.id || c.empleadoOriginal === emp.id;
+            });
+            const total = propias.length;
+            const finalizadas = propias.filter(esFinalizada).length;
+            const enProceso = propias.filter(esEnProceso).length;
+            const pendientes = propias.filter(esPendiente).length;
+            const derivadas = propias.filter(esDerivada).length;
+            const tasa = total ? Math.round((finalizadas / total) * 100) : 0;
+
+            const tipos = {};
+            propias.forEach(function (c) {
+                const t = c.tipo || 'Sin tipo';
+                tipos[t] = (tipos[t] || 0) + 1;
+            });
+            let tipoTop = '—';
+            let maxT = 0;
+            Object.keys(tipos).forEach(function (t) {
+                if (tipos[t] > maxT) { maxT = tipos[t]; tipoTop = t; }
+            });
+
+            return {
+                nombre: emp.nombre,
+                total: total,
+                finalizadas: finalizadas,
+                enProceso: enProceso,
+                pendientes: pendientes,
+                derivadas: derivadas,
+                tasa: tasa,
+                tipoTop: tipoTop
+            };
+        }).filter(function (f) { return f.total > 0; })
+          .sort(function (a, b) { return b.total - a.total; });
+
+        /* === Fila adicional: SIN ASIGNAR === */
+        const sinAsignar = lista.filter(function (c) { return !tieneEmpleado(c); });
+        if (sinAsignar.length) {
+            const tiposSA = {};
+            sinAsignar.forEach(function (c) {
+                const t = c.tipo || 'Sin tipo';
+                tiposSA[t] = (tiposSA[t] || 0) + 1;
+            });
+            let tipoTopSA = '—';
+            let maxTSA = 0;
+            Object.keys(tiposSA).forEach(function (t) {
+                if (tiposSA[t] > maxTSA) { maxTSA = tiposSA[t]; tipoTopSA = t; }
+            });
+            filas.push({
+                nombre: '⚠ Sin asignar (sin empleado)',
+                total: sinAsignar.length,
+                finalizadas: sinAsignar.filter(esFinalizada).length,
+                enProceso: sinAsignar.filter(esEnProceso).length,
+                pendientes: sinAsignar.filter(esPendiente).length,
+                derivadas: sinAsignar.filter(esDerivada).length,
+                tasa: sinAsignar.length ? Math.round((sinAsignar.filter(esFinalizada).length / sinAsignar.length) * 100) : 0,
+                tipoTop: tipoTopSA,
+                esSinAsignar: true
+            });
+            /* Re-ordenar por total para que "Sin asignar" quede en su lugar */
+            filas.sort(function (a, b) { return b.total - a.total; });
+        }
+
+        if (!filas.length) {
+            cont.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>Sin datos para el período.</div>';
+            return;
+        }
+
+        const maxTotal = filas.reduce(function (s, f) { return Math.max(s, f.total); }, 1);
+
+        let totalG = 0, finG = 0, procG = 0, sinG = 0;
+
+        let html = '<div class="table-wrap"><table class="table-modern">' +
+            '<thead><tr>' +
+                '<th style="min-width:200px;">Empleado</th>' +
+                '<th class="num-col">Total</th>' +
+                '<th class="num-col">Finalizadas</th>' +
+                '<th class="num-col">En proceso</th>' +
+                '<th class="num-col">Pendientes</th>' +
+                '<th class="num-col">Derivadas</th>' +
+                '<th style="min-width:120px;">% Finalización</th>' +
+                '<th style="min-width:170px;">Tipo más frecuente</th>' +
+            '</tr></thead><tbody>';
+
+        filas.forEach(function (f) {
+            totalG += f.total;
+            finG   += f.finalizadas;
+            procG  += f.enProceso;
+            if (f.esSinAsignar) sinG += f.total;
+
+            const anchoBarra = Math.round((f.total / maxTotal) * 100);
+            const rowStyle = f.esSinAsignar
+                ? ' style="background:rgba(120,144,156,.10);"'
+                : '';
+            const nameStyle = f.esSinAsignar
+                ? 'font-weight:800;color:#455a64;'
+                : 'font-weight:700;color:#0a2a44;';
+
+            html += '<tr' + rowStyle + '>' +
+                '<td>' +
+                    '<div style="' + nameStyle + '">' + f.nombre + '</div>' +
+                    '<div style="margin-top:4px;"><span class="bar-mini"><span style="width:' + anchoBarra + '%"></span></span></div>' +
+                '</td>' +
+                '<td class="num-col"><span class="pill pill-total">' + f.total + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-fin">' + f.finalizadas + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-proc">' + f.enProceso + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-sec">' + f.pendientes + '</span></td>' +
+                '<td class="num-col"><span class="pill pill-otros">' + f.derivadas + '</span></td>' +
+                '<td><strong style="color:#0a2a44;">' + f.tasa + '%</strong></td>' +
+                '<td style="font-size:.72rem;color:#5f7f9f;">' + f.tipoTop + '</td>' +
+            '</tr>';
+        });
+
+        const pctG = totalG ? Math.round((finG / totalG) * 100) : 0;
+        html += '</tbody><tfoot><tr>' +
+            '<td>TOTAL</td>' +
+            '<td class="num-col">' + totalG + '</td>' +
+            '<td class="num-col">' + finG + '</td>' +
+            '<td class="num-col">' + procG + '</td>' +
+            '<td class="num-col">—</td>' +
+            '<td class="num-col">—</td>' +
+            '<td>' + pctG + '%</td>' +
+            '<td>' + filas.length + ' grupos</td>' +
+        '</tr></tfoot></table></div>';
+
+        cont.innerHTML = html;
+    }
+
+    /* ==========================================================
+       INICIALIZACIÓN DE SELECTS
+       ========================================================== */
+    function initSelects() {
+        const selEmp = document.getElementById('selEmpleado');
+        selEmp.innerHTML = '<option value="">Todos los empleados</option>' +
+            CONFIG.empleados.map(function (e) {
+                return '<option value="' + e.id + '">' + e.nombre + '</option>';
+            }).join('');
+
+        const selSec = document.getElementById('selSecretario');
+        selSec.innerHTML = '<option value="">Todos</option>' +
+            CONFIG.secretarios.map(function (s) {
+                return '<option value="' + s.id + '">' + s.nombre + '</option>';
+            }).join('');
+
+        const selTipo = document.getElementById('selTipo');
+        selTipo.innerHTML = '<option value="">Todos los tipos</option>' +
+            CONFIG.tipos.map(function (t) {
+                return '<option value="' + t + '">' + t + '</option>';
+            }).join('');
+
+        const hoy = new Date();
+        const anioActual = hoy.getFullYear();
+        const selAnio = document.getElementById('selAnio');
+        let optsAnio = '<option value="">Todos los años</option>';
+        for (let a = anioActual + 1; a >= anioActual - 5; a--) {
+            optsAnio += '<option value="' + a + '"' + (a === anioActual ? ' selected' : '') + '>' + a + '</option>';
+        }
+        selAnio.innerHTML = optsAnio;
+
+        const selMes = document.getElementById('selMes');
+        let optsMes = '<option value="">Todos los meses</option>';
+        for (let i = 0; i < 12; i++) {
+            optsMes += '<option value="' + (i + 1) + '">' + MESES[i] + '</option>';
+        }
+        selMes.innerHTML = optsMes;
+
+        filters.anio = anioActual;
+        filters.mes = null;
+    }
+
+    /* ==========================================================
+       EVENTOS
+       ========================================================== */
+    function bindEventos() {
+        document.getElementById('selEmpleado').addEventListener('change', function () {
+            filters.empleado = this.value;
+            renderTodo();
+        });
+        document.getElementById('selSecretario').addEventListener('change', function () {
+            filters.secretario = this.value;
+            renderTodo();
+        });
+        document.getElementById('selTipo').addEventListener('change', function () {
+            filters.tipo = this.value;
+            renderTodo();
+        });
+        document.getElementById('selAnio').addEventListener('change', function () {
+            filters.anio = this.value === '' ? null : parseInt(this.value, 10);
+            renderTodo();
+        });
+        document.getElementById('selMes').addEventListener('change', function () {
+            filters.mes = this.value === '' ? null : parseInt(this.value, 10);
+            renderTodo();
+        });
+        document.getElementById('selOrden').addEventListener('change', function () {
+            filters.orden = this.value;
+            renderTodo();
+        });
+
+        document.getElementById('btnLimpiar').addEventListener('click', function () {
+            filters.empleado = '';
+            filters.secretario = '';
+            filters.tipo = '';
+            filters.anio = new Date().getFullYear();
+            filters.mes = null;
+            filters.orden = 'total';
+
+            document.getElementById('selEmpleado').value = '';
+            document.getElementById('selSecretario').value = '';
+            document.getElementById('selTipo').value = '';
+            document.getElementById('selAnio').value = String(filters.anio);
+            document.getElementById('selMes').value = '';
+            document.getElementById('selOrden').value = 'total';
+
+            renderTodo();
+            showToast('Filtros restablecidos', 'info');
+        });
+
+        document.getElementById('btnImprimir').addEventListener('click', imprimirReporte);
+    }
+
+    /* ==========================================================
+       IMPRESIÓN
+       ========================================================== */
+    function imprimirReporte() {
+        const empNombre = filters.empleado ? getEmpName(filters.empleado) : 'Todos los empleados';
+        const secNombre = filters.secretario ? getSecName(filters.secretario) : 'Todos';
+        const tipoNombre = filters.tipo ? filters.tipo : 'Todos';
+        const periodo = (filters.mes ? MESES[filters.mes - 1] + ' ' : '') + (filters.anio || 'todos los años');
+
+        const pieImg = chartPie ? chartPie.toBase64Image() : '';
+        const lineImg = chartLine ? chartLine.toBase64Image() : '';
+
+        const kpisHtml = document.getElementById('kpiGrid').innerHTML;
+        const tiposHtml = document.getElementById('tablaTiposContainer').innerHTML;
+        const secHtml = document.getElementById('tablaSecretariosContainer').innerHTML;
+        const empHtml = (document.getElementById('cardEmpleados').style.display === 'none')
+            ? ''
+            : document.getElementById('tablaEmpleadosContainer').innerHTML;
+
+        const win = window.open('', '_blank');
+        if (!win) {
+            showToast('Permita ventanas emergentes para imprimir', 'warning');
+            return;
+        }
+
+        win.document.write(
+            '<html><head><title>Reporte de Trabajo por Empleado</title>' +
+            '<style>' +
+                '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");' +
+                'body{font-family:"Inter",sans-serif;padding:26px;color:#0b1e33;background:#fff;}' +
+                'h1{font-size:1.35rem;font-weight:800;color:#0a2a44;margin:0 0 4px;}' +
+                'h2{font-size:1rem;font-weight:700;color:#0a2a44;margin:24px 0 10px;border-bottom:2px solid #e2edf7;padding-bottom:6px;}' +
+                '.sub{font-size:.8rem;color:#5f7f9f;margin-bottom:18px;}' +
+                '.filtros{background:#f4f8fd;border:1px solid #e2edf7;border-radius:14px;padding:10px 16px;font-size:.78rem;margin-bottom:18px;}' +
+                '.filtros strong{color:#0a2a44;}' +
+                '.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}' +
+                '.kpi-item{background:#f9fcff;border:1px solid #e2edf7;border-radius:14px;padding:10px;text-align:center;}' +
+                '.kpi-label{font-size:.6rem;font-weight:700;text-transform:uppercase;color:#5f7f9f;letter-spacing:.4px;}' +
+                '.kpi-value{font-size:1.5rem;font-weight:800;color:#0a2a44;}' +
+                '.kpi-sub{font-size:.6rem;color:#8aa3bc;font-weight:600;}' +
+                '.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}' +
+                '.chart-card{border:1px solid #e2edf7;border-radius:14px;padding:10px;background:#fff;text-align:center;}' +
+                '.chart-card img{max-width:100%;height:auto;}' +
+                'table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;}' +
+                'th,td{border:1px solid #d8e4ef;padding:5px 7px;text-align:left;}' +
+                'th{background:#f1f6fd;font-weight:700;color:#1a3a5a;font-size:10px;text-transform:uppercase;}' +
+                'tfoot td{background:#f4f8fd;font-weight:800;}' +
+                '.num-col{text-align:center;}' +
+                '.pill{display:inline-block;padding:1px 8px;border-radius:20px;font-weight:700;font-size:9px;}' +
+                '.pill-total{background:#e3f2fd;color:#1565c0;}.pill-fin{background:#e8f5e9;color:#2e7d32;}' +
+                '.pill-proc{background:#fff3e0;color:#e67e22;}.pill-sec{background:#f3e5f5;color:#7b1fa2;}' +
+                '.pill-otros{background:#eceff1;color:#455a64;}' +
+                '.bar-mini{display:none;}' +
+                '.sec-chips{display:flex;flex-wrap:wrap;gap:3px;}' +
+                '.sec-chip{background:#e3effa;color:#0b4b7a;border-radius:20px;padding:1px 7px;font-size:9px;font-weight:700;}' +
+                '.tipo-name{font-weight:700;}' +
+                '.empty-state{color:#8aa3bc;font-size:.8rem;padding:10px;}' +
+                '.footer{margin-top:26px;font-size:.65rem;color:#8aa3bc;text-align:center;border-top:1px solid #e2edf7;padding-top:10px;}' +
+                '@page{size:A4;margin:12mm;}' +
+            '</style></head><body>' +
+
+            '<h1>Reporte de Trabajo por Empleado</h1>' +
+            '<div class="sub">Defensoría Oficial Civil y Comercial 6 · Generado el ' +
+                new Date().toLocaleString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) +
+            '</div>' +
+
+            '<div class="filtros">' +
+                '<strong>Empleado:</strong> ' + empNombre + ' &nbsp;|&nbsp; ' +
+                '<strong>Secretario:</strong> ' + secNombre + ' &nbsp;|&nbsp; ' +
+                '<strong>Tipo:</strong> ' + tipoNombre + ' &nbsp;|&nbsp; ' +
+                '<strong>Período:</strong> ' + periodo +
+            '</div>' +
+
+            '<h2>Indicadores generales</h2>' +
+            '<div class="kpi-grid">' + kpisHtml + '</div>' +
+
+            '<h2>Gráficos</h2>' +
+            '<div class="charts">' +
+                '<div class="chart-card">' +
+                    '<div style="font-weight:700;font-size:.8rem;color:#0a2a44;margin-bottom:6px;">Distribución (circular)</div>' +
+                    (pieImg ? '<img src="' + pieImg + '" />' : '<div class="empty-state">Sin datos</div>') +
+                '</div>' +
+                '<div class="chart-card">' +
+                    '<div style="font-weight:700;font-size:.8rem;color:#0a2a44;margin-bottom:6px;">Evolución mensual (lineal)</div>' +
+                    (lineImg ? '<img src="' + lineImg + '" />' : '<div class="empty-state">Sin datos</div>') +
+                '</div>' +
+            '</div>' +
+
+            '<h2>Desglose por tipo de proceso</h2>' + tiposHtml +
+            '<h2>Aporte por Secretario asignante</h2>' + secHtml +
+            (empHtml ? '<h2>Comparativo por empleado</h2>' + empHtml : '') +
+
+            '<div class="footer">Sistema Digital de Pases · Defensoría Oficial Civil y Comercial 6</div>' +
+
+            '</body></html>'
+        );
+        win.document.close();
+
+        win.onload = function () {
+            setTimeout(function () { win.print(); }, 400);
+        };
+        setTimeout(function () {
+            try { win.focus(); win.print(); } catch (e) { /* noop */ }
+        }, 900);
+    }
+
+    /* ==========================================================
+       ARRANQUE
+       ========================================================== */
+    document.addEventListener('DOMContentLoaded', function () {
+        Chart.defaults.font.family = 'Inter, sans-serif';
+        Chart.defaults.color = '#1a344a';
+
+        initSelects();
+        bindEventos();
+        cargarDatos();
+    });
+
+})();
+</script>
+</body>
+</html>
