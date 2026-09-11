@@ -624,8 +624,10 @@
                 <!-- Módulos sin emojis, solo texto -->
                 <button class="modulo-btn active" data-modulo="puntaje">Puntaje de Actividad</button>
                 <button class="modulo-btn" data-modulo="resumen">Resumen Global</button>
-                <!-- Nuevo módulo: Resumen Procesos -->
+                <!-- Módulo: Resumen Procesos -->
                 <button class="modulo-btn" data-modulo="resumen-procesos">Resumen Procesos</button>
+                <!-- Módulo: Reporte Procesos/Empleados -->
+                <button class="modulo-btn" data-modulo="reporte-sec">Reporte Procesos/Empleados</button>
                 <button class="modulo-btn" data-modulo="operador">Reporte Operador</button>
                 <button class="modulo-btn" data-modulo="secretario">Reporte Secretario</button>
                 <button class="modulo-btn" data-modulo="empleado">Reporte Empleados</button>
@@ -826,6 +828,14 @@
                         cont.innerHTML = `
                             <div class="iframe-container">
                                 <iframe src="https://defensoria6.github.io/pase-digital/estadisticas_tipos" title="Resumen Procesos"></iframe>
+                            </div>
+                        `;
+                        break;
+                    case 'reporte-sec':
+                        titulo.textContent = 'Reporte Procesos/Empleados';
+                        cont.innerHTML = `
+                            <div class="iframe-container">
+                                <iframe src="https://defensoria6.github.io/pase-digital/reporte-sec" title="Reporte Procesos/Empleados"></iframe>
                             </div>
                         `;
                         break;
