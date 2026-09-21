@@ -11,10 +11,8 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Firebase (compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
-    </script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
-    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
         * {
@@ -194,28 +192,13 @@
         .puntaje-violeta { background: #f3e5f5; color: #6a1b9a; }
         .puntaje-rojo { background: #ffebee; color: #c62828; }
 
-        .dias-retraso {
-            font-weight: 700 !important;
-        }
-        .dias-retraso.rojo {
-            color: #c62828 !important;
-        }
-        .dias-retraso.celeste {
-            color: #0d6efd !important;
-        }
+        .dias-retraso { font-weight: 700 !important; }
+        .dias-retraso.rojo { color: #c62828 !important; }
+        .dias-retraso.celeste { color: #0d6efd !important; }
 
-        .total-recibidos {
-            color: #0d6efd !important;
-            font-weight: 700 !important;
-        }
-        .en-proceso {
-            color: #000000 !important;
-            font-weight: 700 !important;
-        }
-        .finalizadas {
-            color: #2e7d32 !important;
-            font-weight: 700 !important;
-        }
+        .total-recibidos { color: #0d6efd !important; font-weight: 700 !important; }
+        .en-proceso { color: #000000 !important; font-weight: 700 !important; }
+        .finalizadas { color: #2e7d32 !important; font-weight: 700 !important; }
 
         .chart-container {
             position: relative;
@@ -224,46 +207,23 @@
             margin: 1rem 0;
         }
 
-        .empleado-ausente {
-            opacity: 0.6;
-            background-color: #f5f5f5;
-        }
-        .empleado-ausente td {
-            opacity: 0.6;
-        }
-        .empleado-no-seleccionado {
-            opacity: 0.35 !important;
-            background-color: #f0f0f0 !important;
-        }
-        .empleado-no-seleccionado td {
-            opacity: 0.35 !important;
-        }
+        .empleado-ausente { opacity: 0.6; background-color: #f5f5f5; }
+        .empleado-ausente td { opacity: 0.6; }
+        .empleado-no-seleccionado { opacity: 0.35 !important; background-color: #f0f0f0 !important; }
+        .empleado-no-seleccionado td { opacity: 0.35 !important; }
         .badge-ausente {
-            background: #ffcdd2;
-            color: #b71c1c;
-            padding: 2px 12px;
-            border-radius: 40px;
-            font-size: 0.65rem;
-            font-weight: 700;
+            background: #ffcdd2; color: #b71c1c;
+            padding: 2px 12px; border-radius: 40px;
+            font-size: 0.65rem; font-weight: 700;
         }
         .badge-activo {
-            background: #c8e6c9;
-            color: #1b5e20;
-            padding: 2px 12px;
-            border-radius: 40px;
-            font-size: 0.65rem;
-            font-weight: 700;
+            background: #c8e6c9; color: #1b5e20;
+            padding: 2px 12px; border-radius: 40px;
+            font-size: 0.65rem; font-weight: 700;
         }
 
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: #5f7f9f;
-        }
-        .loading i {
-            font-size: 2.5rem;
-            animation: spin 1s linear infinite;
-        }
+        .loading { text-align: center; padding: 3rem; color: #5f7f9f; }
+        .loading i { font-size: 2.5rem; animation: spin 1s linear infinite; }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -299,63 +259,325 @@
             .filtros-panel .filtro-item { flex: 1 0 100%; }
             .filtros-panel .radio-group { flex-wrap: wrap; }
         }
+
+        /* ============================================================
+           TABS (solo para alternar vistas, no toca estilos de puntaje)
+        ============================================================ */
+        .pv-tabs-wrap {
+            max-width: 620px;
+            margin: 0 auto 22px;
+            padding: 0 4px;
+        }
+        .pv-tabs {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 6px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 20px rgba(0, 20, 40, 0.08);
+        }
+        .pv-tab {
+            flex: 1;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #5f7f9f;
+            background: transparent;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.18s;
+            white-space: nowrap;
+        }
+        .pv-tab:hover { color: #1a6bb0; background: rgba(26, 107, 176, 0.07); }
+        .pv-tab.active {
+            background: #1a6bb0;
+            color: #fff;
+            box-shadow: 0 3px 12px rgba(26, 107, 176, 0.35);
+        }
+        .pv-tab.active:hover { color: #fff; }
+
+        .pv-view { display: none; }
+        .pv-view.active { display: block; }
+
+        /* ============================================================
+           RANKING (estilos aislados, no interfieren con puntaje)
+        ============================================================ */
+        .rk-leader {
+            background: #fff;
+            border: 1px solid #6a1b9a;
+            border-radius: 18px;
+            padding: 16px 22px;
+            box-shadow: 0 10px 28px -14px rgba(106, 27, 154, 0.35), 0 1px 2px rgba(20, 38, 63, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .rk-medal { flex: none; width: 34px; height: 34px; }
+        .rk-body { flex: 1; min-width: 180px; }
+        .rk-tag {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: #6a1b9a; margin-bottom: 3px;
+        }
+        .rk-name { font-size: 1.15rem; font-weight: 700; color: #0a2a44; }
+        .rk-status {
+            font-size: 0.78rem; color: #5f7f9f; margin-top: 3px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .rk-status.ausente { color: #b71c1c; }
+        .rk-status .rk-dot-live {
+            width: 7px; height: 7px; border-radius: 50%; background: #2e7d32;
+        }
+        .rk-status.ausente .rk-dot-live { background: #b71c1c; }
+        .rk-value-block { text-align: right; flex: none; }
+        .rk-value {
+            font-size: 2rem; font-weight: 800; color: #6a1b9a; line-height: 1;
+        }
+        .rk-value-label { font-size: 0.72rem; color: #5f7f9f; margin-top: 4px; }
+
+        .rk-empty {
+            width: 100%; text-align: center; color: #5f7f9f;
+            padding: 14px; font-size: 0.85rem;
+        }
+
+        th.rk-sortable { cursor: pointer; user-select: none; }
+        th.rk-sortable:hover { color: #1a6bb0; }
+        th.rk-active .arrow { font-size: 9px; margin-left: 3px; opacity: 0.85; }
+        .col-puesto { font-weight: 700; color: #5f7f9f; width: 44px; }
+        .col-emp .nm { font-weight: 700; color: #0a2a44; }
+        .col-emp .st {
+            font-size: 0.72rem; color: #5f7f9f; margin-top: 2px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .col-emp .st.ausente { color: #b71c1c; }
+        .rk-dot {
+            display: inline-block; width: 7px; height: 7px;
+            border-radius: 50%; background: #2e7d32; flex: none;
+        }
+        .rk-dot.off { background: #b71c1c; }
+
+        .rk-val-cell { display: flex; align-items: center; gap: 10px; min-width: 150px; }
+        .rk-val-num {
+            font-weight: 800; color: #1a6bb0; width: 40px;
+            text-align: right; flex: none;
+        }
+        .rk-bar-track {
+            flex: 1; height: 8px; background: #e9eef5;
+            border-radius: 4px; overflow: hidden; min-width: 60px;
+        }
+        .rk-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a6bb0, #6a1b9a);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+        .rk-num-cell { font-weight: 700; color: #1a344a; text-align: right; }
+        .rk-muted { color: #5f7f9f; }
+
+        .rk-method {
+            margin-top: 1.4rem; background: #f4f8fd;
+            border: 1px solid #dce5ec; border-radius: 16px;
+            padding: 4px 22px;
+        }
+        .rk-method summary {
+            padding: 14px 0; cursor: pointer; font-weight: 700;
+            font-size: 0.85rem; color: #1a6bb0; list-style: none;
+        }
+        .rk-method summary::-webkit-details-marker { display: none; }
+        .rk-method summary::before { content: "＋ "; color: #5f7f9f; }
+        .rk-method[open] summary::before { content: "－ "; }
+        .rk-method-body {
+            padding-bottom: 16px; font-size: 0.82rem;
+            color: #5f7f9f; line-height: 1.65;
+        }
+        .rk-method-body p { margin: 0 0 8px; }
+        .rk-method-body code {
+            background: #fff; padding: 1px 6px; border-radius: 4px;
+            color: #1a6bb0; font-size: 0.78rem;
+        }
+
+        .rk-footer {
+            margin-top: 6px; padding-top: 14px; font-size: 0.75rem;
+            color: #8aa4bc; display: flex; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px; border-top: 1px solid #e9eef5;
+        }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="dashboard-card">
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                    <h2><i class="bi bi-bar-chart-fill"></i> Puntaje por actividad de empleados</h2>
-                    <div>
-                        <button class="btn-accion primary me-2" id="btnImprimirGrafico"><i class="bi bi-image me-1"></i> Imprimir Gráfico</button>
-                        <button class="btn-accion primary" id="btnImprimirTabla"><i class="bi bi-table me-1"></i> Imprimir Tabla</button>
-                        <button class="btn-accion ms-2" id="btnActualizar"><i class="bi bi-arrow-repeat me-1"></i> Actualizar</button>
-                    </div>
-                </div>
+<!-- ============================================================
+     BARRA DE PESTAÑAS
+============================================================ -->
+<div class="pv-tabs-wrap">
+    <div class="pv-tabs">
+        <button class="pv-tab active" data-view="pvPuntaje" type="button">
+            <i class="bi bi-bar-chart-fill"></i> Puntaje por actividad
+        </button>
+        <button class="pv-tab" data-view="pvRanking" type="button">
+            <i class="bi bi-trophy-fill"></i> Ranking de desempeño
+        </button>
+    </div>
+</div>
 
-                <!-- Panel de filtros -->
-                <div class="filtros-panel">
-                    <div class="filtro-group">
-                        <div class="filtro-item" style="flex: 0 0 200px;">
-                            <label>Vista</label>
-                            <div class="radio-group">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaTodos" value="todos" checked />
-                                    <label class="form-check-label" for="vistaTodos">Todos</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaIndividual" value="individual" />
-                                    <label class="form-check-label" for="vistaIndividual">Individual</label>
+<!-- ============================================================
+     VISTA 1 — PUNTAJE POR ACTIVIDAD (INTACTO)
+============================================================ -->
+<div id="pvPuntaje" class="pv-view active">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                        <h2><i class="bi bi-bar-chart-fill"></i> Puntaje por actividad de empleados</h2>
+                        <div>
+                            <button class="btn-accion primary me-2" id="btnImprimirGrafico"><i class="bi bi-image me-1"></i> Imprimir Gráfico</button>
+                            <button class="btn-accion primary" id="btnImprimirTabla"><i class="bi bi-table me-1"></i> Imprimir Tabla</button>
+                            <button class="btn-accion ms-2" id="btnActualizar"><i class="bi bi-arrow-repeat me-1"></i> Actualizar</button>
+                        </div>
+                    </div>
+
+                    <!-- Panel de filtros -->
+                    <div class="filtros-panel">
+                        <div class="filtro-group">
+                            <div class="filtro-item" style="flex: 0 0 200px;">
+                                <label>Vista</label>
+                                <div class="radio-group">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaTodos" value="todos" checked />
+                                        <label class="form-check-label" for="vistaTodos">Todos</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="vistaEmpleado" id="vistaIndividual" value="individual" />
+                                        <label class="form-check-label" for="vistaIndividual">Individual</label>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="filtro-item" style="flex: 1 0 200px;">
+                                <label for="filtroEmpleado">Empleado</label>
+                                <select id="filtroEmpleado" disabled>
+                                    <option value="">Seleccionar...</option>
+                                </select>
+                            </div>
+                            <div class="filtro-item" style="flex:0 0 auto;">
+                                <button class="btn-limpiar" id="btnLimpiarFiltros"><i class="bi bi-eraser me-1"></i>Limpiar</button>
+                            </div>
                         </div>
-                        <div class="filtro-item" style="flex: 1 0 200px;">
-                            <label for="filtroEmpleado">Empleado</label>
-                            <select id="filtroEmpleado" disabled>
-                                <option value="">Seleccionar...</option>
-                            </select>
+                    </div>
+
+                    <!-- KPIs -->
+                    <div id="kpiContainer" class="kpi-mini"></div>
+
+                    <!-- Gráfico -->
+                    <div class="chart-container">
+                        <canvas id="puntajeChart"></canvas>
+                    </div>
+
+                    <!-- Tabla -->
+                    <div id="tablaContainer">
+                        <div class="loading"><i class="bi bi-arrow-repeat"></i><br />Cargando datos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     VISTA 2 — RANKING DE DESEMPEÑO
+============================================================ -->
+<div id="pvRanking" class="pv-view">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+
+                <div class="dashboard-card">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                        <h2><i class="bi bi-trophy-fill"></i> Ranking de desempeño</h2>
+                        <div>
+                            <button class="btn-accion primary" id="btnImprimirRanking" type="button">
+                                <i class="bi bi-printer me-1"></i> Imprimir Ranking
+                            </button>
                         </div>
-                        <div class="filtro-item" style="flex:0 0 auto;">
-                            <button class="btn-limpiar" id="btnLimpiarFiltros"><i class="bi bi-eraser me-1"></i>Limpiar</button>
-                        </div>
+                    </div>
+                    <p style="color:#5f7f9f; font-size:0.85rem; margin-bottom:1rem;">
+                        Comparativa de agentes por expedientes finalizados y carga histórica, calculada en vivo desde Firestore.
+                    </p>
+                    <div class="kpi-mini" id="rkSummary"></div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="mb-3">
+                        <h2 style="font-size:1.3rem;"><i class="bi bi-check2-circle"></i> Expedientes finalizados</h2>
+                        <p style="color:#5f7f9f; font-size:0.82rem; margin-top:4px;">
+                            Cantidad de expedientes que cada agente llevó hasta el estado
+                            <code style="background:#e9f0f8; padding:1px 6px; border-radius:4px; color:#1a6bb0;">finalizada</code>.
+                            Ordenado de mayor a menor.
+                        </p>
+                    </div>
+                    <div class="rk-leader" id="rkLeaderFin"></div>
+                    <div class="table-wrap">
+                        <table class="table-modern" id="rkTableFin">
+                            <thead>
+                                <tr>
+                                    <th class="rk-sortable rk-active" data-key="puesto">Puesto</th>
+                                    <th class="rk-sortable" data-key="nombre">Agente</th>
+                                    <th class="rk-sortable" data-key="finalizadas">Finalizados <span class="arrow">▾</span></th>
+                                    <th class="rk-sortable" data-key="pctFinal">% del equipo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- KPIs -->
-                <div id="kpiContainer" class="kpi-mini"></div>
+                <div class="dashboard-card">
+                    <div class="mb-3">
+                        <h2 style="font-size:1.3rem;"><i class="bi bi-clock-history"></i> Carga histórica</h2>
+                        <p style="color:#5f7f9f; font-size:0.82rem; margin-top:4px;">
+                            Total de expedientes que pasaron alguna vez por cada agente, sin importar su estado actual.
+                            Ordenado de mayor a menor.
+                        </p>
+                    </div>
+                    <div class="rk-leader" id="rkLeaderHist"></div>
+                    <div class="table-wrap">
+                        <table class="table-modern" id="rkTableHist">
+                            <thead>
+                                <tr>
+                                    <th class="rk-sortable rk-active" data-key="totalCausas">Puesto</th>
+                                    <th class="rk-sortable" data-key="nombre">Agente</th>
+                                    <th class="rk-sortable" data-key="totalCausas">Carga histórica <span class="arrow">▾</span></th>
+                                    <th class="rk-sortable" data-key="puntosTotales">Puntos acumulados</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
 
-                <!-- Gráfico -->
-                <div class="chart-container">
-                    <canvas id="puntajeChart"></canvas>
+                    <details class="rk-method">
+                        <summary>Qué mide cada reporte</summary>
+                        <div class="rk-method-body">
+                            <p><strong>Expedientes finalizados</strong> cuenta, por agente, los expedientes atribuidos a él o ella que llegaron a estado <code>finalizada</code> o <code>en_defensor</code>. Es una medida directa de trabajo efectivamente concluido.</p>
+                            <p><strong>Carga histórica</strong> cuenta el total de expedientes que pasaron por cada agente en cualquier estado (finalizados, en trámite, devueltos), tomando el agente original o asignado. Es una medida de volumen acumulado, no de eficiencia.</p>
+                            <p>Quedan fuera de ambos reportes <span id="rkSinEmpleado">—</span> expedientes que nunca llegaron a un agente individual, y los agentes sin expedientes registrados.</p>
+                            <p>Estos datos se calculan en vivo a partir de la misma colección de Firestore que alimenta la pestaña <strong>Puntaje por actividad</strong>, por lo que ambos reportes siempre están sincronizados.</p>
+                        </div>
+                    </details>
+
+                    <div class="rk-footer">
+                        <span>Fuente: Firestore · colección <code style="background:#e9f0f8; padding:1px 6px; border-radius:4px; color:#1a6bb0;">operador</code></span>
+                        <span id="rkFootTotal">—</span>
+                    </div>
                 </div>
 
-                <!-- Tabla -->
-                <div id="tablaContainer">
-                    <div class="loading"><i class="bi bi-arrow-repeat"></i><br />Cargando datos...</div>
-                </div>
             </div>
         </div>
     </div>
@@ -422,6 +644,10 @@
             empleados: []
         };
         let chartInstance = null;
+        const rankingState = {
+            finSort: { key: 'finalizadas', dir: 'desc' },
+            histSort: { key: 'totalCausas', dir: 'desc' }
+        };
 
         // ============================================================
         //  FUNCIONES AUXILIARES
@@ -571,7 +797,7 @@
                 }
             }
 
-            const promedioHA = CONFIG.empleados.reduce((s, e) => s +
+            const promedioHA = CONFIG.empleados.reduce((s, e) =>
                 state.causas.filter(c => c.empleadoAsignado === e.id || c.empleadoOriginal === e.id)
                 .reduce((s2, c) => s2 + calcularPuntosCausa(c), 0), 0) / CONFIG.empleados.length;
             const FH = promedioHA > 0 ? HA / promedioHA : 1;
@@ -677,6 +903,7 @@
                 select.appendChild(opt);
             });
             renderDashboard();
+            renderRanking();
         }
 
         function renderDashboard() {
@@ -852,7 +1079,232 @@
         }
 
         // ============================================================
-        //  FUNCIONES DE IMPRESIÓN (CORREGIDAS)
+        //  RANKING DE DESEMPEÑO
+        // ============================================================
+        function medalSvg() {
+            return '<svg class="rk-medal" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+                   '<circle cx="17" cy="17" r="14" stroke="#6a1b9a" stroke-width="1.8"/>' +
+                   '<path d="M17 9L19 14.5L25 15L20.5 18.7L22 24.5L17 21.3L12 24.5L13.5 18.7L9 15L15 14.5L17 9Z" fill="#6a1b9a"/></svg>';
+        }
+
+        function computeRankingStats() {
+            const ACTIVE = new Set(['en_proceso', 'en_defensor', 'en_secretaria']);
+            const statsById = {};
+            CONFIG.empleados.forEach(e => {
+                statsById[e.id] = {
+                    id: e.id,
+                    nombre: e.nombre,
+                    ausente: isAusente(e.id),
+                    totalCausas: 0,
+                    finalizadas: 0,
+                    enProceso: 0,
+                    rechazadas: 0,
+                    remitidas: 0,
+                    devueltas: 0,
+                    puntosTotales: 0,
+                    puntosFinalizadas: 0
+                };
+            });
+            let sinEmpleado = 0;
+            state.causas.forEach(c => {
+                const eid = c.empleadoOriginal || c.empleadoAsignado;
+                if (!eid || !statsById[eid]) { sinEmpleado++; return; }
+                const s = statsById[eid];
+                const pts = calcularPuntosCausa(c);
+                s.totalCausas++;
+                s.puntosTotales += pts;
+                if (c.estado === 'finalizada' || c.estado === 'en_defensor') {
+                    s.finalizadas++;
+                    s.puntosFinalizadas += pts;
+                } else if (ACTIVE.has(c.estado)) {
+                    s.enProceso++;
+                } else if (c.estado === 'rechazado') {
+                    s.rechazadas++;
+                } else if (c.estado === 'remitido') {
+                    s.remitidas++;
+                } else if (c.estado === 'devuelto_siged') {
+                    s.devueltas++;
+                }
+            });
+            return { statsById, sinEmpleado };
+        }
+
+        function sortRankingRows(rows, sortState) {
+            const { key, dir } = sortState;
+            const d = dir === 'asc' ? 1 : -1;
+            return [...rows].sort((a, b) => {
+                let av = a[key], bv = b[key];
+                if (typeof av === 'string') return av.localeCompare(bv) * d;
+                return (av - bv) * d;
+            });
+        }
+
+        function renderLeaderRanking(elId, entry, valueLabel, valueText) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (!entry) {
+                el.innerHTML = '<div class="rk-empty">No hay agentes con expedientes para mostrar.</div>';
+                return;
+            }
+            el.innerHTML =
+                medalSvg() +
+                '<div class="rk-body">' +
+                    '<div class="rk-tag">Primer puesto</div>' +
+                    '<div class="rk-name">' + entry.nombre + '</div>' +
+                    '<div class="rk-status ' + (entry.ausente ? 'ausente' : '') + '"><span class="rk-dot-live"></span>' +
+                    (entry.ausente ? 'Actualmente ausente' : 'En actividad') + '</div>' +
+                '</div>' +
+                '<div class="rk-value-block">' +
+                    '<div class="rk-value">' + valueText + '</div>' +
+                    '<div class="rk-value-label">' + valueLabel + '</div>' +
+                '</div>';
+        }
+
+        function updateRankingArrows(tableSel, sortState) {
+            document.querySelectorAll(tableSel + ' thead th').forEach(th => {
+                const active = th.dataset.key === sortState.key;
+                th.classList.toggle('rk-active', active);
+                const arrow = th.querySelector('.arrow');
+                if (arrow) arrow.remove();
+                if (active) {
+                    th.insertAdjacentHTML('beforeend', ' <span class="arrow">' + (sortState.dir === 'desc' ? '▾' : '▴') + '</span>');
+                }
+            });
+        }
+
+        function renderRankingFinalizados(pool, teamFinalizados) {
+            const ranked = [...pool].sort((a, b) => b.finalizadas - a.finalizadas)
+                .map((e, i) => ({ ...e, puesto: i + 1, pctFinal: teamFinalizados ? (e.finalizadas / teamFinalizados) * 100 : 0 }));
+
+            renderLeaderRanking('rkLeaderFin', ranked[0], 'expedientes finalizados', ranked[0] ? ranked[0].finalizadas : 0);
+
+            const tbody = document.querySelector('#rkTableFin tbody');
+            if (!tbody) return;
+
+            const rows = sortRankingRows(ranked, rankingState.finSort);
+            const max = Math.max(...ranked.map(e => e.finalizadas), 1);
+            tbody.innerHTML = rows.length ? rows.map(e =>
+                '<tr>' +
+                    '<td class="col-puesto">' + e.puesto + '</td>' +
+                    '<td class="col-emp"><div class="nm">' + e.nombre + '</div><div class="st ' + (e.ausente ? 'ausente' : '') + '"><span class="rk-dot ' + (e.ausente ? 'off' : '') + '"></span>' + (e.ausente ? 'Ausente' : 'Activo') + '</div></td>' +
+                    '<td><div class="rk-val-cell"><span class="rk-val-num">' + e.finalizadas + '</span><div class="rk-bar-track"><div class="rk-bar-fill" style="width:' + ((e.finalizadas / max) * 100) + '%"></div></div></div></td>' +
+                    '<td class="rk-num-cell rk-muted">' + e.pctFinal.toFixed(1) + '%</td>' +
+                '</tr>'
+            ).join('') : '<tr><td colspan="4" style="text-align:center; padding:24px; color:#5f7f9f;">Sin datos</td></tr>';
+
+            updateRankingArrows('#rkTableFin', rankingState.finSort);
+        }
+
+        function renderRankingHistorico(pool) {
+            const ranked = [...pool].sort((a, b) => b.totalCausas - a.totalCausas)
+                .map((e, i) => ({ ...e, puesto: i + 1 }));
+
+            renderLeaderRanking('rkLeaderHist', ranked[0], 'expedientes históricos', ranked[0] ? ranked[0].totalCausas : 0);
+
+            const tbody = document.querySelector('#rkTableHist tbody');
+            if (!tbody) return;
+
+            const rows = sortRankingRows(ranked, rankingState.histSort);
+            const max = Math.max(...ranked.map(e => e.totalCausas), 1);
+            tbody.innerHTML = rows.length ? rows.map(e =>
+                '<tr>' +
+                    '<td class="col-puesto">' + e.puesto + '</td>' +
+                    '<td class="col-emp"><div class="nm">' + e.nombre + '</div><div class="st ' + (e.ausente ? 'ausente' : '') + '"><span class="rk-dot ' + (e.ausente ? 'off' : '') + '"></span>' + (e.ausente ? 'Ausente' : 'Activo') + '</div></td>' +
+                    '<td><div class="rk-val-cell"><span class="rk-val-num">' + e.totalCausas + '</span><div class="rk-bar-track"><div class="rk-bar-fill" style="width:' + ((e.totalCausas / max) * 100) + '%"></div></div></div></td>' +
+                    '<td class="rk-num-cell rk-muted">' + e.puntosTotales.toFixed(1) + '</td>' +
+                '</tr>'
+            ).join('') : '<tr><td colspan="4" style="text-align:center; padding:24px; color:#5f7f9f;">Sin datos</td></tr>';
+
+            updateRankingArrows('#rkTableHist', rankingState.histSort);
+        }
+
+        function renderRanking() {
+            try {
+                const { statsById, sinEmpleado } = computeRankingStats();
+                const all = Object.values(statsById);
+                const pool = all.filter(e => e.totalCausas > 0);
+                const teamFinalizados = pool.reduce((s, e) => s + e.finalizadas, 0);
+                const teamHistorico = pool.reduce((s, e) => s + e.totalCausas, 0);
+
+                const rkSummary = document.getElementById('rkSummary');
+                if (rkSummary) {
+                    rkSummary.innerHTML = `
+                        <div class="kpi-mini-item">
+                            <div class="kpi-label">Agentes con causas</div>
+                            <div class="kpi-value">${pool.length}</div>
+                        </div>
+                        <div class="kpi-mini-item">
+                            <div class="kpi-label">Finalizados del equipo</div>
+                            <div class="kpi-value" style="color: #2e7d32;">${teamFinalizados}</div>
+                        </div>
+                        <div class="kpi-mini-item">
+                            <div class="kpi-label">Carga histórica del equipo</div>
+                            <div class="kpi-value">${teamHistorico}</div>
+                        </div>
+                        <div class="kpi-mini-item">
+                            <div class="kpi-label">Promedio finalizados / agente</div>
+                            <div class="kpi-value" style="color: #4a1470;">${pool.length ? (teamFinalizados / pool.length).toFixed(1) : '0'}</div>
+                        </div>
+                    `;
+                }
+
+                const elSin = document.getElementById('rkSinEmpleado');
+                if (elSin) elSin.textContent = sinEmpleado;
+
+                const elFoot = document.getElementById('rkFootTotal');
+                if (elFoot) elFoot.textContent =
+                    (teamHistorico + sinEmpleado) + ' expedientes en total · ' + sinEmpleado + ' sin agente individual asignado';
+
+                renderRankingFinalizados(pool, teamFinalizados);
+                renderRankingHistorico(pool);
+            } catch (err) {
+                console.error('Error al renderizar ranking:', err);
+            }
+        }
+
+        // Ordenamiento de tablas del ranking
+        document.querySelectorAll('#rkTableFin thead th').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.key;
+                if (rankingState.finSort.key === key) rankingState.finSort.dir = rankingState.finSort.dir === 'desc' ? 'asc' : 'desc';
+                else { rankingState.finSort.key = key; rankingState.finSort.dir = key === 'nombre' ? 'asc' : 'desc'; }
+                renderRanking();
+            });
+        });
+
+        document.querySelectorAll('#rkTableHist thead th').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.key;
+                if (rankingState.histSort.key === key) rankingState.histSort.dir = rankingState.histSort.dir === 'desc' ? 'asc' : 'desc';
+                else { rankingState.histSort.key = key; rankingState.histSort.dir = key === 'nombre' ? 'asc' : 'desc'; }
+                renderRanking();
+            });
+        });
+
+        // ============================================================
+        //  TABS — CAMBIO DE VISTA
+        // ============================================================
+        document.querySelectorAll('.pv-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.dataset.view;
+                if (!targetId) return;
+
+                document.querySelectorAll('.pv-tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.pv-view').forEach(v => v.classList.remove('active'));
+
+                this.classList.add('active');
+                const target = document.getElementById(targetId);
+                if (target) target.classList.add('active');
+
+                // Si volvemos a la vista de puntaje, redimensionamos el gráfico
+                if (targetId === 'pvPuntaje' && chartInstance) {
+                    setTimeout(() => { try { chartInstance.resize(); } catch (e) {} }, 60);
+                }
+            });
+        });
+
+        // ============================================================
+        //  FUNCIONES DE IMPRESIÓN
         // ============================================================
         function obtenerFechaHora() {
             const now = new Date();
@@ -921,7 +1373,6 @@
                 return;
             }
             const clone = tablaOriginal.cloneNode(true);
-            // Limpiar estilos visuales que puedan afectar la impresión
             clone.querySelectorAll('tr').forEach(row => {
                 row.classList.remove('empleado-no-seleccionado', 'empleado-ausente');
                 row.style.opacity = '1';
@@ -993,6 +1444,97 @@
             win.focus();
         }
 
+        function imprimirRankingDirecto() {
+            const resumen = document.getElementById('rkSummary');
+            const tablaFin = document.querySelector('#rkTableFin');
+            const tablaHist = document.querySelector('#rkTableHist');
+            const leaderFin = document.getElementById('rkLeaderFin');
+            const leaderHist = document.getElementById('rkLeaderHist');
+            if (!tablaFin || !tablaHist) {
+                alert('No hay datos de ranking para imprimir');
+                return;
+            }
+
+            const cloneNode = (node) => {
+                if (!node) return '';
+                const clone = node.cloneNode(true);
+                clone.querySelectorAll('.arrow').forEach(a => a.remove());
+                return clone.outerHTML;
+            };
+
+            const { fecha, hora } = obtenerFechaHora();
+            const win = window.open('', '_blank');
+            if (!win) {
+                alert('Por favor, permita ventanas emergentes para imprimir');
+                return;
+            }
+            win.document.write(`
+                <html>
+                <head>
+                    <title>Ranking de Desempeño</title>
+                    <style>
+                        body { font-family: 'Segoe UI', sans-serif; padding: 24px; color: #1a344a; }
+                        h2 { margin: 26px 0 10px 0; color: #0a2a44; font-size: 1.2rem; }
+                        h2:first-of-type { margin-top: 0; }
+                        .info { font-size: 0.9rem; color: #5f7f9f; margin-bottom: 10px; }
+                        .kpi-mini { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 6px; }
+                        .kpi-mini-item { border: 1px solid #dce5ec; border-radius: 8px; padding: 10px 16px; min-width: 150px; }
+                        .kpi-mini-item .kpi-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #5f7f9f; letter-spacing: 0.05em; }
+                        .kpi-mini-item .kpi-value { font-size: 1.3rem; font-weight: 700; color: #0a2a44; margin-top: 2px; }
+                        .rk-leader { border: 1px solid #6a1b9a; border-radius: 10px; padding: 12px 16px; margin: 10px 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+                        .rk-medal { display: none; }
+                        .rk-tag { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #6a1b9a; }
+                        .rk-name { font-size: 1rem; font-weight: 700; color: #0a2a44; }
+                        .rk-status { font-size: 0.75rem; color: #5f7f9f; }
+                        .rk-status.ausente { color: #b71c1c; }
+                        .rk-value { font-size: 1.4rem; font-weight: 700; color: #6a1b9a; text-align: right; }
+                        .rk-value-label { font-size: 0.7rem; color: #5f7f9f; text-align: right; }
+                        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 6px; }
+                        th, td { border: 1px solid #dce5ec; padding: 7px 10px; text-align: left; }
+                        th { background: #e9f0f8; font-weight: 700; color: #1a3a5a; }
+                        .rk-val-cell { display: flex; align-items: center; gap: 8px; }
+                        .rk-bar-track { flex: 1; height: 6px; background: #e9eef5; border-radius: 4px; overflow: hidden; min-width: 50px; }
+                        .rk-bar-fill { height: 100%; background: #1a6bb0; }
+                        .rk-val-num { font-weight: 700; color: #1a6bb0; min-width: 26px; text-align: right; }
+                        .rk-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #1b5e20; margin-right: 4px; }
+                        .rk-dot.off { background: #b71c1c; }
+                        .rk-muted { color: #5f7f9f; }
+                        .botones { margin-top: 20px; display: flex; gap: 15px; }
+                        .btn { padding: 10px 30px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+                        .btn-primary { background: #1a6bb0; color: #fff; }
+                        .btn-primary:hover { background: #0b4b7a; }
+                        .btn-secondary { background: #e9eef5; color: #1a3a5a; }
+                        .btn-secondary:hover { background: #d2e0ed; }
+                        @media print {
+                            .botones { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h2>Ranking de Desempeño</h2>
+                    <div class="info">Fecha de impresión: ${fecha}  ·  Hora: ${hora}</div>
+                    ${resumen ? resumen.outerHTML : ''}
+
+                    <h2>Expedientes finalizados</h2>
+                    ${cloneNode(leaderFin)}
+                    ${cloneNode(tablaFin)}
+
+                    <h2>Carga histórica</h2>
+                    ${cloneNode(leaderHist)}
+                    ${cloneNode(tablaHist)}
+
+                    <div class="botones">
+                        <button class="btn btn-primary" onclick="window.print();">Imprimir</button>
+                        <button class="btn btn-secondary" onclick="window.close();">Cerrar</button>
+                    </div>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            win.focus();
+        }
+
         // ============================================================
         //  TOAST
         // ============================================================
@@ -1033,6 +1575,7 @@
         // IMPRESIÓN DIRECTA SIN MODALES
         document.getElementById('btnImprimirGrafico').addEventListener('click', imprimirGraficoDirecto);
         document.getElementById('btnImprimirTabla').addEventListener('click', imprimirTablaDirecta);
+        document.getElementById('btnImprimirRanking').addEventListener('click', imprimirRankingDirecto);
 
         // ============================================================
         //  INICIO
