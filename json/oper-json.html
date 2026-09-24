@@ -314,7 +314,7 @@
             background: #ffebee;
             border-color: #ef9a9a;
         }
-        /* Botones modo JSON/Firestore (específicos de oper-json) */
+        /* Botones modo JSON/Firestore */
         .btn-header.modo-json {
             background: #6c757d;
             color: #fff;
@@ -1560,8 +1560,9 @@
                     'Boillat Enrique': '111',
                     'Cardozo Raquel': '222',
                     'Cedron Noelia': '444',
-                    'Pablos Patricia': '333',
-                    'Gonzalez Misael': '606'
+                    'Fioravante Rómulo': '505',
+                    'Gonzalez Misael': '606',
+                    'Pablos Patricia': '333'
                 },
                 nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
                 nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
@@ -1584,7 +1585,7 @@
                     { id: 'sec2', nombre: 'Riveros Patricia' },
                     { id: 'sec3', nombre: 'Magnani Enzo' }
                 ],
-                operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Pablos Patricia', 'Gonzalez Misael'],
+                operadores: ['Boillat Enrique', 'Cardozo Raquel', 'Cedron Noelia', 'Fioravante Rómulo', 'Gonzalez Misael', 'Pablos Patricia'],
                 ordenSecretarios: ['sec1', 'sec3', 'sec2']
             };
 
@@ -1610,6 +1611,7 @@
             let filtroTexto = '';
             let filtroTextoInput = '';
             let filtroFecha = '';
+            let filtroSecretario = '';
             let db = null;
             let unsubscribeCausas = null;
 
@@ -1777,7 +1779,9 @@
                             messagingSenderId: "785250989941",
                             appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
                         };
-                        firebase.initializeApp(firebaseConfig);
+                        if (!firebase.apps.length) {
+                            firebase.initializeApp(firebaseConfig);
+                        }
                         db = firebase.firestore();
                         showToast('Firebase activado correctamente', 'success');
                         return db;
@@ -2087,10 +2091,10 @@
             }
 
             // ============================================================
-            //  REGISTRO DE CAUSA (con fecha opcional)
+            //  REGISTRO DE CAUSA
             // ============================================================
             async function registrarCausa(num, tipo, obs, nivel, op, fuenteSiged, fuenteZimbra, accion, motivo, dependencia,
-                dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, fechaPaseCustom) {
+                modoIntervencion, fuenteDeut, fechaPaseCustom) {
                 if (!num.trim()) { showToast('Ingrese número de expediente', 'warning'); return false; }
                 const esGesell = tipo && tipo.toLowerCase().includes('cámara gesell');
 
@@ -2131,9 +2135,6 @@
                 const nueva = {
                     id: generateId(),
                     numero: num.trim().toUpperCase(),
-                    dni: dni.trim() || '',
-                    datosParte: datosParte || '',
-                    asisteDefensoria: asisteDefensoria || '',
                     tipo: tipo || 'Otro',
                     nivelOperador: parseInt(nivel) || 2,
                     nivelSecretario: null,
@@ -2250,7 +2251,7 @@
                     await actualizarCausa(id, updates);
                     showToast(`🔄 ${c.numero} actualizado: ${accion}`);
                 } catch (error) {
-                    showToast('Error al actualizar en Firestore', 'danger');
+                    showToast('Error al actualizar', 'danger');
                 }
             }
 
@@ -2275,10 +2276,7 @@
                             c.observaciones,
                             c.motivoAccion,
                             c.dependenciaRemision,
-                            c.datosParte,
-                            c.asisteDefensoria,
-                            c.modoIntervencion,
-                            c.dni
+                            c.modoIntervencion
                         ];
                         let historialText = '';
                         if (c.historial && c.historial.length) {
@@ -2313,6 +2311,10 @@
                             return ymd === fechaBuscada;
                         });
                     });
+                }
+
+                if (filtroSecretario) {
+                    causas = causas.filter(c => c.secretarioId === filtroSecretario);
                 }
 
                 if (filtroMes || filtroAnio) {
@@ -2361,10 +2363,7 @@
                             c.observaciones,
                             c.motivoAccion,
                             c.dependenciaRemision,
-                            c.datosParte,
-                            c.asisteDefensoria,
-                            c.modoIntervencion,
-                            c.dni
+                            c.modoIntervencion
                         ];
                         let historialText = '';
                         if (c.historial && c.historial.length) {
@@ -2398,6 +2397,9 @@
                             return ymd === fechaBuscada;
                         });
                     });
+                }
+                if (filtroSecretario) {
+                    rechazados = rechazados.filter(c => c.secretarioId === filtroSecretario);
                 }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
@@ -2438,10 +2440,7 @@
                             c.observaciones,
                             c.motivoAccion,
                             c.dependenciaRemision,
-                            c.datosParte,
-                            c.asisteDefensoria,
-                            c.modoIntervencion,
-                            c.dni
+                            c.modoIntervencion
                         ];
                         let historialText = '';
                         if (c.historial && c.historial.length) {
@@ -2476,6 +2475,9 @@
                         });
                     });
                 }
+                if (filtroSecretario) {
+                    rechazados = rechazados.filter(c => c.secretarioId === filtroSecretario);
+                }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -2505,6 +2507,10 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
                 if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
                 if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                if (filtroSecretario) {
+                    const sec = CONFIG.secretarios.find(s => s.id === filtroSecretario);
+                    filtrosTexto.push(`Secretario: ${sec ? sec.nombre : filtroSecretario}`);
+                }
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
@@ -2547,7 +2553,7 @@
                             <thead>
                                 <tr>
                                     <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                    <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    <th>Estado</th><th>Secretario</th><th>Fecha Pase</th><th>Motivo</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2563,6 +2569,7 @@
                     const esDevuelto = c.estado === 'devuelto_siged';
                     const claseFila = esDevuelto ? 'tr-devuelto' : '';
                     const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                    const secretarioNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
                     html += `
                         <tr class="${claseFila}">
                             <td><strong class="${claseExpediente}">${c.numero}</strong></td>
@@ -2570,6 +2577,7 @@
                             <td>N${c.nivelOperador}</td>
                             <td>${fuenteHtml}</td>
                             <td>${getEstadoTexto(c.estado)}</td>
+                            <td style="font-size:0.6rem;">${secretarioNombre}</td>
                             <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                             <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
                         </tr>
@@ -2599,6 +2607,10 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
                 if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
                 if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                if (filtroSecretario) {
+                    const sec = CONFIG.secretarios.find(s => s.id === filtroSecretario);
+                    filtrosTexto.push(`Secretario: ${sec ? sec.nombre : filtroSecretario}`);
+                }
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
@@ -2650,15 +2662,12 @@
                 }
 
                 let datosPersonaHtml = '';
-                if (c.dni || c.datosParte || c.asisteDefensoria || c.modoIntervencion) {
+                if (c.modoIntervencion) {
                     datosPersonaHtml = `
                         <div class="mb-3 p-3 bg-light rounded-4 border">
-                            <h6 class="fw-600"><i class="bi bi-person-lines-fill me-1"></i> Datos de la persona</h6>
+                            <h6 class="fw-600"><i class="bi bi-diagram-3 me-1"></i> Modo de intervención</h6>
                             <div class="row g-2">
-                                ${c.dni ? `<div class="col-sm-6"><strong>DNI:</strong> ${c.dni}</div>` : ''}
-                                ${c.datosParte ? `<div class="col-sm-6"><strong>Parte:</strong> ${c.datosParte}</div>` : ''}
-                                ${c.asisteDefensoria ? `<div class="col-sm-6"><strong>Asiste a Defensoría:</strong> ${c.asisteDefensoria}</div>` : ''}
-                                ${c.modoIntervencion ? `<div class="col-sm-6"><strong>Modo de intervención:</strong> ${c.modoIntervencion}</div>` : ''}
+                                <div class="col-sm-6"><strong>Modo:</strong> ${c.modoIntervencion}</div>
                             </div>
                         </div>
                     `;
@@ -2737,7 +2746,7 @@
             }
 
             // ============================================================
-            //  ACTUALIZAR KPIs (estilo tira compacta, idéntico a operador)
+            //  ACTUALIZAR KPIs (tira compacta, idéntico a operador)
             // ============================================================
             function actualizarKPIs() {
                 const container = document.getElementById('kpiPanel');
@@ -2792,7 +2801,7 @@
             }
 
             // ============================================================
-            //  CREAR FORMULARIO (con todos los campos de oper-json)
+            //  CREAR FORMULARIO (idéntico a operador)
             // ============================================================
             function createFormulario() {
                 if (formularioInicializado) return;
@@ -2868,28 +2877,6 @@
                     <form id="formIngreso" class="form-modern">
                         <div class="mb-3"><label class="form-label">Operador *</label><select id="inpOperador" class="form-select" disabled>${operadorOptions}</select></div>
                         <div class="mb-3"><label class="form-label">N° Expediente *</label><input type="text" id="inpExpediente" class="form-control" required autocomplete="off" /></div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Datos de la Parte/Cliente</label>
-                            <input type="text" id="inpDatosParte" class="form-control" placeholder="Nombre y apellido de la parte" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">DNI</label>
-                            <input type="text" id="inpDni" class="form-control" autocomplete="off"
-                                   placeholder="Ingrese el DNI (opcional)" maxlength="8"
-                                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
-                            <small class="text-muted">(colocar en caso de figurar en el SIGED el DNI de la parte. En causas MPC se omite)</small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Asiste a la Defensoría</label>
-                            <select id="inpAsisteDefensoria" class="form-select">
-                                <option value="">Seleccione…</option>
-                                <option value="Por citación">Por citación</option>
-                                <option value="Sin citación">Sin citación</option>
-                            </select>
-                        </div>
 
                         <div class="row g-3">
                             <div class="col-md-6"><label class="form-label">Tipo *</label><select id="inpTipo" class="form-select" required><option value="">Seleccione…</option>${tipoOptions}</select></div>
@@ -2973,22 +2960,15 @@
                     const accion = document.getElementById('inpAccion').value;
                     const motivo = document.getElementById('inpMotivo').value.trim();
                     const dependencia = document.getElementById('inpDependencia').value.trim();
-                    const dni = document.getElementById('inpDni').value.trim();
                     const modoIntervencion = document.getElementById('inpModoIntervencion').value;
-                    const datosParte = document.getElementById('inpDatosParte').value.trim();
-                    const asisteDefensoria = document.getElementById('inpAsisteDefensoria').value;
 
-                    if (dni && !/^\d{7,8}$/.test(dni)) {
-                        showToast('El DNI debe tener 7 u 8 dígitos (si se ingresa)', 'warning');
-                        return;
-                    }
                     if (accion !== 'asignar') {
                         if (!motivo) { showToast('Debe ingresar un motivo para la acción', 'warning'); return; }
                         if (accion === 'remitir' && !dependencia) { showToast('Debe especificar la dependencia destino',
                                 'warning'); return; }
                     }
                     const ok = await registrarCausa(num, tipo, obs, nivel, operador, fuenteSiged, fuenteZimbra, accion,
-                        motivo, dependencia, dni, modoIntervencion, datosParte, asisteDefensoria, fuenteDeut, null);
+                        motivo, dependencia, modoIntervencion, fuenteDeut, null);
                     if (ok) {
                         document.getElementById('inpExpediente').value = '';
                         document.getElementById('inpTipo').value = '';
@@ -3001,10 +2981,7 @@
                         document.getElementById('camposAccion').style.display = 'none';
                         document.getElementById('inpMotivo').value = '';
                         document.getElementById('inpDependencia').value = '';
-                        document.getElementById('inpDni').value = '';
                         document.getElementById('inpModoIntervencion').value = '';
-                        document.getElementById('inpDatosParte').value = '';
-                        document.getElementById('inpAsisteDefensoria').value = '';
                         renderTabla();
                     }
                 });
@@ -3038,24 +3015,15 @@
                     }
                 });
 
-                // Funciones para autocompletar desde SIGED
                 window.autocompletarFormularioDesdeSiged = function(entry) {
                     const inpExpediente = document.getElementById('inpExpediente');
                     const inpObs = document.getElementById('inpObs');
                     const fuenteSiged = document.getElementById('fuenteSiged');
-                    const inpDatosParte = document.getElementById('inpDatosParte');
-                    const inpDni = document.getElementById('inpDni');
-                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
                     const inpTipo = document.getElementById('inpTipo');
-                    const inpNivel = document.getElementById('inpNivel');
-                    const inpModo = document.getElementById('inpModoIntervencion');
 
                     if (inpExpediente) inpExpediente.value = entry.numero;
                     if (inpObs) inpObs.value = `Ingreso desde SIGED - Origen: ${entry.origen || entry.juzgado || ''}`;
                     if (fuenteSiged) fuenteSiged.checked = true;
-                    if (inpDatosParte) inpDatosParte.value = '';
-                    if (inpDni) inpDni.value = '';
-                    if (inpAsiste) inpAsiste.value = '';
                     if (inpTipo) inpTipo.value = 'Otro';
                 };
 
@@ -3063,9 +3031,6 @@
                     const inpExpediente = document.getElementById('inpExpediente');
                     const inpObs = document.getElementById('inpObs');
                     const fuenteSiged = document.getElementById('fuenteSiged');
-                    const inpDatosParte = document.getElementById('inpDatosParte');
-                    const inpDni = document.getElementById('inpDni');
-                    const inpAsiste = document.getElementById('inpAsisteDefensoria');
                     const inpTipo = document.getElementById('inpTipo');
                     const inpNivel = document.getElementById('inpNivel');
                     const inpModo = document.getElementById('inpModoIntervencion');
@@ -3076,9 +3041,6 @@
                     if (inpExpediente) inpExpediente.value = '';
                     if (inpObs) inpObs.value = '';
                     if (fuenteSiged) fuenteSiged.checked = false;
-                    if (inpDatosParte) inpDatosParte.value = '';
-                    if (inpDni) inpDni.value = '';
-                    if (inpAsiste) inpAsiste.value = '';
                     if (inpTipo) inpTipo.value = '';
                     if (inpNivel) inpNivel.value = '2';
                     if (inpModo) inpModo.value = '';
@@ -3387,14 +3349,14 @@
             });
 
             // ============================================================
-            //  RENDER TABLA (con filtros avanzados)
+            //  RENDER TABLA (con filtros avanzados, columnas de operador)
             // ============================================================
             function renderTabla() {
                 const container = document.getElementById('tablaContainer');
                 let causasFiltradas = obtenerCausasFiltradas();
 
                 let datosMostrar = causasFiltradas;
-                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha) {
+                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha && !filtroSecretario) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
 
@@ -3421,10 +3383,7 @@
                             c.observaciones,
                             c.motivoAccion,
                             c.dependenciaRemision,
-                            c.datosParte,
-                            c.asisteDefensoria,
-                            c.modoIntervencion,
-                            c.dni
+                            c.modoIntervencion
                         ];
                         let historialText = '';
                         if (c.historial && c.historial.length) {
@@ -3459,6 +3418,9 @@
                         });
                     });
                 }
+                if (filtroSecretario) {
+                    causasRechazadas = causasRechazadas.filter(c => c.secretarioId === filtroSecretario);
+                }
                 if (filtroMes || filtroAnio) {
                     causasRechazadas = causasRechazadas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -3489,8 +3451,11 @@
                     mesOptions.push(`<option value="${m}" ${filtroMes == m ? 'selected' : ''}>${mesesNombres[m-1]}</option>`);
                 }
 
+                const secretarioOptions = CONFIG.secretarios.map(s =>
+                    `<option value="${s.id}" ${filtroSecretario === s.id ? 'selected' : ''}>${s.nombre}</option>`
+                ).join('');
+
                 let html = `
-                    <!-- FILTROS -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
                         <div class="d-flex gap-2">
@@ -3507,12 +3472,17 @@
                             <option value="">Año</option>
                             ${añoOptions}
                         </select>
+                        <label>Secretario:</label>
+                        <select id="filtroSecretarioSelect">
+                            <option value="">Todos</option>
+                            ${secretarioOptions}
+                        </select>
                         <label>Texto:</label>
                         <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTextoInput}" />
                         <label>Fecha exacta:</label>
                         <input type="date" id="filtroFechaExacta" value="${filtroFecha}" />
                         <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
-                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha || filtroSecretario) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
                     </div>
                 `;
 
@@ -3523,7 +3493,8 @@
                                 <thead>
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th>Estado</th><th>Secretario</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th>Observaciones</th>
                                         <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
@@ -3536,6 +3507,7 @@
                                         const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
                                             `<span class="badge-fuente ${fuentes.length > 1 ? 'ambas' : ''}">${fuentes.join('/')}</span>`;
                                         const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        const secretarioNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
                                         return `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
@@ -3543,8 +3515,10 @@
                                             <td>N${c.nivelOperador}</td>
                                             <td>${fuenteHtml}</td>
                                             <td><strong>${getEstadoTexto(c.estado)}</strong></td>
+                                            <td style="font-size:0.7rem;">${secretarioNombre}</td>
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${c.observaciones || '-'}</td>
                                             <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i> Ver</button>
                                             </td>
@@ -3631,6 +3605,7 @@
 
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
+                const secretarioSelect = document.getElementById('filtroSecretarioSelect');
                 const textoInput = document.getElementById('filtroTextoGeneral');
                 const fechaInput = document.getElementById('filtroFechaExacta');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
@@ -3640,6 +3615,10 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
                 if (anioSelect) { anioSelect.addEventListener('change', function() { filtroAnio = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        renderTabla(); }); }
+                if (secretarioSelect) { secretarioSelect.addEventListener('change', function() { filtroSecretario = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
@@ -3675,10 +3654,12 @@
                         filtroTexto = '';
                         filtroTextoInput = '';
                         filtroFecha = '';
+                        filtroSecretario = '';
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         if (mesSelect) mesSelect.value = '';
                         if (anioSelect) anioSelect.value = '';
+                        if (secretarioSelect) secretarioSelect.value = '';
                         if (textoInput) textoInput.value = '';
                         if (fechaInput) fechaInput.value = '';
                         renderTabla();
@@ -3738,10 +3719,11 @@
                 document.getElementById('appWrapper').classList.add('visible');
                 document.getElementById('operadorNombre').textContent = operador;
 
+                // Leer modo preferido guardado (por defecto JSON)
                 const modoGuardado = localStorage.getItem('modo_preferido');
                 if (modoGuardado === 'firestore') {
                     USE_FIRESTORE = true;
-                } else if (modoGuardado === 'json') {
+                } else {
                     USE_FIRESTORE = false;
                 }
 
@@ -3779,6 +3761,7 @@
                 filtroTexto = '';
                 filtroTextoInput = '';
                 filtroFecha = '';
+                filtroSecretario = '';
                 state.causas = [];
                 state.ausencias = [];
                 state.lastIndex = 0;
@@ -3825,6 +3808,7 @@
 
                 document.getElementById('btnActualizarDatos').addEventListener('click', recargarDatos);
 
+                // ===== Botones de modo (JSON / Firestore) =====
                 document.getElementById('btnModoFire').addEventListener('click', function() {
                     if (USE_FIRESTORE) {
                         showToast('Ya estás en modo Firestore', 'info');
