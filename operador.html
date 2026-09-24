@@ -1605,6 +1605,7 @@
             let filtroTexto = '';
             let filtroTextoInput = '';
             let filtroFecha = '';
+            let filtroSecretario = '';
 
             // ============================================================
             //  UTILS
@@ -2030,10 +2031,13 @@
                     fechaFinalizacion: c.fechaFinalizacion || null,
                     empleadoId: c.empleadoId || null,
                     fechaAsignacion: c.fechaAsignacion || null,
-                    fechaLimite: c.fechaLimite || null,
+                    fechalimite: c.fechaLimite || null,
                     fechaResolucionEmpleado: c.fechaResolucionEmpleado || null,
                     historial: c.historial
                 };
+                // Nota: se mantiene la clave original "fechaLimite" para compatibilidad.
+                updates.fechaLimite = c.fechaLimite || null;
+                delete updates.fechalimite;
                 try {
                     await updateCausa(id, updates);
                     showToast(`🔄 ${c.numero} actualizado: ${accion}`);
@@ -2100,6 +2104,11 @@
                             return ymd === fechaBuscada;
                         });
                     });
+                }
+
+                // ✅ NUEVO: filtro por secretario asignado
+                if (filtroSecretario) {
+                    causas = causas.filter(c => c.secretarioId === filtroSecretario);
                 }
 
                 if (filtroMes || filtroAnio) {
@@ -2183,6 +2192,9 @@
                         });
                     });
                 }
+                if (filtroSecretario) {
+                    rechazados = rechazados.filter(c => c.secretarioId === filtroSecretario);
+                }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -2257,6 +2269,9 @@
                         });
                     });
                 }
+                if (filtroSecretario) {
+                    rechazados = rechazados.filter(c => c.secretarioId === filtroSecretario);
+                }
                 if (filtroMes || filtroAnio) {
                     rechazados = rechazados.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -2286,6 +2301,10 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
                 if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
                 if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                if (filtroSecretario) {
+                    const sec = CONFIG.secretarios.find(s => s.id === filtroSecretario);
+                    filtrosTexto.push(`Secretario: ${sec ? sec.nombre : filtroSecretario}`);
+                }
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
@@ -2328,7 +2347,7 @@
                             <thead>
                                 <tr>
                                     <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                    <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                    <th>Estado</th><th>Secretario</th><th>Fecha Pase</th><th>Motivo</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2344,6 +2363,7 @@
                     const esDevuelto = c.estado === 'devuelto_siged';
                     const claseFila = esDevuelto ? 'tr-devuelto' : '';
                     const claseExpediente = esDevuelto ? 'expediente-devuelto' : '';
+                    const secretarioNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
                     html += `
                         <tr class="${claseFila}">
                             <td><strong class="${claseExpediente}">${c.numero}</strong></td>
@@ -2351,6 +2371,7 @@
                             <td>N${c.nivelOperador}</td>
                             <td>${fuenteHtml}</td>
                             <td>${getEstadoTexto(c.estado)}</td>
+                            <td style="font-size:0.6rem;">${secretarioNombre}</td>
                             <td style="font-size:0.6rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                             <td style="font-size:0.6rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
                         </tr>
@@ -2380,6 +2401,10 @@
                 if (searchTerm) filtrosTexto.push(`Búsqueda por expediente: "${searchTerm}"`);
                 if (filtroTexto) filtrosTexto.push(`Texto libre: "${filtroTexto}"`);
                 if (filtroFecha) filtrosTexto.push(`Fecha exacta: ${filtroFecha}`);
+                if (filtroSecretario) {
+                    const sec = CONFIG.secretarios.find(s => s.id === filtroSecretario);
+                    filtrosTexto.push(`Secretario: ${sec ? sec.nombre : filtroSecretario}`);
+                }
                 const filtrosStr = filtrosTexto.length ? ' · ' + filtrosTexto.join(' · ') : ' (sin filtros)';
 
                 let html = `
@@ -2842,7 +2867,7 @@
                 let causasFiltradas = obtenerCausasFiltradas();
 
                 let datosMostrar = causasFiltradas;
-                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha) {
+                if (!filtroMes && !filtroAnio && !filtroTexto && !filtroFecha && !filtroSecretario) {
                     datosMostrar = datosMostrar.slice(0, 50);
                 }
 
@@ -2904,6 +2929,9 @@
                         });
                     });
                 }
+                if (filtroSecretario) {
+                    causasRechazadas = causasRechazadas.filter(c => c.secretarioId === filtroSecretario);
+                }
                 if (filtroMes || filtroAnio) {
                     causasRechazadas = causasRechazadas.filter(c => {
                         if (!c.fechaPaseSecretario) return false;
@@ -2934,6 +2962,11 @@
                     mesOptions.push(`<option value="${m}" ${filtroMes == m ? 'selected' : ''}>${mesesNombres[m-1]}</option>`);
                 }
 
+                // ✅ NUEVO: opciones del filtro de secretario
+                const secretarioOptions = CONFIG.secretarios.map(s =>
+                    `<option value="${s.id}" ${filtroSecretario === s.id ? 'selected' : ''}>${s.nombre}</option>`
+                ).join('');
+
                 let html = `
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
                         <div class="card-title mb-0"><i class="bi bi-clock-history"></i> Recientes</div>
@@ -2951,12 +2984,17 @@
                             <option value="">Año</option>
                             ${añoOptions}
                         </select>
+                        <label>Secretario:</label>
+                        <select id="filtroSecretarioSelect">
+                            <option value="">Todos</option>
+                            ${secretarioOptions}
+                        </select>
                         <label>Texto:</label>
                         <input type="text" id="filtroTextoGeneral" placeholder="Buscar en todos los campos..." value="${filtroTextoInput}" />
                         <label>Fecha exacta:</label>
                         <input type="date" id="filtroFechaExacta" value="${filtroFecha}" />
                         <button class="btn-limpiar" id="btnLimpiarFiltros">Limpiar</button>
-                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
+                        ${ (filtroMes || filtroAnio || filtroTexto || filtroFecha || filtroSecretario) ? `<span class="text-muted" style="font-size:0.7rem;">Mostrando ${total} registros</span>` : '' }
                     </div>
                 `;
 
@@ -2967,7 +3005,8 @@
                                 <thead>
                                     <tr>
                                         <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th>
-                                        <th>Estado</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th>Estado</th><th>Secretario</th><th>Fecha Pase</th><th>Motivo</th>
+                                        <th>Observaciones</th>
                                         <th style="width:100px;">Acciones</th>
                                     </tr>
                                 </thead>
@@ -2980,6 +3019,7 @@
                                         const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' :
                                             `<span class="badge-fuente ${fuentes.length > 1 ? 'ambas' : ''}">${fuentes.join('/')}</span>`;
                                         const motivoMostrar = c.motivoAccion || (c.estado === 'devuelto_siged' || c.estado === 'remitido' || c.estado === 'rechazado' ? c.historial[c.historial.length-1]?.comentario || '' : '');
+                                        const secretarioNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
                                         return `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
@@ -2987,8 +3027,10 @@
                                             <td>N${c.nivelOperador}</td>
                                             <td>${fuenteHtml}</td>
                                             <td><strong>${getEstadoTexto(c.estado)}</strong></td>
+                                            <td style="font-size:0.7rem;">${secretarioNombre}</td>
                                             <td style="font-size:0.65rem;">${fmtDt(c.fechaPaseSecretario)}</td>
                                             <td style="font-size:0.7rem; max-width:120px; word-break:break-word;">${motivoMostrar || '-'}</td>
+                                            <td style="font-size:0.7rem; max-width:150px; word-break:break-word;">${c.observaciones || '-'}</td>
                                             <td>
                                                 <button class="btn-accion-tabla" data-id="${c.id}" data-accion="historial" title="Ver historial"><i class="bi bi-eye"></i> Ver</button>
                                             </td>
@@ -3075,6 +3117,7 @@
 
                 const mesSelect = document.getElementById('filtroMesSelect');
                 const anioSelect = document.getElementById('filtroAnioSelect');
+                const secretarioSelect = document.getElementById('filtroSecretarioSelect');
                 const textoInput = document.getElementById('filtroTextoGeneral');
                 const fechaInput = document.getElementById('filtroFechaExacta');
                 const limpiarBtn = document.getElementById('btnLimpiarFiltros');
@@ -3084,6 +3127,10 @@
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
                 if (anioSelect) { anioSelect.addEventListener('change', function() { filtroAnio = this.value;
+                        paginationState.ingreso.page = 1;
+                        paginationState.rechazados.page = 1;
+                        renderTabla(); }); }
+                if (secretarioSelect) { secretarioSelect.addEventListener('change', function() { filtroSecretario = this.value;
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         renderTabla(); }); }
@@ -3119,10 +3166,12 @@
                         filtroTexto = '';
                         filtroTextoInput = '';
                         filtroFecha = '';
+                        filtroSecretario = '';
                         paginationState.ingreso.page = 1;
                         paginationState.rechazados.page = 1;
                         if (mesSelect) mesSelect.value = '';
                         if (anioSelect) anioSelect.value = '';
+                        if (secretarioSelect) secretarioSelect.value = '';
                         if (textoInput) textoInput.value = '';
                         if (fechaInput) fechaInput.value = '';
                         renderTabla();
@@ -3506,6 +3555,7 @@
                 filtroTexto = '';
                 filtroTextoInput = '';
                 filtroFecha = '';
+                filtroSecretario = '';
                 state.causas = [];
                 state.ausencias = [];
                 state.lastIndex = 0;
