@@ -498,6 +498,203 @@
             }
         }
     </style>
+
+    <!-- ============================================================
+         NUEVO: ESTILOS DE LA IMPRESIÓN MENSUAL (A4)
+         No modifican ninguna regla anterior.
+         ============================================================ -->
+    <style>
+        /* Botón del header */
+        .controls button.btn-imprimir-mes {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .controls button.btn-imprimir-mes:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+            color: var(--white);
+        }
+
+        /* Modal de vista previa */
+        #printMonthModal .modal-content {
+            max-width: 900px;
+            max-height: 90vh;
+        }
+
+        .print-preview-body {
+            padding: 1.2rem;
+            background: #eef2f7;
+            overflow-y: auto;
+        }
+
+        /* Hoja A4 (se usa igual en pantalla y en impresión) */
+        .mes-sheet {
+            background: #ffffff;
+            color: #1f2937;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+            box-sizing: border-box;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            border-radius: 6px;
+        }
+
+        .mes-sheet .mes-titulo {
+            font-size: 17pt;
+            font-weight: 800;
+            color: #1e3a8a;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin: 0 0 2mm 0;
+            line-height: 1.2;
+        }
+
+        .mes-sheet .mes-subtitulo {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #2563eb;
+            text-align: center;
+            text-transform: capitalize;
+            margin: 0 0 4mm 0;
+        }
+
+        .mes-sheet .mes-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6mm;
+            flex-wrap: wrap;
+            font-size: 9pt;
+            color: #374151;
+            text-align: justify;
+            border-top: 1.5px solid #cbd5e1;
+            border-bottom: 1.5px solid #cbd5e1;
+            padding: 2.5mm 0;
+            margin-bottom: 4mm;
+        }
+
+        .mes-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .mes-tabla th {
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 9pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 2mm 1mm;
+            border: 1px solid #2563eb;
+            text-align: center;
+        }
+
+        .mes-tabla td {
+            border: 1px solid #cbd5e1;
+            height: 22mm;
+            vertical-align: top;
+            padding: 1.5mm;
+            font-size: 10pt;
+            overflow: hidden;
+        }
+
+        .mes-celda {
+            position: relative;
+            background: #ffffff;
+        }
+
+        .mes-celda.mes-hoy {
+            background: #eff6ff;
+            border: 1.5px solid #2563eb;
+        }
+
+        .mes-vacia {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .mes-dia {
+            display: block;
+            text-align: right;
+            font-weight: 700;
+            font-size: 10pt;
+            color: #1f2937;
+            line-height: 1.1;
+        }
+
+        .mes-conteo {
+            display: block;
+            text-align: center;
+            font-weight: 800;
+            font-size: 12pt;
+            color: #2563eb;
+            margin-top: 3mm;
+            line-height: 1.1;
+        }
+
+        .mes-conteo.cero {
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 10pt;
+        }
+
+        .mes-pie {
+            margin-top: 4mm;
+            font-size: 8pt;
+            color: #6b7280;
+            text-align: justify;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 2mm;
+            line-height: 1.35;
+        }
+
+        /* ===== IMPRESIÓN SOLO PARA EL MODO MENSUAL ===== */
+        @media print {
+            #printContainer.mes-mode {
+                position: static !important;
+                top: auto !important;
+                left: auto !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                background: #ffffff !important;
+                font-family: 'Inter', sans-serif;
+            }
+
+            #printContainer.mes-mode .mes-sheet {
+                width: 100%;
+                max-width: none;
+                padding: 0;
+                margin: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            #printContainer.mes-mode .mes-tabla tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            #printContainer.mes-mode .mes-tabla {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            #printContainer.mes-mode .mes-tabla td {
+                height: 22mm;
+                overflow: hidden;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -513,6 +710,7 @@
             <button id="btnPrev" title="Mes Anterior"><i class="fas fa-chevron-left"></i> Anterior</button>
             <button id="btnToday" title="Ir a hoy"><i class="fas fa-calendar-day"></i> Hoy</button>
             <button id="btnNext" title="Mes Siguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+            <button id="btnImprimirMes" class="btn-imprimir-mes" title="Imprimir el calendario del mes visible"><i class="fas fa-print"></i> Imprimir</button>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <span id="monthTotalKpi" class="month-total-kpi"><i class="fas fa-list-ul"></i> 0</span>
@@ -551,6 +749,28 @@
             </div>
             <div class="modal-body" id="modalBody">
                 <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         NUEVO: MODAL DE VISTA PREVIA / IMPRESIÓN DEL MES (A4)
+         ============================================================ -->
+    <div class="modal-overlay" id="printMonthModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-file-invoice"></i> Vista previa · Calendario mensual (A4)
+                </h3>
+                <div class="modal-actions">
+                    <button class="btn-imprimir" id="btnConfirmarImpresionMes"><i class="fas fa-print"></i> Imprimir A4</button>
+                    <button class="close-btn" id="closePrintModalBtn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div class="modal-body print-preview-body">
+                <div id="printPreviewSheet" class="mes-sheet">
+                    <!-- Contenido dinámico -->
+                </div>
             </div>
         </div>
     </div>
@@ -872,7 +1092,137 @@
             document.getElementById('btnImprimirModal').addEventListener('click', imprimirProfesional);
 
             // ============================================================
-            // 9. INICIALIZACIÓN
+            // 9. IMPRESIÓN DEL CALENDARIO MENSUAL (A4)
+            // ============================================================
+            const printMonthModal = document.getElementById('printMonthModal');
+            const printPreviewSheet = document.getElementById('printPreviewSheet');
+
+            function capitalizar(texto) {
+                if (!texto) return '';
+                return texto.charAt(0).toUpperCase() + texto.slice(1);
+            }
+
+            function fmtFechaCorta(fecha) {
+                const d = new Date(fecha);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yyyy = d.getFullYear();
+                return `${dd}/${mm}/${yyyy}`;
+            }
+
+            // Construye el HTML interno de la hoja A4 del mes visible
+            function construirCalendarioMensualHTML() {
+                const year = navDate.getFullYear();
+                const month = navDate.getMonth();
+
+                const nombreMes = capitalizar(
+                    navDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+                );
+
+                const prefijo = `${year}-${String(month + 1).padStart(2, '0')}`;
+                let totalMes = 0;
+                for (const key in agrupadas) {
+                    if (key.startsWith(prefijo)) {
+                        totalMes += agrupadas[key].length;
+                    }
+                }
+
+                const primerDia = new Date(year, month, 1).getDay();
+                const diasMes = new Date(year, month + 1, 0).getDate();
+
+                const celdas = [];
+                for (let i = 0; i < primerDia; i++) celdas.push(null);
+                for (let d = 1; d <= diasMes; d++) celdas.push(d);
+                while (celdas.length % 7 !== 0) celdas.push(null);
+
+                let filas = '';
+                for (let i = 0; i < celdas.length; i += 7) {
+                    filas += '<tr>';
+                    for (let j = 0; j < 7; j++) {
+                        const dia = celdas[i + j];
+                        if (dia === null) {
+                            filas += '<td class="mes-vacia"></td>';
+                            continue;
+                        }
+                        const fecha = new Date(year, month, dia);
+                        const key = fmtDateKey(fecha);
+                        const count = (agrupadas[key] || []).length;
+                        const claseHoy = esHoy(fecha) ? ' mes-hoy' : '';
+                        filas += '<td class="mes-celda' + claseHoy + '">' +
+                            '<span class="mes-dia">' + dia + '</span>' +
+                            '<span class="mes-conteo' + (count === 0 ? ' cero' : '') + '">' + count + '</span>' +
+                            '</td>';
+                    }
+                    filas += '</tr>';
+                }
+
+                const encabezados = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+                    .map(d => '<th>' + d + '</th>').join('');
+
+                return `
+                    <h1 class="mes-titulo">Calendario de Pases · Defensoría</h1>
+                    <div class="mes-subtitulo">${nombreMes}</div>
+                    <div class="mes-info">
+                        <span><strong>Fecha de impresión:</strong> ${fmtFechaCorta(new Date())}</span>
+                        <span><strong>Total de pases del mes:</strong> ${totalMes}</span>
+                    </div>
+                    <table class="mes-tabla">
+                        <thead>
+                            <tr>${encabezados}</tr>
+                        </thead>
+                        <tbody>
+                            ${filas}
+                        </tbody>
+                    </table>
+                    <div class="mes-pie">
+                        Documento generado automáticamente por el Sistema de Pase Digital de la Defensoría.
+                        El número indicado en cada casilla corresponde a la cantidad de pases registrados para ese día del mes.
+                    </div>
+                `;
+            }
+
+            // Abre el modal con la vista previa A4 del mes visible
+            function abrirModalImpresionMes() {
+                printPreviewSheet.innerHTML = construirCalendarioMensualHTML();
+                printMonthModal.classList.add('active');
+            }
+
+            // Cierra el modal de vista previa
+            function cerrarModalImpresionMes() {
+                printMonthModal.classList.remove('active');
+            }
+
+            // Manda a imprimir exactamente lo que se ve en la vista previa (A4, sin scroll ni desborde)
+            function imprimirCalendarioMensual() {
+                const printContainer = document.getElementById('printContainer');
+
+                printContainer.innerHTML = '<div class="mes-sheet">' +
+                    construirCalendarioMensualHTML() +
+                    '</div>';
+
+                // Modo "mes": fuerza A4 sin scroll ni desborde
+                printContainer.classList.add('mes-mode');
+                printContainer.style.display = 'block';
+
+                window.print();
+
+                setTimeout(() => {
+                    printContainer.style.display = 'none';
+                    printContainer.classList.remove('mes-mode');
+                    printContainer.innerHTML = '';
+                }, 500);
+            }
+
+            document.getElementById('btnImprimirMes').addEventListener('click', abrirModalImpresionMes);
+            document.getElementById('btnConfirmarImpresionMes').addEventListener('click', imprimirCalendarioMensual);
+            document.getElementById('closePrintModalBtn').addEventListener('click', cerrarModalImpresionMes);
+
+            printMonthModal.addEventListener('click', (e) => {
+                if (e.target === printMonthModal) cerrarModalImpresionMes();
+            });
+
+            // ============================================================
+            // 10. INICIALIZACIÓN
             // ============================================================
             document.addEventListener('DOMContentLoaded', async () => {
                 causas = await cargarCausas();
