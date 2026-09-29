@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reporte estadístico · Defensoría</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6fb;--sf:#fff;--sf2:#eef1f8;--bd:#e2e6f0;--tx:#0f172a;--mu:#64748b;--ac:#6d4aff;--ac2:#06b6d4;--ok:#10b981;--warn:#f59e0b;--bad:#f43f5e;--grid:rgba(100,116,139,.15);--sh:0 10px 30px -12px rgba(30,41,90,.18)}
+@media(prefers-color-scheme:dark){:root{--bg:#0a0e1c;--sf:#121933;--sf2:#1a2242;--bd:#232c50;--tx:#e8ecff;--mu:#93a0c8;--ac:#8b7bff;--ac2:#22d3ee;--grid:rgba(147,160,200,.12);--sh:0 10px 30px -12px rgba(0,0,0,.6)}}
+*{box-sizing:border-box;margin:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:radial-gradient(900px 400px at 85% -10%,color-mix(in srgb,var(--ac) 22%,transparent),transparent),var(--bg);color:var(--tx);min-height:100vh;padding:24px clamp(14px,3vw,40px) 60px}
+h1,h2,.num{font-family:'Space Grotesk',sans-serif}
+header{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:grid;place-items:center;color:#fff;font-size:20px}
+h1{font-size:1.35rem;letter-spacing:-.02em}
+.sub{color:var(--mu);font-size:.8rem;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}.dot.on{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}.dot.err{background:var(--bad)}
+.seg{display:inline-flex;background:var(--sf2);border:1px solid var(--bd);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:none;color:var(--mu);font:600 .82rem 'Plus Jakarta Sans';padding:8px 15px;border-radius:9px;cursor:pointer;transition:.15s}
+.seg button.on{background:var(--ac);color:#fff;box-shadow:0 4px 12px -4px var(--ac)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:end;background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px 16px;box-shadow:var(--sh);margin-bottom:18px}
+.f{display:flex;flex-direction:column;gap:5px}.f label{font-size:.7rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
+select,input[type=date]{font:500 .85rem 'Plus Jakarta Sans';background:var(--sf2);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;outline:none}
+select:focus,input:focus{border-color:var(--ac)}
+.btn{font:600 .8rem 'Plus Jakarta Sans';border:1px solid var(--bd);background:var(--sf2);color:var(--tx);padding:9px 13px;border-radius:10px;cursor:pointer}.btn:hover{border-color:var(--ac)}
+.tg{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:600;cursor:pointer;padding-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.k{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.k::after{content:'';position:absolute;inset:0 auto 0 0;width:4px;background:var(--c,var(--ac))}
+.k span{font-size:.72rem;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
+.k .num{font-size:1.9rem;font-weight:700;margin-top:4px;letter-spacing:-.03em}.k small{color:var(--mu);font-size:.75rem}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:18px;padding:18px;box-shadow:var(--sh);margin-bottom:18px}
+.card h2{font-size:1.02rem;margin-bottom:2px}.card p{color:var(--mu);font-size:.78rem;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--bd);background:var(--sf2);color:var(--mu);border-radius:99px;padding:5px 11px;font:600 .74rem 'Plus Jakarta Sans';cursor:pointer;transition:.15s}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.chip.on{color:var(--tx);border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--sf))}
+.chip:not(.on) i{opacity:.35}
+.lnk{background:none;border:0;color:var(--ac);font:600 .74rem 'Plus Jakarta Sans';cursor:pointer}
+.cv{position:relative;height:min(58vh,480px)}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);text-align:right;padding:9px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--bd);text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}td:first-child{font-weight:600;white-space:nowrap}
+tr:hover td{background:var(--sf2)}
+.mb{display:inline-block;height:6px;border-radius:9px;background:linear-gradient(90deg,var(--ac),var(--ac2));vertical-align:middle;margin-left:8px}
+.msg{padding:40px;text-align:center;color:var(--mu)}
+.alert{background:color-mix(in srgb,var(--bad) 12%,var(--sf));border:1px solid var(--bad);color:var(--tx);padding:12px 16px;border-radius:12px;margin-bottom:16px;font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">📈</div>
+    <div><h1>Reporte estadístico de actividad</h1>
+    <div class="sub"><span class="dot" id="dot"></span><span id="status">Conectando con Firestore…</span></div></div>
+  </div>
+  <div class="seg" id="roleSeg"><button data-r="ope">Operador</button><button data-r="emp" class="on">Empleados</button><button data-r="sec">Secretarios</button><button data-r="def">Defensor</button></div>
+</header>
+
+<div id="alert"></div>
+
+<section class="bar">
+  <div class="f"><label>Detalle</label>
+    <div class="seg" id="granSeg"><button data-g="day" class="on">Día</button><button data-g="week">Semana</button><button data-g="month">Mes</button><button data-g="year">Año</button></div></div>
+  <div class="f"><label>Métrica</label><select id="metric"></select></div>
+  <div class="f"><label>Desde</label><input type="date" id="from"></div>
+  <div class="f"><label>Hasta</label><input type="date" id="to"></div>
+  <button class="btn" id="all">Desde el primer registro</button>
+  <label class="tg"><input type="checkbox" id="cum"> Acumulado</label>
+  <button class="btn" id="print" style="margin-left:auto">🖨 Imprimir</button>
+</section>
+
+<section class="grid" id="kpis"></section>
+
+<section class="card">
+  <h2 id="chTitle">Evolución</h2><p id="chSub"></p>
+  <div class="chips" id="chips"></div>
+  <div class="cv"><canvas id="chart"></canvas></div>
+</section>
+
+<section class="card">
+  <h2>Detalle por persona</h2><p id="tbSub"></p>
+  <div class="tw"><table id="tbl"></table></div>
+</section>
+
+<script>
+(function(){
+'use strict';
+// ---------- FIREBASE (mismo proyecto que empleado.html / secretario.html) ----------
+firebase.initializeApp({
+  apiKey:"AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",authDomain:"pasedefensoria6.firebaseapp.com",
+  projectId:"pasedefensoria6",storageBucket:"pasedefensoria6.firebasestorage.app",
+  messagingSenderId:"785250989941",appId:"1:785250989941:web:1bfb35a5f954144dbb853c"});
+const db=firebase.firestore();
+
+// ---------- CONFIGURACIÓN ----------
+const PTS={1:1,2:2,3:3,4:5};
+const PEOPLE={
+  emp:[['emp1','Bazante Nadia Romina'],['emp2','Bolillat Cesar Enrique'],['emp3','Cardozo Maria Raquel'],['emp4','Cedron Noelia'],['emp5','Escobar Monica Graciela'],['emp6','Fioravante Rómulo'],['emp7','Gonzalez Alberto Misael'],['emp8','Gonzalez Juan Jose'],['emp9','Gudiño Natalia Esther'],['emp10','Ortega Lucia Noemi'],['emp11','Pablos Patricia Tamara'],['emp12','Palacios Ana Gabriela'],['emp13','Sosa Rita Cecilia']],
+  sec:[['sec1','Corrales Mariela'],['sec2','Riveros Patricia'],['sec3','Magnani Enzo']],
+  def:[['def1','Defensor']],
+  ope:[['ope1','Boillat Enrique'],['ope2','Cardozo Raquel'],['ope3','Cedron Noelia'],['ope4','Fioravante Rómulo'],['ope5','Gonzalez Misael'],['ope6','Pablos Patricia']]};
+const PRIM={emp:'recibidas',sec:'asignadas',def:'asignadas',ope:'ingresos'};
+const ALIAS={emp14:'emp10'};
+const METRICS={
+  emp:{recibidas:'Causas recibidas',enviadas:'Enviadas a finalizar',consultas:'Consultas a secretaría',justificaciones:'Justificaciones de atraso',puntos:'Puntos asignados'},
+  sec:{asignadas:'Asignaciones realizadas',finalizadas:'Finalizadas',devueltas:'Devueltas al operador',elevadas:'Elevadas a Defensor',puntos:'Puntos asignados'},
+  def:{recibidas:'Causas elevadas al Defensor',asignadas:'Asignaciones / reasignaciones',finalizadas:'Finalizadas',gesell:'Actualizaciones Cámara Gesell',puntos:'Puntos asignados'},
+  ope:{ingresos:'Pases registrados',devueltas:'Devueltas a SIGED',remitidas:'Remitidas a dependencia',rechazadas:'Rechazadas',puntos:'Puntos (nivel de operador)'}};
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+// ---------- ESTADO ----------
+const ROLE_NAME={ope:'Operador',emp:'Empleados',sec:'Secretarios',def:'Defensor'},ROLE_ACT={ope:'Operadores activos',emp:'Empleados activos',sec:'Secretarios activos',def:'Defensor activo'};
+const S={role:'emp',gran:'day',metric:'actividad',cum:false,from:null,to:null,sel:{emp:null,sec:null}};
+let EV=[],chart=null,loaded=false;
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const norm=s=>(s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fmt=d=>`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+const pname=(r,id)=>(PEOPLE[r].find(p=>p[0]===id)||[,id])[1];
+const color=(i,n)=>`hsl(${Math.round((i*360/n+250)%360)} 78% 58%)`;
+
+// ---------- CONSTRUCCIÓN DE EVENTOS DESDE Firestore ('operador') ----------
+function matchEmp(t){t=norm(t);if(!t)return null;let p=PEOPLE.emp.find(p=>norm(p[1])===t);
+  if(!p)p=PEOPLE.emp.find(p=>t.includes(norm(p[1])));return p?p[0]:null}
+function matchSec(t){t=norm(t);if(!t)return null;const p=PEOPLE.sec.find(p=>t.includes(norm(p[1].split(' ')[0])));return p?p[0]:null}
+function matchOpe(t){t=norm(t);if(!t)return null;let p=PEOPLE.ope.find(p=>norm(p[1])===t);
+  if(!p)p=PEOPLE.ope.find(p=>p[1].split(' ').every(w=>t.includes(norm(w))));return p?p[0]:null}
+const fixEmp=id=>ALIAS[id]||id;
+
+function buildEvents(docs){
+  const ev=[];
+  const push=(role,pid,type,t,pts)=>{if(pid&&t&&!isNaN(t)&&PEOPLE[role].some(p=>p[0]===pid))ev.push({role,pid,type,t,pts:pts||0})};
+  docs.forEach(c=>{
+    let hasAsig=false,hasFin=false,hasIng=false,lastSec=c.secretarioId;
+    (c.historial||[]).forEach(h=>{
+      if(!h||!h.fecha)return;const a=h.accion||'',t=new Date(h.fecha);
+      if(/^Ingreso/.test(a)){push('ope',matchOpe(h.usuario)||matchOpe(c.operador),'ingresos',t,PTS[c.nivelOperador]||2);hasIng=true}
+      else if(/^Devuelto a SIGED/.test(a))push('ope',matchOpe(h.usuario),'devueltas',t);
+      else if(/^Remitido a/.test(a))push('ope',matchOpe(h.usuario),'remitidas',t);
+      else if(/^Rechazado/.test(a))push('ope',matchOpe(h.usuario),'rechazadas',t);
+      else if(/^Asignado \(Nivel/.test(a)){
+        const niv=+((a.match(/Nivel (\d)/)||[])[1])||c.nivelSecretario||2,pts=PTS[niv]||2;
+        const sec=matchSec(h.usuario)||c.secretarioId,emp=matchEmp(a.split(' a ').slice(1).join(' a '))||fixEmp(c.empleadoAsignado||c.empleadoId);
+        if(sec)lastSec=sec;push('sec',sec,'asignadas',t,pts);push('emp',emp,'recibidas',t,pts);hasAsig=true;
+        if(norm(h.usuario)==='defensor')push('def','def1','asignadas',t,pts);
+      }else if(/^Enviado a Secretario para finalizaci/.test(a))push('emp',matchEmp(h.usuario),'enviadas',t);
+      else if(/^Enviado a Secretario para consulta/.test(a))push('emp',matchEmp(h.usuario),'consultas',t);
+      else if(/^Justificaci/.test(a))push('emp',matchEmp(h.usuario),'justificaciones',t);
+      else if(/^Finalizado por Secretario/.test(a)){push('sec',matchSec(h.usuario)||lastSec,'finalizadas',t);hasFin=true}
+      else if(/^Devuelto al Operador/.test(a))push('sec',matchSec(h.usuario)||lastSec,'devueltas',t);
+      else if(/^Elevado a Defensor/.test(a)){push('sec',matchSec(h.usuario)||lastSec,'elevadas',t);push('def','def1','recibidas',t)}
+      else if(/^Finalizada por Defensor/.test(a))push('def','def1','finalizadas',t);
+      else if(/^Actualizaci.n C.mara Gesell/.test(a))push('def','def1','gesell',t);
+    });
+    if(!hasIng&&c.fechaPaseSecretario&&c.operador)push('ope',matchOpe(c.operador),'ingresos',new Date(c.fechaPaseSecretario),PTS[c.nivelOperador]||2);
+    // respaldo con campos propios de la causa si el historial no los registró
+    if(!hasAsig&&c.fechaAsignacion){const pts=PTS[c.nivelSecretario]||c.puntos||2,t=new Date(c.fechaAsignacion);
+      push('sec',c.secretarioId,'asignadas',t,pts);push('emp',fixEmp(c.empleadoAsignado||c.empleadoId),'recibidas',t,pts)}
+    if(!hasFin&&c.fechaFinalizacion)push('sec',c.secretarioId,'finalizadas',new Date(c.fechaFinalizacion));
+  });
+  return ev;
+}
+
+// ---------- FECHAS / BUCKETS ----------
+function startOf(d,g){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  if(g==='week')x.setDate(x.getDate()-((x.getDay()+6)%7));
+  if(g==='month')x.setDate(1);if(g==='year')x.setMonth(0,1);return x}
+function nextB(d,g){const x=new Date(d);
+  if(g==='day')x.setDate(x.getDate()+1);else if(g==='week')x.setDate(x.getDate()+7);
+  else if(g==='month')x.setMonth(x.getMonth()+1);else x.setFullYear(x.getFullYear()+1);return x}
+function lbl(d,g){
+  if(g==='day')return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)}`;
+  if(g==='week')return `Sem ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)}`;
+  if(g==='month')return `${MESES[d.getMonth()]} ${d.getFullYear()}`;return String(d.getFullYear())}
+function longLbl(d,g){
+  if(g==='day')return d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(g==='week'){const e=new Date(d);e.setDate(e.getDate()+6);return `Semana del ${fmt(d)} al ${fmt(e)}`}
+  if(g==='month')return d.toLocaleDateString('es-AR',{month:'long',year:'numeric'});return 'Año '+d.getFullYear()}
+
+// ---------- CÁLCULO ----------
+const roleEv=()=>EV.filter(e=>e.role===S.role);
+function inMetric(e){
+  if(S.metric==='actividad')return true;
+  if(S.metric==='puntos')return e.type===PRIM[S.role];
+  return e.type===S.metric}
+function compute(){
+  const from=new Date(S.from+'T00:00:00'),to=new Date(S.to+'T23:59:59');
+  const ppl=PEOPLE[S.role],buckets=[];
+  for(let d=startOf(from,S.gran);d<=to;d=nextB(d,S.gran))buckets.push(d);
+  const idx=new Map(buckets.map((d,i)=>[d.getTime(),i]));
+  const ser={};ppl.forEach(p=>ser[p[0]]=new Array(buckets.length).fill(0));
+  const total=new Array(buckets.length).fill(0);
+  const tab={};ppl.forEach(p=>tab[p[0]]={last:null,pts:0,n:0});
+  ppl.forEach(p=>Object.keys(METRICS[S.role]).forEach(k=>tab[p[0]][k]=0));
+  roleEv().forEach(e=>{
+    if(e.t<from||e.t>to)return;
+    const T=tab[e.pid];T[e.type]++;T.n++;if(!T.last||e.t>T.last)T.last=e.t;
+    if(e.type===PRIM[S.role])T.pts+=e.pts;
+    if(!inMetric(e))return;
+    const i=idx.get(startOf(e.t,S.gran).getTime());if(i==null)return;
+    const v=S.metric==='puntos'?e.pts:1;ser[e.pid][i]+=v;total[i]+=v});
+  if(S.cum){const acc=a=>{let s=0;return a.map(v=>s+=v)};ppl.forEach(p=>ser[p[0]]=acc(ser[p[0]]));const t=acc(total);total.splice(0,total.length,...t)}
+  return{buckets,ser,total,tab}}
+
+// ---------- RENDER ----------
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function render(){
+  if(!loaded)return;
+  const ppl=PEOPLE[S.role];
+  if(!S.sel[S.role])S.sel[S.role]=new Set(['total',...ppl.map(p=>p[0])]);
+  const sel=S.sel[S.role],R=compute(),mName=S.metric==='actividad'?'Actividad total':METRICS[S.role][S.metric];
+  $('chTitle').textContent=`${mName} por ${{day:'día',week:'semana',month:'mes',year:'año'}[S.gran]}${S.cum?' (acumulado)':''}`;
+  $('chSub').textContent=`${ROLE_NAME[S.role]} · ${fmt(new Date(S.from+'T00:00:00'))} al ${fmt(new Date(S.to+'T00:00:00'))} · ${R.buckets.length} períodos`;
+  // chips
+  $('chips').innerHTML=`<button class="lnk" data-a="all">Todos</button><button class="lnk" data-a="none">Ninguno</button>`+
+    `<button class="chip ${sel.has('total')?'on':''}" data-id="total" style="--c:${css('--tx')}"><i></i>Total</button>`+
+    ppl.map((p,i)=>`<button class="chip ${sel.has(p[0])?'on':''}" data-id="${p[0]}" style="--c:${color(i,ppl.length)}"><i></i>${p[1]}</button>`).join('');
+  // KPIs
+  const raw=R.total,sum=S.cum?(raw[raw.length-1]||0):raw.reduce((a,b)=>a+b,0);
+  const per=S.cum?R.buckets.map((_,i)=>raw[i]-(raw[i-1]||0)):raw;
+  const mx=Math.max(0,...per),mi=per.indexOf(mx),act=ppl.filter(p=>R.tab[p[0]].n>0).length;
+  const top=[...ppl].sort((a,b)=>R.tab[b[0]].n-R.tab[a[0]].n)[0];
+  $('kpis').innerHTML=[
+    ['Total del período',sum.toLocaleString('es-AR'),mName,'--ac'],
+    ['Promedio por '+{day:'día',week:'semana',month:'mes',year:'año'}[S.gran],(sum/Math.max(1,R.buckets.length)).toFixed(2),'sobre '+R.buckets.length+' períodos','--ac2'],
+    ['Pico de actividad',mx.toLocaleString('es-AR'),mx?lbl(R.buckets[mi],S.gran):'—','--ok'],
+    [ROLE_ACT[S.role],act+' / '+ppl.length,R.tab[top[0]].n?'Mayor actividad: '+top[1]:'Sin actividad','--warn']
+  ].map(k=>`<div class="k" style="--c:var(${k[3]})"><span>${k[0]}</span><div class="num">${k[1]}</div><small>${k[2]}</small></div>`).join('');
+  // gráfico
+  // lienzo nuevo en cada render: evita que Chart.js reutilice un canvas viejo/sin tamaño al cambiar de pestaña
+  try{const old=Chart.getChart&&Chart.getChart('chart');if(old)old.destroy()}catch(e){}
+  if(chart){try{chart.destroy()}catch(e){}chart=null}
+  const box=document.querySelector('.cv');box.innerHTML='<canvas id="chart"></canvas>';
+  const ctx=$('chart').getContext('2d'),n=R.buckets.length;
+  const ds=[];
+  if(sel.has('total')){const g=ctx.createLinearGradient(0,0,0,420);g.addColorStop(0,'rgba(139,123,255,.35)');g.addColorStop(1,'rgba(139,123,255,0)');
+    ds.push({label:'Total',data:R.total,borderColor:css('--ac'),backgroundColor:g,fill:true,borderWidth:3,order:0})}
+  ppl.forEach((p,i)=>{if(sel.has(p[0]))ds.push({label:p[1],data:R.ser[p[0]],borderColor:color(i,ppl.length),backgroundColor:color(i,ppl.length),borderWidth:1.8,order:1})});
+  try{
+  chart=new Chart(ctx,{type:'line',data:{labels:R.buckets.map(d=>lbl(d,S.gran)),datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,animation:n>200?false:{duration:500},
+    interaction:{mode:'index',intersect:false},
+    elements:{line:{tension:.3},point:{radius:n>60?0:3,hoverRadius:6}},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#0b1020ee',padding:12,titleFont:{family:'Plus Jakarta Sans',weight:'700'},bodyFont:{family:'Plus Jakarta Sans'},
+      itemSort:(a,b)=>b.parsed.y-a.parsed.y,filter:i=>i.parsed.y>0||i.dataset.label==='Total',
+      callbacks:{title:it=>longLbl(R.buckets[it[0].dataIndex],S.gran)}}},
+    scales:{x:{grid:{display:false},ticks:{color:css('--mu'),maxTicksLimit:12,maxRotation:0,font:{family:'Plus Jakarta Sans',size:11}}},
+      y:{beginAtZero:true,grid:{color:css('--grid')},ticks:{color:css('--mu'),precision:0,font:{family:'Space Grotesk',size:11}}}}}});
+  requestAnimationFrame(()=>{if(chart)chart.resize()});
+  }catch(err){console.error('Error al dibujar el gráfico',err);box.innerHTML='<div class="msg">No se pudo dibujar el gráfico.</div>'}
+  if(!R.total.some(v=>v>0)&&!Object.values(R.ser).some(a=>a.some(v=>v>0)))box.insertAdjacentHTML('beforeend','<div class="msg" style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none">Sin actividad en el período seleccionado</div>');
+  // tabla
+  const keys=Object.keys(METRICS[S.role]).filter(k=>k!=='puntos');
+  const rows=[...ppl].sort((a,b)=>R.tab[b[0]].n-R.tab[a[0]].n),mxN=Math.max(1,...rows.map(p=>R.tab[p[0]].n));
+  $('tbSub').textContent='Conteo de eventos en el rango seleccionado, independiente de la métrica del gráfico.';
+  $('tbl').innerHTML=`<thead><tr><th>Nombre</th>${keys.map(k=>`<th>${METRICS[S.role][k]}</th>`).join('')}<th>Puntos</th><th>Total</th><th>Última actividad</th></tr></thead><tbody>`+
+    rows.map(p=>{const t=R.tab[p[0]];return `<tr><td>${p[1]}</td>${keys.map(k=>`<td>${t[k]}</td>`).join('')}<td>${t.pts}</td><td><b>${t.n}</b><span class="mb" style="width:${Math.round(t.n/mxN*70)}px"></span></td><td>${t.last?fmt(t.last):'—'}</td></tr>`}).join('')+'</tbody>';
+  window._rows={keys,rows,R};
+  window._print={title:$('chTitle').textContent,sub:$('chSub').textContent,tbSub:$('tbSub').textContent,labels:R.buckets.map(d=>lbl(d,S.gran)),ds:ds.map(d=>({label:d.label,data:d.data,borderColor:d.borderColor,borderWidth:d.borderWidth})),tbl:$('tbl').innerHTML,gran:S.gran,role:S.role,from:S.from,to:S.to};
+}
+
+// ---------- CONTROLES ----------
+function setRange(){const ev=roleEv();
+  const first=ev.length?new Date(Math.min(...ev.map(e=>e.t))):new Date();
+  S.from=ymd(first);S.to=ymd(new Date());$('from').value=S.from;$('to').value=S.to}
+function fillMetrics(){
+  $('metric').innerHTML=`<option value="actividad">Actividad total</option>`+Object.entries(METRICS[S.role]).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+  S.metric='actividad'}
+$('roleSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.role=b.dataset.r;
+  [...$('roleSeg').children].forEach(x=>x.classList.toggle('on',x===b));fillMetrics();setRange();render()};
+$('granSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;S.gran=b.dataset.g;
+  [...$('granSeg').children].forEach(x=>x.classList.toggle('on',x===b));render()};
+$('metric').onchange=e=>{S.metric=e.target.value;render()};
+$('cum').onchange=e=>{S.cum=e.target.checked;render()};
+$('from').onchange=e=>{if(e.target.value){S.from=e.target.value;render()}};
+$('to').onchange=e=>{if(e.target.value){S.to=e.target.value;render()}};
+$('all').onclick=()=>{setRange();render()};
+$('chips').onclick=e=>{const b=e.target.closest('button');if(!b)return;const sel=S.sel[S.role];
+  if(b.dataset.a==='all')PEOPLE[S.role].forEach(p=>sel.add(p[0])),sel.add('total');
+  else if(b.dataset.a==='none')sel.clear();
+  else sel.has(b.dataset.id)?sel.delete(b.dataset.id):sel.add(b.dataset.id);render()};
+$('print').onclick=()=>{const w=window._print;if(!w)return;
+  // gráfico en paleta clara (fuera de pantalla) para que se imprima legible aunque la página esté en modo oscuro
+  const host=document.createElement('div');host.style.cssText='position:fixed;left:-99999px;top:0';
+  const cv=document.createElement('canvas');cv.width=1100;cv.height=430;host.appendChild(cv);document.body.appendChild(host);
+  const n=w.labels.length,dark='#334155',gr='rgba(100,116,139,.25)';
+  const ds=w.ds.map(d=>d.label==='Total'?{label:'Total',data:d.data,borderColor:'#6d4aff',backgroundColor:'rgba(109,74,255,.12)',fill:true,borderWidth:3}
+    :{label:d.label,data:d.data,borderColor:d.borderColor,backgroundColor:d.borderColor,borderWidth:1.8});
+  const pc=new Chart(cv,{type:'line',data:{labels:w.labels,datasets:ds},options:{responsive:false,animation:false,devicePixelRatio:2,
+    elements:{line:{tension:.3},point:{radius:n>60?0:3}},
+    plugins:{legend:{display:true,position:'bottom',labels:{color:dark,boxWidth:12,font:{family:'Plus Jakarta Sans',size:11}}}},
+    scales:{x:{grid:{display:false},ticks:{color:dark,maxTicksLimit:12,maxRotation:0,font:{size:11}}},y:{beginAtZero:true,grid:{color:gr},ticks:{color:dark,precision:0,font:{size:11}}}}}});
+  const img=cv.toDataURL('image/png');pc.destroy();host.remove();
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  const d=fr.contentDocument;d.open();
+  d.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte estadístico · ${ROLE_NAME[w.role]}</title><style>
+    @page{size:A4 landscape;margin:12mm}
+    *{box-sizing:border-box}body{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#0f172a;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    h1{font-size:18px;margin:0 0 2px}h2{font-size:14px;margin:0 0 2px}p{margin:0 0 8px;color:#64748b;font-size:11px}
+    .top{border-bottom:2px solid #6d4aff;padding-bottom:8px;margin-bottom:12px}
+    img{width:100%;height:auto;display:block;margin-bottom:6px}
+    .sec2{page-break-before:always;padding-top:4px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;text-align:right;padding:6px 6px;border-bottom:1.5px solid #cbd5e1}
+    td{padding:6px;border-bottom:1px solid #e2e8f0;text-align:right}
+    th:first-child,td:first-child{text-align:left}td:first-child{font-weight:600}
+    tr{page-break-inside:avoid}
+    .mb{display:inline-block;height:5px;border-radius:9px;background:#6d4aff;vertical-align:middle;margin-left:6px}
+  </style></head><body>
+    <div class="top"><h1>Reporte estadístico de actividad · ${ROLE_NAME[w.role]}</h1><p>Emitido el ${fmt(new Date())} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())} · Defensoría</p></div>
+    <h2>${w.title}</h2><p>${w.sub}</p><img src="${img}" alt="Gráfico">
+    <div class="sec2"><h2>Detalle por persona</h2><p>${w.tbSub} (${fmt(new Date(w.from+'T00:00:00'))} al ${fmt(new Date(w.to+'T00:00:00'))})</p><table>${w.tbl}</table></div>
+  </body></html>`);d.close();
+  const go=()=>{fr.contentWindow.focus();fr.contentWindow.print();setTimeout(()=>fr.remove(),2000)};
+  const im=d.querySelector('img');if(im.complete)setTimeout(go,100);else im.onload=()=>setTimeout(go,100)};
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',render);
+
+// ---------- DATOS EN TIEMPO REAL ----------
+fillMetrics();
+db.collection('operador').onSnapshot(snap=>{
+  const docs=[];snap.forEach(d=>{if(d.id==='secretario_config')return;const x=d.data();if(!x.id)x.id=d.id;docs.push(x)});
+  EV=buildEvents(docs);const first=!loaded;loaded=true;
+  $('dot').className='dot on';$('status').textContent=`En vivo · ${docs.length} causas · ${EV.length} eventos analizados`;
+  $('alert').innerHTML='';
+  if(first||!S.from)setRange();render();
+},err=>{
+  console.error(err);$('dot').className='dot err';$('status').textContent='Sin conexión';
+  $('alert').innerHTML='<div class="alert"><b>No se pudo leer Firestore.</b> Verificá las reglas de seguridad de la colección <code>operador</code> y tu conexión. ('+err.code+')</div>'});
+})();
+</script>
+</body>
+</html>
