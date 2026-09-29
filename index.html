@@ -136,7 +136,31 @@
             color: #fff;
             border-color: #2e7d32;
         }
-        .btn-calendario i { font-size: 1.2rem; }
+        .btn-calendario i, .btn-reporte i { font-size: 1.2rem; }
+
+        /* Nuevo botón Reporte Total */
+        .btn-reporte {
+            background: #ffffff;
+            border: 1px solid #1565c0;
+            color: #1565c0;
+            font-weight: 700;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 44px;
+            white-space: nowrap;
+        }
+        .btn-reporte:hover {
+            background: #1565c0;
+            color: #fff;
+            border-color: #1565c0;
+        }
+        .btn-reporte i { font-size: 1.2rem; }
 
         /* ===== NUEVO BOTÓN AUDITOR IA ===== */
         .btn-auditor {
@@ -452,7 +476,7 @@
         @media (max-width: 768px) {
             .app-container { padding: 1rem 1.2rem 0.8rem 1.2rem; }
             .header-left h1 { font-size: 1.4rem; }
-            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-auditor { font-size: 0.8rem; padding: 4px 14px; min-height: 40px; }
+            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.8rem; padding: 4px 14px; min-height: 40px; }
             .btn-auditor img { height: 22px; }
             .header-text { font-size: 1rem; }
             .header-text span { font-size: 0.8rem; }
@@ -471,8 +495,8 @@
             .header-left { width: 100%; justify-content: space-between; gap: 0.5rem; }
             .header-left h1 { font-size: 1.1rem; white-space: normal; word-break: break-word; }
             .header-left h1 i { font-size: 1.2rem; }
-            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-auditor { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
-            .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i { font-size: 1rem; }
+            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
+            .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i, .btn-reporte i { font-size: 1rem; }
             .btn-auditor img { height: 18px; }
             .header-right { width: 100%; justify-content: flex-end; gap: 0.6rem; }
             .header-text { font-size: 0.9rem; text-align: right; flex: 1 1 auto; }
@@ -508,8 +532,8 @@
             .app-container { padding: 0.3rem; }
             .header-left h1 { font-size: 0.95rem; }
             .header-left h1 i { font-size: 1rem; }
-            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-auditor { font-size: 0.6rem; padding: 2px 8px; min-height: 32px; }
-            .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i { font-size: 0.9rem; }
+            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.6rem; padding: 2px 8px; min-height: 32px; }
+            .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i, .btn-reporte i { font-size: 0.9rem; }
             .btn-auditor img { height: 16px; }
             .header-text { font-size: 0.8rem; }
             .header-text span { font-size: 0.65rem; }
@@ -524,7 +548,7 @@
             .app-container { padding: 0.4rem 1rem 0.2rem 1rem; }
             .app-header { margin-bottom: 0.4rem; }
             .header-left h1 { font-size: 1.2rem; }
-            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-auditor { min-height: 32px; font-size: 0.75rem; padding: 2px 12px; }
+            .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { min-height: 32px; font-size: 0.75rem; padding: 2px 12px; }
             .btn-auditor img { height: 20px; }
             .module-card { min-height: 100px; padding: 0.8rem 1rem; flex-direction: row; gap: 0.8rem; }
             .module-card i { font-size: 2rem; }
@@ -545,9 +569,11 @@
             <button class="btn-manual" id="btnManual"><i class="bi bi-book"></i> Manual para uso</button>
             <button class="btn-video" id="btnVideo"><i class="bi bi-play-circle"></i> Video Presentación</button>
             <!-- Botón de respaldo existente -->
-            <button class="btn-respaldo" id="btnRespaldo"><i class="bi bi-database"></i> Acceder a Respaldo del Sistema</button>
+            <button class="btn-respaldo" id="btnRespaldo"><i class="bi bi-database"></i> Respaldo</button>
             <!-- NUEVO BOTÓN: Calendario Pases -->
             <button class="btn-calendario" id="btnCalendario"><i class="bi bi-calendar-event"></i> Calendario Pases</button>
+            <!-- NUEVO BOTÓN: Reporte Total -->
+            <button class="btn-reporte" id="btnReporte"><i class="bi bi-file-earmark-bar-graph"></i> Reporte Total</button>
             <!-- NUEVO BOTÓN: Auditor IA (texto + gif) -->
             <span class="btn-auditor" id="btnAuditor">
                 <img src="https://raw.githubusercontent.com/sistemadigital/iconos/main/vector.gif" alt="Auditor IA" />
@@ -641,6 +667,7 @@
         const infoModal = document.getElementById('infoModal');
         const btnRespaldo = document.getElementById('btnRespaldo');
         const btnCalendario = document.getElementById('btnCalendario');
+        const btnReporte = document.getElementById('btnReporte');
         // Nuevo botón Auditor IA
         const btnAuditor = document.getElementById('btnAuditor');
 
@@ -683,6 +710,11 @@
         // Evento para el botón Calendario Pases
         btnCalendario.addEventListener('click', function() {
             mostrarModulo('https://defensoria6.github.io/pase-digital/calendario-pase');
+        });
+
+        // Evento para el botón Reporte Total (abre en el iframe)
+        btnReporte.addEventListener('click', function() {
+            mostrarModulo('https://defensoria6.github.io/pase-digital/reporte-p');
         });
 
         // Evento para el botón Auditor IA (abre en el iframe)
