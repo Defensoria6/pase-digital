@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurar causas en Firestore · Defensoría 6</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+  :root {
+    --bg: #f3f5f8; --panel: #ffffff; --ink: #1c2530; --muted: #5d6a79;
+    --line: #d5dce5; --accent: #1565c0; --ok: #1b7f4b; --warn: #b26a00; --bad: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 14px; }
+  h2 { font-size: 1.02rem; margin: 0 0 10px; }
+  label { display: block; font-size: .9rem; margin-bottom: 4px; color: var(--muted); }
+  select, input[type=file] { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; background: #fff; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { font: inherit; padding: 9px 16px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  button.sec { background: #fff; color: var(--accent); }
+  button.danger { background: var(--bad); border-color: var(--bad); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid #90b8e8; outline-offset: 1px; }
+  .opt { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; font-size: .93rem; color: var(--ink); }
+  .opt input { margin-top: 4px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+  .stat { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 1.5rem; }
+  .stat span { font-size: .85rem; color: var(--muted); }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .tablewrap { max-height: 280px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; margin-top: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { position: sticky; top: 0; background: #eef2f7; }
+  progress { width: 100%; height: 14px; margin-top: 10px; }
+  #log { background: #111820; color: #d6e2ee; font-family: ui-monospace, Consolas, monospace; font-size: .82rem; padding: 10px 12px; border-radius: 6px; height: 170px; overflow: auto; white-space: pre-wrap; }
+  .hint { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Restaurar causas en Firestore</h1>
+  <p class="lead">Sube el <code>datos.json</code> y vuelve a guardar en la colección <code>operador</code> las causas que faltan, con el mismo ID y los mismos datos que tiene el JSON.</p>
+
+  <section>
+    <h2>1. Cargar el JSON</h2>
+    <label for="archivo">Archivo datos.json</label>
+    <input type="file" id="archivo" accept=".json,application/json">
+    <div class="row" style="margin-top:10px">
+      <button class="sec" id="btnGithub" type="button">O cargar desde GitHub (Defensoria6/pase-digital)</button>
+    </div>
+    <div id="estadoJson" class="hint">Todavía no se cargó ningún archivo.</div>
+  </section>
+
+  <section id="secFiltro" hidden>
+    <h2>2. Qué restaurar</h2>
+    <label for="selEmp">Empleado</label>
+    <select id="selEmp"></select>
+    <div class="hint">Se toman las causas donde el empleado figura como original, asignado o ID de empleado.</div>
+    <div style="margin-top:12px">
+      <label class="opt"><input type="radio" name="modo" value="faltantes" checked>
+        <span><b>Solo las que faltan</b> (recomendado): no toca las causas que ya existen en Firestore, así no pisa cambios más nuevos.</span></label>
+      <label class="opt"><input type="radio" name="modo" value="sobrescribir">
+        <span><b>Sobrescribir todas</b>: deja cada causa idéntica al JSON, incluso las que ya existen.</span></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnVerificar" type="button">Verificar contra Firestore</button>
+    </div>
+  </section>
+
+  <section id="secResumen" hidden>
+    <h2>3. Resultado de la verificación</h2>
+    <div class="stats">
+      <div class="stat"><b id="stJson">0</b><span>causas en el JSON</span></div>
+      <div class="stat"><b id="stFalta" class="warn">0</b><span>faltan en Firestore</span></div>
+      <div class="stat"><b id="stExiste" class="ok">0</b><span>ya existen</span></div>
+      <div class="stat"><b id="stAccion">0</b><span>se van a escribir</span></div>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Número</th><th>Tipo</th><th>Estado</th><th>En Firestore</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <div class="row" style="margin-top:12px">
+      <button id="btnRestaurar" type="button" disabled>Restaurar en Firestore</button>
+    </div>
+    <progress id="prog" value="0" max="100" hidden></progress>
+  </section>
+
+  <section>
+    <h2>Registro</h2>
+    <div id="log" role="log" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Firebase (mismo proyecto que empleado.html) ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
+    authDomain: "pasedefensoria6.firebaseapp.com",
+    projectId: "pasedefensoria6",
+    storageBucket: "pasedefensoria6.firebasestorage.app",
+    messagingSenderId: "785250989941",
+    appId: "1:785250989941:web:1bfb35a5f954144dbb853c"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const COLECCION = 'operador';
+  const DOC_RESERVADO = 'secretario_config';
+  const URL_GITHUB = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
+  const TAM_LOTE = 400; // Firestore admite hasta 500 operaciones por lote
+
+  const EMPLEADOS = [
+    { id: 'emp9',  nombre: 'Gudiño Natalia Esther' },
+    { id: 'emp1',  nombre: 'Bazante Nadia Romina' },
+    { id: 'emp3',  nombre: 'Cardozo Maria Raquel' },
+    { id: 'emp4',  nombre: 'Cedron Noelia' },
+    { id: 'emp5',  nombre: 'emp5 (Escobar en el JSON / Martinis en la app)' },
+    { id: 'emp6',  nombre: 'Fioravante Rómulo' },
+    { id: 'emp7',  nombre: 'Gonzalez Alberto Misael' },
+    { id: 'emp8',  nombre: 'Gonzalez Juan Jose' },
+    { id: 'emp11', nombre: 'Pablos Patricia Tamara' },
+    { id: 'emp12', nombre: 'Palacios Ana Gabriela' },
+    { id: 'emp13', nombre: 'Sosa Rita Cecilia' },
+    { id: '__todas__', nombre: 'Todas las causas del JSON' }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  let causasJson = [];
+  let seleccion = [];      // causas del filtro actual
+  let aEscribir = [];      // causas que se van a escribir
+  let idsExistentes = new Set();
+
+  function log(msg, cls) {
+    const el = $('log');
+    const hora = new Date().toLocaleTimeString('es-AR');
+    el.textContent += `[${hora}] ${msg}\n`;
+    el.scrollTop = el.scrollHeight;
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function modo() { return document.querySelector('input[name=modo]:checked').value; }
+
+  // ---------- 1. Cargar JSON ----------
+  function procesarJson(data, origen) {
+    if (!data || !Array.isArray(data.causas)) {
+      throw new Error('El archivo no tiene el formato esperado: falta la lista "causas".');
+    }
+    causasJson = data.causas.filter((c) => c && c.id && String(c.id).indexOf('/') === -1 && c.id !== DOC_RESERVADO);
+    const descartadas = data.causas.length - causasJson.length;
+    $('estadoJson').innerHTML = `<span class="ok">Listo (${esc(origen)}).</span> ${causasJson.length} causas leídas` +
+      (descartadas ? `, ${descartadas} descartadas por no tener un ID válido` : '') + '.';
+    log(`JSON cargado desde ${origen}: ${causasJson.length} causas.`);
+    $('secFiltro').hidden = false;
+    $('secResumen').hidden = true;
+    $('btnRestaurar').disabled = true;
+  }
+
+  $('archivo').addEventListener('change', (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { procesarJson(JSON.parse(r.result), f.name); }
+      catch (e) { $('estadoJson').innerHTML = `<span class="bad">${esc(e.message)}</span>`; log('Error: ' + e.message); }
+    };
+    r.onerror = () => { $('estadoJson').innerHTML = '<span class="bad">No se pudo leer el archivo.</span>'; };
+    r.readAsText(f, 'utf-8');
+  });
+
+  $('btnGithub').addEventListener('click', async () => {
+    try {
+      $('estadoJson').textContent = 'Descargando desde GitHub…';
+      const resp = await fetch(URL_GITHUB, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('GitHub respondió ' + resp.status);
+      procesarJson(await resp.json(), 'GitHub');
+    } catch (e) {
+      $('estadoJson').innerHTML = `<span class="bad">${esc(e.message)}</span>`;
+      log('Error: ' + e.message);
+    }
+  });
+
+  // ---------- 2. Selector ----------
+  const sel = $('selEmp');
+  EMPLEADOS.forEach((e) => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nombre;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => { $('secResumen').hidden = true; $('btnRestaurar').disabled = true; });
+  document.querySelectorAll('input[name=modo]').forEach((r) => r.addEventListener('change', () => {
+    $('secResumen').hidden = true; $('btnRestaurar').disabled = true;
+  }));
+
+  function filtrar() {
+    const emp = sel.value;
+    if (emp === '__todas__') return causasJson.slice();
+    return causasJson.filter((c) => c.empleadoOriginal === emp || c.empleadoAsignado === emp || c.empleadoId === emp);
+  }
+
+  // ---------- 3. Verificar contra Firestore ----------
+  async function leerIdsFirestore() {
+    const snap = await db.collection(COLECCION).get();
+    const ids = new Set();
+    snap.forEach((d) => ids.add(d.id));
+    return ids;
+  }
+
+  $('btnVerificar').addEventListener('click', async () => {
+    const btn = $('btnVerificar');
+    btn.disabled = true;
+    try {
+      seleccion = filtrar();
+      log(`Verificando ${seleccion.length} causas contra Firestore…`);
+      idsExistentes = await leerIdsFirestore();
+      const faltan = seleccion.filter((c) => !idsExistentes.has(c.id));
+      const existen = seleccion.length - faltan.length;
+      aEscribir = modo() === 'faltantes' ? faltan : seleccion.slice();
+
+      $('stJson').textContent = seleccion.length;
+      $('stFalta').textContent = faltan.length;
+      $('stExiste').textContent = existen;
+      $('stAccion').textContent = aEscribir.length;
+      $('tbody').innerHTML = seleccion.map((c) => {
+        const ex = idsExistentes.has(c.id);
+        return `<tr><td>${esc(c.numero)}</td><td>${esc(c.tipo)}</td><td>${esc(c.estado)}</td>` +
+               `<td class="${ex ? 'ok' : 'warn'}">${ex ? 'existe' : 'falta'}</td></tr>`;
+      }).join('');
+      $('secResumen').hidden = false;
+      $('btnRestaurar').disabled = aEscribir.length === 0;
+      log(`Verificación lista: ${faltan.length} faltan, ${existen} ya existen. Se escribirán ${aEscribir.length}.`);
+      if (aEscribir.length === 0) log('No hay nada para restaurar con esta selección.');
+    } catch (e) {
+      log('Error al leer Firestore: ' + e.message);
+      alert('No se pudo leer Firestore: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- 4. Restaurar ----------
+  $('btnRestaurar').addEventListener('click', async () => {
+    if (!aEscribir.length) return;
+    const msg = modo() === 'sobrescribir'
+      ? `Se van a SOBRESCRIBIR ${aEscribir.length} causas en Firestore con los datos del JSON. ¿Continuar?`
+      : `Se van a crear ${aEscribir.length} causas en Firestore. ¿Continuar?`;
+    if (!confirm(msg)) return;
+
+    const btn = $('btnRestaurar'), verif = $('btnVerificar'), prog = $('prog');
+    btn.disabled = true; verif.disabled = true;
+    prog.hidden = false; prog.max = aEscribir.length; prog.value = 0;
+
+    let escritas = 0;
+    try {
+      for (let i = 0; i < aEscribir.length; i += TAM_LOTE) {
+        const tramo = aEscribir.slice(i, i + TAM_LOTE);
+        const batch = db.batch();
+        tramo.forEach((c) => {
+          // copia exacta del JSON, sin merge: el documento queda igual al registro original
+          const limpio = JSON.parse(JSON.stringify(c));
+          batch.set(db.collection(COLECCION).doc(String(c.id)), limpio);
+        });
+        await batch.commit();
+        escritas += tramo.length;
+        prog.value = escritas;
+        log(`Lote guardado: ${escritas}/${aEscribir.length}`);
+      }
+
+      // comprobación final
+      const idsAhora = await leerIdsFirestore();
+      const faltanAun = seleccion.filter((c) => !idsAhora.has(c.id)).length;
+      if (faltanAun === 0) {
+        log(`Terminado. ${escritas} causas escritas y verificadas en Firestore. Ya podés recargar empleado.html.`);
+        alert(`Listo: ${escritas} causas restauradas.`);
+      } else {
+        log(`Terminado con diferencias: todavía faltan ${faltanAun} causas. Volvé a verificar.`);
+        alert(`Atención: todavía faltan ${faltanAun} causas. Revisá el registro.`);
+      }
+      idsExistentes = idsAhora;
+    } catch (e) {
+      log(`ERROR tras ${escritas} causas escritas: ${e.message}`);
+      alert('Se interrumpió la restauración: ' + e.message + '\nPodés volver a verificar y repetir; el modo "solo faltantes" retoma donde quedó.');
+    } finally {
+      verif.disabled = false;
+      btn.disabled = false;
+    }
+  });
+
+  log('Listo. Cargá el datos.json para empezar.');
+})();
+</script>
+</body>
+</html>
