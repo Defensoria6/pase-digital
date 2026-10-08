@@ -695,13 +695,115 @@
             }
         }
     </style>
+    <!-- ============================================================
+         NUEVO: INTERRUPTOR DE HISTÓRICOS (GitHub)
+         ============================================================ -->
+    <style>
+        .historicos-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.3rem 0.85rem 0.3rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: var(--white);
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+            transition: border-color 0.2s, opacity 0.2s;
+        }
+
+        .historicos-toggle:focus-within {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .historicos-toggle input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .historicos-switch {
+            position: relative;
+            flex-shrink: 0;
+            width: 34px;
+            height: 20px;
+            border-radius: 999px;
+            background: #cbd5e1;
+            transition: background 0.2s;
+        }
+
+        .historicos-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s;
+        }
+
+        .historicos-toggle input:checked + .historicos-switch {
+            background: var(--primary);
+        }
+
+        .historicos-toggle input:checked + .historicos-switch::after {
+            transform: translateX(14px);
+        }
+
+        .historicos-count {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .historicos-toggle.is-off .historicos-count {
+            color: var(--past);
+        }
+
+        .historicos-toggle.is-error {
+            border-color: #f59e0b;
+        }
+
+        .historicos-toggle.is-error .historicos-count {
+            color: #b45309;
+        }
+
+        .historicos-toggle.is-loading {
+            opacity: 0.6;
+            cursor: progress;
+        }
+
+        .causa-tag-historico {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #92400e;
+            background: #fef3c7;
+            padding: 2px 10px;
+            border-radius: 20px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .historicos-switch,
+            .historicos-switch::after,
+            .historicos-toggle {
+                transition: none;
+            }
+        }
+    </style>
 </head>
 <body>
 
     <!-- LOADING -->
     <div id="loadingScreen" class="loading-screen">
         <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom: 1rem;"></i>
-        <p>Cargando pases desde la base de datos...</p>
+        <p>Cargando pases...</p>
     </div>
 
     <!-- HEADER -->
@@ -711,6 +813,11 @@
             <button id="btnToday" title="Ir a hoy"><i class="fas fa-calendar-day"></i> Hoy</button>
             <button id="btnNext" title="Mes Siguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
             <button id="btnImprimirMes" class="btn-imprimir-mes" title="Imprimir el calendario del mes visible"><i class="fas fa-print"></i> Imprimir</button>
+            <label class="historicos-toggle" id="historicosToggle" title="Mostrar u ocultar los pases históricos guardados en GitHub">
+                <input type="checkbox" id="chkHistoricos" checked />
+                <span class="historicos-switch" aria-hidden="true"></span>
+                <span>Históricos <span class="historicos-count" id="historicosCount"></span></span>
+            </label>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <span id="monthTotalKpi" class="month-total-kpi"><i class="fas fa-list-ul"></i> 0</span>
@@ -806,7 +913,15 @@
             // ============================================================
             // 2. VARIABLES GLOBALES
             // ============================================================
-            let causas = [];
+            // Fuente de los pases históricos (archivo en GitHub)
+            const URL_HISTORICOS = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/refs/heads/main/datos.json';
+            const LS_HISTORICOS = 'calendarioPase.mostrarHistoricos';
+
+            let causas = [];              // lo que se muestra: actuales (+ históricos si están activados)
+            let causasActuales = [];      // Firestore
+            let causasHistoricas = [];    // GitHub (datos.json)
+            let historicosCargados = false;
+            let mostrarHistoricos = leerPreferenciaHistoricos();
             let agrupadas = {};
             let navDate = new Date();
             let currentModalCausas = []; // para imprimir
@@ -819,6 +934,9 @@
             const modalDateTitle = document.getElementById('modalDateTitle');
             const modalTotalBadge = document.getElementById('modalTotalBadge');
             const monthTotalKpi = document.getElementById('monthTotalKpi');
+            const chkHistoricos = document.getElementById('chkHistoricos');
+            const historicosToggle = document.getElementById('historicosToggle');
+            const historicosCount = document.getElementById('historicosCount');
 
             // ============================================================
             // 3. FUNCIONES AUXILIARES
@@ -826,9 +944,38 @@
             function toDate(val) {
                 if (!val) return null;
                 if (val.toDate) return val.toDate();
-                if (val.seconds) return new Date(val.seconds * 1000);
+                if (val.seconds !== undefined) return new Date(val.seconds * 1000);
+                if (val._seconds !== undefined) return new Date(val._seconds * 1000);
                 if (val instanceof Date) return val;
+                if (typeof val === 'string') {
+                    // "2026-10-05" -> fecha local (evita el corrimiento de un día por zona horaria)
+                    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                    if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
+                    // "05/10/2026" -> día/mes/año (formato argentino)
+                    const dmy = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                    if (dmy) return new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
+                }
                 return new Date(val);
+            }
+
+            function esc(texto) {
+                return String(texto ?? '').replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
+            }
+
+            function leerPreferenciaHistoricos() {
+                try {
+                    return localStorage.getItem(LS_HISTORICOS) !== 'off';
+                } catch (e) {
+                    return true;
+                }
+            }
+
+            function guardarPreferenciaHistoricos(valor) {
+                try {
+                    localStorage.setItem(LS_HISTORICOS, valor ? 'on' : 'off');
+                } catch (e) { /* sin almacenamiento: la preferencia dura solo esta visita */ }
             }
 
             function fmtDateKey(date) {
@@ -857,9 +1004,10 @@
             }
 
             // ============================================================
-            // 4. CARGA DE DATOS DESDE FIRESTORE
+            // 4. CARGA DE DATOS: FIRESTORE (actuales) + GITHUB (históricos)
             // ============================================================
-            async function cargarCausas() {
+            async function cargarCausasFirestore() {
+                if (!db) return [];
                 try {
                     const snapshot = await db.collection('operador').get();
                     const lista = [];
@@ -870,16 +1018,107 @@
                     });
                     return lista;
                 } catch (error) {
-                    console.error('Error cargando causas:', error);
+                    console.error('Error cargando causas desde Firestore:', error);
                     return [];
                 }
+            }
+
+            // Acepta un arreglo, o un objeto con el arreglo dentro (causas, datos, pases...),
+            // o un objeto cuyas claves son los ids de cada causa.
+            function normalizarHistoricos(json) {
+                if (!json || typeof json !== 'object') return [];
+
+                let origen = json;
+                if (!Array.isArray(json)) {
+                    const clavesConocidas = ['causas', 'datos', 'pases', 'historico', 'historicos', 'operador'];
+                    origen = clavesConocidas.map(k => json[k]).find(v => v && typeof v === 'object')
+                          || Object.values(json).find(Array.isArray)
+                          || json;
+                }
+
+                const lista = Array.isArray(origen)
+                    ? origen
+                    : Object.entries(origen)
+                        .filter(([, v]) => v && typeof v === 'object')
+                        .map(([id, v]) => ({ id, ...v }));
+
+                return lista
+                    .filter(c => c && typeof c === 'object')
+                    .map((c, i) => ({ ...c, id: c.id || ('gh-' + i), origen: 'github' }));
+            }
+
+            async function cargarHistoricosGitHub() {
+                try {
+                    const resp = await fetch(URL_HISTORICOS, { cache: 'no-cache' });
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    causasHistoricas = normalizarHistoricos(await resp.json());
+                    historicosCargados = true;
+
+                    const sinFecha = causasHistoricas.filter(c => {
+                        const d = toDate(c.fechaPaseSecretario);
+                        return !d || isNaN(d.getTime());
+                    }).length;
+                    if (sinFecha > 0) {
+                        console.warn(`Históricos: ${sinFecha} registro(s) sin fechaPaseSecretario válida; no se ven en el calendario.`);
+                    }
+                } catch (error) {
+                    console.error('Error cargando históricos desde GitHub:', error);
+                    causasHistoricas = [];
+                    historicosCargados = false;
+                }
+                return historicosCargados;
+            }
+
+            // Si una causa está en Firestore y también en GitHub (mismo expediente y misma fecha),
+            // se cuenta una sola vez y gana la de Firestore.
+            function claveDuplicado(c) {
+                const f = toDate(c.fechaPaseSecretario);
+                if (!c.numero || !f || isNaN(f.getTime())) return null;
+                return String(c.numero).trim().toLowerCase() + '|' + fmtDateKey(f);
+            }
+
+            function combinarCausas() {
+                if (!mostrarHistoricos || causasHistoricas.length === 0) return causasActuales;
+                const vistas = new Set();
+                causasActuales.forEach(c => {
+                    const k = claveDuplicado(c);
+                    if (k) vistas.add(k);
+                });
+                const historicasSinDuplicar = causasHistoricas.filter(c => {
+                    const k = claveDuplicado(c);
+                    return !k || !vistas.has(k);
+                });
+                return causasActuales.concat(historicasSinDuplicar);
+            }
+
+            function actualizarIndicadorHistoricos() {
+                chkHistoricos.checked = mostrarHistoricos;
+                historicosToggle.classList.toggle('is-off', !mostrarHistoricos);
+                historicosToggle.classList.toggle('is-error', mostrarHistoricos && !historicosCargados);
+
+                if (historicosCargados) {
+                    historicosCount.textContent = causasHistoricas.length.toLocaleString('es-AR');
+                    historicosToggle.title = 'Mostrar u ocultar los pases históricos guardados en GitHub';
+                } else if (mostrarHistoricos) {
+                    historicosCount.textContent = 'sin conexión';
+                    historicosToggle.title = 'No se pudieron cargar los históricos de GitHub. Desactive y vuelva a activar para reintentar.';
+                } else {
+                    historicosCount.textContent = '';
+                }
+            }
+
+            function refrescarVista() {
+                causas = combinarCausas();
+                agrupadas = agruparPorFecha(causas);
+                actualizarIndicadorHistoricos();
+                renderizarCalendario();
             }
 
             function agruparPorFecha(causasArray) {
                 const grupos = {};
                 causasArray.forEach(c => {
-                    const fecha = c.fechaPaseSecretario;
-                    if (fecha) {
+                    const fecha = toDate(c.fechaPaseSecretario);
+                    if (fecha && !isNaN(fecha.getTime())) {
                         const key = fmtDateKey(fecha);
                         if (!grupos[key]) grupos[key] = [];
                         grupos[key].push(c);
@@ -986,10 +1225,14 @@
                         const tipo = c.tipo || 'Otro';
                         const div = document.createElement('div');
                         div.className = 'causa-item';
+                        const tagHistorico = c.origen === 'github'
+                            ? '<span class="causa-tag-historico">Histórico</span>'
+                            : '';
                         div.innerHTML = `
-                            <span class="causa-num">${c.numero || 'S/N'}</span>
-                            <span class="causa-tipo">${tipo}</span>
-                            <span class="causa-estado">${estadoTexto}</span>
+                            <span class="causa-num">${esc(c.numero || 'S/N')}</span>
+                            <span class="causa-tipo">${esc(tipo)}</span>
+                            ${tagHistorico}
+                            <span class="causa-estado">${esc(estadoTexto)}</span>
                         `;
                         modalBody.appendChild(div);
                     });
@@ -1015,9 +1258,9 @@
                         const tipo = c.tipo || 'Otro';
                         filas += `
                             <tr>
-                                <td><strong>${c.numero || 'S/N'}</strong></td>
-                                <td>${tipo}</td>
-                                <td>${estado}</td>
+                                <td><strong>${esc(c.numero || 'S/N')}</strong></td>
+                                <td>${esc(tipo)}</td>
+                                <td>${esc(estado)}</td>
                             </tr>
                         `;
                     });
@@ -1165,6 +1408,7 @@
                     <div class="mes-info">
                         <span><strong>Fecha de impresión:</strong> ${fmtFechaCorta(new Date())}</span>
                         <span><strong>Total de pases del mes:</strong> ${totalMes}</span>
+                        <span><strong>Datos:</strong> ${mostrarHistoricos && historicosCargados ? 'Actuales + históricos' : 'Solo actuales'}</span>
                     </div>
                     <table class="mes-tabla">
                         <thead>
@@ -1224,11 +1468,27 @@
             // ============================================================
             // 10. INICIALIZACIÓN
             // ============================================================
+            chkHistoricos.addEventListener('change', async () => {
+                mostrarHistoricos = chkHistoricos.checked;
+                guardarPreferenciaHistoricos(mostrarHistoricos);
+
+                // Si se activa y todavía no se pudieron traer (o nunca se pidieron), se intenta de nuevo
+                if (mostrarHistoricos && !historicosCargados) {
+                    historicosToggle.classList.add('is-loading');
+                    await cargarHistoricosGitHub();
+                    historicosToggle.classList.remove('is-loading');
+                }
+                refrescarVista();
+            });
+
             document.addEventListener('DOMContentLoaded', async () => {
-                causas = await cargarCausas();
-                agrupadas = agruparPorFecha(causas);
+                const [actuales] = await Promise.all([
+                    cargarCausasFirestore(),
+                    mostrarHistoricos ? cargarHistoricosGitHub() : Promise.resolve()
+                ]);
+                causasActuales = actuales;
                 loadingScreen.style.display = 'none';
-                renderizarCalendario();
+                refrescarVista();
             });
 
         })();
