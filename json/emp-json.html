@@ -981,9 +981,21 @@
             //  PERSISTENCIA LOCAL (JSON + localStorage)
             // ============================================================
             function guardarEstadoLocal() {
-                localStorage.setItem('pases_data_empleado', JSON.stringify({
+                const payload = JSON.stringify({
                     causas: state.causas
-                }));
+                });
+                try {
+                    localStorage.setItem('pases_data_empleado', payload);
+                } catch (e) {
+                    // Almacenamiento lleno (las 4 páginas comparten ~5 MB): se liberan las copias
+                    // locales de las otras páginas (son solo respaldo) y se reintenta una vez.
+                    try {
+                        ['pases_data_defensor', 'pases_data_empleado', 'pases_data_operador', 'pases_data'].filter(k => k !== 'pases_data_empleado').forEach(k => localStorage.removeItem(k));
+                        localStorage.setItem('pases_data_empleado', payload);
+                    } catch (e2) {
+                        console.warn('No se pudo guardar la copia local (almacenamiento lleno)', e2);
+                    }
+                }
             }
 
             function setDefaultData() {
@@ -994,7 +1006,7 @@
             async function cargarDatosDesdeJSON() {
                 const JSON_DATA_URL = 'https://raw.githubusercontent.com/Defensoria6/pase-digital/main/datos.json';
                 try {
-                    const resp = await fetch(JSON_DATA_URL);
+                    const resp = await fetch(JSON_DATA_URL + '?t=' + Date.now(), { cache: 'no-store' });
                     if (!resp.ok) throw new Error('Error al cargar JSON desde GitHub');
                     const data = await resp.json();
                     state.causas = data.causas || [];
@@ -1003,6 +1015,7 @@
                     showToast('Datos cargados desde JSON (GitHub)', 'success');
                 } catch (e) {
                     console.warn('No se pudo cargar JSON desde GitHub, usando localStorage...', e);
+                    showToast('No se pudo cargar desde GitHub (' + (e && e.message ? e.message : e) + '). Se usa la copia local.', 'danger');
                     const local = localStorage.getItem('pases_data_empleado');
                     if (local) {
                         try {

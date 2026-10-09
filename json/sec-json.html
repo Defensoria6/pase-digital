@@ -1600,10 +1600,22 @@
         //  PERSISTENCIA LOCAL (JSON)
         // ============================================================
         function guardarEstadoLocal() {
-            localStorage.setItem('pases_data', JSON.stringify({
+            const payload = JSON.stringify({
                 causas: state.causas,
                 empleados: state.empleados
-            }));
+            });
+            try {
+                localStorage.setItem('pases_data', payload);
+            } catch (e) {
+                // Almacenamiento lleno (las 4 páginas comparten ~5 MB): se liberan las copias
+                // locales de las otras páginas (son solo respaldo) y se reintenta una vez.
+                try {
+                    ['pases_data_defensor', 'pases_data_empleado', 'pases_data_operador', 'pases_data'].filter(k => k !== 'pases_data').forEach(k => localStorage.removeItem(k));
+                    localStorage.setItem('pases_data', payload);
+                } catch (e2) {
+                    console.warn('No se pudo guardar la copia local (almacenamiento lleno)', e2);
+                }
+            }
         }
 
         function setDefaultData() {
@@ -1614,7 +1626,7 @@
 
         async function cargarDatosDesdeJSON() {
             try {
-                const resp = await fetch(JSON_DATA_URL);
+                const resp = await fetch(JSON_DATA_URL + '?t=' + Date.now(), { cache: 'no-store' });
                 if (!resp.ok) throw new Error('Error al cargar JSON desde GitHub');
                 const data = await resp.json();
                 state.causas = data.causas || [];
@@ -1623,6 +1635,7 @@
                 showToast('Datos cargados desde JSON (GitHub)', 'success');
             } catch (e) {
                 console.warn('No se pudo cargar JSON desde GitHub, usando localStorage...', e);
+                showToast('No se pudo cargar desde GitHub (' + (e && e.message ? e.message : e) + '). Se usa la copia local.', 'danger');
                 const local = localStorage.getItem('pases_data');
                 if (local) {
                     try {
@@ -1797,7 +1810,7 @@
                 }
             }
             USE_FIRESTORE = nuevoModo;
-            localStorage.setItem('modo_preferido', USE_FIRESTORE ? 'firestore' : 'json');
+            try { localStorage.setItem('modo_preferido_secretario', USE_FIRESTORE ? 'firestore' : 'json'); } catch (_) {}
             state.causas = [];
             state.empleados = [];
             cargarDatos();
@@ -4676,7 +4689,7 @@
                 errorDiv.style.display = 'none';
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('appWrapper').classList.add('visible');
-                const modoGuardado = localStorage.getItem('modo_preferido');
+                const modoGuardado = localStorage.getItem('modo_preferido_secretario');
                 if (modoGuardado === 'firestore') {
                     USE_FIRESTORE = true;
                 } else if (modoGuardado === 'json') {
@@ -4898,7 +4911,7 @@
         //  INICIALIZACIÓN
         // ============================================================
         (function init() {
-            const modoGuardado = localStorage.getItem('modo_preferido');
+            const modoGuardado = localStorage.getItem('modo_preferido_secretario');
             if (modoGuardado === 'firestore') {
                 USE_FIRESTORE = true;
             } else if (modoGuardado === 'json') {
