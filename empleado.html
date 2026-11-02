@@ -563,6 +563,40 @@ const KPI_LABELS = {
 function fmtDt(iso){ if(!iso) return '—'; const d=new Date(iso); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function getEmpName(id){ const e=CONFIG.empleados.find(x=>x.id===id); return e?e.nombre:'—'; }
 function getSecName(id){ const s=CONFIG.secretarios.find(x=>x.id===id); return s?s.nombre:'—'; }
+
+
+// ---- Secretario del pase: el HISTORIAL es la fuente de verdad ----
+// La tabla, filtros, reportes y modales deben mostrar el mismo secretario que figura
+// en el movimiento "Asignado (Nivel N)..." del historial (quien realmente hizo el pase).
+function _secNorm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+function resolverSecretario(txt){
+  const raw = String(txt||'').trim();
+  const t = _secNorm(raw);
+  if(!t) return null;
+  const porId = CONFIG.secretarios.find(s => s.id === raw);
+  if(porId) return porId;
+  // Se compara por apellido (1.ª palabra del nombre) para no confundir con empleados que comparten nombre de pila
+  return CONFIG.secretarios.find(s => {
+    const apellido = _secNorm(s.nombre).split(' ')[0];
+    return apellido && (' ' + t + ' ').includes(' ' + apellido + ' ');
+  }) || null;
+}
+function secretarioDeHistorial(c){
+  const h = (c && c.historial) || [];
+  for(let i = h.length - 1; i >= 0; i--){
+    const m = h[i];
+    if(m && m.accion && String(m.accion).includes('Asignado (Nivel')){
+      const s = resolverSecretario(m.usuario);
+      if(s) return s;
+    }
+  }
+  return null;
+}
+function sincronizarSecretarioConHistorial(c){
+  const s = secretarioDeHistorial(c);
+  if(s){ c.secretarioId = s.id; c.secretarioNombre = s.nombre; }
+  return c;
+}
 function showToast(msg,type='success'){
   const c = document.getElementById('toastContainer');
   const icons = {success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};
@@ -908,6 +942,7 @@ function loadState(){
       const data = doc.data();
       if(!data.numero) return;
       if(!data.id) data.id = doc.id;
+      sincronizarSecretarioConHistorial(data);
       if(!data.empleadoAsignado && data.empleadoId) data.empleadoAsignado = data.empleadoId;
       const esSuPase = (
         (data.empleadoId       && (data.empleadoId       === empId || data.empleadoId       === empNombre)) ||
