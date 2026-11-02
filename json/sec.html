@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pase Digital · Secretario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ===== CAPA DE DATOS LOCAL: solo datos.json (sin Firebase) ===== -->
+<script>
+const DataFile = (function () {
+    const NOMBRE = 'datos.json', STORE = 'handles';
+    const LISTAS = ['causas', 'ausencias', 'empleados', 'chatInterno', 'chatDefensor'];
+    const FSA = typeof window.showOpenFilePicker === 'function';
+    const api = { onExterno: null };
+    let handle = null, raw = null, base = null, lastMod = 0;
+    let timer = null, guardando = false, pendiente = false, sucio = false, getSnap = null, estadoActual = '';
+
+    const abrirDB = () => new Promise((ok, no) => { const r = indexedDB.open('pase-digital-local', 1); r.onupgradeneeded = () => r.result.createObjectStore(STORE); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+    const dbGet = async k => { try { const d = await abrirDB(); return await new Promise((ok, no) => { const q = d.transaction(STORE).objectStore(STORE).get(k); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); }); } catch (_) { return null; } };
+    const dbSet = async (k, v) => { try { const d = await abrirDB(); await new Promise((ok, no) => { const t = d.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(v, k); t.oncomplete = ok; t.onerror = () => no(t.error); }); } catch (_) {} };
+    const permiso = async (h, pedir) => { const o = { mode: 'readwrite' }; try { if ((await h.queryPermission(o)) === 'granted') return true; return !!pedir && (await h.requestPermission(o)) === 'granted'; } catch (_) { return false; } };
+
+    const clave = x => (x && x.id != null) ? x.id : JSON.stringify(x);
+    const indexar = d => { const b = {}; LISTAS.forEach(k => { b[k] = new Map((d[k] || []).map(x => [clave(x), JSON.stringify(x)])); }); return b; };
+    const validar = d => { if (!d || typeof d !== 'object' || !Array.isArray(d.causas)) throw new Error('El archivo no tiene el formato esperado de datos.json (falta "causas").'); return d; };
+    const conMeta = o => { o.meta = Object.assign({}, o.meta, { exportado: new Date().toISOString(), version: (o.meta && o.meta.version) || '2.0' }); return o; };
+
+    async function leer() { const f = await handle.getFile(); const d = validar(JSON.parse(await f.text())); lastMod = f.lastModified; raw = d; base = indexar(d); return d; }
+
+    function fusionarLista(b, m, d) {
+        const mm = new Map(m.map(x => [clave(x), x])), dm = new Map(d.map(x => [clave(x), x])), out = [];
+        dm.forEach((dx, id) => { const mx = mm.get(id), bs = b.get(id); if (!mx) { if (bs === undefined || JSON.stringify(dx) !== bs) out.push(dx); } else out.push(JSON.stringify(mx) !== bs ? mx : dx); });
+        mm.forEach((mx, id) => { if (!dm.has(id) && (b.get(id) === undefined || JSON.stringify(mx) !== b.get(id))) out.push(mx); });
+        return out;
+    }
+    function fusionar(mine, disk) { const out = Object.assign({}, disk); Object.keys(mine).forEach(k => { out[k] = LISTAS.includes(k) ? fusionarLista(base[k] || new Map(), mine[k] || [], disk[k] || []) : mine[k]; }); return out; }
+
+    function estado(s, msg) {
+        estadoActual = s;
+        let el = document.getElementById('dfChip');
+        if (!el) {
+            el = document.createElement('div'); el.id = 'dfChip';
+            el.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99990;font:600 12px "Plus Jakarta Sans",sans-serif;padding:6px 12px;border-radius:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);color:#fff;user-select:none';
+            el.addEventListener('click', () => { if (estadoActual === 'descargar') descargar(); else if (estadoActual === 'error') { pendiente = true; volcar(); } });
+            document.body.appendChild(el);
+        }
+        const t = { ok: ['#2e7d32', '✔ datos.json al día'], pend: ['#f9a825', '⏳ guardando…'], descargar: ['#e65100', '⬇ Descargar datos.json'], error: ['#c62828', '⚠ ' + (msg || 'Error al guardar') + ' · clic para reintentar'] }[s];
+        el.style.background = t[0]; el.textContent = t[1];
+    }
+    function descargar() { const out = conMeta(Object.assign({}, raw, getSnap ? getSnap() : {})); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })); a.download = NOMBRE; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); sucio = false; estado('ok'); }
+
+    async function volcar() {
+        if (!pendiente) return;
+        if (guardando) { timer = setTimeout(volcar, 300); return; }
+        guardando = true; pendiente = false;
+        try {
+            const mine = getSnap();
+            if (!handle || !(await permiso(handle, false))) { raw = Object.assign(raw || {}, mine); estado('descargar'); return; }
+            if (raw && raw.causas && raw.causas.length && mine.causas && !mine.causas.length) throw new Error('Se evitó guardar una lista de causas vacía');
+            const f = await handle.getFile();
+            let out, fusionado = false;
+            if (f.lastModified !== lastMod) { out = fusionar(mine, validar(JSON.parse(await f.text()))); fusionado = true; } else out = Object.assign(raw, mine);
+            conMeta(out);
+            const w = await handle.createWritable();
+            await w.write(JSON.stringify(out, null, 2));
+            await w.close();
+            lastMod = (await handle.getFile()).lastModified; raw = out; base = indexar(out);
+            sucio = pendiente; estado(pendiente ? 'pend' : 'ok');
+            if (fusionado && api.onExterno) api.onExterno(out);
+        } catch (e) { console.error('datos.json:', e); pendiente = true; estado('error', e && e.message ? e.message : 'Error al guardar'); }
+        finally { guardando = false; if (pendiente && estadoActual !== 'error') { clearTimeout(timer); timer = setTimeout(volcar, 300); } }
+    }
+
+    function pantalla() {
+        return new Promise(async (ok) => {
+            const guardado = FSA ? await dbGet(NOMBRE) : null;
+            const B = 'display:block;width:100%;margin:8px 0;padding:11px;border:0;border-radius:10px;font-weight:700;cursor:pointer;color:#fff;background:';
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(11,30,51,.93);display:flex;align-items:center;justify-content:center;font-family:"Plus Jakarta Sans",sans-serif';
+            ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px 32px;max-width:470px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+                + '<div style="font-size:2.2rem">📂</div>'
+                + '<h4 style="margin:6px 0 10px;color:#0b3b5f;font-weight:700">Conectar con datos.json</h4>'
+                + '<p style="color:#455a64;font-size:.9rem;margin-bottom:14px">Esta página trabaja únicamente con el archivo <b>datos.json</b> de su misma carpeta. El navegador exige indicarlo con un clic' + (FSA ? ' (queda recordado).' : ' cada vez.') + '</p>'
+                + '<div id="dfMsg" style="color:#c62828;font-size:.8rem;min-height:18px"></div>'
+                + (guardado ? '<button id="dfReco" style="' + B + '#2e7d32">Reconectar con el archivo recordado</button>' : '')
+                + '<button id="dfSel" style="' + B + '#1976d2">Seleccionar datos.json</button>'
+                + '<input type="file" id="dfInp" accept=".json,application/json" style="display:none">'
+                + (FSA ? '' : '<p style="font-size:.72rem;color:#78909c;margin-top:10px">Navegador sin guardado directo: los cambios se guardan con «Descargar datos.json». Para guardado automático use Chrome o Edge.</p>')
+                + '</div>';
+            document.body.appendChild(ov);
+            const msg = t => { ov.querySelector('#dfMsg').textContent = t; };
+            const fin = async () => { try { await leer(); ov.remove(); ok(raw); } catch (e) { handle = null; msg(e && e.message ? e.message : String(e)); } };
+            const reco = ov.querySelector('#dfReco');
+            if (reco) reco.onclick = async () => { if (!(await permiso(guardado, true))) { msg('No se concedió permiso.'); return; } handle = guardado; fin(); };
+            ov.querySelector('#dfSel').onclick = async () => {
+                if (!FSA) { ov.querySelector('#dfInp').click(); return; }
+                try { const [h] = await window.showOpenFilePicker({ id: 'pase-digital', multiple: false, types: [{ description: 'datos.json', accept: { 'application/json': ['.json'] } }] }); await permiso(h, true); await dbSet(NOMBRE, h); handle = h; }
+                catch (e) { if (!e || e.name !== 'AbortError') msg('No se pudo abrir: ' + (e && e.message ? e.message : e)); return; }
+                fin();
+            };
+            ov.querySelector('#dfInp').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { raw = validar(JSON.parse(await f.text())); base = indexar(raw); handle = null; lastMod = 0; ov.remove(); ok(raw); } catch (er) { msg(er && er.message ? er.message : String(er)); } };
+        });
+    }
+
+    api.cargar = async function () {
+        if (!handle && !raw && FSA) { const h = await dbGet(NOMBRE); if (h && await permiso(h, false)) handle = h; }
+        if (handle) { try { await leer(); estado(sucio ? 'pend' : 'ok'); return raw; } catch (e) { if (raw) { estado('error', 'No se pudo leer datos.json'); return raw; } handle = null; } }
+        if (!handle && raw) return raw;
+        await pantalla(); estado('ok'); return raw;
+    };
+    api.guardar = function (snap) { getSnap = snap; pendiente = true; sucio = true; clearTimeout(timer); estado('pend'); timer = setTimeout(volcar, 400); };
+    api.datos = () => raw;
+    api.pendiente = () => pendiente || guardando;
+
+    setInterval(async () => {
+        if (!handle || pendiente || guardando || document.hidden) return;
+        try { const f = await handle.getFile(); if (f.lastModified === lastMod) return; const d = validar(JSON.parse(await f.text())); lastMod = f.lastModified; raw = d; base = indexar(d); if (api.onExterno) api.onExterno(d); } catch (_) {}
+    }, 4000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && pendiente) { clearTimeout(timer); volcar(); } });
+    window.addEventListener('beforeunload', e => { if (sucio) { e.preventDefault(); e.returnValue = ''; } });
+    return api;
+})();
+</script>
+
+<style>
+/* ===== CSS: idéntico al original (sin cambios) ===== */
+:root{--primary:#6366f1;--primary-dark:#4f46e5;--primary-light:#818cf8;--secondary:#2563eb;--accent:#06b6d4;--success:#3b82f6;--warning:#f59e0b;--danger:#ef4444;--bg:#ffffff;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--celeste:#0ea5e9;--shadow-sm:0 1px 2px rgba(15,23,42,.04);--shadow-md:0 4px 16px rgba(15,23,42,.06);--shadow-lg:0 20px 50px rgba(15,23,42,.12);}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#ffffff;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.login-overlay{position:fixed;inset:0;background:#ffffff;display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px}
+.login-overlay.hidden{display:none !important}
+.login-overlay::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 15%,rgba(37,99,235,.06) 0%,transparent 45%),radial-gradient(circle at 80% 85%,rgba(6,182,212,.06) 0%,transparent 45%);pointer-events:none}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@property --arc{syntax:'<angle>';initial-value:70deg;inherits:false}
+.login-card{--a1:#f5a25d;--a2:#e67e22;--a3:#c2570a;--g1:#f59a3c;--g2:#d96a0c;--accent:#d96a0c;--tint:#fdf0e3;--ink-c:#8a4108;--line-c:#f3e6d8;--glow:rgba(217,106,12,.32);--ring:7px;--ang:0deg;--arc:70deg;position:relative;border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,conic-gradient(from var(--ang),transparent 0deg,transparent calc(360deg - var(--arc)),var(--a1) calc(360deg - var(--arc) * .65),var(--a2) calc(360deg - var(--arc) * .3),var(--a3) calc(360deg - 4deg),transparent 360deg) border-box,linear-gradient(var(--line-c),var(--line-c)) border-box;border-radius:28px;padding:3rem 2.5rem 2.5rem;width:100%;max-width:440px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -16px rgba(15,23,42,.14);text-align:center;animation:slideUp .6s cubic-bezier(.16,1,.3,1),orbit 9s linear infinite;transition:box-shadow .35s ease,--arc .5s ease;-webkit-tap-highlight-color:transparent}
+@keyframes orbit{to{--ang:360deg}}
+.login-card:hover{--arc:150deg;box-shadow:0 1px 2px rgba(15,23,42,.05),0 26px 46px -20px var(--glow)}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.login-card .logo-icon{width:72px;height:72px;margin:.2rem auto 1.6rem;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:var(--accent);background:linear-gradient(135deg,var(--g1),var(--g2)) center / 0% 0% no-repeat,var(--tint);box-shadow:0 0 0 var(--ring) color-mix(in srgb,var(--accent) 9%,transparent);flex-shrink:0;transition:background-size .4s cubic-bezier(.16,1,.3,1),color .3s ease,box-shadow .35s ease,transform .35s cubic-bezier(.16,1,.3,1)}
+.login-card:hover .logo-icon{background-size:100% 100%,auto;color:#fff;transform:rotate(-4deg) scale(1.05)}
+.login-card h1{font-size:1.7rem;font-weight:800;line-height:1.1;letter-spacing:-.035em;margin-bottom:.55rem;color:#0b1f3a}
+.login-card .sub{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem;color:var(--muted);font-size:.92rem;font-weight:500;margin-bottom:2rem}
+.login-card .sub .celeste{display:inline-block;padding:.18rem .65rem;border-radius:999px;background:var(--tint);color:var(--ink-c);font-weight:700;font-size:.76rem}
+.celeste{color:var(--celeste);font-weight:800}
+.login-card .form-control{border-radius:14px;padding:14px 18px;border:2px solid var(--border);background:#f8fafc;font-size:.95rem;margin-bottom:1rem}
+.login-card .form-control:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(217,106,12,.15);background:#fff;outline:none}
+.btn-gradient{background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:14px;padding:14px;font-weight:700;font-size:.95rem;color:#fff;width:100%;transition:.25s;box-shadow:0 8px 24px -8px var(--glow)}
+.btn-gradient:hover{transform:translateY(-2px);color:#fff}
+.login-error{color:var(--danger);font-size:.82rem;margin-bottom:.8rem;display:none;font-weight:600}
+.app-wrapper{max-width:1700px;margin:0 auto;padding:20px;display:none;animation:fadeIn .5s ease}
+.app-wrapper.visible{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.app-header{--hd-ink:#4a2505;--hd-sub:#8a5a2b;--hd-line:#f6dcbc;--hd-tint:#fff3e4;--hd-accent:#f59a3c;--hd-ring:rgba(245,154,60,.25);background:linear-gradient(135deg,#fff8f0 0%,#fde9d2 100%);border:1px solid #f6dcbc;border-radius:24px;padding:1.2rem 2rem;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -18px rgba(217,106,12,.30);position:relative;overflow:hidden}
+.app-header::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(245,154,60,.18) 0%,transparent 55%);pointer-events:none}
+.brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+.brand-icon{width:52px;height:52px;background:linear-gradient(135deg,#f59a3c,#d96a0c);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;flex-shrink:0;box-shadow:0 0 0 5px rgba(245,154,60,.2),0 8px 22px -8px rgba(217,106,12,.6)}
+.brand h1{font-size:1.3rem;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.2}
+.brand h1 small{display:block;font-size:.7rem;font-weight:500;color:rgba(255,255,255,.65);margin-top:2px}
+.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.badge-role{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);color:#fff;padding:8px 18px;border-radius:40px;font-weight:600;font-size:.78rem;display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.2)}
+.badge-role .notif-count{background:#dc3545;color:#fff;border-radius:20px;padding:0 8px;font-size:.7rem;font-weight:700;margin-left:4px}
+.search-box{position:relative;flex:1;min-width:180px;max-width:280px}
+.search-box i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.6)}
+.search-box input{width:100%;padding:10px 16px 10px 42px;border-radius:40px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font-size:.85rem;backdrop-filter:blur(10px)}
+.search-box input::placeholder{color:rgba(255,255,255,.55)}
+.search-box input:focus{outline:none;background:rgba(255,255,255,.2)}
+.btn-header{padding:9px 20px;border-radius:40px;font-weight:600;font-size:.78rem;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;transition:.2s;display:inline-flex;align-items:center;gap:6px;backdrop-filter:blur(10px)}
+.btn-header:hover{background:rgba(255,255,255,.2)}
+.btn-header.primary{background:linear-gradient(135deg,var(--success),var(--accent));border:none;color:#fff}
+.app-header .brand h1{color:var(--hd-ink)}
+.app-header .brand h1 small{color:var(--hd-sub)}
+.app-header .badge-role{background:#fff;color:var(--hd-ink);border:1px solid var(--hd-line)}
+.app-header .search-box i{color:#94a3b8}
+.app-header .search-box input{background:#fff;color:var(--text);border:1px solid var(--hd-line)}
+.app-header .search-box input::placeholder{color:#94a3b8}
+.app-header .search-box input:focus{background:#fff;border-color:var(--hd-accent);box-shadow:0 0 0 3px var(--hd-ring)}
+.app-header .btn-header:not(.primary):not(.danger):not(.danger-outline){background:#fff;color:var(--hd-ink);border:1px solid var(--hd-line)}
+.app-header .btn-header:not(.primary):not(.danger):not(.danger-outline):hover{background:var(--hd-tint)}
+.app-header .btn-header.danger,.app-header .btn-header.danger-outline{background:#fff;color:#b91c1c;border:1px solid #fecaca}
+.filtros-activos-badge{background:var(--warning);color:#fff;border-radius:20px;padding:0 7px;font-size:.65rem;font-weight:800;margin-left:4px;display:none}
+.glass-card{background:#fff;border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow-md);padding:1.5rem 1.8rem;margin-bottom:1rem;position:relative}
+.glass-card .card-title{font-weight:800;font-size:1rem;color:var(--text);display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;padding-bottom:.7rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.glass-card .card-title i{color:var(--success)}
+.collapse-container{margin-bottom:1rem}
+.tab-container{background:#fff;border-radius:20px;padding:1.2rem 1.5rem;border:1px solid var(--border);box-shadow:var(--shadow-md);margin-bottom:1.5rem;position:relative}
+.nav-tabs-custom{border-bottom:2px solid var(--border);padding-bottom:.4rem;margin-bottom:1.2rem;display:flex;flex-wrap:wrap;gap:.3rem;list-style:none}
+.nav-tabs-custom .nav-item{list-style:none}
+.nav-tabs-custom .tab-btn{background:transparent;border:none;padding:.55rem 1.2rem;border-radius:10px;font-weight:700;font-size:.82rem;color:var(--muted);transition:all .2s;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.nav-tabs-custom .tab-btn:hover{background:#f1f5f9;color:var(--text)}
+.nav-tabs-custom .tab-btn.active{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3);border-color:transparent}
+.tab-pane{display:none;animation:fadeIn .3s ease}
+.tab-pane.active{display:block}
+.kpi-total-badge{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;padding:6px 18px 6px 14px;border-radius:40px;font-weight:700;font-size:1.1rem;box-shadow:0 4px 12px rgba(37,99,235,.3);display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.3)}
+.kpi-total-badge .total-num{font-size:1.8rem;font-weight:800;line-height:1;margin-left:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1.5rem}
+.kpi-item{background:#f9fcff;border-radius:16px;padding:.8rem .5rem;text-align:center;border:1px solid var(--border);transition:.15s}
+.kpi-item:hover{background:#f0f9ff;border-color:#bae6fd;transform:translateY(-2px)}
+.kpi-item .kpi-label{font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.3px}
+.kpi-item .kpi-value{font-size:1.5rem;font-weight:800;color:var(--text);line-height:1.2}
+.kpi-item .kpi-value.text-danger{color:#c62828}
+.kpi-item .kpi-value.text-success{color:#1e40af}
+.kpi-item .kpi-value.text-warning{color:#d97706}
+.kpi-item .kpi-value.text-primary{color:#0284c7}
+.kpi-item .kpi-value.text-secondary{color:#64748b}
+.kpi-item .kpi-value.text-info{color:#0891b2}
+.kpi-item .kpi-value.text-dark{color:#1e293b}
+.destacados-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
+.destacado-item{background:#fff;border-radius:16px;padding:.9rem 1.2rem;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.destacado-item .dest-label{font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.3px}
+.destacado-item .dest-nombre{font-size:1.1rem;font-weight:800;color:var(--text);margin-top:.1rem}
+.destacado-item .dest-nombre.text-danger{color:#c62828}
+.destacado-item .dest-detalle{font-size:.8rem;color:var(--muted)}
+.badge-estado{display:inline-block;padding:4px 12px;border-radius:30px;font-weight:700;font-size:.65rem;white-space:nowrap}
+.badge-sec{background:#fef3c7;color:#92400e}
+.badge-proc{background:#dbeafe;color:#1e40af}
+.badge-fin{background:#dbeafe;color:#1e40af}
+.badge-def{background:#ede9fe;color:#5b21b6}
+.badge-dev{background:#fee2e2;color:#991b1b}
+.badge-rem{background:#e0e7ff;color:#3730a3}
+.badge-rech{background:#fce7f3;color:#9d174d}
+.badge-espera{background:#fef9c3;color:#854d0e}
+.table-wrap{overflow-x:auto;border-radius:14px}
+.table-modern{width:100%;font-size:.82rem;border-collapse:separate;border-spacing:0;min-width:800px;margin:0}
+.table-modern thead th{background:linear-gradient(135deg,#f8fafc,#f1f5f9);color:#475569;font-weight:800;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;position:sticky;top:0;z-index:5}
+.table-modern tbody td{padding:9px 8px;border-bottom:1px solid var(--border);font-size:.82rem;vertical-align:middle;color:#1f2937;transition:background .15s}
+.table-modern tbody tr:hover{background:#f8fafc}
+.table-modern tbody tr:last-child td{border-bottom:none}
+.pagination-bar{padding:.8rem 0 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem;border-top:1px solid var(--border);margin-top:.6rem}
+.pagination-bar .info{font-size:.72rem;color:var(--muted)}
+.pagination-bar .page-btn{background:#f0f4f9;border:none;border-radius:30px;padding:4px 12px;font-weight:600;color:#1e293b;margin:0 2px;cursor:pointer;transition:.15s;font-size:.72rem;min-width:30px}
+.pagination-bar .page-btn.active{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff}
+.pagination-bar .page-btn:disabled{opacity:.35;pointer-events:none}
+.pagination-bar .page-btn:hover:not(:disabled):not(.active){background:#dbeafe}
+.pagination-bar .page-selector{display:flex;align-items:center;gap:4px;font-size:.72rem;color:var(--muted)}
+.pagination-bar .page-selector select{padding:3px 8px;border-radius:30px;border:1px solid var(--border);background:#fff;font-size:.72rem}
+.equidad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem;margin-top:.5rem}
+.equidad-item{background:#f9fcff;border-radius:16px;padding:.9rem 1rem;border:1px solid var(--border);text-align:center;transition:.15s}
+.equidad-item:hover{background:#f0f9ff;border-color:#bae6fd;transform:translateY(-2px)}
+.equidad-item .eq-label{font-size:.75rem;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.3px;cursor:pointer}
+.equidad-item .eq-value{font-size:1.5rem;font-weight:800;color:var(--text);margin-top:.2rem}
+.equidad-item .eq-actions{margin-top:.4rem}
+.equidad-item .eq-actions .btn-sm{font-size:.65rem;padding:3px 10px}
+.form-label{font-size:.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-control,.form-select{border-radius:12px;border:2px solid var(--border);background:#f8fafc;padding:10px 14px;font-size:.88rem;color:var(--text)}
+.form-control:focus,.form-select:focus{border-color:var(--success);box-shadow:0 0 0 4px rgba(37,99,235,.12);background:#fff;outline:none}
+.btn-modern{border-radius:12px;padding:9px 20px;font-weight:700;font-size:.82rem;border:none;transition:.2s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-modern-primary{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;box-shadow:0 6px 20px rgba(37,99,235,.3)}
+.btn-modern-primary:hover{transform:translateY(-2px);color:#fff}
+.btn-modern-success{background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff}
+.btn-modern-success:hover{transform:translateY(-2px);color:#fff}
+.btn-modern-danger{background:linear-gradient(135deg,#b71c1c,#d32f2f);color:#fff}
+.btn-modern-outline{background:#fff;border:2px solid var(--border);color:#475569}
+.btn-modern-outline:hover{background:#f1f5f9;border-color:#cbd5e1}
+.btn-modern-sm{padding:5px 12px;font-size:.72rem;border-radius:10px}
+.btn-imprimir{background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
+.btn-imprimir:hover{background:#bae6fd}
+.btn-finalizar-secretario{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.btn-finalizar-secretario:hover{background:#bfdbfe}
+.btn-ausente{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.btn-reintegrado{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.btn-confirm-si{font-weight:700;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:10px;padding:8px 22px}
+.btn-confirm-no{font-weight:700;background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:8px 22px}
+.btn-decidir{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:.7rem;font-weight:600;cursor:pointer}
+.row-ausente{background-color:#fee2e2 !important;border-left:4px solid #ef4444}
+.row-ausente td{background-color:#fee2e2 !important;color:#991b1b !important;font-weight:500}
+.row-presente{background-color:#fff}
+.estado-plazo{color:#1e40af;font-weight:700}
+.estado-vencido{color:#92400e;font-weight:700}
+.estado-fueraplazo{color:#991b1b;font-weight:700}
+.crono{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:800;font-size:.78rem;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif}
+.crono.verde,.crono.azul{background:#dbeafe;color:#1e40af;border:2px solid #93c5fd}
+.crono.naranja{background:#fed7aa;color:#9a3412;border:2px solid #fdba74}
+.crono.rojo{background:#fecaca;color:#991b1b;border:2px solid #fca5a5}
+.crono.violeta{background:#e9d5ff;color:#6b21a8;border:2px solid #d8b4fe}
+.crono.gris{background:#f1f5f9;color:#64748b;border:2px solid #cbd5e1}
+.exp-link-hist{color:#0284c7;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.exp-link-hist:hover{color:#0369a1;text-decoration-style:solid}
+.sec-nombre-link{color:#0284c7;font-weight:700;cursor:pointer;text-decoration:none}
+.sec-nombre-link:hover{color:#0369a1;text-decoration:underline}
+.empty-state{padding:3rem 1rem;text-align:center;color:var(--muted)}
+.empty-state i{font-size:3rem;display:block;margin-bottom:.8rem;opacity:.4}
+.text-muted{color:var(--muted)}.text-muted-light{color:#94a3b8}.fw-600{font-weight:600}
+.modal-modern .modal-content{border-radius:24px;border:none;box-shadow:var(--shadow-lg)}
+.modal-modern .modal-header{background:linear-gradient(135deg,#0f172a,#1e40af);color:#fff;padding:1.2rem 1.8rem;border:none}
+.modal-modern .modal-header .btn-close{filter:brightness(0) invert(1);opacity:.8}
+.modal-modern .modal-body{padding:1.8rem;max-height:70vh;overflow-y:auto}
+.modal-modern .modal-footer{border-top:1px solid var(--border);padding:1rem 1.8rem;background:#f8fafc}
+.modal-devolver .modal-header{background:linear-gradient(135deg,#92400e,#d97706) !important}
+.modal-corregir .modal-header{background:linear-gradient(135deg,#0369a1,#0284c7) !important}
+.cb-wrap{position:relative}
+.cb-wrap .form-control{padding-right:2rem}
+.cb-caret{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:#64748b;font-size:.8rem}
+.cb-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:1060;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);max-height:220px;overflow-y:auto;padding:4px}
+.cb-item{padding:7px 10px;border-radius:8px;font-size:.85rem;cursor:pointer}
+.cb-item:hover,.cb-item.active{background:#e0f2fe;color:#0369a1}
+.cb-item.sel{font-weight:700}
+.cb-empty{padding:8px 10px;font-size:.82rem;color:#64748b}
+#toastContainer{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:400px;width:100%}
+.toast-custom{background:rgba(15,23,42,.95);color:#fff;padding:14px 20px;border-radius:14px;box-shadow:var(--shadow-lg);font-size:.87rem;display:flex;align-items:center;gap:12px;animation:slideIn .35s cubic-bezier(.16,1,.3,1);border-left:4px solid transparent;pointer-events:auto}
+.toast-custom.success{border-left-color:var(--success)}
+.toast-custom.warning{border-left-color:var(--warning)}
+.toast-custom.danger{border-left-color:var(--danger)}
+.toast-custom.info{border-left-color:var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.toast-custom.removing{animation:fadeOut .3s forwards}
+@keyframes fadeOut{to{opacity:0;transform:translateX(20px)}}
+#logoutAlert{position:fixed;bottom:24px;right:24px;z-index:9999;background:#fff;border-left:5px solid var(--danger);border-radius:16px;padding:18px 22px;min-width:280px;max-width:360px;box-shadow:var(--shadow-lg);display:none;flex-direction:column;gap:12px;border:1px solid #fecaca}
+#logoutAlert .alert-header{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--danger);font-size:.95rem}
+#logoutAlert .alert-body{font-size:.85rem;color:#475569}
+#logoutAlert .alert-actions{display:flex;gap:8px;justify-content:flex-end}
+#logoutAlert .alert-actions button{padding:7px 18px;border-radius:10px;border:none;font-weight:700;font-size:.78rem;cursor:pointer}
+#logoutAlert .alert-actions .btn-cancel{background:#f1f5f9;color:#475569}
+#logoutAlert .alert-actions .btn-confirm{background:var(--danger);color:#fff}
+#notificacionesContainer{position:fixed;top:20px;right:20px;z-index:9999;max-width:400px;width:100%;pointer-events:none}
+#notificacionesContainer .notif-card{background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);padding:16px;border-left:4px solid var(--warning);pointer-events:auto;max-height:400px;overflow-y:auto;margin-bottom:8px}
+#notificacionesContainer .notif-card .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#notificacionesContainer .notif-card .header strong{font-size:.9rem;color:#92400e}
+#notificacionesContainer .notif-card ul{list-style:none;padding:0;margin:0}
+#notificacionesContainer .notif-card ul li{padding:6px 0;border-bottom:1px solid #eef2f7;font-size:.85rem;display:flex;justify-content:space-between;align-items:center}
+#notificacionesContainer .notif-card ul li:last-child{border-bottom:none}
+#notificacionesContainer .notif-card ul li .badge-pendiente{background:var(--warning);color:#fff;border-radius:20px;padding:2px 10px;font-size:.6rem;font-weight:700;margin-left:6px}
+.iframe-container{display:none;width:100%;height:80vh;border:none;border-radius:20px;overflow:hidden;background:#fff;margin-bottom:1.5rem}
+.iframe-container iframe{width:100%;height:100%;border:none}
+.iframe-close-btn{position:absolute;top:10px;right:20px;z-index:10;background:rgba(255,255,255,.9);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;border:1px solid var(--border)}
+.chat-widget{position:fixed;bottom:24px;left:24px;z-index:9999;font-family:'Plus Jakarta Sans',sans-serif}
+.chat-toggle-btn{background:#2563eb;color:#fff;border:none;border-radius:50%;width:60px;height:60px;font-size:1.8rem;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:pointer;display:flex;justify-content:center;align-items:center;position:relative}
+.chat-badge{position:absolute;top:-6px;right:-6px;background:#dc3545;color:#fff;border-radius:50%;padding:2px 6px;font-size:.6rem;font-weight:700;min-width:20px;text-align:center;display:none}
+.chat-panel{position:absolute;bottom:80px;left:0;width:380px;height:500px;background:#e5ddd5;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;transition:opacity .3s,transform .3s}
+.chat-panel.hidden{opacity:0;transform:scale(0);pointer-events:none}
+.chat-header{background:linear-gradient(135deg,#0f172a,#1e40af);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:600;flex-shrink:0}
+.chat-header h6{margin:0;font-size:1rem;display:flex;align-items:center;gap:8px}
+.chat-header button{background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer}
+.chat-tab-btn{border:none;padding:5px 14px;border-radius:20px;font-weight:700;font-size:.8rem;cursor:pointer;margin-right:4px;background:rgba(255,255,255,.15);color:#fff}
+.chat-tab-btn.active{background:#06b6d4;box-shadow:0 0 0 2px rgba(6,182,212,.5)}
+.chat-employee-list{flex:1;overflow-y:auto;padding:10px;background:#f0f0f0}
+.chat-employee-item{padding:10px 14px;border-radius:10px;background:#fff;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.chat-employee-item:hover{background:#dbeafe}
+.chat-employee-item .name{font-weight:600;color:#1e40af}
+.chat-employee-item .msg-count{background:#2563eb;color:#fff;border-radius:20px;padding:1px 10px;font-size:.75rem;font-weight:700}
+.chat-employee-empty{padding:30px;text-align:center;color:#777;font-size:.9rem}
+.chat-messages{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;background:#e5ddd5}
+.chat-message{max-width:80%;padding:8px 12px;border-radius:8px;font-size:.85rem;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.chat-message .sender{font-size:.7rem;font-weight:700;margin-bottom:2px;color:#1e40af;display:block}
+.chat-message .time{font-size:.65rem;color:#999;text-align:right;margin-top:4px;display:block}
+.chat-message.sent{background:#dbeafe;align-self:flex-end;border-top-right-radius:0}
+.chat-message.received{background:#fff;align-self:flex-start;border-top-left-radius:0}
+.chat-input-area{background:#f0f0f0;padding:10px;display:flex;gap:10px;align-items:center;flex-shrink:0}
+.chat-input-area input{flex:1;border:none;padding:10px 16px;border-radius:24px;font-size:.9rem;outline:none;background:#fff}
+.chat-input-area button{background:var(--success);color:#fff;border:none;border-radius:50%;width:40px;height:40px;display:flex;justify-content:center;align-items:center;cursor:pointer}
+.chat-back-btn{background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 6px}
+.chat-conversation{display:none;flex-direction:column;flex:1;overflow:hidden}
+.chat-header-title{margin-left:8px;font-size:.85rem;font-weight:400;opacity:.85;color:#fff}
+@media (max-width:576px){.chat-panel{width:calc(100vw - 48px);height:400px}}
+.cursor-pointer{cursor:pointer}.gap-2{gap:.5rem}.text-danger{color:#c62828 !important}
+@media(max-width:992px){.app-header{flex-direction:column;align-items:stretch;padding:1rem}.header-actions{justify-content:stretch}.search-box{max-width:100%;flex:1}.glass-card{padding:1rem}.nav-tabs-custom .tab-btn{font-size:.7rem;padding:.45rem .85rem}}
+@media(max-width:576px){.login-card{padding:2rem 1.5rem;border-radius:22px;--ring:5px}.login-card .logo-icon{width:60px;height:60px;font-size:1.8rem}.login-card h1{font-size:1.45rem}.brand-icon{width:44px;height:44px;font-size:1.35rem}.app-wrapper{padding:10px 8px}.brand h1{font-size:1rem}.glass-card{padding:.8rem;border-radius:16px}.table-modern{font-size:.68rem;min-width:600px}.modal-modern .modal-body{padding:1rem}#toastContainer{bottom:12px;right:12px;max-width:calc(100% - 24px)}.toast-custom{padding:12px 16px;font-size:.8rem}.pagination-bar{flex-direction:column;align-items:stretch;text-align:center}.equidad-grid{grid-template-columns:1fr 1fr}.kpi-grid{grid-template-columns:1fr 1fr}.destacados-grid{grid-template-columns:1fr}.nav-tabs-custom{flex-wrap:nowrap;overflow-x:auto}.nav-tabs-custom .tab-btn{flex:0 0 auto}}
+@media(prefers-reduced-motion:reduce){.login-card{animation:none;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--a1),var(--a3)) border-box}.login-card:hover .logo-icon{transform:none}.login-card .logo-icon{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="logo-icon"><i class="bi bi-share"></i></div>
+    <h1>Secretario</h1>
+    <p class="sub">Pase Digital <span class="celeste">Actualizado</span></p>
+    <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
+    <div id="loginError" class="login-error">❌ Clave incorrecta.</div>
+    <button class="btn-gradient" id="btnLogin"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar</button>
+  </div>
+</div>
+
+<div id="notificacionesContainer"></div>
+
+<div id="appWrapper" class="app-wrapper">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon"><i class="bi bi-share"></i></div>
+      <div>
+        <h1>Pase Digital <span style="color:#c2570c;">Actualizado</span> <small>Defensoría Oficial Civil y Comercial 6</small></h1>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge-role"><i class="bi bi-person-badge"></i> Secretario</span>
+      <span class="badge-role" id="notifBadge" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true" title="Justificaciones pendientes"><i class="bi bi-bell"></i> <span id="notifCount" class="notif-count">0</span></span>
+      <div class="search-box"><i class="bi bi-search"></i><input type="text" id="globalSearch" placeholder="Buscar expediente…" autocomplete="off" /></div>
+      <button class="btn-header" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosCollapse" aria-expanded="false"><i class="bi bi-funnel"></i> Filtros <span id="filtrosActivosBadge" class="filtros-activos-badge">!</span></button>
+      <button class="btn-header" type="button" data-bs-toggle="collapse" data-bs-target="#kpisCollapse" aria-expanded="false"><i class="bi bi-graph-up-arrow"></i> Informe de Pases</button>
+      <button class="btn-header" type="button" data-bs-toggle="collapse" data-bs-target="#destacadosCollapse" aria-expanded="false"><i class="bi bi-trophy"></i> Informe sobre Empleados</button>
+      <button class="btn-header primary" id="btnReportePuntaje"><i class="bi bi-file-earmark-text"></i> Reporte y Puntaje</button>
+      <button class="btn-header primary" id="btnActualizarBD"><i class="bi bi-arrow-repeat me-1"></i>Actualizar</button>
+      <button class="btn-header danger" id="btnCerrarSesion"><i class="bi bi-power me-1"></i>Salir</button>
+    </div>
+  </header>
+
+  <div class="collapse-container">
+    <div class="collapse" id="filtrosCollapse">
+      <div class="glass-card" id="filtrosGlobales">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-2"><label class="form-label">Empleado</label><select id="filtroEmpleado" class="form-select form-select-sm"><option value="">Todos</option></select></div>
+          <div class="col-md-2"><label class="form-label">Secretario</label><select id="filtroSecretario" class="form-select form-select-sm"><option value="">Todos</option></select></div>
+          <div class="col-md-2"><label class="form-label">Tipo de Proceso</label><select id="filtroTipo" class="form-select form-select-sm"><option value="">Todos</option></select></div>
+          <div class="col-md-1"><label class="form-label">Nivel</label><select id="filtroNivel" class="form-select form-select-sm"><option value="">Todos</option><option value="1">N1</option><option value="2">N2</option><option value="3">N3</option><option value="4">N4</option></select></div>
+          <div class="col-md-2"><label class="form-label">Estado</label><select id="filtroEstado" class="form-select form-select-sm"><option value="">Todos</option></select></div>
+          <div class="col-md-1"><label class="form-label">Demora</label><div class="form-check"><input class="form-check-input" type="checkbox" id="filtroDemora"><label class="form-check-label" for="filtroDemora" style="font-size:.78rem;">Solo con demora</label></div></div>
+          <div class="col-md-2"><button class="btn btn-modern btn-modern-outline btn-modern-sm w-100" id="btnLimpiarFiltros">Limpiar filtros</button></div>
+        </div>
+        <div class="row g-2 align-items-end mt-2">
+          <div class="col-md-3"><label class="form-label"><i class="bi bi-calendar-event"></i> Fecha exacta del pase</label><input type="date" id="filtroFechaExacta" class="form-control form-control-sm"></div>
+          <div class="col-md-3"><label class="form-label"><i class="bi bi-calendar-range"></i> Desde</label><input type="date" id="filtroFechaDesde" class="form-control form-control-sm"></div>
+          <div class="col-md-3"><label class="form-label"><i class="bi bi-calendar-range"></i> Hasta</label><input type="date" id="filtroFechaHasta" class="form-control form-control-sm"></div>
+          <div class="col-md-3"><button class="btn btn-modern btn-modern-outline btn-modern-sm w-100" id="btnLimpiarFechas"><i class="bi bi-calendar-x"></i> Limpiar fechas</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="collapse" id="kpisCollapse"><div class="glass-card"><div id="kpisContainer"></div></div></div>
+    <div class="collapse" id="destacadosCollapse"><div class="glass-card"><div id="destacadosContainer"></div></div></div>
+  </div>
+
+  <div id="panelDistribucion" style="position:relative;"></div>
+
+  <footer class="text-center text-muted-light mt-4" style="font-size:.72rem;border-top:1px solid var(--border);padding-top:1rem;">
+    <i class="bi bi-hdd-fill"></i> Defensoría Oficial Civil y Comercial 6 · <strong>Modo local estricto</strong> · datos.json
+    <span id="modoIndicador" class="badge bg-secondary ms-2">Modo: JSON local</span>
+  </footer>
+</div>
+
+<!-- MODALES -->
+<div class="modal fade modal-modern" id="modalHistorial" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalHistorialBody"></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-outline btn-imprimir" onclick="imprimirHistorial()"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalReporte" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Pase Digital. Secretarios.</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando…</div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-primary" id="btnImprimirReporteCompleto"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalEquidad" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-printer me-2"></i>Informe de Equidad de Pases</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalEquidadBody"><div class="text-muted">Cargando…</div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-primary" id="btnImprimirEquidad"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalConsultas" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-question-circle me-2"></i>Historial de Consultas · <span id="modalConsultasExp"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalConsultasBody"></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalHistorialSecretario" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial de Causas · <span id="modalHistorialSecNombre"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalHistorialSecBody"></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-outline btn-imprimir" onclick="imprimirHistorialSec()"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalHistorialEmpleado" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial de: <span id="tituloNombreEmpleado" style="color:#7dd3fc;"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalHistorialEmpleadoBody"><div id="contenidoHistorialEmpleado"></div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-outline btn-imprimir" id="btnImprimirHistorialEmpleado"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalConfirmacionAutoGeneral" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-shield-check me-2"></i>Confirmar asignación automática</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalConfirmacionBodyGeneral"></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-modern btn-modern-success" id="btnConfirmarAutoGeneral">Confirmar asignación</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalDecidirJustificacion" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-check2-circle me-2"></i>Decidir justificación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalDecidirBody"><div id="justificacionDetalle"></div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-modern btn-modern-danger" id="btnRechazarJustificacion">Rechazar</button><button type="button" class="btn btn-modern btn-modern-success" id="btnAprobarJustificacion">Aprobar</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalEliminarChat" tabindex="-1"><div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content" style="border-radius:20px;border:2px solid #dc3545;">
+  <div class="modal-header" style="background:#dc3545;color:#fff;"><h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Advertencia</h5><button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:brightness(0) invert(1);"></button></div>
+  <div class="modal-body text-center py-4"><p style="font-size:1.05rem;font-weight:600;">Eliminar todos los mensajes del Chat</p><p class="text-muted" style="font-size:.85rem;">Esta acción no se puede deshacer.</p></div>
+  <div class="modal-footer justify-content-center border-0"><button type="button" class="btn btn-confirm-no" id="modalEliminarNo">No</button><button type="button" class="btn btn-confirm-si" id="modalEliminarSi">Sí</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern modal-devolver" id="modalDevolverOperador" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-arrow-return-left me-2"></i>Devolver al Operador</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><p><strong>Expediente:</strong> <span id="devolverNumeroExpediente" class="fw-bold"></span></p><div class="mb-3"><label class="form-label">Motivo (opcional)</label><textarea class="form-control" id="devolverMotivo" rows="2" placeholder="Escriba el motivo..."></textarea></div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-confirm-no" id="btnDevolverNo" data-bs-dismiss="modal">No</button><button type="button" class="btn btn-confirm-si" id="btnDevolverSi">Sí</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern modal-corregir" id="modalCorregirPase" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar pase · <span id="corregirPaseExp" class="fw-bold"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-3">
+      <div class="col-12"><label class="form-label">Empleado asignado</label><select class="form-select" id="corregirPaseEmpleado"></select><div class="form-text" id="corregirPaseEmpleadoHint" style="font-size:.72rem;"></div></div>
+      <div class="col-12"><label class="form-label">Modo de intervención</label><div id="corregirPaseModoWrap"></div></div>
+      <div class="col-md-6"><label class="form-label">Tipo de causa</label><div id="corregirPaseTipoWrap"></div></div>
+      <div class="col-md-6"><label class="form-label">Tipo de escrito</label><div id="corregirPaseEscritoWrap"></div></div>
+      <div class="col-12"><label class="form-label">Observaciones del pase</label><textarea class="form-control" id="corregirPaseObs" rows="3" placeholder="Observación (opcional)"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-confirm-si" id="btnGuardarCorreccionPase">Guardar corrección</button></div>
+</div></div></div>
+
+<div class="modal fade modal-modern" id="modalSecretarioDetalle" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-person-badge me-2"></i>Detalle de asignaciones · <span id="modalSecDetalleNombre" class="fw-bold"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body" id="modalSecDetalleBody"><div id="contenidoSecDetalle"></div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button><button class="btn btn-modern btn-modern-outline btn-imprimir" id="btnImprimirSecDetalle"><i class="bi bi-printer"></i> Imprimir</button></div>
+</div></div></div>
+
+<div id="logoutAlert">
+  <div class="alert-header"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
+  <div class="alert-body">Volverás a la pantalla de inicio. Los datos no se perderán.</div>
+  <div class="alert-actions"><button class="btn-cancel" id="btnCancelarSalida">Cancelar</button><button class="btn-confirm" id="btnConfirmarSalida">Sí, salir</button></div>
+</div>
+
+<div id="toastContainer"></div>
+
+<div id="chatWidget" class="chat-widget" style="display:none;">
+  <button id="chatToggleBtn" class="chat-toggle-btn"><i class="bi bi-chat-dots-fill"></i><span id="chatBadge" class="chat-badge">0</span></button>
+  <div id="chatPanel" class="chat-panel hidden">
+    <div class="chat-header">
+      <div style="display:flex;gap:4px;align-items:center;flex:1;">
+        <button id="chatTabEmpleados" class="chat-tab-btn active">Empleados</button>
+        <button id="chatTabDefensor" class="chat-tab-btn">Defensor</button>
+        <span id="chatHeaderTitle" class="chat-header-title">Chats</span>
+      </div>
+      <div><button id="chatBackBtn" class="chat-back-btn" style="display:none;"><i class="bi bi-arrow-left"></i></button><button id="chatCloseBtn"><i class="bi bi-x-lg"></i></button></div>
+    </div>
+    <div id="chatEmployeeList" class="chat-employee-list"><div class="chat-employee-empty">No hay mensajes de empleados</div></div>
+    <div id="chatConversation" class="chat-conversation">
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-input-area"><input type="text" id="chatInput" placeholder="Escribe un mensaje..." autocomplete="off" /><button id="chatSendBtn"><i class="bi bi-send-fill"></i></button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CONFIG = {
+  password: 'def6',
+  nivelesPuntos: { 1: 1, 2: 2, 3: 3, 4: 5 },
+  nivelesDias: { 1: 5, 2: 3, 3: 3, 4: 2 },
+  empleados: [
+    { id:'emp1', nombre:'Bazante Nadia Romina' },
+    { id:'emp3', nombre:'Cardozo Maria Raquel' },
+    { id:'emp4', nombre:'Cedron Noelia' },
+    { id:'emp6', nombre:'Fioravante Rómulo' },
+    { id:'emp7', nombre:'Gonzalez Alberto Misael' },
+    { id:'emp8', nombre:'Gonzalez Juan Jose' },
+    { id:'emp9', nombre:'Gudiño Natalia Esther' },
+    { id:'emp15', nombre:'Martinis Carlos Esteban' },
+    { id:'emp10', nombre:'Ortega Lucia Noemi' },
+    { id:'emp11', nombre:'Pablos Patricia Tamara' },
+    { id:'emp12', nombre:'Palacios Ana Gabriela' },
+    { id:'emp13', nombre:'Sosa Rita Cecilia' }
+  ],
+  secretarios: [
+    { id:'sec1', nombre:'Corrales A.Mariela' },
+    { id:'sec2', nombre:'Riveros Patricia' },
+    { id:'sec3', nombre:'Magnani Enzo' }
+  ]
+};
+
+const MODOS_INTERVENCION = ['Defensor Oficial','Ministerio Principal','Ministerio Complementario','Patrocinante Actor','Patrocinante Demandado','Patrocinante Tercero','Defensor de Ausente','Patrocinante presunto incapaz','Asistencia Letrada del incapaz','Ministerio Público del incapaz','Ministerio Público en turno Abril','Ministerio Público en turno Agosto','Ministerio Público en turno Diciembre','Tutor Ad Litem','Defensor Oficial Art 329 CPCC','Defensor Oficial Art 626 CPCC'];
+const TIPOS = ['Nuevo patrocinio','Nuevo patrocinio Violencia Familiar','Amparo','Acción de protección de persona','Alimentos','Art 583','Autorización de viaje','Cambio de residencia','Causa Penal','Cédula de citación','CEJUME Formulario','Cuidado personal','Curatela','Daños y Perjuicios','Declaración de incapacidad','Delegación de responsabilidad parental','Desalojo','Determinación de capacidad','Diligencia preliminar','Divorcio','Evaluación Art 42 C.C.C.N.','Filiación','Filiación y Daño','Guarda','Guarda con fines de adopción','Homologación Acuerdo CEJUME','Impugnación de paternidad','Insania','Laboral','Medida autosatisfactiva','Medida excepcional de protección integral de persona Art 648 inc b','Oficio de citación','Penal (cámara gesell)','Prescripción Adquisitiva','Protección de personas','Rectificación de datos','Régimen de comunicación y contacto','Restitución de menores','Restricción de capacidad','Sucesión','Supresión de apellido paterno','Tutela','Venia judicial','Violencia Familiar','Otro'];
+const TIPOS_ESCRITO = ['Apelacion','Cédula citación','Comparece a estar a derecho','Contesta demanda','Demanda','Oficio citación','Otro','Prestamo','Revocatoria','Varios','Vinculacion'];
+const ESTADOS = ['en_secretaria','en_proceso','finalizada','en_defensor','devuelto_siged','remitido','rechazado','en_espera'];
+
+const DIAS_BLOQUEO = 5, PERIODO_PRODUCTIVIDAD = 30, CAPACIDAD_BASE = 60, DIAS_GRACIA = 2, WIP_MAX = 25, PER_PAGE = 10;
+
+/* ============================================================
+   FERIADOS / DÍAS HÁBILES
+   ============================================================ */
+function calcPascua(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(y,month-1,day);}
+function nesimoDia(y,m,dow,n){let f=new Date(y,m,1),fd=(f.getDay()+6)%7,diff=(dow-fd+7)%7,d=1+diff+(n-1)*7;return d>new Date(y,m+1,0).getDate()?null:new Date(y,m,d);}
+function getFeriados(y){const p=calcPascua(y),f=[new Date(y,0,1),new Date(y,2,24),new Date(y,3,2),new Date(y,4,1),new Date(y,4,25),new Date(y,6,9),new Date(y,11,8),new Date(y,11,25)];const cl=new Date(p);cl.setDate(cl.getDate()-47);f.push(cl);const cm=new Date(p);cm.setDate(cm.getDate()-46);f.push(cm);const js=new Date(p);js.setDate(js.getDate()-3);f.push(js);const vs=new Date(p);vs.setDate(vs.getDate()-2);f.push(vs);const tlj=nesimoDia(y,5,0,3);if(tlj)f.push(tlj);const tla=nesimoDia(y,7,0,3);if(tla)f.push(tla);const slo=nesimoDia(y,9,0,2);if(slo)f.push(slo);const cln=nesimoDia(y,10,0,4);if(cln)f.push(cln);return f;}
+function esFeriado(f){const y=f.getFullYear();return getFeriados(y).some(x=>x.getMonth()===f.getMonth()&&x.getDate()===f.getDate());}
+function esDiaHabil(f){const d=f.getDay();if(d===0||d===6)return false;return !esFeriado(f);}
+function sumarDiasHabiles(fi,c){let f=new Date(fi),n=0;while(n<c){f.setDate(f.getDate()+1);if(esDiaHabil(f))n++;}return f;}
+function calcularFechaInicio(fIso){const fA=new Date(fIso);let fIni=new Date(fA);const h=fA.getHours(),m=fA.getMinutes();if(h>12||(h===12&&m>0)){fIni.setDate(fIni.getDate()+1);while(!esDiaHabil(fIni))fIni.setDate(fIni.getDate()+1);}fIni.setHours(7,0,0,0);return fIni;}
+function calcularFechaLimite(fIni,nivel){const d=CONFIG.nivelesDias[nivel]||5;const f=sumarDiasHabiles(fIni,d);f.setHours(12,0,0,0);return f;}
+function diasHabilesTranscurridos(fi,ff){if(!fi)return 0;const ini=new Date(fi),fin=ff?new Date(ff):new Date();if(ini>fin)return 0;let d=0,cur=new Date(ini);while(!esDiaHabil(cur)&&cur<=fin)cur.setDate(cur.getDate()+1);while(cur<=fin){if(esDiaHabil(cur))d++;cur.setDate(cur.getDate()+1);}return d;}
+function getEstadoPlazo(fLim,ref){if(!fLim)return{estado:'plazo',color:'gris',label:'—'};const h=ref?new Date(ref):new Date();const f=new Date(fLim);h.setHours(0,0,0,0);f.setHours(0,0,0,0);const diff=Math.floor((h-f)/86400000);if(diff<=0)return{estado:'plazo',color:'verde',label:'En plazo'};if(diff<=2)return{estado:'vencido',color:'naranja',label:'Vencido'};if(diff<=5)return{estado:'fueraplazo',color:'rojo',label:'Fuera de plazo'};return{estado:'exceso',color:'violeta',label:'Exceso'};}
+function getFechaFinEfectiva(c){if(c.estado==='finalizada')return c.fechaFinalizacion||c.fechaResolucionEmpleado||null;if(c.estado==='para_finalizar'||c.estado==='en_secretaria')return c.fechaResolucionEmpleado||null;return new Date();}
+function getDetalleTiempo(c){if(!c.fechaAsignacion)return{error:'Sin fecha'};const fIni=calcularFechaInicio(c.fechaAsignacion);const n=c.nivelSecretario||1;const fLim=calcularFechaLimite(fIni,n);const fechaFin=getFechaFinEfectiva(c);const trans=diasHabilesTranscurridos(fIni,fechaFin);const est=getEstadoPlazo(fLim,fechaFin);return{fechaAsignacion:new Date(c.fechaAsignacion),fechaInicio:fIni,fechaLimite:fLim,diasTranscurridos:trans,estado:est,nivel:n};}
+function getDiasDemora(c){const d=getDetalleTiempo(c);if(!d||!d.fechaLimite)return 0;const ini=new Date(d.fechaLimite);ini.setHours(0,0,0,0);ini.setDate(ini.getDate()+1);return diasHabilesTranscurridos(ini,new Date());}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = { causas: [], empleados: [], chatInterno: [], chatDefensor: [], tiposExtra: [] };
+let searchTerm = '';
+let filters = { empleado:'', secretario:'', tipo:'', nivel:'', estado:'', demora:false, fechaExacta:'', fechaDesde:'', fechaHasta:'' };
+let paginationState = { distribucion:{page:1,perPage:PER_PAGE}, proceso:{page:1,perPage:PER_PAGE}, pases:{page:1,perPage:PER_PAGE}, equidad:{page:1,perPage:PER_PAGE}, cumplidos:{page:1,perPage:PER_PAGE}, espera:{page:1,perPage:PER_PAGE}, pasesOperador:{page:1,perPage:PER_PAGE} };
+let chatUsuarioActual = "", chatEmpleadoActivo = null, chatAllMessages = [], chatEmployeeSet = new Set(), chatModo = 'empleados', chatDefensorMessages = [], chatLeidosLocal = new Set(), chatIdsConocidos = new Set(), chatAudioCtx = null;
+let notificacionesPendientes = [];
+let _causaDevolverId = null, autoEmployeeIndex = 0, activeTabId = 'tab-pases-operador', _causaCorregirId = null;
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).substring(2,8); }
+function getEmpName(id){const e=CONFIG.empleados.find(x=>x.id===id);return e?e.nombre:'-';}
+function getSecName(id){const s=CONFIG.secretarios.find(x=>x.id===id);return s?s.nombre:'-';}
+function fmtDt(iso){if(!iso)return '-';const d=new Date(iso);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function getEstadoBadge(estado){const m={'en_secretaria':'<span class="badge-estado badge-sec">📋 Secretaría</span>','en_proceso':'<span class="badge-estado badge-proc">🔄 En proceso</span>','para_finalizar':'<span class="badge-estado badge-sec">📋 Para finalizar</span>','finalizada':'<span class="badge-estado badge-fin">✅ Finalizada</span>','en_defensor':'<span class="badge-estado badge-def">⚖️ Defensor</span>','devuelto_siged':'<span class="badge-estado badge-dev">↩️ Devuelto SIGED</span>','remitido':'<span class="badge-estado badge-rem">📤 Remitido</span>','rechazado':'<span class="badge-estado badge-rech">🚫 Rechazado</span>','en_espera':'<span class="badge-estado badge-espera">⏳ En espera</span>'};return m[estado]||`<span class="badge-estado">${estado}</span>`;}
+function isAusente(empId){const e=state.empleados.find(se=>se.id===empId);return e?e.ausente:false;}
+function showToast(msg,type='success'){const c=document.getElementById('toastContainer');const i={success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};const d=document.createElement('div');d.className=`toast-custom ${type}`;d.innerHTML=`<i class="bi ${i[type]||i.info}"></i><span>${msg}</span>`;c.appendChild(d);setTimeout(()=>{d.classList.add('removing');setTimeout(()=>d.remove(),300);},3800);}
+function getFechaPase(c){if(c.fechaPaseSecretario)return c.fechaPaseSecretario;if(c.historial){for(let i=c.historial.length-1;i>=0;i--){const h=c.historial[i];if(h.accion&&/Enviado a Secretario|Pase a Secretar/i.test(h.accion))return h.fecha;}}return c.fechaAsignacion;}
+
+/* ============================================================
+   FILTRO FECHA (exacta / rango)
+   ============================================================ */
+function parseDateInput(str){if(!str)return null;const p=str.split('-').map(Number);if(p.length!==3||p.some(isNaN))return null;return new Date(p[0],p[1]-1,p[2],0,0,0,0);}
+function matchDateFilter(c){
+  const tE=!!filters.fechaExacta, tR=!!(filters.fechaDesde||filters.fechaHasta);
+  if(!tE && !tR) return true;
+  const fp=getFechaPase(c); if(!fp) return false;
+  const d=new Date(fp); if(isNaN(d.getTime())) return false;
+  if(tE){const ex=parseDateInput(filters.fechaExacta);if(!ex)return true;return d.getFullYear()===ex.getFullYear()&&(d.getMonth()+1)===(ex.getMonth()+1)&&d.getDate()===ex.getDate();}
+  const desde=parseDateInput(filters.fechaDesde), hasta=parseDateInput(filters.fechaHasta);
+  const dL=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);
+  if(desde && dL<desde) return false;
+  if(hasta && dL>hasta) return false;
+  return true;
+}
+
+/* ============================================================
+   PUNTAJES / PRODUCTIVIDAD
+   ============================================================ */
+function getFactorTipo(tipo){const f={'Nuevo patrocinio':0.3,'Nuevo patrocinio Violencia Familiar':0.4,'Amparo':0.5,'Acción de protección de persona':0.5,'Alimentos':0.4,'Art 583':0.2,'Autorización de viaje':0.3,'Cambio de residencia':0.3,'Causa Penal':0.4,'CEJUME Formulario':0.1,'Cuidado personal':0.4,'Curatela':0.4,'Daños y Perjuicios':0.4,'Declaración de incapacidad':0.5,'Delegación de responsabilidad parental':0.4,'Desalojo':0.4,'Determinación de capacidad':0.5,'Diligencia preliminar':0.3,'Divorcio':0.4,'Evaluación Art 42 C.C.C.N.':0.5,'Filiación':0.4,'Filiación y Daño':0.4,'Guarda':0.4,'Guarda con fines de adopción':0.4,'Homologación Acuerdo CEJUME':0.2,'Impugnación de paternidad':0.5,'Insania':0.5,'Laboral':0.4,'Medida autosatisfactiva':0.3,'Medida excepcional de protección integral de persona Art 648 inc b':0.4,'Penal (cámara gesell)':0.4,'Prescripción Adquisitiva':0.3,'Protección de personas':0.5,'Rectificación de datos':0.3,'Régimen de comunicación y contacto':0.4,'Restitución de menores':0.4,'Restricción de capacidad':0.5,'Sucesión':0.4,'Supresión de apellido paterno':0.4,'Tutela':0.4,'Venia judicial':0.3,'Violencia Familiar':0.3,'Otro':0.2};return f[tipo]||0.1;}
+function calcularPuntosCausa(c){const n=c.nivelSecretario||c.nivelOperador||2;const b=CONFIG.nivelesPuntos[n]||2;return b+getFactorTipo(c.tipo);}
+function tieneJustificacionParaCausa(causa,empId){if(!causa.justificaciones)return false;const a=new Date();for(let j of causa.justificaciones){if(j.empleadoId===empId&&j.estado==='aprobada'){const f=new Date(j.fecha);const diff=(a-f)/86400000;if(diff<=DIAS_GRACIA)return true;}}return false;}
+function calcularRetrasoNoJustificado(empId){let t=0;const a=new Date();state.causas.filter(c=>c.empleadoAsignado===empId&&c.estado==='en_proceso').forEach(c=>{if(c.fechaLimite){const l=new Date(c.fechaLimite);if(l<a){const diff=(a-l)/86400000;if(!tieneJustificacionParaCausa(c,empId))t+=diff;}}});return t;}
+
+/* ============================================================
+   PERSISTENCIA LOCAL  ← CAMBIO CLAVE
+   ============================================================ */
+function guardarEstadoLocal(){
+  DataFile.guardar(() => ({
+    causas: state.causas,
+    empleados: state.empleados,
+    tiposExtra: state.tiposExtra,
+    tiposCustom: state.tiposExtra,   /* compatibilidad con anda.html */
+    chatInterno: state.chatInterno,
+    chatDefensor: state.chatDefensor
+  }));
+}
+function aplicarDatos(data){
+  state.causas = (data.causas || []).map(c => { if(!c.empleadoAsignado && c.empleadoId) c.empleadoAsignado = c.empleadoId; return c; });
+  state.empleados = data.empleados || [];
+  state.chatInterno = (data.chatInterno || []).slice();
+  state.chatDefensor = (data.chatDefensor || []).slice();
+  /* Fusiona ambas claves (tiposExtra y tiposCustom) para interoperabilidad */
+  state.tiposExtra = [...new Set([...(data.tiposExtra || []), ...(data.tiposCustom || [])])];
+  CONFIG.empleados.forEach(emp => { if(!state.empleados.find(e => e.id === emp.id)) state.empleados.push({ id: emp.id, ausente: false, fechaReintegro: null }); });
+  /* Aplicar tiposExtra al catálogo */
+  state.tiposExtra.forEach(n => { if(typeof n==='string' && n.trim() && !TIPOS.includes(n)) TIPOS.push(n); });
+}
+async function cargarDatosDesdeJSON(){
+  try{ aplicarDatos(await DataFile.cargar()); showToast('Datos cargados desde datos.json','success'); }
+  catch(e){ console.error(e); showToast('No se pudo leer datos.json: '+(e&&e.message?e.message:e),'danger'); }
+  actualizarNotificaciones();
+  renderDistribucion();
+  actualizarChatDesdeState();
+  detectarNuevosMensajes();
+}
+DataFile.onExterno = function(data){
+  aplicarDatos(data);
+  actualizarNotificaciones();
+  renderDistribucion();
+  actualizarChatDesdeState();
+  detectarNuevosMensajes();
+};
+
+async function saveConfigToFirestore(){ guardarEstadoLocal(); }
+async function updateCausaInFirestore(causa){
+  const idx = state.causas.findIndex(c => c.id === causa.id);
+  if(idx !== -1) state.causas[idx] = causa; else state.causas.push(causa);
+  guardarEstadoLocal();
+  actualizarNotificaciones();
+  renderDistribucion();
+}
+
+/* ============================================================
+   NOTIFICACIONES (justificaciones pendientes)
+   ============================================================ */
+function actualizarNotificaciones(){
+  const p=[];
+  state.causas.forEach(c=>{ if(c.justificaciones){ c.justificaciones.forEach(j=>{ if(j.estado==='pendiente'){ p.push({causaId:c.id,justificacionId:j.id,numero:c.numero,empleado:j.empleadoNombre||getEmpName(j.empleadoId),motivo:j.motivo,fecha:j.fecha}); } }); } });
+  notificacionesPendientes=p;
+  const el=document.getElementById('notifCount'); if(el) el.textContent=p.length;
+  renderNotificaciones(); actualizarPopoverNotificaciones(p);
+}
+function renderNotificaciones(){
+  const c=document.getElementById('notificacionesContainer'); if(!c) return;
+  if(notificacionesPendientes.length===0){ c.innerHTML=''; return; }
+  let h=`<div class="notif-card"><div class="header"><strong><i class="bi bi-bell-fill"></i> Justificaciones pendientes</strong><button onclick="document.getElementById('notificacionesContainer').innerHTML=''" title="Cerrar">&times;</button></div><ul>`;
+  notificacionesPendientes.forEach(j=>{ h+=`<li><span><strong>${j.numero}</strong> - ${j.empleado} <span class="badge-pendiente">pendiente</span></span><button class="btn-decidir" onclick="abrirModalDecidir('${j.causaId}','${j.justificacionId}')">Decidir</button></li>`; });
+  h+=`</ul></div>`;
+  c.innerHTML=h;
+}
+function actualizarPopoverNotificaciones(p){
+  const el=document.getElementById('notifBadge'); if(!el) return;
+  const ex=bootstrap.Popover.getInstance(el); if(ex) ex.dispose();
+  if(!p||p.length===0){ new bootstrap.Popover(el,{content:'No hay justificaciones pendientes',placement:'bottom',trigger:'hover',html:true,title:'Justificaciones'}); return; }
+  const g={}; p.forEach(j=>{ const k=j.empleado||'Desc.'; if(!g[k])g[k]=[]; g[k].push(j); });
+  let h='<ul style="padding-left:1.2rem;margin-bottom:0;">';
+  for(const [k,v] of Object.entries(g)){ h+=`<li><strong>${k}</strong><ul>`; v.forEach(j=>{ h+=`<li>${j.numero}: ${j.motivo}</li>`; }); h+=`</ul></li>`; }
+  h+='</ul>';
+  new bootstrap.Popover(el,{content:h,placement:'bottom',trigger:'hover',html:true,title:'Justificaciones pendientes'});
+}
+
+function abrirModalDecidir(causaId,justId){
+  const c=state.causas.find(x=>x.id===causaId); if(!c){ showToast('Causa no encontrada','danger'); return; }
+  const j=c.justificaciones?.find(x=>x.id===justId); if(!j){ showToast('Justificación no encontrada','danger'); return; }
+  document.getElementById('justificacionDetalle').innerHTML=`<p><strong>Expediente:</strong> ${c.numero}</p><p><strong>Empleado:</strong> ${j.empleadoNombre||getEmpName(j.empleadoId)}</p><p><strong>Motivo:</strong> ${j.motivo}</p><p><strong>Fecha:</strong> ${fmtDt(j.fecha)}</p><div class="mb-3"><label class="form-label">Comentario (opcional)</label><input type="text" class="form-control" id="comentarioSecretario" placeholder="Agregar comentario..."></div>`;
+  new bootstrap.Modal(document.getElementById('modalDecidirJustificacion')).show();
+  const bA=document.getElementById('btnAprobarJustificacion'), bR=document.getElementById('btnRechazarJustificacion');
+  const nA=bA.cloneNode(true), nR=bR.cloneNode(true);
+  bA.parentNode.replaceChild(nA,bA); bR.parentNode.replaceChild(nR,bR);
+  nA.onclick=()=>decidirJustificacion(causaId,justId,'aprobada');
+  nR.onclick=()=>decidirJustificacion(causaId,justId,'rechazada');
+}
+async function decidirJustificacion(causaId,justId,decision){
+  const c=state.causas.find(x=>x.id===causaId); if(!c) return;
+  const j=c.justificaciones?.find(x=>x.id===justId); if(!j) return;
+  const com=document.getElementById('comentarioSecretario')?.value?.trim()||'Sin comentario';
+  j.estado=decision; j.fechaDecision=new Date().toISOString(); j.secretarioId='sec1'; j.comentarioSecretario=com;
+  if(!c.historial) c.historial=[];
+  c.historial.push({fecha:new Date().toISOString(),accion:`Justificación ${decision==='aprobada'?'aprobada':'rechazada'} por Secretario`,usuario:'Secretario',comentario:`Motivo: ${j.motivo}. Decisión: ${decision}. Comentario: ${com}`});
+  if(j.empleadoId){
+    state.chatInterno.push({
+      id: genId(), empleadoId: j.empleadoId, remitente: 'Secretario',
+      texto: `📢 Tu justificación para el expediente ${c.numero} ha sido ${decision==='aprobada'?'aprobada ✅':'rechazada ❌'}. Comentario: ${com}`,
+      timestamp: new Date().toISOString(), leido: false
+    });
+  }
+  try{
+    await updateCausaInFirestore(c);
+    showToast(`✅ Justificación ${decision} para ${c.numero}`,'success');
+    notificacionesPendientes=notificacionesPendientes.filter(x=>x.justificacionId!==justId);
+    renderNotificaciones(); document.getElementById('notifCount').textContent=notificacionesPendientes.length;
+    actualizarChatDesdeState();
+    bootstrap.Modal.getInstance(document.getElementById('modalDecidirJustificacion')).hide();
+  }catch(e){ showToast('Error al guardar la decisión','danger'); }
+}
+
+/* ============================================================
+   PAGINACIÓN
+   ============================================================ */
+function paginateData(d,p,per=PER_PAGE){const t=d.length,tp=Math.ceil(t/per)||1,s=(p-1)*per,e=Math.min(s+per,t);return{items:d.slice(s,e),total:t,totalPages:tp,page:p,start:s,end:e};}
+function renderPagination(id,total,tp,page,per,cb){
+  const c=document.getElementById(id); if(!c) return;
+  let h=`<div class="pagination-bar"><div class="info">Mostrando ${Math.min((page-1)*per+1,total)} - ${Math.min(page*per,total)} de ${total} · ${per} por página</div><div>`;
+  h+=`<button class="page-btn" data-page="prev" ${page<=1?'disabled':''}>Anterior</button>`;
+  for(let i=1;i<=tp;i++){ if(i===1||i===tp||(i>=page-2&&i<=page+2)){ h+=`<button class="page-btn ${i===page?'active':''}" data-page="${i}">${i}</button>`; } else if(i===page-3||i===page+3){ h+=`<span style="padding:0 4px;color:var(--muted)">…</span>`; } }
+  h+=`<button class="page-btn" data-page="next" ${page>=tp?'disabled':''}>Siguiente</button></div></div>`;
+  c.innerHTML=h;
+  c.querySelectorAll('.page-btn').forEach(b=>{ b.addEventListener('click',function(){ const p=this.dataset.page; let np=page; if(p==='prev')np=Math.max(1,page-1); else if(p==='next')np=Math.min(tp,page+1); else np=parseInt(p); if(np!==page) cb(np,per); }); });
+}
+
+/* ============================================================
+   FILTROS — render + eventos (idéntico al original)
+   ============================================================ */
+function renderFiltros(){
+  const eS=document.getElementById('filtroEmpleado'); if(!eS) return;
+  eS.innerHTML='<option value="">Todos</option>'+CONFIG.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+  eS.value=filters.empleado;
+  const sS=document.getElementById('filtroSecretario'); sS.innerHTML='<option value="">Todos</option>'+CONFIG.secretarios.map(s=>`<option value="${s.id}">${s.nombre}</option>`).join(''); sS.value=filters.secretario;
+  const tS=document.getElementById('filtroTipo'); tS.innerHTML='<option value="">Todos</option>'+TIPOS.map(t=>`<option value="${t.replace(/"/g,'&quot;')}">${t}</option>`).join(''); tS.value=filters.tipo;
+  document.getElementById('filtroNivel').value=filters.nivel;
+  const esS=document.getElementById('filtroEstado'); esS.innerHTML='<option value="">Todos</option>'+ESTADOS.map(e=>`<option value="${e}">${e.replace('_',' ').toUpperCase()}</option>`).join(''); esS.value=filters.estado;
+  document.getElementById('filtroDemora').checked=filters.demora;
+  const fE=document.getElementById('filtroFechaExacta'), fD=document.getElementById('filtroFechaDesde'), fH=document.getElementById('filtroFechaHasta');
+  if(fE) fE.value=filters.fechaExacta||''; if(fD) fD.value=filters.fechaDesde||''; if(fH) fH.value=filters.fechaHasta||'';
+  const badge=document.getElementById('filtrosActivosBadge');
+  if(badge) badge.style.display=(filters.fechaExacta||filters.fechaDesde||filters.fechaHasta)?'inline-block':'none';
+
+  const reset=()=>{ ['distribucion','cumplidos','proceso','pases','equidad','espera','pasesOperador'].forEach(k=>paginationState[k].page=1); };
+  eS.onchange=function(){ filters.empleado=this.value; reset(); renderDistribucion(); renderFiltros(); };
+  sS.onchange=function(){ filters.secretario=this.value; reset(); renderDistribucion(); renderFiltros(); };
+  tS.onchange=function(){ filters.tipo=this.value; reset(); renderDistribucion(); renderFiltros(); };
+  document.getElementById('filtroNivel').onchange=function(){ filters.nivel=this.value; reset(); renderDistribucion(); renderFiltros(); };
+  esS.onchange=function(){ filters.estado=this.value; reset(); renderDistribucion(); renderFiltros(); };
+  document.getElementById('filtroDemora').onchange=function(){ filters.demora=this.checked; reset(); renderDistribucion(); renderFiltros(); };
+  if(fE) fE.onchange=function(){ filters.fechaExacta=this.value||''; if(filters.fechaExacta){ filters.fechaDesde=''; filters.fechaHasta=''; if(fD)fD.value=''; if(fH)fH.value=''; } reset(); renderDistribucion(); renderFiltros(); };
+  if(fD) fD.onchange=function(){ filters.fechaDesde=this.value||''; if(filters.fechaDesde&&filters.fechaExacta){ filters.fechaExacta=''; if(fE)fE.value=''; } reset(); renderDistribucion(); renderFiltros(); };
+  if(fH) fH.onchange=function(){ filters.fechaHasta=this.value||''; if(filters.fechaHasta&&filters.fechaExacta){ filters.fechaExacta=''; if(fE)fE.value=''; } reset(); renderDistribucion(); renderFiltros(); };
+  const bLF=document.getElementById('btnLimpiarFechas');
+  if(bLF) bLF.onclick=function(){ filters.fechaExacta=''; filters.fechaDesde=''; filters.fechaHasta=''; if(fE)fE.value=''; if(fD)fD.value=''; if(fH)fH.value=''; reset(); renderDistribucion(); renderFiltros(); };
+  document.getElementById('btnLimpiarFiltros').onclick=function(){ filters={empleado:'',secretario:'',tipo:'',nivel:'',estado:'',demora:false,fechaExacta:'',fechaDesde:'',fechaHasta:''}; renderFiltros(); reset(); renderDistribucion(); };
+}
+
+/* ============================================================
+   CHAT (local) — reemplaza onSnapshot por polling de DataFile
+   ============================================================ */
+function chatEsPendiente(m){ return m.empleadoId && m.remitente !== chatUsuarioActual && m.leido !== true && !chatLeidosLocal.has(m.id); }
+function chatPanelVisto(){ const p=document.getElementById('chatPanel'); return !!p && !p.classList.contains('hidden') && !document.hidden; }
+function chatBeep(){ try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; if(!chatAudioCtx) chatAudioCtx=new AC(); const ctx=chatAudioCtx; if(ctx.state==='suspended') ctx.resume(); const o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=880; g.gain.setValueAtTime(.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.15,ctx.currentTime+.02); g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.35); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+.4); }catch(e){} }
+function chatMarcarLeidos(empId){
+  if(!chatPanelVisto()) return;
+  const p = state.chatInterno.filter(m => m.empleadoId === empId && chatEsPendiente(m));
+  if(!p.length) return;
+  p.forEach(m => { chatLeidosLocal.add(m.id); m.leido = true; });
+  guardarEstadoLocal();
+  actualizarBadge();
+}
+function actualizarBadge(){
+  const b = document.getElementById('chatBadge'), p = document.getElementById('chatPanel');
+  if(!b || !p) return;
+  let t = chatAllMessages.filter(chatEsPendiente).length;
+  if(p.classList.contains('hidden')) t += chatDefensorMessages.filter(m => m.emisor === 'Defensor').length;
+  if(t > 0){ b.textContent = t; b.style.display = 'block'; } else b.style.display = 'none';
+}
+function actualizarChatDesdeState(){
+  chatAllMessages = state.chatInterno.slice().sort((a,b) => {
+    const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return ta - tb;
+  });
+  chatDefensorMessages = state.chatDefensor.slice().sort((a,b) => {
+    const ta = (a.fecha || a.timestamp) ? new Date(a.fecha || a.timestamp).getTime() : 0;
+    const tb = (b.fecha || b.timestamp) ? new Date(b.fecha || b.timestamp).getTime() : 0;
+    return ta - tb;
+  });
+  chatEmployeeSet = new Set();
+  chatAllMessages.forEach(m => { if(m.remitente !== chatUsuarioActual && m.empleadoId) chatEmployeeSet.add(m.empleadoId); });
+  actualizarBadge();
+  if(chatUsuarioActual){
+    if(chatModo === 'empleados'){
+      if(chatEmpleadoActivo) mostrarConversacion(chatEmpleadoActivo); else mostrarListaEmpleados();
+    } else mostrarConversacionDefensor();
+  }
+}
+function detectarNuevosMensajes(){
+  if(!chatIdsConocidos.size){ state.chatInterno.forEach(m => chatIdsConocidos.add(m.id)); return; }
+  const nuevos = state.chatInterno.filter(m => !chatIdsConocidos.has(m.id) && m.remitente !== chatUsuarioActual);
+  state.chatInterno.forEach(m => chatIdsConocidos.add(m.id));
+  const ult = nuevos[nuevos.length - 1];
+  if(ult && !(chatPanelVisto() && chatModo === 'empleados' && chatEmpleadoActivo === ult.empleadoId)){
+    const emp = CONFIG.empleados.find(e => e.id === ult.empleadoId);
+    showToast(`💬 Nuevo mensaje de ${emp ? emp.nombre : 'un empleado'}`, 'info');
+    chatBeep();
+  }
+}
+function cambiarModo(modo){
+  chatModo = modo;
+  document.getElementById('chatTabEmpleados').classList.toggle('active', modo==='empleados');
+  document.getElementById('chatTabDefensor').classList.toggle('active', modo==='defensor');
+  const back = document.getElementById('chatBackBtn'), list = document.getElementById('chatEmployeeList'), conv = document.getElementById('chatConversation');
+  if(modo === 'empleados'){ back.style.display='none'; if(chatEmpleadoActivo) mostrarConversacion(chatEmpleadoActivo); else mostrarListaEmpleados(); }
+  else { back.style.display='none'; list.style.display='none'; conv.style.display='flex'; mostrarConversacionDefensor(); }
+  setTimeout(()=>{ const i=document.getElementById('chatInput'); if(i){ i.disabled=false; i.focus(); } }, 100);
+}
+function mostrarListaEmpleados(){
+  if(chatModo !== 'empleados') return;
+  const l=document.getElementById('chatEmployeeList'), c=document.getElementById('chatConversation'), b=document.getElementById('chatBackBtn'), h=document.getElementById('chatHeaderTitle');
+  l.style.display='block'; c.style.display='none'; b.style.display='none'; if(h) h.textContent='Chats';
+  let html='';
+  CONFIG.empleados.forEach(emp=>{
+    const msgs = chatAllMessages.filter(m => m.empleadoId === emp.id && chatEsPendiente(m));
+    html += `<div class="chat-employee-item" data-emp-id="${emp.id}"><span class="name">${emp.nombre}</span><span class="msg-count">${msgs.length>0?msgs.length:''}</span></div>`;
+  });
+  l.innerHTML=html;
+  l.onclick=function(e){ const it=e.target.closest('.chat-employee-item'); if(!it) return; const id=it.dataset.empId; if(id){ chatEmpleadoActivo=id; mostrarConversacion(id); } };
+}
+function mostrarConversacion(empId){
+  if(chatModo !== 'empleados') return;
+  chatEmpleadoActivo = empId;
+  const l=document.getElementById('chatEmployeeList'), c=document.getElementById('chatConversation'), b=document.getElementById('chatBackBtn'), h=document.getElementById('chatHeaderTitle'), m=document.getElementById('chatMessages');
+  l.style.display='none'; c.style.display='flex'; b.style.display='inline-block';
+  const emp = CONFIG.empleados.find(e => e.id === empId); if(h) h.textContent = emp ? emp.nombre : 'Empleado';
+  m.innerHTML='';
+  chatAllMessages.filter(x => x.empleadoId === empId).forEach(d => renderizarMensajeChat(d));
+  m.scrollTop = m.scrollHeight;
+  chatMarcarLeidos(empId);
+  b.onclick = function(){ chatEmpleadoActivo = null; mostrarListaEmpleados(); };
+}
+function renderizarMensajeChat(data){
+  const m=document.getElementById('chatMessages'), mio=data.remitente===chatUsuarioActual;
+  const d=document.createElement('div'); d.className=`chat-message ${mio?'sent':'received'}`;
+  let hora='-';
+  if(data.timestamp){ const f=new Date(data.timestamp); if(!isNaN(f.getTime())) hora=`${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`; }
+  d.innerHTML=`<span class="sender">${data.remitente}</span>${data.texto}<span class="time">${hora}</span>`;
+  m.appendChild(d);
+}
+function mostrarConversacionDefensor(){
+  const l=document.getElementById('chatEmployeeList'), c=document.getElementById('chatConversation'), b=document.getElementById('chatBackBtn'), h=document.getElementById('chatHeaderTitle'), m=document.getElementById('chatMessages');
+  l.style.display='none'; c.style.display='flex'; b.style.display='none'; if(h) h.textContent='Defensor';
+  m.innerHTML=''; chatDefensorMessages.forEach(d => renderizarMensajeChatDefensor(d)); m.scrollTop=m.scrollHeight;
+}
+function renderizarMensajeChatDefensor(data){
+  const m=document.getElementById('chatMessages'), mio=(data.emisor===chatUsuarioActual||data.emisor==='Secretario');
+  const d=document.createElement('div'); d.className=`chat-message ${mio?'sent':'received'}`;
+  let hora='-'; const fS = data.fecha || data.timestamp;
+  if(fS){ const f=new Date(fS); if(!isNaN(f.getTime())) hora=`${String(f.getHours()).padStart(2,'0')}:${String(f.getMinutes()).padStart(2,'0')}`; }
+  d.innerHTML=`<span class="sender">${data.emisor||'Defensor'}</span>${data.texto||''}<span class="time">${hora}</span>`;
+  m.appendChild(d);
+}
+async function enviarMensaje(){
+  const inp=document.getElementById('chatInput'), txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  try{
+    if(chatModo === 'empleados'){
+      if(!chatEmpleadoActivo){ showToast('Selecciona un empleado','warning'); return; }
+      state.chatInterno.push({ id: genId(), empleadoId: chatEmpleadoActivo, remitente: chatUsuarioActual, texto: txt, timestamp: new Date().toISOString(), leido: false });
+    } else {
+      state.chatDefensor.push({ id: genId(), emisor: 'Secretario', texto: txt, fecha: new Date().toISOString() });
+    }
+    guardarEstadoLocal();
+    actualizarChatDesdeState();
+    inp.focus();
+  }catch(e){ showToast('Error al enviar','danger'); }
+}
+function eliminarTodosLosChats(){
+  state.chatInterno = [];
+  guardarEstadoLocal();
+  showToast('💬 Chat eliminado','info');
+  document.getElementById('chatMessages').innerHTML='';
+  chatAllMessages=[]; chatEmployeeSet=new Set(); chatLeidosLocal=new Set();
+  actualizarBadge();
+  mostrarListaEmpleados();
+}
+function inicializarChat(nombre){
+  chatUsuarioActual = nombre;
+  document.getElementById('chatWidget').style.display = 'block';
+  chatIdsConocidos = new Set(state.chatInterno.map(m => m.id));
+  actualizarChatDesdeState();
+  cambiarModo('empleados');
+}
+
+/* ============================================================
+   TIPOS DE CAUSA personalizados (persistidos en datos.json)
+   ============================================================ */
+function _cbNorm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+function _cbEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function _tiposAgregarLocal(nombre){
+  if(TIPOS.some(t => _cbNorm(t) === _cbNorm(nombre))) return false;
+  const i = TIPOS.findIndex(t => _cbNorm(t) === 'otro');
+  if(i >= 0) TIPOS.splice(i, 0, nombre); else TIPOS.push(nombre);
+  if(!state.tiposExtra.includes(nombre)) state.tiposExtra.push(nombre);
+  return true;
+}
+function refrescarFiltroTipos(){
+  const s=document.getElementById('filtroTipo'); if(!s) return;
+  const v=s.value||filters.tipo;
+  s.innerHTML='<option value="">Todos</option>'+TIPOS.map(t=>`<option value="${_cbEsc(t)}">${_cbEsc(t)}</option>`).join('');
+  s.value=v;
+}
+async function agregarTipoCausa(nombre){
+  if(_tiposAgregarLocal(nombre)){
+    guardarEstadoLocal();
+    refrescarFiltroTipos();
+  }
+}
+
+/* ============================================================
+   COMBO CON BÚSQUEDA
+   ============================================================ */
+function crearComboBusqueda(wrap, id, getLista, valorInicial, onSelect){
+  wrap.innerHTML=`<div class="cb-wrap"><input type="text" id="${id}" class="form-control" autocomplete="off" placeholder="Escriba para buscar..." value="${_cbEsc(valorInicial||'')}"><i class="bi bi-chevron-down cb-caret"></i><div class="cb-list" style="display:none"></div></div>`;
+  const input=wrap.querySelector('input'), list=wrap.querySelector('.cb-list');
+  input.dataset.sel = valorInicial || '';
+  let items=[], activo=-1;
+  const lista=()=>{ const l=getLista().slice(); if(valorInicial && !l.includes(valorInicial)) l.unshift(valorInicial); return l; };
+  const visible=()=>list.style.display!=='none';
+  const cerrar=()=>{ list.style.display='none'; activo=-1; };
+  const marcar=()=>{ list.querySelectorAll('.cb-item').forEach((el,i)=>el.classList.toggle('active',i===activo)); const a=list.querySelector('.cb-item.active'); if(a) a.scrollIntoView({block:'nearest'}); };
+  const pintar=(filtrar)=>{
+    const q=filtrar?_cbNorm(input.value):'';
+    const toks=q.split(/\s+/).filter(Boolean);
+    items=lista().filter(t=>{ const n=_cbNorm(t); return toks.every(k=>n.includes(k)); });
+    if(q) items.sort((a,b)=>{ const r=t=>{ const n=_cbNorm(t); return n===q?0:(n.startsWith(q)?1:2); }; return r(a)-r(b); });
+    list.innerHTML=items.length?items.map((t,i)=>`<div class="cb-item${t===input.dataset.sel?' sel':''}" data-i="${i}">${_cbEsc(t)}</div>`).join(''):'<div class="cb-empty">Sin resultados</div>';
+    activo=(filtrar&&q&&items.length)?0:-1;
+    list.style.display='block'; list.scrollTop=0; marcar();
+    if(!filtrar){ const s=list.querySelector('.cb-item.sel'); if(s) s.scrollIntoView({block:'nearest'}); }
+  };
+  const seleccionar=(v,exp)=>{ const cmb=v!==input.dataset.sel; input.value=v; input.dataset.sel=v; cerrar(); if(onSelect && (exp||cmb)) onSelect(v,cmb); };
+  input.addEventListener('focus',()=>{ input.select(); pintar(false); });
+  input.addEventListener('click',()=>{ if(!visible()) pintar(false); });
+  input.addEventListener('input',()=>pintar(true));
+  input.addEventListener('keydown',(e)=>{
+    if(e.key==='ArrowDown'){ e.preventDefault(); if(!visible()) pintar(false); else if(items.length){ activo=Math.min(activo+1,items.length-1); marcar(); } }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); if(visible()&&items.length){ activo=Math.max(activo-1,0); marcar(); } }
+    else if(e.key==='Enter'){ if(visible()){ e.preventDefault(); if(activo>=0&&items[activo]!==undefined) seleccionar(items[activo],true); else if(items.length===1) seleccionar(items[0],true); } }
+    else if(e.key==='Escape'){ if(visible()){ e.stopPropagation(); cerrar(); input.value=input.dataset.sel; } }
+  });
+  list.addEventListener('mousedown',(e)=>e.preventDefault());
+  list.addEventListener('click',(e)=>{ const el=e.target.closest('.cb-item'); if(!el) return; const v=items[parseInt(el.dataset.i,10)]; if(v!==undefined) seleccionar(v,true); });
+  input.addEventListener('blur',()=>{ cerrar(); const n=_cbNorm(input.value); const ex=n?lista().find(t=>_cbNorm(t)===n):null; if(ex) seleccionar(ex,false); else input.value=input.dataset.sel; });
+  return input;
+}
+
+function configurarComboTipoCausa(c){
+  const w=document.getElementById('corregirPaseTipoWrap');
+  w.innerHTML='<div id="cp_tipo_combo"></div><div id="cp_tipo_nuevo_box" class="mt-2" style="display:none"><input type="text" id="cp_tipo_nuevo" class="form-control" maxlength="120" placeholder="Escriba el nuevo tipo de causa"><div class="form-text" style="font-size:.72rem;">Se agregará al listado al guardar.</div></div>';
+  crearComboBusqueda(document.getElementById('cp_tipo_combo'),'cp_tipo',()=>TIPOS,c.tipo||'',(v)=>{
+    const b=document.getElementById('cp_tipo_nuevo_box'), i=document.getElementById('cp_tipo_nuevo');
+    const esOtro=_cbNorm(v)==='otro';
+    b.style.display=esOtro?'block':'none';
+    if(esOtro) setTimeout(()=>i.focus(),0); else i.value='';
+  });
+}
+
+function getObservacionPase(c){
+  if(typeof c.observacionPase==='string') return c.observacionPase;
+  const asig=(c.historial||[]).filter(h=>h.accion&&h.accion.includes('Asignado (Nivel'));
+  if(!asig.length) return '';
+  let com=asig[asig.length-1].comentario||'';
+  const p=`Asignado a ${getEmpName(c.empleadoAsignado)}`;
+  if(com.startsWith(p)) com=com.slice(p.length);
+  com=com.trim();
+  return com==='Sin observación adicional'?'':com;
+}
+
+/* ============================================================
+   MODAL EDITAR PASE
+   ============================================================ */
+function abrirModalCorregirPase(causaId){
+  const c=state.causas.find(x=>x.id===causaId); if(!c){ showToast('Causa no encontrada','danger'); return; }
+  _causaCorregirId=causaId;
+  document.getElementById('corregirPaseExp').textContent=c.numero;
+  const esEnProceso=c.estado==='en_proceso', tieneEmp=!!c.empleadoAsignado;
+  const eS=document.getElementById('corregirPaseEmpleado'), eH=document.getElementById('corregirPaseEmpleadoHint');
+  const optEmp=e=>{ const cg=state.causas.filter(x=>x.empleadoAsignado===e.id||x.empleadoOriginal===e.id).length; const act=e.id===c.empleadoAsignado; return `<option value="${e.id}" ${act?'selected':''}>${e.nombre} (carga: ${cg})${act?' · actual':''}</option>`; };
+  if(esEnProceso){ eS.innerHTML=CONFIG.empleados.filter(e=>e.id===c.empleadoAsignado||!isAusente(e.id)).map(e=>optEmp(e)).join(''); eS.disabled=false; if(eH){ eH.textContent='Si elige otro empleado, el pase se reasigna y el plazo se reinicia.'; eH.style.color=''; } }
+  else if(tieneEmp){ eS.innerHTML=CONFIG.empleados.map(e=>optEmp(e)).join(''); eS.disabled=false; if(eH){ eH.textContent='Corrección: no modifica estado ni fechas.'; eH.style.color='#b45309'; } }
+  else if(c.estado==='en_secretaria'){ eS.innerHTML='<option value="" selected>— Sin asignar —</option>'+CONFIG.empleados.filter(e=>!isAusente(e.id)).map(e=>optEmp(e)).join(''); eS.disabled=false; if(eH){ eH.textContent='Si elige un empleado, la causa se asigna: pasa a «en proceso» y comienza el plazo.'; eH.style.color='#b45309'; } }
+  else { eS.innerHTML=`<option value="" selected>Sin asignar · ${(c.estado||'').replace(/_/g,' ')} (no editable)</option>`; eS.disabled=true; if(eH){ eH.textContent='Se asigna desde el flujo normal.'; eH.style.color='#b45309'; } }
+  crearComboBusqueda(document.getElementById('corregirPaseModoWrap'),'cp_modo',()=>MODOS_INTERVENCION,c.modoIntervencion||'');
+  configurarComboTipoCausa(c);
+  const eSc=document.getElementById('corregirPaseEscritoWrap');
+  eSc.innerHTML=`<input type="text" id="cp_escrito" class="form-control" list="cp_escrito_list" value="${(c.tipoEscrito||'').replace(/"/g,'&quot;')}"><datalist id="cp_escrito_list">${TIPOS_ESCRITO.map(t=>`<option value="${t}">`).join('')}</datalist>`;
+  document.getElementById('corregirPaseObs').value=getObservacionPase(c);
+  const btn=document.getElementById('btnGuardarCorreccionPase'); btn.disabled=false; btn.onclick=guardarCorreccionPase;
+  new bootstrap.Modal(document.getElementById('modalCorregirPase')).show();
+}
+async function guardarCorreccionPase(){
+  const c=state.causas.find(x=>x.id===_causaCorregirId); if(!c){ showToast('Causa no encontrada','danger'); return; }
+  const esEnProceso=c.estado==='en_proceso', empPrev=c.empleadoAsignado;
+  const empNuevo=document.getElementById('corregirPaseEmpleado').value || c.empleadoAsignado;
+  let tipoNuevo=document.getElementById('cp_tipo').dataset.sel||'', tipoEsNuevo=false;
+  const bN=document.getElementById('cp_tipo_nuevo_box');
+  if(bN && bN.style.display!=='none'){
+    let t=document.getElementById('cp_tipo_nuevo').value.trim().replace(/\s+/g,' ');
+    if(!t){ showToast('Escriba el nuevo tipo','warning'); return; }
+    if(_cbNorm(t)==='otro'){ showToast('Nombre distinto de "Otro"','warning'); return; }
+    const ex=TIPOS.find(x=>_cbNorm(x)===_cbNorm(t));
+    if(ex) tipoNuevo=ex; else { tipoNuevo=t.charAt(0).toUpperCase()+t.slice(1); tipoEsNuevo=true; }
+  }
+  const modoNuevo=document.getElementById('cp_modo').dataset.sel||'';
+  const escritoNuevo=document.getElementById('cp_escrito').value;
+  const obsNueva=document.getElementById('corregirPaseObs').value.trim();
+  if(esEnProceso && !empNuevo){ showToast('Seleccione empleado','warning'); return; }
+  const cambEmp=empNuevo!==empPrev, esAsig=cambEmp && !empPrev && c.estado==='en_secretaria';
+  if(cambEmp && !esEnProceso && !empPrev && !esAsig){ showToast('Causa sin empleado: use asignación normal','warning'); return; }
+  if(cambEmp && (esEnProceso||esAsig) && isAusente(empNuevo)){ showToast('Empleado ausente','warning'); return; }
+  const tPrev=c.tipo||'', escPrev=c.tipoEscrito||'', obsPrev=getObservacionPase(c), modoPrev=c.modoIntervencion||'';
+  const cT=tipoNuevo!==tPrev, cE=escritoNuevo!==escPrev, cO=obsNueva!==obsPrev, cM=modoNuevo!==modoPrev;
+  if(!cambEmp&&!cT&&!cE&&!cO&&!cM){ showToast('Sin cambios','info'); return; }
+  const btn=document.getElementById('btnGuardarCorreccionPase'); btn.disabled=true;
+  if(tipoEsNuevo){ try{ await agregarTipoCausa(tipoNuevo); }catch(e){ btn.disabled=false; return; } }
+  const ah=new Date().toISOString(), cambios=[];
+  if(cambEmp){
+    cambios.push(`Empleado: ${empPrev?getEmpName(empPrev):'Sin asignar'} → ${getEmpName(empNuevo)}`);
+    c.empleadoId=empNuevo; c.empleadoAsignado=empNuevo;
+    if(!c.empleadoOriginal||c.empleadoOriginal===empPrev) c.empleadoOriginal=empNuevo;
+  }
+  if(cambEmp && (esEnProceso||esAsig)){
+    if(esAsig){ c.estado='en_proceso'; if(!c.nivelSecretario) c.nivelSecretario=c.nivelOperador||1; }
+    c.fechaAsignacion=ah; const fI=calcularFechaInicio(ah); c.fechaLimite=calcularFechaLimite(fI,c.nivelSecretario||1).toISOString();
+  }
+  if(cM){ cambios.push(`Modo: ${modoPrev||'N/D'} → ${modoNuevo||'N/D'}`); c.modoIntervencion=modoNuevo; }
+  if(cT){ cambios.push(`Tipo: ${tPrev||'N/D'} → ${tipoNuevo||'N/D'}`); c.tipo=tipoNuevo; }
+  if(cE){ cambios.push(`Escrito: ${escPrev||'N/D'} → ${escritoNuevo||'N/D'}`); c.tipoEscrito=escritoNuevo; }
+  if(cO) cambios.push('Observación modificada');
+  c.observacionPase=obsNueva;
+  const secN=getSecName(c.secretarioId)||'Secretario';
+  if(!c.historial) c.historial=[];
+  if(esAsig) c.historial.push({fecha:ah,accion:`Asignado (Nivel ${c.nivelSecretario}) a ${getEmpName(empNuevo)} - desde Editar pase`,usuario:secN,comentario:`Asignado a ${getEmpName(empNuevo)} ${obsNueva||'Sin observación adicional'}`});
+  c.historial.push({fecha:ah,accion:'Pase editado por Secretario',usuario:secN,comentario:cambios.join(' | ')});
+  try{
+    await updateCausaInFirestore(c);
+    const m=bootstrap.Modal.getInstance(document.getElementById('modalCorregirPase')); if(m) m.hide();
+    showToast(`✏️ Pase de ${c.numero} actualizado`);
+    renderDistribucion();
+  }catch(e){ console.error(e); } finally { btn.disabled=false; }
+}
+
+/* ============================================================
+   ACCIONES
+   ============================================================ */
+async function devolverAlOperador(id,com){
+  const c=state.causas.find(x=>x.id===id); if(!c){ showToast('Causa no encontrada','danger'); return false; }
+  c.estado='devuelto_siged'; c.empleadoId=null; c.empleadoAsignado=null; c.fechaAsignacion=null; c.fechaLimite=null; c.fechaResolucionEmpleado=null;
+  if(!c.historial) c.historial=[];
+  c.historial.push({fecha:new Date().toISOString(),accion:'Devuelto al Operador por Secretario',usuario:'Secretario',comentario:com||'Sin motivo'});
+  try{ await updateCausaInFirestore(c); showToast(`↩️ ${c.numero} devuelta al operador`,'warning'); return true; }catch(e){ showToast('Error','danger'); return false; }
+}
+async function finalizarCausaSecretario(id,com){
+  const c=state.causas.find(x=>x.id===id); if(!c){ showToast('Causa no encontrada','danger'); return false; }
+  c.estado='finalizada'; c.fechaFinalizacion=new Date().toISOString();
+  if(c.empleadoAsignado && !c.fechaResolucionEmpleado) c.fechaResolucionEmpleado=new Date().toISOString();
+  if(!c.historial) c.historial=[];
+  c.historial.push({fecha:new Date().toISOString(),accion:'Finalizado por Secretario',usuario:'Secretario',comentario:com||'Trámite finalizado'});
+  try{ await updateCausaInFirestore(c); showToast(`✅ ${c.numero} finalizada`,'success'); renderDistribucion(); return true; }catch(e){ showToast('Error','danger'); return false; }
+}
+async function elevarDefensor(id){
+  const c=state.causas.find(x=>x.id===id); if(!c) return;
+  if(c.estado!=='en_proceso' && c.estado!=='finalizada'){ showToast('Solo causas en proceso o finalizadas','warning'); return; }
+  const m=prompt('Motivo de elevación (opcional):'); if(m===null) return;
+  c.estado='en_defensor'; if(!c.historial) c.historial=[];
+  c.historial.push({fecha:new Date().toISOString(),accion:'Elevado a Defensor',usuario:'Secretario',comentario:m||'Sin motivo'});
+  try{ await updateCausaInFirestore(c); showToast(`⚖️ ${c.numero} elevada a Defensor`,'info'); renderDistribucion(); }catch(e){ showToast('Error','danger'); }
+}
+async function elevarDefensorDesdePendiente(id){
+  const c=state.causas.find(x=>x.id===id); if(!c) return;
+  const m=prompt('Motivo de elevación a Defensor:'); if(m===null) return;
+  c.estado='en_defensor'; if(!c.historial) c.historial=[];
+  c.historial.push({fecha:new Date().toISOString(),accion:'Elevado a Defensor',usuario:'Secretario',comentario:m||'Sin motivo'});
+  try{ await updateCausaInFirestore(c); showToast(`⚖️ ${c.numero} elevada a Defensor`,'info'); renderDistribucion(); }catch(e){ showToast('Error','danger'); }
+}
+async function toggleAusencia(empId){
+  let e=state.empleados.find(x=>x.id===empId);
+  if(!e){ e={id:empId,ausente:false,fechaReintegro:null}; state.empleados.push(e); }
+  e.ausente=!e.ausente;
+  if(!e.ausente){ e.fechaReintegro=new Date().toISOString(); showToast(`✅ ${getEmpName(empId)} reintegrado`,'success'); }
+  else { e.fechaReintegro=null; showToast(`⛔ ${getEmpName(empId)} ausente`,'warning'); }
+  renderDistribucion(); await saveConfigToFirestore();
+}
+
+/* ============================================================
+   HISTORIALES / MODALES (mantiene estructura del original)
+   ============================================================ */
+function abrirHistorial(id){
+  const c=state.causas.find(x=>x.id===id); if(!c){ showToast('Causa no encontrada','danger'); return; }
+  document.getElementById('modalHistorialExp').textContent=c.numero;
+  const b=document.getElementById('modalHistorialBody');
+  const eA=c.empleadoAsignado?getEmpName(c.empleadoAsignado):'Sin asignar';
+  let h=`<div class="mb-3"><strong>Empleado actual:</strong> ${eA}</div>`;
+  if(c.datosParte) h+=`<div><strong>Parte:</strong> ${c.datosParte}</div>`;
+  if(c.dni) h+=`<div><strong>DNI:</strong> ${c.dni}</div>`;
+  h+=`<hr/><h6>Movimientos</h6>`;
+  if(!c.historial||!c.historial.length) h+='<div class="text-muted">Sin movimientos.</div>';
+  else h+=c.historial.slice().reverse().map(m=>`<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:.75rem;color:#64748b;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario||'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:.8rem;color:#64748b;width:100%;padding-left:140px;">${m.comentario||'-'}</span></div>`).join('');
+  b.innerHTML=h;
+  new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+}
+function verConsultas(id){
+  const c=state.causas.find(x=>x.id===id); if(!c) return;
+  document.getElementById('modalConsultasExp').textContent=c.numero;
+  const b=document.getElementById('modalConsultasBody');
+  let h='';
+  if(c.datosParte) h+=`<div><strong>Parte:</strong> ${c.datosParte}</div>`;
+  if(c.dni) h+=`<div><strong>DNI:</strong> ${c.dni}</div>`;
+  h+=`<hr/>`;
+  const cons=c.historial?c.historial.filter(x=>x.accion&&x.accion.includes('Enviado a Secretario para consulta')):[];
+  if(!cons.length) h+='<div class="text-muted">No hay consultas.</div>';
+  else h+=cons.slice().reverse().map(m=>`<div class="d-flex flex-wrap gap-2 align-items-start border-bottom py-2"><span style="font-size:.75rem;color:#64748b;min-width:140px;">${fmtDt(m.fecha)}</span><span class="fw-600" style="min-width:100px;">${m.usuario||'Sistema'}</span><span style="flex:1;">${m.accion}</span><span style="font-size:.8rem;color:#64748b;width:100%;padding-left:140px;">${m.comentario||'-'}</span></div>`).join('');
+  b.innerHTML=h;
+  new bootstrap.Modal(document.getElementById('modalConsultas')).show();
+}
+function verHistorialSecretario(secId){
+  const sec=CONFIG.secretarios.find(s=>s.id===secId); if(!sec) return;
+  document.getElementById('modalHistorialSecNombre').textContent=sec.nombre;
+  const mB=document.getElementById('modalHistorialSecBody');
+  let h=`<div class="row g-2 mb-3"><div class="col-md-6"><label class="form-label">Buscar exp.</label><input type="text" id="filtroExpedienteSec" class="form-control form-control-sm"></div><div class="col-md-4"><label class="form-label">Estado</label><select id="filtroEstadoSec" class="form-select form-select-sm"><option value="">Todos</option>${ESTADOS.map(e=>`<option value="${e}">${e.replace('_',' ')}</option>`).join('')}</select></div><div class="col-md-2 d-flex align-items-end"><button class="btn btn-modern btn-modern-outline btn-modern-sm w-100" id="btnLimpiarFiltrosSec">Limpiar</button></div></div><div id="tablaHistorialSecContainer"><div class="text-muted">Cargando...</div></div>`;
+  mB.innerHTML=h;
+  function render(){
+    const fE=document.getElementById('filtroExpedienteSec')?.value?.toLowerCase().trim()||'';
+    const fS=document.getElementById('filtroEstadoSec')?.value||'';
+    let cc=state.causas.filter(c=>c.secretarioId===secId);
+    if(fE) cc=cc.filter(c=>c.numero.toLowerCase().includes(fE));
+    if(fS) cc=cc.filter(c=>c.estado===fS);
+    cc=cc.filter(matchDateFilter);
+    cc.sort((a,b)=>{ const fa=a.fechaPaseSecretario||a.fechaAsignacion||''; const fb=b.fechaPaseSecretario||b.fechaAsignacion||''; return new Date(fb)-new Date(fa); });
+    const cont=document.getElementById('tablaHistorialSecContainer');
+    if(!cc.length){ cont.innerHTML='<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas.</div>'; return; }
+    cont.innerHTML=`<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>Modo</th><th>Tipo</th><th>Nivel</th><th>Fecha Pase</th><th>Estado</th><th>Observación</th></tr></thead><tbody>${cc.map(c=>{ let obs='-'; if(c.historial&&c.historial.length){ const p=c.historial.find(x=>x.accion&&(x.accion.includes('Pase a Secretaría')||x.accion.includes('Enviado a Secretaría'))); obs=p&&p.comentario?p.comentario:(c.historial[c.historial.length-1]?.comentario||'-'); } const fp=c.fechaPaseSecretario||c.fechaAsignacion||'-'; return `<tr><td><strong>${c.numero}</strong></td><td>${c.modoIntervencion||'-'}</td><td>${c.tipo||'-'}</td><td>N${c.nivelSecretario||c.nivelOperador||'-'}</td><td style="font-size:.75rem;">${fmtDt(fp)}</td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:.75rem;">${obs}</td></tr>`; }).join('')}</tbody></table></div>`;
+  }
+  document.getElementById('filtroExpedienteSec').addEventListener('input',render);
+  document.getElementById('filtroEstadoSec').addEventListener('change',render);
+  document.getElementById('btnLimpiarFiltrosSec').addEventListener('click',()=>{ document.getElementById('filtroExpedienteSec').value=''; document.getElementById('filtroEstadoSec').value=''; render(); });
+  render();
+  new bootstrap.Modal(document.getElementById('modalHistorialSecretario')).show();
+}
+function cargarHistorialEmpleado(empId,empNombre){
+  if(!empId){ showToast('ID inválido','danger'); return; }
+  document.getElementById('tituloNombreEmpleado').textContent=empNombre;
+  const cc=state.causas.filter(c=>c.empleadoAsignado===empId||c.empleadoOriginal===empId);
+  cc.sort((a,b)=>{ const fa=a.fechaAsignacion||a.fechaPaseSecretario||''; const fb=b.fechaAsignacion||b.fechaPaseSecretario||''; return new Date(fb)-new Date(fa); });
+  const cont=document.getElementById('contenidoHistorialEmpleado');
+  if(!cc.length) cont.innerHTML=`<div class="empty-state"><i class="bi bi-inbox"></i>Sin causas asignadas.</div>`;
+  else {
+    cont.innerHTML=`<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>Modo</th><th>Tipo</th><th>Nivel</th><th>Estado</th><th>Fecha Asig.</th><th>Acciones</th></tr></thead><tbody>${cc.map(c=>{ const fa=c.fechaAsignacion||c.fechaPaseSecretario||'-'; return `<tr><td><strong>${c.numero}</strong></td><td>${c.modoIntervencion||'-'}</td><td>${c.tipo||'-'}</td><td>N${c.nivelSecretario||c.nivelOperador||'N/D'}</td><td>${getEstadoBadge(c.estado)}</td><td style="font-size:.75rem;">${fmtDt(fa)}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`; }).join('')}</tbody></table></div>`;
+    cont.querySelectorAll('.btn-ver-hist').forEach(b=>{ b.addEventListener('click',function(){ const id=this.dataset.id; const m=bootstrap.Modal.getInstance(document.getElementById('modalHistorialEmpleado')); if(m) m.hide(); abrirHistorial(id); }); });
+  }
+  new bootstrap.Modal(document.getElementById('modalHistorialEmpleado')).show();
+}
+function abrirDetalleSecretario(secId){
+  const sec=CONFIG.secretarios.find(s=>s.id===secId); if(!sec) return;
+  document.getElementById('modalSecDetalleNombre').textContent=sec.nombre;
+  const cont=document.getElementById('contenidoSecDetalle');
+  const ff=(c)=>{
+    const term=searchTerm.toLowerCase().trim();
+    if(term && !String(c.numero??'').toLowerCase().includes(term)) return false;
+    if(filters.empleado){ const e=CONFIG.empleados.find(x=>x.id===filters.empleado); if(e){ const nl=e.nombre.toLowerCase(); const ea=c.empleadoAsignado?getEmpName(c.empleadoAsignado).toLowerCase():''; const eo=c.empleadoOriginal?getEmpName(c.empleadoOriginal).toLowerCase():''; if(ea!==nl&&eo!==nl) return false; } }
+    if(filters.secretario && c.secretarioId!==filters.secretario) return false;
+    if(filters.tipo && c.tipo!==filters.tipo) return false;
+    if(filters.nivel){ const n=parseInt(filters.nivel); if(parseInt(c.nivelOperador)!==n&&parseInt(c.nivelSecretario)!==n) return false; }
+    if(filters.estado && c.estado!==filters.estado) return false;
+    if(filters.demora){ if(c.estado!=='en_proceso') return false; if(getDiasDemora(c)<=0) return false; }
+    if(!matchDateFilter(c)) return false;
+    return true;
+  };
+  const cs=state.causas.filter(c=>c.secretarioId===secId&&ff(c));
+  const mapa={}; ESTADOS.forEach(e=>mapa[e]=0); cs.forEach(c=>{ if(mapa[c.estado]!==undefined) mapa[c.estado]++; });
+  const et={'en_secretaria':'📋 Secretaría','en_proceso':'🔄 En proceso','finalizada':'✅ Finalizada','en_defensor':'⚖️ Defensor','devuelto_siged':'↩️ Devuelto SIGED','remitido':'📤 Remitido','rechazado':'🚫 Rechazado','en_espera':'⏳ En espera'};
+  let filas=''; ESTADOS.forEach(e=>{ filas+=`<tr><td><strong>${et[e]||e}</strong></td><td style="font-weight:800;font-size:1.1rem;text-align:center;">${mapa[e]||0}</td></tr>`; });
+  cont.innerHTML=`<div class="kpi-grid"><div class="kpi-item"><div class="kpi-label">Total (filtradas)</div><div class="kpi-value text-primary">${cs.length}</div></div></div><hr/><div class="table-wrap"><table class="table-modern table"><thead><tr><th>Estado</th><th style="text-align:center;">Cantidad</th></tr></thead><tbody>${filas}</tbody></table></div>`;
+  new bootstrap.Modal(document.getElementById('modalSecretarioDetalle')).show();
+}
+
+/* ============================================================
+   IMPRESIONES
+   ============================================================ */
+function imprimirNuevoPatrocinio(){
+  let emps=CONFIG.empleados;
+  if(filters.empleado){ const ef=CONFIG.empleados.find(e=>e.id===filters.empleado); emps=ef?[ef]:[]; }
+  const data=emps.map(emp=>{
+    const n=state.causas.filter(c=>c.tipo==='Nuevo patrocinio'&&(c.empleadoAsignado===emp.id||c.empleadoOriginal===emp.id)&&matchDateFilter(c));
+    const v=state.causas.filter(c=>c.tipo==='Nuevo patrocinio Violencia Familiar'&&(c.empleadoAsignado===emp.id||c.empleadoOriginal===emp.id)&&matchDateFilter(c));
+    return { nombre:emp.nombre, total:n.length+v.length, enProceso:n.filter(c=>c.estado==='en_proceso').length+v.filter(c=>c.estado==='en_proceso').length, totalViolencia:v.length, historico:(n.length+v.length)-(n.filter(c=>c.estado==='en_proceso').length+v.filter(c=>c.estado==='en_proceso').length) };
+  });
+  const tK=data.reduce((s,e)=>s+e.total,0), tA=data.reduce((s,e)=>s+e.enProceso,0), tV=data.reduce((s,e)=>s+e.totalViolencia,0), tH=data.reduce((s,e)=>s+e.historico,0);
+  const fecha=new Date().toLocaleString('es-AR');
+  let rows=''; data.forEach(e=>{ rows+=`<tr><td><strong>${e.nombre}</strong></td><td style="font-weight:800;font-size:1.1rem;">${e.total}</td><td style="color:#0284c7;font-weight:700;">${e.enProceso}</td><td style="color:#7c3aed;font-weight:700;">${e.totalViolencia}</td><td>${e.historico}</td></tr>`; });
+  const win=window.open('','_blank'); if(!win){ showToast('Permita ventanas emergentes','warning'); return; }
+  win.document.write(`<html><head><title>Nuevo Patrocinio</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body><h3>Panel de Nuevo Patrocinio por Empleado</h3><div style="margin-bottom:15px;font-size:.85rem;"><strong>Fecha:</strong> ${fecha}</div><table><thead><tr><th>Empleado</th><th>Total (${tK})</th><th>Actual (${tA})</th><th>N.P.V.F. (${tV})</th><th>Histórico (${tH})</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  win.document.close(); setTimeout(()=>win.print(),500);
+}
+function abrirReporteCompleto(){
+  const b=document.getElementById('modalReporteBody');
+  const p=state.causas.filter(c=>c.estado==='en_secretaria');
+  const e=state.causas.filter(c=>c.estado==='en_proceso');
+  let h=`<div class="print-table"><h5>Reporte de Pase Digital. Secretarios.</h5><p><strong>Fecha:</strong> ${new Date().toLocaleString('es-AR')}</p><hr/><h6>Pendientes (${p.length})</h6>`;
+  h+=p.length?`<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Exp.</th><th>Modo</th><th>Tipo</th><th>Nivel</th></tr></thead><tbody>${p.map(c=>`<tr><td><strong>${c.numero}</strong></td><td>${c.modoIntervencion||'-'}</td><td>${c.tipo}</td><td>N${c.nivelOperador}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-muted">Sin pendientes.</div>';
+  h+=`<h6 class="mt-3">En Proceso (${e.length})</h6>`;
+  h+=e.length?`<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Exp.</th><th>Empleado</th><th>Nivel</th></tr></thead><tbody>${e.map(c=>`<tr><td><strong>${c.numero}</strong></td><td>${getEmpName(c.empleadoAsignado)}</td><td>N${c.nivelSecretario||c.nivelOperador||'N/D'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="text-muted">Sin causas en proceso.</div>';
+  h+=`</div>`;
+  b.innerHTML=h;
+  new bootstrap.Modal(document.getElementById('modalReporte')).show();
+}
+function imprimirReporteCompleto(){ const b=document.getElementById('modalReporteBody'); if(!b) return; const win=window.open('','_blank'); if(!win) return; win.document.write(`<html><head><title>Reporte</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body>${b.innerHTML}</body></html>`); win.document.close(); setTimeout(()=>win.print(),500); }
+function imprimirPasesCompleto(){
+  const term=searchTerm.toLowerCase().trim(), ff=(c)=>{ if(term!==''&&!String(c.numero??'').toLowerCase().includes(term)) return false; return matchDateFilter(c); };
+  let todas=[];
+  state.causas.forEach(c=>{ if(!c.historial) return; c.historial.forEach(h=>{ if(h.accion&&h.accion.includes('Asignado')&&ff(c)){ const m=h.accion.match(/Asignado \(Nivel \d+\) a (.+?) - /); const emp=m?m[1]:'Desconocido'; const nm=h.accion.match(/Nivel (\d+)/); const n=nm?parseInt(nm[1]):(c.nivelSecretario||c.nivelOperador||'N/D'); todas.push({numero:c.numero,empleado:emp,secretario:getSecName(c.secretarioId)||h.usuario||'Secretario',nivel:n,fechaAsignacion:h.fecha,tipo:c.tipo||'N/D',estado:c.estado,obs:h.comentario||'-'}); } }); });
+  todas.sort((a,b)=>new Date(b.fechaAsignacion)-new Date(a.fechaAsignacion));
+  if(!todas.length){ showToast('No hay registros','warning'); return; }
+  const now=new Date(), fecha=now.toLocaleDateString('es-AR'), hora=now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  let rows=''; todas.forEach(a=>{ rows+=`<tr><td><strong>${a.numero}</strong></td><td>${a.empleado}</td><td>${a.secretario}</td><td>N${a.nivel}</td><td>${fmtDt(a.fechaAsignacion)}</td><td>${a.tipo}</td><td>${a.estado}</td><td>${a.obs}</td></tr>`; });
+  const win=window.open('','_blank'); if(!win) return;
+  win.document.write(`<html><head><title>Pases</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body><h3>Todos los pases a empleados</h3><div style="margin-bottom:15px;"><strong>Fecha:</strong> ${fecha} <strong>Hora:</strong> ${hora}</div><table><thead><tr><th>Exp.</th><th>Empleado</th><th>Secretario</th><th>Nivel</th><th>Fecha</th><th>Tipo</th><th>Estado</th><th>Obs.</th></tr></thead><tbody>${rows}</tbody></table></body></html>`);
+  win.document.close(); setTimeout(()=>win.print(),500);
+}
+function generarInformeEquidad(){
+  const b=document.getElementById('modalEquidadBody');
+  const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+  b.innerHTML=`<div class="row g-2 mb-3"><div class="col-md-4"><label class="form-label">Mes</label><select id="equidadMes" class="form-select form-select-sm">${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${i+1===cm?'selected':''}>${new Date(0,i).toLocaleString('es',{month:'long'})}</option>`).join('')}</select></div><div class="col-md-4"><label class="form-label">Año</label><select id="equidadAnio" class="form-select form-select-sm">${Array.from({length:15},(_,i)=>{const y=2026+i;return `<option value="${y}" ${y===cy?'selected':''}>${y}</option>`;}).join('')}</select></div><div class="col-md-4 d-flex align-items-end"><button class="btn btn-modern btn-modern-primary btn-modern-sm w-100" id="btnAplicarFiltroEquidad">Aplicar</button></div></div><hr/><div id="contenidoEquidad"></div>`;
+  function renderEq(){
+    const mes=parseInt(document.getElementById('equidadMes').value), anio=parseInt(document.getElementById('equidadAnio').value);
+    const caus=state.causas.filter(c=>{ if(!c.fechaPaseSecretario) return false; const d=new Date(c.fechaPaseSecretario); return d.getMonth()===mes-1 && d.getFullYear()===anio; });
+    const asg=caus.filter(c=>c.empleadoAsignado && (c.estado==='en_proceso'||c.estado==='finalizada'));
+    const secStats=CONFIG.secretarios.map(s=>({...s,asignadas:asg.filter(a=>a.secretarioId===s.id).length}));
+    const empStats=CONFIG.empleados.map(e=>{ const a=asg.filter(x=>x.empleadoAsignado===e.id); const n={1:0,2:0,3:0,4:0}; a.forEach(x=>{if(x.nivelSecretario>=1&&x.nivelSecretario<=4) n[x.nivelSecretario]++;}); return {nombre:e.nombre,total:a.length,niveles:n,ausente:isAusente(e.id)}; });
+    let h=`<h5 style="font-weight:800;">Informe · ${mes}/${anio}</h5><p style="color:var(--muted);font-size:.85rem;"><strong>Total asignaciones:</strong> ${asg.length}</p><hr/><h6>Asignaciones por Secretario</h6><div class="equidad-grid">${secStats.map(s=>`<div class="equidad-item"><div class="eq-label">${s.nombre}</div><div class="eq-value">${s.asignadas}</div></div>`).join('')}</div><hr/><h6>Carga por Empleado</h6><div class="table-wrap"><table class="table-modern table"><thead><tr><th>Empleado</th><th>Total</th><th>N1</th><th>N2</th><th>N3</th><th>N4</th><th>Estado</th></tr></thead><tbody>${empStats.map(e=>`<tr class="${e.ausente?'row-ausente':'row-presente'}"><td><strong>${e.nombre}</strong></td><td>${e.total}</td><td>${e.niveles[1]}</td><td>${e.niveles[2]}</td><td>${e.niveles[3]}</td><td>${e.niveles[4]}</td><td>${e.ausente?'<span class="badge bg-danger">Ausente</span>':'<span class="badge bg-success">Activo</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+    document.getElementById('contenidoEquidad').innerHTML=h;
+  }
+  document.getElementById('btnAplicarFiltroEquidad').addEventListener('click',renderEq);
+  renderEq();
+  new bootstrap.Modal(document.getElementById('modalEquidad')).show();
+}
+function imprimirInformeEquidad(){ const c=document.getElementById('contenidoEquidad'); if(!c) return; const win=window.open('','_blank'); if(!win) return; win.document.write(`<html><head><title>Equidad</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}.equidad-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0;}.equidad-item{border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;}</style></head><body><h2>Informe de Equidad</h2>${c.innerHTML}</body></html>`); win.document.close(); setTimeout(()=>win.print(),500); }
+
+/* ============================================================
+   REPORTE TRIMESTRAL
+   ============================================================ */
+const RT_MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const RT_RANGOS={1:'Ene–Mar',2:'Abr–Jun',3:'Jul–Sep',4:'Oct–Dic'};
+let reporteTrimestralState={anio:new Date().getFullYear(),trimestre:Math.floor(new Date().getMonth()/3)+1,mostrarCeros:false};
+function rtEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function rtFechaCausa(c){ const f=c.fechaAsignacion||c.fechaPaseSecretario; if(!f) return null; const d=new Date(f); return isNaN(d.getTime())?null:d; }
+function rtCalcular(cs,anio,tr){ const r={totalTipo:0,totalEscrito:0,tipos:{},escritos:{}}; cs.forEach(c=>{ const d=rtFechaCausa(c); if(!d||d.getFullYear()!==anio||(Math.floor(d.getMonth()/3)+1)!==tr) return; const mi=d.getMonth()%3; if(c.tipo){ if(!r.tipos[c.tipo]) r.tipos[c.tipo]={n:0,m:[0,0,0]}; r.tipos[c.tipo].n++; r.tipos[c.tipo].m[mi]++; r.totalTipo++; } if(c.tipoEscrito){ if(!r.escritos[c.tipoEscrito]) r.escritos[c.tipoEscrito]={n:0,m:[0,0,0]}; r.escritos[c.tipoEscrito].n++; r.escritos[c.tipoEscrito].m[mi]++; r.totalEscrito++; } }); return r; }
+function rtVarHTML(a,p){ if(p===0&&a===0) return '<span style="color:#94a3b8;">—</span>'; if(p===0) return '<span style="color:#1d4ed8;font-weight:700;">Nuevo</span>'; const pct=Math.round(((a-p)/p)*100); if(pct>0) return `<span style="color:#1d4ed8;font-weight:700;">▲ ${pct}%</span>`; if(pct<0) return `<span style="color:#dc2626;font-weight:700;">▼ ${Math.abs(pct)}%</span>`; return '<span style="color:#64748b;font-weight:700;">= 0%</span>'; }
+function rtTablaHTML(titulo,cat,act,ant,total,meses,verCeros,idT){
+  const n=new Set(cat); Object.keys(act).forEach(k=>n.add(k)); Object.keys(ant).forEach(k=>n.add(k));
+  let f=Array.from(n).map(nb=>({nb,n:act[nb]?act[nb].n:0,m:act[nb]?act[nb].m:[0,0,0],prev:ant[nb]?ant[nb].n:0}));
+  if(!verCeros) f=f.filter(x=>x.n>0||x.prev>0);
+  f.sort((a,b)=>b.n-a.n||a.nb.localeCompare(b.nb,'es'));
+  const tP=Object.values(ant).reduce((s,x)=>s+x.n,0);
+  const tM=[0,1,2].map(i=>f.reduce((s,x)=>s+x.m[i],0));
+  return `<div class="table-wrap"><table class="table-modern table" id="${idT}" style="min-width:0;width:100%;"><thead><tr><th>${titulo}</th><th>Cant.</th><th>%</th>${meses.map(m=>`<th>${m}</th>`).join('')}<th>Trim.ant.</th><th>Var.</th></tr></thead><tbody>${f.length?f.map(x=>`<tr><td><strong>${rtEsc(x.nb)}</strong></td><td style="font-weight:800;font-size:1.05rem;">${x.n}</td><td>${total?((x.n/total)*100).toFixed(1):'0.0'}%</td>${x.m.map(v=>`<td>${v}</td>`).join('')}<td>${x.prev}</td><td>${rtVarHTML(x.n,x.prev)}</td></tr>`).join(''):`<tr><td colspan="${6+meses.length-1}" class="text-center" style="color:#94a3b8;padding:1.5rem;">Sin registros.</td></tr>`}</tbody><tfoot><tr style="background:#f1f5f9;font-weight:800;"><td>TOTAL</td><td>${total}</td><td>${total?'100.0%':'0.0%'}</td>${tM.map(x=>`<td>${x}</td>`).join('')}<td>${tP}</td><td>${rtVarHTML(total,tP)}</td></tr></tfoot></table></div>`;
+}
+function rtRender(wrap,filterFn){
+  const st=reporteTrimestralState, base=state.causas.filter(filterFn);
+  const aniosS=new Set([new Date().getFullYear(),st.anio]);
+  base.forEach(c=>{ const d=rtFechaCausa(c); if(d) aniosS.add(d.getFullYear()); });
+  const anios=Array.from(aniosS).sort((a,b)=>b-a);
+  const act=rtCalcular(base,st.anio,st.trimestre);
+  const pT=st.trimestre===1?4:st.trimestre-1, pA=st.trimestre===1?st.anio-1:st.anio;
+  const ant=rtCalcular(base,pA,pT);
+  const meses=[0,1,2].map(i=>RT_MESES[(st.trimestre-1)*3+i]);
+  const top=o=>{ const e=Object.entries(o).sort((a,b)=>b[1].n-a[1].n||a[0].localeCompare(b[0],'es'))[0]; return e?{nombre:e[0],n:e[1].n}:null; };
+  const tT=top(act.tipos), tE=top(act.escritos);
+  const escN=new Set(TIPOS_ESCRITO); Object.keys(act.escritos).forEach(k=>escN.add(k));
+  wrap.innerHTML=`<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-calendar3"></i> Reporte Trimestral ${st.trimestre}T ${st.anio} (${RT_RANGOS[st.trimestre]})</div><div class="d-flex flex-wrap align-items-center gap-2"><select id="rtAnio" class="form-select form-select-sm" style="width:auto;">${anios.map(a=>`<option value="${a}" ${a===st.anio?'selected':''}>${a}</option>`).join('')}</select><select id="rtTrimestre" class="form-select form-select-sm" style="width:auto;">${[1,2,3,4].map(t=>`<option value="${t}" ${t===st.trimestre?'selected':''}>${t}T</option>`).join('')}</select><label style="font-size:.75rem;color:#475569;"><input type="checkbox" id="rtCeros" ${st.mostrarCeros?'checked':''}> Ver ceros</label><button class="btn btn-imprimir btn-modern-sm" id="btnImprimirRT"><i class="bi bi-printer"></i> Imprimir</button></div></div><div id="rtPrintable"><div class="card-title" style="font-size:.9rem;"><i class="bi bi-tags-fill"></i> Por Tipo</div><div class="kpi-grid"><div class="kpi-item"><div class="kpi-label">Total trim.</div><div class="kpi-value text-primary">${act.totalTipo}</div></div><div class="kpi-item"><div class="kpi-label">Tipos</div><div class="kpi-value">${Object.keys(act.tipos).length}</div></div><div class="kpi-item"><div class="kpi-label">Más frecuente</div><div class="kpi-value" style="font-size:.85rem;">${tT?rtEsc(tT.nombre)+' ('+tT.n+')':'-'}</div></div><div class="kpi-item"><div class="kpi-label">Trim.ant.</div><div class="kpi-value text-secondary">${ant.totalTipo}</div></div><div class="kpi-item"><div class="kpi-label">Variación</div><div class="kpi-value" style="font-size:1rem;">${rtVarHTML(act.totalTipo,ant.totalTipo)}</div></div></div>${rtTablaHTML('Tipo',TIPOS,act.tipos,ant.tipos,act.totalTipo,meses,st.mostrarCeros,'tRT')}<div class="card-title mt-4" style="font-size:.9rem;"><i class="bi bi-file-earmark-text-fill"></i> Por Tipo de Escrito</div><div class="kpi-grid"><div class="kpi-item"><div class="kpi-label">Total escritos</div><div class="kpi-value text-primary">${act.totalEscrito}</div></div>${Array.from(escN).map(nb=>`<div class="kpi-item"><div class="kpi-label">${rtEsc(nb)}</div><div class="kpi-value">${act.escritos[nb]?act.escritos[nb].n:0}</div></div>`).join('')}<div class="kpi-item"><div class="kpi-label">Más frecuente</div><div class="kpi-value" style="font-size:.85rem;">${tE?rtEsc(tE.nombre)+' ('+tE.n+')':'-'}</div></div></div>${rtTablaHTML('Tipo de Escrito',TIPOS_ESCRITO,act.escritos,ant.escritos,act.totalEscrito,meses,st.mostrarCeros,'tRT2')}</div>`;
+  wrap.querySelector('#rtAnio').addEventListener('change',e=>{ st.anio=parseInt(e.target.value); rtRender(wrap,filterFn); });
+  wrap.querySelector('#rtTrimestre').addEventListener('change',e=>{ st.trimestre=parseInt(e.target.value); rtRender(wrap,filterFn); });
+  wrap.querySelector('#rtCeros').addEventListener('change',e=>{ st.mostrarCeros=e.target.checked; rtRender(wrap,filterFn); });
+  wrap.querySelector('#btnImprimirRT').addEventListener('click',()=>{ const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>RT</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:left;}th{background:#f1f6fd;}.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;}.kpi-item{border:1px solid #ddd;border-radius:8px;padding:6px;text-align:center;}.kpi-label{font-size:9px;color:#64748b;text-transform:uppercase;}.kpi-value{font-size:18px;font-weight:800;}</style></head><body><h3>RT ${st.trimestre}T ${st.anio}</h3>${wrap.querySelector('#rtPrintable').innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),300); });
+}
+function initReporteTrimestral(panel,filterFn){ const w=panel.querySelector('#reporteTrimestralWrap'); if(w) rtRender(w,filterFn); }
+
+/* ============================================================
+   FORMs CEJUME
+   ============================================================ */
+const FC_TIPO='CEJUME Formulario';
+let formCejumeState={anio:new Date().getFullYear()};
+function fcCalcular(cs,anio){ const r={}; let sE=0; cs.forEach(c=>{ if(c.tipo!==FC_TIPO) return; const d=rtFechaCausa(c); if(!d||d.getFullYear()!==anio) return; const id=c.empleadoAsignado||c.empleadoOriginal||c.empleadoId||null; if(!id){ sE++; return; } if(!r[id]) r[id]={m:new Array(12).fill(0),total:0}; r[id].m[d.getMonth()]++; r[id].total++; }); r._sinEmpleado=sE; return r; }
+function fcRender(wrap,filterFn){
+  const st=formCejumeState, base=state.causas.filter(filterFn);
+  const aniosS=new Set([new Date().getFullYear(),st.anio]);
+  base.forEach(c=>{ if(c.tipo!==FC_TIPO) return; const d=rtFechaCausa(c); if(d) aniosS.add(d.getFullYear()); });
+  const anios=Array.from(aniosS).sort((a,b)=>b-a);
+  const datos=fcCalcular(base,st.anio);
+  let emps=CONFIG.empleados.slice(); if(filters.empleado) emps=emps.filter(e=>e.id===filters.empleado);
+  const filas=emps.map(e=>{ const d=datos[e.id]||{m:new Array(12).fill(0),total:0}; return {nombre:e.nombre,m:d.m,total:d.total}; });
+  const tM=RT_MESES.map((_,i)=>filas.reduce((s,f)=>s+f.m[i],0));
+  const tG=filas.reduce((s,f)=>s+f.total,0);
+  const celda=n=>n>0?`<td style="text-align:center;font-weight:700;color:#0369a1;">${n}</td>`:`<td style="text-align:center;color:#cbd5e1;">0</td>`;
+  wrap.innerHTML=`<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-file-earmark-ruled"></i> FormCEJUME (${st.anio})</div><div class="d-flex flex-wrap align-items-center gap-2"><select id="fcAnio" class="form-select form-select-sm" style="width:auto;">${anios.map(a=>`<option value="${a}" ${a===st.anio?'selected':''}>${a}</option>`).join('')}</select><button class="btn btn-imprimir btn-modern-sm" id="btnImprimirFC"><i class="bi bi-printer"></i> Imprimir</button></div></div><div id="fcPrintable"><div class="table-wrap"><table class="table-modern table" style="min-width:760px;width:100%;"><thead><tr><th>Empleado</th>${RT_MESES.map(m=>`<th style="text-align:center;">${m}</th>`).join('')}<th style="text-align:center;">Total</th></tr></thead><tbody>${filas.length?filas.map(f=>`<tr><td><strong>${rtEsc(f.nombre)}</strong></td>${f.m.map(celda).join('')}<td style="text-align:center;font-weight:800;font-size:1.05rem;">${f.total}</td></tr>`).join(''):`<tr><td colspan="14" class="text-center" style="color:#94a3b8;padding:1.5rem;">Sin empleados.</td></tr>`}</tbody><tfoot><tr style="background:#f1f5f9;font-weight:800;"><td>TOTAL</td>${tM.map(x=>`<td style="text-align:center;">${x}</td>`).join('')}<td style="text-align:center;">${tG}</td></tr></tfoot></table></div></div>`;
+  wrap.querySelector('#fcAnio').addEventListener('change',e=>{ st.anio=parseInt(e.target.value); fcRender(wrap,filterFn); });
+  wrap.querySelector('#btnImprimirFC').addEventListener('click',()=>{ const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>FC</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:11px;}th,td{border:1px solid #ccc;padding:4px 6px;text-align:center;}th:first-child,td:first-child{text-align:left;}th,tfoot td{background:#f1f6fd;font-weight:700;}@page{size:landscape;}</style></head><body><h3>FormCEJUME ${st.anio}</h3>${wrap.querySelector('#fcPrintable').innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),300); });
+}
+function initFormCejume(panel,filterFn){ const w=panel.querySelector('#formCejumeWrap'); if(w) fcRender(w,filterFn); }
+
+/* ============================================================
+   RENDER PRINCIPAL
+   ============================================================ */
+function renderDistribucion(){
+  const panel=document.getElementById('panelDistribucion'); if(!panel) return;
+  if(!panel._tabsDelegados){
+    panel._tabsDelegados=true;
+    const act=b=>{ const t=b.dataset.tab; if(!t) return; panel.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b)); panel.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id===t)); activeTabId=t; };
+    panel.addEventListener('mousedown',e=>{ if(e.button!==0) return; const b=e.target.closest?e.target.closest('.tab-btn'):null; if(b&&panel.contains(b)) act(b); });
+    panel.addEventListener('click',e=>{ const b=e.target.closest?e.target.closest('.tab-btn'):null; if(b&&panel.contains(b)) act(b); });
+  }
+
+  const term=searchTerm.toLowerCase().trim();
+  const filterFn=c=>{
+    if(term && !String(c.numero??'').toLowerCase().includes(term)) return false;
+    if(filters.empleado){ const e=CONFIG.empleados.find(x=>x.id===filters.empleado); if(e){ const nl=e.nombre.toLowerCase(); const ea=c.empleadoAsignado?getEmpName(c.empleadoAsignado).toLowerCase():''; const eo=c.empleadoOriginal?getEmpName(c.empleadoOriginal).toLowerCase():''; if(ea!==nl&&eo!==nl) return false; } }
+    if(filters.secretario && c.secretarioId!==filters.secretario) return false;
+    if(filters.tipo && c.tipo!==filters.tipo) return false;
+    if(filters.nivel){ const n=parseInt(filters.nivel); if(parseInt(c.nivelOperador)!==n&&parseInt(c.nivelSecretario)!==n) return false; }
+    if(filters.estado && c.estado!==filters.estado) return false;
+    if(filters.demora){ if(c.estado!=='en_proceso') return false; if(getDiasDemora(c)<=0) return false; }
+    if(!matchDateFilter(c)) return false;
+    return true;
+  };
+
+  // Pases del Operador
+  let pasesOperador=state.causas.filter(c=>{ if(c.secretarioId) return true; if(c.fechaPaseSecretario) return true; if(c.historial && c.historial.some(h=>h.accion && /Enviado a Secretario|Pase a Secretar/i.test(h.accion))) return true; return false; }).filter(filterFn);
+  pasesOperador.sort((a,b)=>new Date(getFechaPase(b)||0)-new Date(getFechaPase(a)||0));
+  const pPO=paginationState.pasesOperador;
+  const {items:pOItems,total:pOTotal,totalPages:pOTotalPages,page:pOPage}=paginateData(pasesOperador,pPO.page,pPO.perPage);
+
+  // En proceso
+  let enProceso=state.causas.filter(c=>c.estado==='en_proceso').filter(filterFn);
+  enProceso.sort((a,b)=>new Date(b.fechaAsignacion)-new Date(a.fechaAsignacion));
+  const pProc=paginationState.proceso;
+  const {items:procItems,total:procTotal,totalPages:procTotalPages,page:procPage}=paginateData(enProceso,pProc.page,pProc.perPage);
+
+  // Pases desde Empleado
+  let pasesDesdeEmpleado=state.causas.filter(c=>{ if(c.estado!=='en_secretaria') return false; if(!c.fechaPaseSecretario) return false; if(!c.historial||!c.historial.length) return false; return c.historial.some(h=>{ const a=h.accion||'',u=h.usuario||''; if(a.includes('Enviado a Secretario')&&u!=='Secretario'&&u!=='Sistema') return true; return false; }); }).filter(filterFn);
+  pasesDesdeEmpleado.sort((a,b)=>new Date(b.fechaPaseSecretario)-new Date(a.fechaPaseSecretario));
+  const pCum=paginationState.cumplidos;
+  const {items:cumplidosItems,total:cumplidosTotal,totalPages:cumplidosTotalPages,page:cumplidosPage}=paginateData(pasesDesdeEmpleado,pCum.page,pCum.perPage);
+
+  // Histórico
+  let todasAsignaciones=[];
+  state.causas.forEach(c=>{ if(!c.historial) return; c.historial.forEach(h=>{ if(h.accion&&h.accion.includes('Asignado')&&filterFn(c)){ const m=h.accion.match(/Asignado \(Nivel \d+\) a (.+?) - /); const emp=m?m[1]:'Desconocido'; const nm=h.accion.match(/Nivel (\d+)/); const n=nm?parseInt(nm[1]):(c.nivelSecretario||c.nivelOperador||'N/D'); todasAsignaciones.push({numero:c.numero,empleado:emp,secretario:getSecName(c.secretarioId)||h.usuario||'Secretario',nivel:n,fechaAsignacion:h.fecha,tipo:c.tipo||'N/D',estado:c.estado,obs:h.comentario||'-'}); } }); });
+  todasAsignaciones.sort((a,b)=>new Date(b.fechaAsignacion)-new Date(a.fechaAsignacion));
+  const pPases=paginationState.pases;
+  const {items:pasesItems,total:pasesTotal,totalPages:pasesTotalPages,page:pasesPage}=paginateData(todasAsignaciones,pPases.page,pPases.perPage);
+
+  // En espera
+  let enEspera=state.causas.filter(c=>c.estado==='en_espera').filter(filterFn);
+  enEspera.sort((a,b)=>new Date(b.fechaPaseSecretario||b.fechaAsignacion)-new Date(a.fechaPaseSecretario||a.fechaAsignacion));
+  const pEsp=paginationState.espera;
+  const {items:esperaItems,total:esperaTotal,totalPages:esperaTotalPages,page:esperaPage}=paginateData(enEspera,pEsp.page,pEsp.perPage);
+
+  // KPIs
+  const causasFiltradas=state.causas.filter(filterFn);
+  const totalKpisSum=causasFiltradas.length;
+  const cE={}; causasFiltradas.forEach(c=>{ cE[c.estado||'sin_estado']=(cE[c.estado||'sin_estado']||0)+1; });
+  const esPaseEmp=c=>(c.historial||[]).some(h=>{ const a=h.accion||'',u=h.usuario||''; return a.includes('Enviado a Secretario')&&u!=='Secretario'&&u!=='Sistema'; });
+  const totalSinAsignar=causasFiltradas.filter(c=>c.estado==='en_secretaria'&&!esPaseEmp(c)).length;
+  const paraFinalizar=causasFiltradas.filter(c=>c.estado==='en_secretaria'&&esPaseEmp(c)).length;
+  const enProcesoTotal=cE['en_proceso']||0, enDefensor=cE['en_defensor']||0, finalizados=cE['finalizada']||0, enEsperaTotal=cE['en_espera']||0, devueltosSiged=cE['devuelto_siged']||0, remitidos=cE['remitido']||0, rechazados=cE['rechazado']||0;
+
+  // Destacados
+  let mejor={nombre:'N/A',count:-1}; CONFIG.empleados.forEach(e=>{ const n=state.causas.filter(x=>x.estado==='finalizada'&&(x.empleadoAsignado===e.id||x.empleadoOriginal===e.id)).filter(filterFn).length; if(n>mejor.count) mejor={nombre:e.nombre,count:n}; });
+  let mayorC={nombre:'N/A',count:-1}; CONFIG.empleados.forEach(e=>{ const n=state.causas.filter(x=>x.empleadoAsignado===e.id||x.empleadoOriginal===e.id).filter(filterFn).length; if(n>mayorC.count) mayorC={nombre:e.nombre,count:n}; });
+  let mayorD={nombre:'N/A',dias:-1}; CONFIG.empleados.forEach(e=>{ const d=calcularRetrasoNoJustificado(e.id); if(d>mayorD.dias) mayorD={nombre:e.nombre,dias:d}; });
+  const secStats=CONFIG.secretarios.map(s=>({...s,asignadas:state.causas.filter(c=>c.secretarioId===s.id&&filterFn(c)).length}));
+
+  const empTableData=CONFIG.empleados.map(e=>{
+    const t=state.causas.filter(c=>(c.empleadoAsignado===e.id||c.empleadoOriginal===e.id)&&filterFn(c));
+    const a=t.filter(c=>c.estado==='en_proceso');
+    const nH={1:0,2:0,3:0,4:0}, nA={1:0,2:0,3:0,4:0}; const sSet=new Set();
+    t.forEach(c=>{ const n=c.nivelSecretario||c.nivelOperador||0; if(n>=1&&n<=4) nH[n]++; if(c.secretarioId) sSet.add(getSecName(c.secretarioId)); });
+    a.forEach(c=>{ const n=c.nivelSecretario||c.nivelOperador||0; if(n>=1&&n<=4) nA[n]++; });
+    return {id:e.id,nombre:e.nombre,activas:a.length,historico:t.length,nivelesAct:nA,nivelesHist:nH,secretarios:Array.from(sSet).join(', '),ausente:isAusente(e.id)};
+  });
+  const pEq=paginationState.equidad;
+  const {items:eqItems,total:eqTotal,totalPages:eqTotalPages,page:eqPage}=paginateData(empTableData,pEq.page,pEq.perPage);
+
+  let empsNP=CONFIG.empleados.map(e=>{
+    const n=state.causas.filter(c=>c.tipo==='Nuevo patrocinio'&&(c.empleadoAsignado===e.id||c.empleadoOriginal===e.id)&&filterFn(c));
+    const v=state.causas.filter(c=>c.tipo==='Nuevo patrocinio Violencia Familiar'&&(c.empleadoAsignado===e.id||c.empleadoOriginal===e.id)&&filterFn(c));
+    return {...e,total:n.length+v.length,enProceso:n.filter(c=>c.estado==='en_proceso').length+v.filter(c=>c.estado==='en_proceso').length,totalViolencia:v.length};
+  });
+  if(filters.empleado){ const ef=CONFIG.empleados.find(e=>e.id===filters.empleado); if(ef) empsNP=empsNP.filter(e=>e.id===ef.id); }
+
+  // KPIs UI
+  const kc=document.getElementById('kpisContainer');
+  if(kc) kc.innerHTML=`<div class="kpi-total-badge" style="margin-bottom:1rem;"><span>Total</span><span class="total-num">${totalKpisSum}</span></div><div class="kpi-grid"><div class="kpi-item"><div class="kpi-label">Sin Asignar</div><div class="kpi-value">${totalSinAsignar}</div></div><div class="kpi-item"><div class="kpi-label">A Finalizar</div><div class="kpi-value text-success">${paraFinalizar}</div></div><div class="kpi-item"><div class="kpi-label">En Proceso</div><div class="kpi-value text-warning">${enProcesoTotal}</div></div><div class="kpi-item"><div class="kpi-label">En Defensor</div><div class="kpi-value text-primary">${enDefensor}</div></div><div class="kpi-item"><div class="kpi-label">Finalizados</div><div class="kpi-value" style="color:#1e40af;">${finalizados}</div></div><div class="kpi-item"><div class="kpi-label">En Espera</div><div class="kpi-value text-danger">${enEsperaTotal}</div></div><div class="kpi-item"><div class="kpi-label">Devuelto SIGED</div><div class="kpi-value text-secondary">${devueltosSiged}</div></div><div class="kpi-item"><div class="kpi-label">Remitidos</div><div class="kpi-value text-info">${remitidos}</div></div><div class="kpi-item"><div class="kpi-label">Rechazados</div><div class="kpi-value text-dark">${rechazados}</div></div></div>`;
+
+  const dc=document.getElementById('destacadosContainer');
+  if(dc) dc.innerHTML=`<div class="card-title" style="border:none;padding:0;margin-bottom:.6rem;"><i class="bi bi-trophy"></i> Empleados Destacados</div><div class="destacados-grid"><div class="destacado-item"><div class="dest-label">🏆 Mejor Cumplimiento</div><div class="dest-nombre">${mejor.nombre}</div><div class="dest-detalle">${mejor.count} causas finalizadas</div></div><div class="destacado-item"><div class="dest-label">📊 Mayor Carga</div><div class="dest-nombre">${mayorC.nombre}</div><div class="dest-detalle">${mayorC.count} expedientes total</div></div><div class="destacado-item"><div class="dest-label">⏳ Mayor Demora</div><div class="dest-nombre text-danger">${mayorD.nombre}</div><div class="dest-detalle">${mayorD.dias>0?mayorD.dias.toFixed(1)+' días':'Sin retrasos'}</div></div></div>`;
+
+  // Tabs
+  const tabs=[
+    {id:'tab-pases-operador',label:'Pases del Operador'},
+    {id:'tab-pases-empleado',label:'Pases Empleado'},
+    {id:'tab-en-proceso',label:'En Proceso'},
+    {id:'tab-asignaciones-sec',label:'Asignaciones por Secretario'},
+    {id:'tab-carga-empleados',label:'Carga de Empleados'},
+    {id:'tab-espera',label:'En Espera'},
+    {id:'tab-historico-pases',label:'Histórico de Pases'},
+    {id:'tab-nuevo-patrocinio',label:'Nuevo Patrocinio'},
+    {id:'tab-form-cejume',label:'FormCEJUME'},
+    {id:'tab-reporte-trimestral',label:'Reporte Trimestral'}
+  ];
+
+  const tabsNav = `<ul class="nav-tabs-custom">${tabs.map(t=>`<li class="nav-item"><button class="tab-btn ${t.id===activeTabId?'active':''}" data-tab="${t.id}" type="button">${t.label}</button></li>`).join('')}</ul>`;
+
+  const pasesOperadorHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-person-workspace"></i> Pases del Operador</div>
+      <span class="badge bg-primary">${pOTotal} registros</span>
+    </div>
+    ${pOTotal ? `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>Modo</th><th>Fecha Pase</th><th>Operador</th><th>Secretario</th><th>Empleado</th><th>Nivel</th><th>Tipo</th><th>Demora</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+      ${pOItems.map(c=>{
+        const fp=getFechaPase(c), eN=getEmpName(c.empleadoAsignado||c.empleadoOriginal)||'Sin asignar';
+        const n=c.nivelSecretario||c.nivelOperador||'N/D', sN=c.secretarioId?getSecName(c.secretarioId):'-', oN=c.operador||'-';
+        const dD=getDiasDemora(c), det=getDetalleTiempo(c), col=(det&&det.estado&&det.estado.color)?det.estado.color:'gris';
+        const esAct=(c.estado==='en_proceso'||c.estado==='en_secretaria'), puedeE=(c.estado==='en_proceso');
+        return `<tr><td><strong><span class="exp-link-hist" role="button" data-id="${c.id}">${c.numero}</span></strong></td><td>${c.modoIntervencion||'-'}</td><td style="font-size:.75rem;">${fmtDt(fp)}</td><td>${oN}</td><td>${sN}</td><td>${eN}</td><td>N${n}</td><td>${c.tipo||'-'}</td><td><span class="crono ${col}">${dD} día${dD!==1?'s':''}</span></td><td>${getEstadoBadge(c.estado)}</td><td>${esAct?`<button class="btn btn-finalizar-secretario btn-modern-sm btn-cumplido" data-id="${c.id}">Finalizar</button>`:''} ${puedeE?`<button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button>`:''} <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-corregir-pase" data-id="${c.id}"><i class="bi bi-pencil-square"></i> Editar</button> <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button></td></tr>`;
+      }).join('')}
+    </tbody></table></div><div id="paginationPasesOperador"></div>` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay pases registrados.</div>`}
+  `;
+
+  const pasesEmpleadoHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-check2-circle"></i> Pases desde Empleado</div>
+      <span class="badge bg-secondary">${cumplidosTotal} registros</span>
+    </div>
+    ${cumplidosTotal ? `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Fecha Pase</th><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Motivo</th><th>Empleado</th><th>Acciones</th></tr></thead><tbody>
+      ${cumplidosItems.map(c=>{
+        let eN='Sin asignar', mt='-';
+        const env=c.historial?.find(h=>{ const a=h.accion||'',u=h.usuario||''; return a.includes('Enviado a Secretario')&&u!=='Secretario'&&u!=='Sistema'; });
+        if(env){ eN=env.usuario||'Sin asignar'; mt=env.comentario||'-'; }
+        return `<tr><td style="font-size:.75rem;">${fmtDt(c.fechaPaseSecretario||'-')}</td><td><strong><span class="exp-link-hist" role="button" data-id="${c.id}">${c.numero}</span></strong></td><td>${c.tipo||'-'}</td><td>N${c.nivelSecretario||c.nivelOperador||'N/D'}</td><td style="font-size:.8rem;">${mt}</td><td><strong style="color:#0284c7;">${eN}</strong></td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-devolver-consulta" data-id="${c.id}" data-empleado="${eN}" ${eN==='Sin asignar'?'disabled':''}>Devolver</button> <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-def-cumplido" data-id="${c.id}">Elevar</button> <button class="btn btn-finalizar-secretario btn-modern-sm btn-cumplido" data-id="${c.id}">Finalizar</button></td></tr>`;
+      }).join('')}
+    </tbody></table></div><div id="paginationCumplidos"></div>` : `<div class="empty-state"><i class="bi bi-inbox"></i>Sin pases desde empleados.</div>`}
+  `;
+
+  const enProcesoHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-people"></i> Causas en Proceso</div>
+    </div>
+    ${procTotal ? `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>Modo</th><th>Empleado</th><th>Nivel</th><th>Tipo</th><th>Demora</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+      ${procItems.map(c=>{
+        const det=getDetalleTiempo(c), dD=getDiasDemora(c);
+        const e=det.estado||{estado:'plazo',color:'verde',label:'En plazo'};
+        const eCol=e.color==='verde'?'estado-plazo':(e.color==='naranja'?'estado-vencido':'estado-fueraplazo');
+        return `<tr><td><strong><span class="exp-link-hist" role="button" data-id="${c.id}">${c.numero}</span></strong></td><td>${c.modoIntervencion||'-'}</td><td>${getEmpName(c.empleadoAsignado)}</td><td>N${c.nivelSecretario||c.nivelOperador||'N/D'}</td><td>${c.tipo||'-'}</td><td><span class="crono ${e.color}">${dD} día${dD!==1?'s':''}</span></td><td><span class="${eCol}">${e.label}</span></td><td><button class="btn btn-finalizar-secretario btn-modern-sm btn-cumplido" data-id="${c.id}">Finalizar</button> <button class="btn btn-modern btn-modern-success btn-modern-sm btn-elevar-defensor" data-id="${c.id}">Elevar</button> <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-corregir-pase" data-id="${c.id}"><i class="bi bi-pencil-square"></i></button> <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-consultas" data-id="${c.id}"><i class="bi bi-question-circle"></i></button></td></tr>`;
+      }).join('')}
+    </tbody></table></div><div id="paginationProceso"></div>` : `<div class="empty-state"><i class="bi bi-inbox"></i>No hay causas en proceso.</div>`}
+  `;
+
+  const asigSecHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-person-badge"></i> Asignaciones por Secretario</div></div>
+    <div class="equidad-grid">${secStats.map(s=>`<div class="equidad-item"><div class="eq-label sec-nombre-link" data-sec="${s.id}">${s.nombre}</div><div class="eq-value">${s.asignadas}</div><div class="eq-actions"><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-sec" data-sec="${s.id}">Ver historial</button></div></div>`).join('')}</div>
+  `;
+
+  const cargaEmpHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-bar-chart-fill"></i> Carga de Empleados</div><button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnInformeEquidad"><i class="bi bi-printer"></i> Imprimir informe</button></div>
+    <div class="table-wrap"><table class="table-modern table" style="min-width:0;width:100%;"><thead><tr><th>Empleado</th><th>Activas</th><th>Histórico</th><th>N1</th><th>N2</th><th>N3</th><th>N4</th><th>Secretario(s)</th><th>Acciones</th></tr></thead><tbody>
+      ${eqItems.map(e=>`<tr class="${e.ausente?'row-ausente':'row-presente'}"><td><strong>${e.nombre}</strong></td><td>${e.activas}</td><td>${e.historico}</td><td>${e.nivelesAct[1]}/${e.nivelesHist[1]}</td><td>${e.nivelesAct[2]}/${e.nivelesHist[2]}</td><td>${e.nivelesAct[3]}/${e.nivelesHist[3]}</td><td>${e.nivelesAct[4]}/${e.nivelesHist[4]}</td><td>${e.secretarios||'-'}</td><td><button class="btn btn-sm ${e.ausente?'btn-ausente':'btn-reintegrado'} btn-toggle-ausencia" data-emp="${e.nombre}">${e.ausente?'Reintegro':'Ausente'}</button> <button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist-emp" data-id="${e.id}" data-nombre="${e.nombre}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}
+    </tbody></table></div><div id="paginationEquidad"></div>
+  `;
+
+  const esperaHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-clock-history"></i> Causas en Espera</div><span class="badge bg-warning text-dark">${esperaTotal} en espera</span></div>
+    ${esperaTotal ? `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Fecha</th><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Acciones</th></tr></thead><tbody>
+      ${esperaItems.map(c=>`<tr><td style="font-size:.75rem;">${fmtDt(c.fechaPaseSecretario||c.fechaAsignacion)}</td><td><strong>${c.numero}</strong></td><td>${c.tipo||'-'}</td><td>N${c.nivelOperador||c.nivelSecretario||'N/D'}</td><td><button class="btn btn-modern btn-modern-outline btn-modern-sm btn-ver-hist" data-id="${c.id}"><i class="bi bi-eye"></i></button></td></tr>`).join('')}
+    </tbody></table></div><div id="paginationEspera"></div>` : `<div class="empty-state"><i class="bi bi-inbox"></i>Sin causas en espera.</div>`}
+  `;
+
+  const historicoHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-list-ul"></i> Histórico de Pases</div><button class="btn btn-imprimir btn-modern-sm" id="btnImprimirPases"><i class="bi bi-printer"></i> Imprimir</button></div>
+    ${pasesTotal ? `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>Empleado</th><th>Secretario</th><th>Nivel</th><th>Fecha</th><th>Tipo</th><th>Estado</th><th>Obs.</th></tr></thead><tbody>
+      ${pasesItems.map(a=>`<tr><td><strong>${a.numero}</strong></td><td>${a.empleado}</td><td>${a.secretario}</td><td>N${a.nivel}</td><td style="font-size:.75rem;">${fmtDt(a.fechaAsignacion)}</td><td>${a.tipo}</td><td>${getEstadoBadge(a.estado)}</td><td style="font-size:.75rem;">${a.obs}</td></tr>`).join('')}
+    </tbody></table></div><div id="paginationPases"></div>` : `<div class="empty-state"><i class="bi bi-inbox"></i>Sin registros.</div>`}
+  `;
+
+  const tNPT=empsNP.reduce((s,e)=>s+e.total,0), tNPA=empsNP.reduce((s,e)=>s+e.enProceso,0), tNPV=empsNP.reduce((s,e)=>s+e.totalViolencia,0), tNPH=empsNP.reduce((s,e)=>s+(e.total-e.enProceso),0);
+  const nuevoPatHTML = `
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3"><div class="card-title mb-0" style="border:none;padding:0;"><i class="bi bi-pie-chart-fill"></i> Nuevo Patrocinio</div><button class="btn btn-imprimir btn-modern-sm" id="btnImprimirNuevoPatrocinio"><i class="bi bi-printer"></i> Imprimir</button></div>
+    <div class="table-wrap"><table class="table-modern table" style="min-width:0;width:100%;"><thead><tr><th>Empleado</th><th>Total (${tNPT})</th><th>Actual (${tNPA})</th><th>N.P.V.F. (${tNPV})</th><th>Histórico (${tNPH})</th></tr></thead><tbody>
+      ${empsNP.map(e=>{ const h=e.total-e.enProceso; return `<tr><td><strong>${e.nombre}</strong></td><td style="font-weight:800;font-size:1.05rem;">${e.total}</td><td style="color:#0284c7;font-weight:700;">${e.enProceso}</td><td style="color:#7c3aed;font-weight:700;">${e.totalViolencia}</td><td>${h}</td></tr>`; }).join('')}
+    </tbody></table></div>
+  `;
+
+  let tabContent='<div class="tab-content">';
+  tabs.forEach(t=>{
+    let c='';
+    switch(t.id){
+      case 'tab-pases-operador': c=pasesOperadorHTML; break;
+      case 'tab-pases-empleado': c=pasesEmpleadoHTML; break;
+      case 'tab-en-proceso': c=enProcesoHTML; break;
+      case 'tab-asignaciones-sec': c=asigSecHTML; break;
+      case 'tab-carga-empleados': c=cargaEmpHTML; break;
+      case 'tab-espera': c=esperaHTML; break;
+      case 'tab-historico-pases': c=historicoHTML; break;
+      case 'tab-nuevo-patrocinio': c=nuevoPatHTML; break;
+      case 'tab-form-cejume': c='<div id="formCejumeWrap"></div>'; break;
+      case 'tab-reporte-trimestral': c='<div id="reporteTrimestralWrap"></div>'; break;
+    }
+    tabContent+=`<div class="tab-pane ${t.id===activeTabId?'active':''}" id="${t.id}">${c}</div>`;
+  });
+  tabContent+='</div>';
+
+  panel.innerHTML=`<div class="tab-container" id="tabContainerPrincipal">${tabsNav}${tabContent}</div>`;
+
+  try{ initReporteTrimestral(panel,filterFn); }catch(e){ console.error('RT:',e); }
+  try{ initFormCejume(panel,filterFn); }catch(e){ console.error('FC:',e); }
+
+  const cb=pS=>((np,npp)=>{ pS.page=np; if(npp) pS.perPage=npp; renderDistribucion(); });
+  if(pOTotal>0) renderPagination('paginationPasesOperador',pOTotal,pOTotalPages,pOPage,pPO.perPage,cb(pPO));
+  if(procTotal>0) renderPagination('paginationProceso',procTotal,procTotalPages,procPage,pProc.perPage,cb(pProc));
+  if(pasesTotal>0) renderPagination('paginationPases',pasesTotal,pasesTotalPages,pasesPage,pPases.perPage,cb(pPases));
+  if(eqTotal>0) renderPagination('paginationEquidad',eqTotal,eqTotalPages,eqPage,pEq.perPage,cb(pEq));
+  if(cumplidosTotal>0) renderPagination('paginationCumplidos',cumplidosTotal,cumplidosTotalPages,cumplidosPage,pCum.perPage,cb(pCum));
+  if(esperaTotal>0) renderPagination('paginationEspera',esperaTotal,esperaTotalPages,esperaPage,pEsp.perPage,cb(pEsp));
+
+  panel.removeEventListener('click',panel._delHandler);
+  panel._delHandler=async function(e){
+    const t=e.target.closest('button, .sec-nombre-link, .exp-link-hist');
+    if(!t) return;
+    if(t.classList.contains('exp-link-hist') || t.classList.contains('btn-ver-hist')){ abrirHistorial(t.dataset.id); return; }
+    if(t.classList.contains('btn-elevar-def-cumplido') || t.classList.contains('btn-elevar-defensor')){ await elevarDefensor(t.dataset.id); return; }
+    if(t.classList.contains('btn-cumplido')){
+      const id=t.dataset.id, c=state.causas.find(x=>x.id===id); if(!c) return;
+      if(c.estado!=='en_proceso' && c.estado!=='en_secretaria'){ showToast('Solo pendientes o en proceso','warning'); return; }
+      if(confirm(`¿Finalizar ${c.numero}?`)){ const cm=prompt('Comentario (opcional):','Cumplido autorizado'); if(cm===null) return; await finalizarCausaSecretario(id,cm||'Cumplido autorizado'); }
+      return;
+    }
+    if(t.classList.contains('btn-ver-consultas')){ verConsultas(t.dataset.id); return; }
+    if(t.classList.contains('btn-ver-hist-sec')){ verHistorialSecretario(t.dataset.sec); return; }
+    if(t.classList.contains('btn-toggle-ausencia')){ const emp=CONFIG.empleados.find(x=>x.nombre===t.dataset.emp); if(emp) await toggleAusencia(emp.id); return; }
+    if(t.classList.contains('btn-devolver-consulta')){ showToast('Devolución no disponible sin asignación','info'); return; }
+    if(t.classList.contains('btn-devolver-operador')){ const id=t.dataset.id, c=state.causas.find(x=>x.id===id); if(!c) return; _causaDevolverId=id; document.getElementById('devolverNumeroExpediente').textContent=c.numero; document.getElementById('devolverMotivo').value=''; new bootstrap.Modal(document.getElementById('modalDevolverOperador')).show(); return; }
+    if(t.classList.contains('btn-corregir-pase')){ abrirModalCorregirPase(t.dataset.id); return; }
+    if(t.classList.contains('btn-ver-hist-emp')){ cargarHistorialEmpleado(t.dataset.id,t.dataset.nombre); return; }
+    if(t.classList.contains('sec-nombre-link')){ e.stopPropagation(); abrirDetalleSecretario(t.dataset.sec); return; }
+  };
+  panel.addEventListener('click',panel._delHandler);
+
+  const b1=document.getElementById('btnInformeEquidad'); if(b1) b1.onclick=generarInformeEquidad;
+  const b2=document.getElementById('btnImprimirPases'); if(b2) b2.onclick=imprimirPasesCompleto;
+  const b3=document.getElementById('btnImprimirNuevoPatrocinio'); if(b3) b3.onclick=imprimirNuevoPatrocinio;
+  const b4=document.getElementById('btnImprimirHistorialEmpleado'); if(b4) b4.onclick=window.imprimirHistorialEmpleado;
+
+  const bSi=document.getElementById('btnDevolverSi');
+  if(bSi) bSi.onclick=async()=>{ const id=_causaDevolverId; if(!id) return; const m=document.getElementById('devolverMotivo').value.trim(); await devolverAlOperador(id,m||'Devuelto por Secretario'); const mod=bootstrap.Modal.getInstance(document.getElementById('modalDevolverOperador')); if(mod) mod.hide(); renderDistribucion(); };
+
+  const bSD=document.getElementById('btnImprimirSecDetalle');
+  if(bSD) bSD.onclick=function(){ const c=document.getElementById('contenidoSecDetalle'); if(!c) return; const n=document.getElementById('modalSecDetalleNombre').textContent; const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>Detalle</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body><h3>Detalle · ${n}</h3>${c.innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),500); };
+
+  const bRP=document.getElementById('btnReportePuntaje');
+  if(bRP){
+    bRP.onclick=function(){
+      const tabC=document.getElementById('tabContainerPrincipal'); if(!tabC) return;
+      let ifr=document.getElementById('iframeContainerReporte');
+      if(ifr){ ifr.style.display=ifr.style.display==='none'?'block':'none'; tabC.style.display=ifr.style.display==='none'?'block':'none'; return; }
+      ifr=document.createElement('div'); ifr.id='iframeContainerReporte'; ifr.className='iframe-container'; ifr.style.display='block'; ifr.style.position='relative';
+      const btn=document.createElement('div'); btn.className='iframe-close-btn'; btn.innerHTML='&times;'; btn.onclick=function(){ ifr.style.display='none'; tabC.style.display='block'; };
+      const iframe=document.createElement('iframe'); iframe.src='https://defensoria6.github.io/pase-digital/reporte-completo'; iframe.title='Reporte y Puntaje';
+      ifr.appendChild(btn); ifr.appendChild(iframe);
+      tabC.parentNode.insertBefore(ifr,tabC); tabC.style.display='none';
+    };
+  }
+}
+
+/* ============================================================
+   IMPRESIONES GLOBALES
+   ============================================================ */
+window.imprimirHistorial=function(){ const b=document.getElementById('modalHistorialBody'); if(!b) return; const e=document.getElementById('modalHistorialExp').textContent; const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>Historial ${e}</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}</style></head><body><h3>Historial - ${e}</h3>${b.innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),500); };
+window.imprimirHistorialSec=function(){ const c=document.getElementById('tablaHistorialSecContainer'); if(!c) return; const n=document.getElementById('modalHistorialSecNombre').textContent; const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>Historial</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body><h3>Historial - ${n}</h3>${c.innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),500); };
+window.imprimirHistorialEmpleado=function(){ const c=document.getElementById('contenidoHistorialEmpleado'); if(!c) return; const n=document.getElementById('tituloNombreEmpleado').textContent; const w=window.open('','_blank'); if(!w) return; w.document.write(`<html><head><title>Historial</title><style>body{font-family:'Plus Jakarta Sans',sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #ccc;padding:6px;}th{background:#f1f6fd;}</style></head><body><h3>Historial - ${n}</h3>${c.innerHTML}</body></html>`); w.document.close(); setTimeout(()=>w.print(),500); };
+window.abrirModalDecidir=abrirModalDecidir;
+
+/* ============================================================
+   LOGIN / LOGOUT
+   ============================================================ */
+async function handleLogin(){
+  const p=document.getElementById('loginPassword').value;
+  const err=document.getElementById('loginError');
+  if(p === CONFIG.password){
+    err.style.display='none';
+    const ov=document.getElementById('loginOverlay'); ov.classList.add('hidden'); ov.style.display='none';
+    document.getElementById('appWrapper').classList.add('visible');
+    await cargarDatosDesdeJSON();
+    renderFiltros();
+    showToast('Bienvenido/a Secretario','success');
+    inicializarChat('Secretario');
+  } else { err.style.display='block'; setTimeout(()=>err.style.display='none',2500); }
+}
+function cerrarSesion(){
+  DataFile.onExterno = null;
+  document.getElementById('logoutAlert').style.display='none';
+  document.getElementById('appWrapper').classList.remove('visible');
+  const ov=document.getElementById('loginOverlay'); ov.classList.remove('hidden'); ov.style.display='flex';
+  document.getElementById('loginPassword').value='';
+  document.getElementById('chatWidget').style.display='none';
+  chatUsuarioActual=''; chatEmpleadoActivo=null;
+  showToast('Sesión cerrada','warning');
+}
+
+/* ============================================================
+   EVENTOS GLOBALES
+   ============================================================ */
+document.getElementById('btnLogin').addEventListener('click', handleLogin);
+document.getElementById('loginPassword').addEventListener('keypress', e=>{ if(e.key==='Enter') handleLogin(); });
+document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{ document.getElementById('logoutAlert').style.display='flex'; });
+document.getElementById('btnCancelarSalida').addEventListener('click', ()=>{ document.getElementById('logoutAlert').style.display='none'; });
+document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+document.getElementById('btnActualizarBD').addEventListener('click', async ()=>{
+  if(DataFile.pendiente()) await new Promise(r=>setTimeout(r,500));
+  await cargarDatosDesdeJSON();
+  showToast('Datos actualizados desde datos.json','info');
+});
+document.getElementById('globalSearch').addEventListener('input', e=>{
+  searchTerm=e.target.value;
+  ['distribucion','cumplidos','proceso','pases','equidad','espera','pasesOperador'].forEach(k=>paginationState[k].page=1);
+  renderDistribucion();
+});
+document.getElementById('btnImprimirReporteCompleto').addEventListener('click',imprimirReporteCompleto);
+document.getElementById('btnImprimirEquidad').addEventListener('click',imprimirInformeEquidad);
+
+document.getElementById('chatToggleBtn').addEventListener('click',function(){
+  const p=document.getElementById('chatPanel');
+  if(p.classList.contains('hidden')){ p.classList.remove('hidden'); document.getElementById('chatBadge').style.display='none'; if(chatModo==='empleados'){ if(chatEmpleadoActivo) mostrarConversacion(chatEmpleadoActivo); else mostrarListaEmpleados(); } else mostrarConversacionDefensor(); setTimeout(()=>{ const i=document.getElementById('chatInput'); if(i){ i.disabled=false; i.focus(); } },200); }
+  else p.classList.add('hidden');
+});
+document.getElementById('chatCloseBtn').addEventListener('click',()=>{ new bootstrap.Modal(document.getElementById('modalEliminarChat')).show(); });
+document.getElementById('modalEliminarSi').addEventListener('click',()=>{ eliminarTodosLosChats(); document.getElementById('chatPanel').classList.add('hidden'); bootstrap.Modal.getInstance(document.getElementById('modalEliminarChat')).hide(); });
+document.getElementById('modalEliminarNo').addEventListener('click',()=>{ bootstrap.Modal.getInstance(document.getElementById('modalEliminarChat')).hide(); });
+document.getElementById('chatSendBtn').addEventListener('click',enviarMensaje);
+document.getElementById('chatInput').addEventListener('keypress',e=>{ if(e.key==='Enter') enviarMensaje(); });
+document.getElementById('chatTabEmpleados').addEventListener('click',()=>cambiarModo('empleados'));
+document.getElementById('chatTabDefensor').addEventListener('click',()=>cambiarModo('defensor'));
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && chatModo==='empleados' && chatEmpleadoActivo) chatMarcarLeidos(chatEmpleadoActivo); });
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.collapse').forEach(c=>{ if(!c.classList.contains('show')) c.classList.remove('show'); });
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pase Digital · Empleado (modo local)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+:root{
+  --primary:#6366f1; --primary-dark:#4f46e5; --primary-light:#818cf8;
+  --secondary:#8b5cf6; --accent:#06b6d4; --success:#10b981;
+  --warning:#f59e0b; --danger:#ef4444;
+  --bg:#f1f5f9; --surface:#fff; --text:#0f172a; --muted:#64748b;
+  --border:#e2e8f0;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:0 4px 16px rgba(15,23,42,.06);
+  --shadow-lg:0 20px 50px rgba(15,23,42,.12);
+  --celeste:#0ea5e9;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 0% 0%,rgba(16,185,129,.05) 0%,transparent 40%),radial-gradient(circle at 100% 100%,rgba(6,182,212,.06) 0%,transparent 40%)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+
+.login-overlay{position:fixed;inset:0;background:#ffffff;display:flex;justify-content:center;align-items:center;z-index:9999;padding:20px}
+.login-overlay::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 20% 15%,rgba(16,185,129,.08) 0%,transparent 45%),radial-gradient(circle at 80% 85%,rgba(6,182,212,.08) 0%,transparent 45%);pointer-events:none}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@property --arc{syntax:'<angle>';initial-value:70deg;inherits:false}
+@keyframes orbit{to{--ang:360deg}}
+.login-card{
+  --a1:#06b6d4;--a2:#10b981;--a3:#065f46;
+  --g1:#06b6d4;--g2:#10b981;
+  --acc:#065f46;--tint:#e5f6ee;--ink-c:#064e3b;
+  --line-c:#dbeee5;--glow:rgba(16,185,129,.30);
+  --ring:7px;--ang:0deg;--arc:70deg;
+  position:relative;border:1.5px solid transparent;border-radius:28px;
+  background:
+    linear-gradient(#fff,#fff) padding-box,
+    conic-gradient(from var(--ang),transparent 0deg,transparent calc(360deg - var(--arc)),var(--a1) calc(360deg - var(--arc) * .65),var(--a2) calc(360deg - var(--arc) * .3),var(--a3) calc(360deg - 4deg),transparent 360deg) border-box,
+    linear-gradient(var(--line-c),var(--line-c)) border-box;
+  padding:3rem 2.5rem 2.5rem;width:100%;max-width:440px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -16px rgba(15,23,42,.14);
+  text-align:center;
+  animation:slideUp .6s cubic-bezier(.16,1,.3,1),orbit 9s linear infinite;
+  transition:box-shadow .35s ease,--arc .5s ease}
+.login-card:hover{--arc:150deg;box-shadow:0 1px 2px rgba(15,23,42,.05),0 26px 46px -20px var(--glow)}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.login-card .logo-icon{
+  width:72px;height:72px;margin:.2rem auto 1.6rem;border-radius:22px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:2.2rem;color:var(--acc);
+  background:linear-gradient(135deg,var(--g1),var(--g2)) center / 0% 0% no-repeat,var(--tint);
+  box-shadow:0 0 0 var(--ring) var(--line-c);
+  transition:background-size .4s cubic-bezier(.16,1,.3,1),color .3s ease,box-shadow .35s ease,transform .35s cubic-bezier(.16,1,.3,1)}
+.login-card:hover .logo-icon{
+  background-size:100% 100%,auto;color:#fff;transform:rotate(-4deg) scale(1.05);
+  box-shadow:0 0 0 calc(var(--ring) + 3px) var(--line-c)}
+.login-card h1{font-size:1.7rem;font-weight:800;line-height:1.1;letter-spacing:-.035em;margin-bottom:.55rem;color:#0b1f3a}
+.login-card .sub{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem;font-size:.92rem;font-weight:500;color:var(--muted);margin-bottom:2rem}
+.login-card .sub .celeste{display:inline-block;padding:.18rem .65rem;border-radius:999px;background:var(--tint);color:var(--ink-c);font-weight:700;font-size:.76rem}
+.celeste{color:var(--celeste);font-weight:800}
+.login-card .form-control,.login-card .form-select{border-radius:14px;padding:14px 18px;border:2px solid var(--border);background:#f8fafc;font-size:.95rem;margin-bottom:1rem}
+.login-card .form-control:focus,.login-card .form-select:focus{border-color:var(--success);box-shadow:0 0 0 4px rgba(16,185,129,.15);background:#fff;outline:none}
+.btn-gradient{background:linear-gradient(135deg,var(--success),var(--accent));border:none;border-radius:14px;padding:14px;font-weight:700;font-size:.95rem;color:#fff;width:100%;transition:.25s;box-shadow:0 8px 24px rgba(16,185,129,.35)}
+.btn-gradient:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(16,185,129,.5);color:#fff}
+.login-error{color:var(--danger);font-size:.82rem;margin-bottom:.8rem;display:none;font-weight:600}
+
+.app-wrapper{max-width:1600px;margin:0 auto;padding:20px;display:none;animation:fadeIn .5s ease}
+.app-wrapper.visible{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.app-header{--hd-ink:#064e3b;--hd-sub:#64748b;--hd-line:#cfeedd;--hd-tint:#ecfdf5;--hd-accent:#10b981;--hd-ring:rgba(16,185,129,.2);background:linear-gradient(135deg,#f8fdfa 0%,#e9f8f0 100%);border:1px solid #cfeedd;border-radius:24px;padding:1.2rem 2rem;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -18px rgba(6,78,59,.22);position:relative;overflow:hidden}
+.app-header::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(16,185,129,.12) 0%,transparent 55%);pointer-events:none}
+.brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+.brand-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--accent),var(--success));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;box-shadow:0 8px 24px rgba(6,182,212,.4)}
+.brand h1{font-size:1.3rem;font-weight:800;color:var(--hd-ink);letter-spacing:-.3px;line-height:1.2}
+.brand h1 small{display:block;font-size:.7rem;font-weight:500;color:var(--hd-sub);margin-top:2px}
+.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.badge-role{background:#fff;color:var(--hd-ink);border:1px solid var(--hd-line);padding:8px 18px;border-radius:40px;font-weight:600;font-size:.78rem;display:flex;align-items:center;gap:6px}
+.badge-role.emp{background:#e3f6ec;color:#065f46;border-color:#b7e6cd}
+.search-box{position:relative;flex:1;min-width:180px;max-width:300px}
+.search-box i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#94a3b8}
+.search-box input{width:100%;padding:10px 16px 10px 42px;border-radius:40px;border:1px solid var(--hd-line);background:#fff;color:var(--text);font-size:.85rem}
+.search-box input::placeholder{color:#94a3b8}
+.search-box input:focus{outline:none;border-color:var(--hd-accent);box-shadow:0 0 0 3px var(--hd-ring)}
+.btn-header{padding:9px 20px;border-radius:40px;font-weight:600;font-size:.78rem;border:1px solid var(--hd-line);background:#fff;color:var(--hd-ink);transition:.2s;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.btn-header:hover{background:var(--hd-tint);border-color:var(--hd-accent);transform:translateY(-1px)}
+.btn-header.danger{color:#b91c1c;border-color:#fecaca}
+.btn-header.danger:hover{background:#fef2f2;border-color:#fca5a5}
+
+.card{background:var(--surface);border-radius:20px;border:1px solid var(--border);box-shadow:var(--shadow-md);padding:1.5rem 1.8rem;margin-bottom:1.5rem}
+.card-title{font-weight:800;font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:10px;margin-bottom:1.2rem;padding-bottom:.7rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.card-title i{color:var(--success)}
+
+#filtrosActivos{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.filtro-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd}
+.filtro-chip .chip-close{cursor:pointer;opacity:.6;font-weight:900;padding:0 2px;line-height:1;background:none;border:none;color:inherit;font-size:.9rem}
+.filtro-chip .chip-close:hover{opacity:1;color:#dc2626}
+.btn-clear-filters{padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;cursor:pointer}
+.btn-clear-filters:hover{background:#fecaca}
+
+.form-label{font-size:.72rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.form-control,.form-select{border-radius:12px;border:2px solid var(--border);background:#f8fafc;padding:10px 14px;font-size:.88rem;color:var(--text)}
+.form-control:focus,.form-select:focus{border-color:var(--success);box-shadow:0 0 0 4px rgba(16,185,129,.12);background:#fff;outline:none}
+
+.btn-modern{border-radius:12px;padding:10px 22px;font-weight:700;font-size:.85rem;border:none;transition:.2s;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-success-modern{background:linear-gradient(135deg,var(--success),var(--accent));color:#fff;box-shadow:0 6px 20px rgba(16,185,129,.3)}
+.btn-success-modern:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(16,185,129,.45);color:#fff}
+.btn-warning-modern{background:linear-gradient(135deg,var(--warning),#d97706);color:#fff}
+.btn-warning-modern:hover{transform:translateY(-2px);color:#fff}
+.btn-outline-modern{background:#fff;border:2px solid var(--border);color:#475569}
+.btn-outline-modern:hover{background:#f1f5f9}
+.btn-sm-modern{padding:6px 14px;font-size:.75rem;border-radius:10px}
+
+.table-wrap{overflow-x:auto;border-radius:14px}
+.table-modern{width:100%;font-size:.82rem;border-collapse:separate;border-spacing:0;min-width:1050px}
+.table-modern thead th{background:linear-gradient(135deg,#f8fafc,#f1f5f9);color:#475569;font-weight:800;font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;padding:10px 8px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;position:relative}
+.table-modern tbody td{padding:10px 8px;border-bottom:1px solid var(--border);font-size:.82rem;vertical-align:middle}
+.table-modern tbody tr{transition:background .15s}
+.table-modern tbody tr:hover{background:#f8fafc}
+
+.th-sortable{cursor:pointer;user-select:none;transition:background .15s}
+.th-sortable:hover{background:#e0f2fe}
+.th-sortable.th-active{color:#0369a1;background:#f0f9ff}
+.th-sortable .sort-icon{font-size:.55rem;margin-left:3px;opacity:.35}
+.th-sortable.th-active .sort-icon{opacity:1;color:#0284c7}
+
+.th-filter{min-width:120px}
+.th-filter select{display:block;margin-top:4px;font-size:.6rem;padding:3px 6px;border-radius:6px;border:1px solid var(--border);background:#fff;font-weight:600;color:#475569;width:100%;max-width:150px;cursor:pointer;outline:none}
+.th-filter select:focus{border-color:var(--success);box-shadow:0 0 0 2px rgba(16,185,129,.15)}
+.th-filter select.th-filter-active{background:#e0f2fe;color:#0369a1;border-color:#7dd3fc}
+
+.badge-status{display:inline-block;padding:5px 12px;border-radius:30px;font-weight:700;font-size:.65rem;white-space:nowrap}
+.badge-proceso{background:#dbeafe;color:#1e40af}
+.badge-finalizada{background:#d1fae5;color:#065f46}
+.badge-para-finalizar{background:#fef3c7;color:#92400e}
+.badge-defensor{background:#ede9fe;color:#5b21b6}
+
+.crono{display:inline-block;padding:4px 12px;border-radius:20px;font-weight:800;font-size:.78rem;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif}
+.crono.verde{background:#d1fae5;color:#065f46;border:2px solid #6ee7b7}
+.crono.naranja{background:#fed7aa;color:#9a3412;border:2px solid #fdba74}
+.crono.rojo{background:#fecaca;color:#991b1b;border:2px solid #fca5a5}
+.crono.violeta{background:#e9d5ff;color:#6b21a8;border:2px solid #d8b4fe}
+.crono.gris{background:#f1f5f9;color:#64748b;border:2px solid #cbd5e1}
+
+.expediente-link{cursor:pointer;color:var(--primary-dark);font-weight:800;text-decoration:underline;text-decoration-style:dotted;text-decoration-color:rgba(79,70,229,.4);text-underline-offset:3px;transition:color .15s, text-decoration-color .15s}
+.expediente-link:hover{color:var(--primary);text-decoration-color:var(--primary);text-decoration-style:solid}
+
+.kpi-strip{display:flex;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap}
+.kpi-card{flex:1 1 100px;min-width:100px;background:#fff;border-radius:14px;padding:12px;border:1px solid var(--border);text-align:center;border-top:3px solid var(--success);box-shadow:var(--shadow-sm);transition:transform .2s, box-shadow .2s, border-color .2s;cursor:pointer;user-select:none}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-card:active{transform:translateY(0)}
+.kpi-card .num{font-size:1.5rem;font-weight:800;color:var(--success)}
+.kpi-card .lbl{font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.kpi-card.total{background:linear-gradient(135deg,var(--success),var(--accent));border:none}
+.kpi-card.total .num,.kpi-card.total .lbl{color:#fff}
+.kpi-card.active{border-top-color:var(--celeste);border-color:#7dd3fc;background:linear-gradient(135deg,#e0f2fe,#f0f9ff);box-shadow:0 10px 26px rgba(14,165,233,.22);transform:translateY(-3px);outline:2px solid rgba(14,165,233,.25)}
+.kpi-card.total.active{background:linear-gradient(135deg,#0ea5e9,#06b6d4);box-shadow:0 10px 26px rgba(14,165,233,.35)}
+
+.modal-modern .modal-content{border-radius:24px;border:none;box-shadow:var(--shadow-lg)}
+.modal-modern .modal-header{background:linear-gradient(135deg,#022c22,#065f46);color:#fff;padding:1.2rem 1.8rem;border:none}
+.modal-modern .modal-header .btn-close{filter:brightness(0) invert(1);opacity:.8}
+.modal-modern .modal-body{padding:1.8rem;max-height:70vh;overflow-y:auto}
+.modal-modern .modal-footer{border-top:1px solid var(--border);padding:1rem 1.8rem;background:#f8fafc;gap:.5rem}
+
+#toastContainer{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:400px}
+.toast-custom{background:rgba(15,23,42,.95);color:#fff;padding:14px 20px;border-radius:14px;box-shadow:var(--shadow-lg);font-size:.87rem;display:flex;align-items:center;gap:12px;animation:slideIn .35s cubic-bezier(.16,1,.3,1);border-left:4px solid transparent}
+.toast-custom.success{border-left-color:var(--success)}
+.toast-custom.warning{border-left-color:var(--warning)}
+.toast-custom.danger{border-left-color:var(--danger)}
+.toast-custom.info{border-left-color:var(--accent)}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+.logout-alert{position:fixed;bottom:24px;right:24px;z-index:9999;background:#fff;border-left:5px solid var(--danger);border-radius:16px;padding:18px 22px;min-width:280px;max-width:360px;box-shadow:var(--shadow-lg);display:none;flex-direction:column;gap:12px}
+.logout-alert.show{display:flex}
+.logout-alert .hdr{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--danger);font-size:.95rem}
+.logout-alert .body{font-size:.85rem;color:#475569}
+.logout-alert .actions{display:flex;gap:8px;justify-content:flex-end}
+.logout-alert .actions button{padding:7px 18px;border-radius:10px;border:none;font-weight:700;font-size:.78rem;cursor:pointer}
+.logout-alert .actions .cancel{background:#f1f5f9;color:#475569}
+.logout-alert .actions .confirm{background:var(--danger);color:#fff}
+
+.empty-state{padding:2.5rem 1rem;text-align:center;color:var(--muted)}
+.empty-state i{font-size:2.5rem;display:block;margin-bottom:.6rem;opacity:.4}
+.text-muted{color:var(--muted)}
+
+.dim-report-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.dim-report-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .15s}
+.dim-report-row:hover{background:#f8fafc}
+.dim-report-row:last-child{border-bottom:none}
+.dim-report-name{font-weight:700;color:var(--text);font-size:.88rem}
+.dim-report-count{font-weight:800;font-size:1.1rem;color:var(--success)}
+.dim-report-pct{font-size:.78rem;color:var(--muted);font-weight:600;min-width:60px;text-align:right}
+.dim-report-total{background:linear-gradient(135deg,#ecfdf5,#d1fae5);font-weight:800;padding:12px 14px;border-top:2px solid #6ee7b7;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 12px 12px}
+.dim-report-total .dim-report-name{color:#065f46}
+.dim-report-total .dim-report-count{color:#065f46;font-size:1.3rem}
+
+@media(max-width:992px){.app-header{flex-direction:column;align-items:stretch;padding:1rem}.header-actions{justify-content:stretch}}
+@media(max-width:576px){.app-wrapper{padding:12px}.card{padding:1rem;border-radius:16px}.login-card{padding:2rem 1.5rem;--ring:5px}.login-card .logo-icon{width:60px;height:60px;font-size:1.8rem;border-radius:18px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div class="logo-icon"><i class="bi bi-person-check"></i></div>
+    <h1>Empleado</h1>
+    <p class="sub">Pase Digital <span class="celeste">Local</span></p>
+    <select id="loginEmpleado" class="form-select"><option value="">Seleccione su usuario…</option></select>
+    <input type="password" id="loginPassword" class="form-control" placeholder="Contraseña" autocomplete="off" />
+    <div id="loginError" class="login-error">❌ Clave incorrecta</div>
+    <button class="btn-gradient" id="btnLogin"><i class="bi bi-box-arrow-in-right me-2"></i>Ingresar al sistema</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrapper" class="app-wrapper">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon"><i class="bi bi-person-check-fill"></i></div>
+      <div>
+        <h1>Pase Digital <span class="celeste">Local</span> <small>Defensoría Oficial Civil y Comercial 6</small></h1>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge-role"><i class="bi bi-person-badge"></i> Empleado</span>
+      <span class="badge-role emp"><i class="bi bi-person-check-fill"></i> <span id="empleadoNombre">—</span></span>
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="globalSearch" placeholder="Buscar expediente…" autocomplete="off" />
+      </div>
+      <button class="btn-header" id="btnReporte"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+      <button class="btn-header" id="btnActualizar"><i class="bi bi-arrow-repeat"></i> Recargar datos.json</button>
+      <button class="btn-header danger" id="btnCerrarSesion"><i class="bi bi-power"></i> Salir</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="card-title">
+      <i class="bi bi-list-task"></i> Mis Tareas
+      <div id="filtrosActivos"></div>
+    </div>
+    <div class="kpi-strip" id="kpiPanel"></div>
+    <div class="table-wrap" id="tablaContainer"></div>
+    <div id="paginationContainer" class="mt-2"></div>
+  </div>
+
+  <footer class="text-center text-muted mt-4" style="font-size:.72rem;border-top:1px solid var(--border);padding-top:1rem;">
+    <i class="bi bi-hdd-fill"></i> Datos locales en <code>datos.json</code> · Secretario asignado visible en cada expediente
+  </footer>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div class="modal fade modal-modern" id="modalHistorial" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Detalle · <span id="modalHistorialExp"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalHistorialBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-modern btn-success-modern" onclick="imprimirModalContenido('modalHistorial')"><i class="bi bi-printer"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENVIAR A SECRETARIO -->
+<div class="modal fade modal-modern" id="modalEnviar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-send-fill me-2"></i>Enviar a Secretario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Expediente:</strong> <span id="enviarExp"></span></p>
+        <p><strong>Secretario asignado:</strong> <span id="enviarSec"></span></p>
+        <div class="mb-3">
+          <label class="form-label">Observación (opcional)</label>
+          <textarea id="enviarObs" class="form-control" rows="3" placeholder="Observación del pase…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-modern btn-outline-modern" onclick="imprimirModalContenido('modalEnviar')"><i class="bi bi-printer"></i> Imprimir</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-modern btn-success-modern" id="btnConfirmarEnviar"><i class="bi bi-send-fill"></i> Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL JUSTIFICAR -->
+<div class="modal fade modal-modern" id="modalJustificar" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:linear-gradient(135deg,#92400e,#d97706);">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Justificar demora</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Expediente:</strong> <span id="justificarExp"></span></p>
+        <div class="mb-3">
+          <label class="form-label">Motivo</label>
+          <textarea id="justificarMotivo" class="form-control" rows="3" placeholder="Ingrese el motivo…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-modern btn-outline-modern" onclick="imprimirModalContenido('modalJustificar')"><i class="bi bi-printer"></i> Imprimir</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-modern btn-warning-modern" id="btnConfirmarJustificar"><i class="bi bi-check2"></i> Enviar justificación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE -->
+<div class="modal fade modal-modern" id="modalReporte" tabindex="-1">
+  <div class="modal-dialog modal-xl" style="max-width:95%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" for="selectTipoReporte">Seleccione el tipo de reporte</label>
+          <select id="selectTipoReporte" class="form-select">
+            <option value="resumen">Resumen General</option>
+            <option value="mes">Expedientes por Mes</option>
+            <option value="tipo">Por Tipo de Causa</option>
+            <option value="nivel">Por Nivel</option>
+            <option value="secretario">Por Secretario</option>
+            <option value="demoras">Demoras</option>
+            <option value="proceso">En Proceso</option>
+            <option value="secretaria">En Secretaría</option>
+            <option value="finalizados">Finalizados</option>
+            <option value="antesPlazo">Finalizados antes del Plazo</option>
+          </select>
+        </div>
+        <div id="modalReporteBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-modern btn-success-modern" id="btnImprimirReporte"><i class="bi bi-printer"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="logoutAlert" class="logout-alert">
+  <div class="hdr"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
+  <div class="body">Volverás a la pantalla de inicio. Los cambios ya guardados en datos.json no se perderán.</div>
+  <div class="actions">
+    <button class="cancel" id="btnCancelarSalida">Cancelar</button>
+    <button class="confirm" id="btnConfirmarSalida">Sí, salir</button>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+/* ============================================================
+   DataFile · capa local estricta sobre datos.json
+   - File System Access API cuando el navegador lo permite
+   - Fallback a descarga manual
+   - Fusión por id para preservar cambios concurrentes
+   - Polling periódico por cambios externos
+   - IDB compartida con sec.html y anda.html (pase-digital-local)
+   - LISTAS de fusión idénticas a sec.html / anda.html
+   ============================================================ */
+const DataFile = (function () {
+  const FILE_NAME = 'datos.json';
+  const IDB_NAME  = 'pase-digital-local';  /* ← compartida con sec.html / anda.html */
+  const IDB_STORE = 'handles';
+  const canUseFSA = typeof window.showOpenFilePicker === 'function';
+
+  /* Listas que se fusionan por id (misma nomenclatura que sec.html/anda.html) */
+  const LISTAS = ['causas', 'ausencias', 'empleados', 'chatInterno', 'chatDefensor'];
+
+  let fileHandle     = null;
+  let currentData    = null;
+  let baseIndexMap   = {};   /* { [lista]: Map } */
+  let lastFileMod    = 0;
+  let saveTimer      = null;
+  let savingNow      = false;
+  let pendingWrite   = false;
+  let dirtyFlag      = false;
+  let snapshotGetter = null;
+  let currentStatus  = 'ok';
+  let onExternal     = null;
+
+  const api = {};
+
+  /* ---------- IndexedDB (solo guarda el handle, no datos) ---------- */
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = () => reject(req.error);
+    });
+  }
+  async function idbGet(key) {
+    try {
+      const db = await openDB();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, 'readonly');
+        const r  = tx.objectStore(IDB_STORE).get(key);
+        r.onsuccess = () => resolve(r.result);
+        r.onerror   = () => reject(r.error);
+      });
+    } catch (_) { return null; }
+  }
+  async function idbSet(key, val) {
+    try {
+      const db = await openDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(val, key);
+        tx.oncomplete = resolve;
+        tx.onerror    = () => reject(tx.error);
+      });
+    } catch (_) {}
+  }
+
+  /* ---------- Helpers ---------- */
+  async function hasPermission(handle, request) {
+    const opts = { mode: 'readwrite' };
+    try {
+      if ((await handle.queryPermission(opts)) === 'granted') return true;
+      return !!request && (await handle.requestPermission(opts)) === 'granted';
+    } catch (_) { return false; }
+  }
+  function itemKey(x) {
+    return (x && x.id != null) ? x.id : JSON.stringify(x);
+  }
+  function buildIndex(arr) {
+    const m = new Map();
+    (arr || []).forEach(x => m.set(itemKey(x), JSON.stringify(x)));
+    return m;
+  }
+  function rebuildAllIndexes(data) {
+    baseIndexMap = {};
+    LISTAS.forEach(k => { baseIndexMap[k] = buildIndex((data && data[k]) || []); });
+  }
+  function validate(obj) {
+    if (!obj || typeof obj !== 'object') throw new Error('El archivo no es un JSON válido.');
+    if (!Array.isArray(obj.causas)) throw new Error('El archivo no contiene el campo "causas".');
+    return obj;
+  }
+  function stampMeta(obj) {
+    obj.meta = Object.assign({}, obj.meta, {
+      exportado: new Date().toISOString(),
+      version: (obj.meta && obj.meta.version) || '2.0'
+    });
+    return obj;
+  }
+
+  /* ---------- Estado visual ---------- */
+  function setStatus(state, msg) {
+    currentStatus = state;
+    let chip = document.getElementById('dfChip');
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.id = 'dfChip';
+      chip.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:9990;font:600 12px "Plus Jakarta Sans",sans-serif;padding:7px 14px;border-radius:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2);color:#fff;user-select:none;transition:transform .15s';
+      chip.addEventListener('click', () => {
+        if (currentStatus === 'download') downloadFile();
+        else if (currentStatus === 'error') { pendingWrite = true; scheduleSave(); }
+      });
+      document.body.appendChild(chip);
+    }
+    const map = {
+      ok:       { bg: '#10b981', text: '✔ datos.json al día' },
+      saving:   { bg: '#f59e0b', text: '⏳ guardando…' },
+      download: { bg: '#f97316', text: '⬇ Descargar datos.json (cambios sin guardar)' },
+      error:    { bg: '#ef4444', text: '⚠ ' + (msg || 'Error al guardar') + ' · clic para reintentar' }
+    };
+    const cfg = map[state] || map.ok;
+    chip.style.background = cfg.bg;
+    chip.textContent = cfg.text;
+  }
+
+  /* ---------- Descarga fallback ---------- */
+  function downloadFile() {
+    if (!currentData) return;
+    const payload = stampMeta(Object.assign({}, currentData, snapshotGetter ? snapshotGetter() : {}));
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = FILE_NAME;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    dirtyFlag = false;
+    setStatus('ok');
+  }
+
+  /* ---------- Lectura ---------- */
+  async function readFromDisk() {
+    const f = await fileHandle.getFile();
+    const parsed = JSON.parse(await f.text());
+    const valid  = validate(parsed);
+    lastFileMod    = f.lastModified;
+    currentData    = valid;
+    rebuildAllIndexes(valid);
+    return valid;
+  }
+
+  /* ---------- Merge por id (idéntico a sec.html / anda.html) ---------- */
+  function mergeList(base, mine, disk) {
+    const mineMap = new Map((mine || []).map(x => [itemKey(x), x]));
+    const diskMap = new Map((disk || []).map(x => [itemKey(x), x]));
+    const out = [];
+    diskMap.forEach((diskItem, id) => {
+      const mineItem = mineMap.get(id);
+      const baseJson = base.get(id);
+      if (!mineItem) {
+        if (baseJson === undefined || JSON.stringify(diskItem) !== baseJson) out.push(diskItem);
+      } else {
+        out.push(JSON.stringify(mineItem) !== baseJson ? mineItem : diskItem);
+      }
+    });
+    mineMap.forEach((mineItem, id) => {
+      if (!diskMap.has(id)) {
+        const baseJson = base.get(id);
+        if (baseJson === undefined || JSON.stringify(mineItem) !== baseJson) out.push(mineItem);
+      }
+    });
+    return out;
+  }
+  function mergeData(mine, disk) {
+    const out = Object.assign({}, disk);
+    Object.keys(mine).forEach(k => {
+      if (LISTAS.includes(k)) {
+        out[k] = mergeList(baseIndexMap[k] || new Map(), mine[k] || [], disk[k] || []);
+      } else {
+        out[k] = mine[k];
+      }
+    });
+    return out;
+  }
+
+  /* ---------- Escritura ---------- */
+  function scheduleSave() {
+    if (pendingWrite) return;
+    pendingWrite = true;
+    dirtyFlag    = true;
+    clearTimeout(saveTimer);
+    setStatus('saving');
+    saveTimer = setTimeout(flushSave, 400);
+  }
+  async function flushSave() {
+    if (!pendingWrite) return;
+    if (savingNow) { saveTimer = setTimeout(flushSave, 300); return; }
+    savingNow = true;
+    pendingWrite = false;
+    try {
+      const snap = snapshotGetter ? snapshotGetter() : {};
+      if (!fileHandle || !(await hasPermission(fileHandle, false))) {
+        currentData = Object.assign(currentData || {}, snap);
+        setStatus('download');
+        return;
+      }
+      if (currentData && currentData.causas && currentData.causas.length
+          && snap.causas && !snap.causas.length) {
+        throw new Error('Se evitó guardar una lista de causas vacía');
+      }
+      const f = await fileHandle.getFile();
+      let out, merged = false;
+      if (f.lastModified !== lastFileMod) {
+        out = mergeData(snap, validate(JSON.parse(await f.text())));
+        merged = true;
+      } else {
+        out = Object.assign(currentData, snap);
+      }
+      stampMeta(out);
+      const w = await fileHandle.createWritable();
+      await w.write(JSON.stringify(out, null, 2));
+      await w.close();
+      lastFileMod  = (await fileHandle.getFile()).lastModified;
+      currentData  = out;
+      rebuildAllIndexes(out);
+      dirtyFlag    = pendingWrite;
+      setStatus(pendingWrite ? 'saving' : 'ok');
+      if (merged && onExternal) onExternal(out);
+    } catch (e) {
+      console.error('datos.json:', e);
+      pendingWrite = true;
+      setStatus('error', e && e.message ? e.message : 'Error al guardar');
+    } finally {
+      savingNow = false;
+      if (pendingWrite && currentStatus !== 'error') {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(flushSave, 300);
+      }
+    }
+  }
+
+  /* ---------- Pantalla de conexión ---------- */
+  function showConnectScreen() {
+    return new Promise(async (resolve) => {
+      const saved = canUseFSA ? await idbGet(FILE_NAME) : null;
+      const btn = 'display:block;width:100%;margin:10px 0;padding:12px;border:0;border-radius:12px;font-weight:700;font-size:.9rem;cursor:pointer;color:#fff';
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9998;background:rgba(2,44,34,.92);display:flex;align-items:center;justify-content:center;padding:20px;font-family:"Plus Jakarta Sans",sans-serif;backdrop-filter:blur(4px)';
+      ov.innerHTML = `
+        <div style="background:#fff;border-radius:24px;padding:28px 32px;max-width:480px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+          <div style="width:64px;height:64px;margin:0 auto 12px;border-radius:18px;background:linear-gradient(135deg,#06b6d4,#10b981);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#fff">
+            <i class="bi bi-folder2-open"></i>
+          </div>
+          <h3 style="font-weight:800;color:#0f172a;margin-bottom:8px;font-size:1.3rem">Conectar datos.json</h3>
+          <p style="color:#64748b;font-size:.85rem;margin-bottom:18px;line-height:1.5">
+            Esta aplicación trabaja <strong>únicamente</strong> con el archivo
+            <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;color:#0f172a">datos.json</code>
+            ubicado en la misma carpeta. ${canUseFSA
+              ? 'El navegador recordará el permiso para próximas sesiones.'
+              : 'Su navegador no permite escritura directa: use la descarga.'}
+          </p>
+          <div id="dfMsg" style="color:#dc2626;font-size:.78rem;min-height:20px;margin-bottom:6px;font-weight:600"></div>
+          ${saved ? `<button id="dfReconnect" style="${btn};background:#10b981">Reconectar con el archivo recordado</button>` : ''}
+          <button id="dfSelect" style="${btn};background:#0ea5e9">Seleccionar datos.json existente</button>
+          ${canUseFSA ? `<button id="dfCreate" style="${btn};background:#64748b">Crear datos.json nuevo (vacío)</button>` : ''}
+          <input type="file" id="dfInput" accept=".json,application/json" style="display:none">
+        </div>`;
+      document.body.appendChild(ov);
+
+      const msgEl = ov.querySelector('#dfMsg');
+      const showMsg = t => { msgEl.textContent = t; };
+      const finish  = data => { ov.remove(); resolve(data); };
+
+      const reconnectBtn = ov.querySelector('#dfReconnect');
+      if (reconnectBtn) reconnectBtn.onclick = async () => {
+        showMsg('');
+        if (!(await hasPermission(saved, true))) {
+          showMsg('No se concedió permiso al archivo.'); return;
+        }
+        fileHandle = saved;
+        try { finish(await readFromDisk()); }
+        catch (e) { fileHandle = null; showMsg(e.message || String(e)); }
+      };
+
+      ov.querySelector('#dfSelect').onclick = async () => {
+        showMsg('');
+        if (!canUseFSA) { ov.querySelector('#dfInput').click(); return; }
+        try {
+          const [h] = await window.showOpenFilePicker({
+            id: 'pase-local', multiple: false,
+            types: [{ description: 'datos.json', accept: { 'application/json': ['.json'] } }]
+          });
+          await hasPermission(h, true);
+          fileHandle = h;
+          await idbSet(FILE_NAME, h);
+          finish(await readFromDisk());
+        } catch (e) {
+          if (!e || e.name !== 'AbortError') {
+            showMsg('No se pudo abrir: ' + (e.message || e));
+            fileHandle = null;
+          }
+        }
+      };
+
+      const createBtn = ov.querySelector('#dfCreate');
+      if (createBtn) createBtn.onclick = async () => {
+        showMsg('');
+        try {
+          const h = await window.showSaveFilePicker({
+            suggestedName: FILE_NAME,
+            types: [{ description: 'datos.json', accept: { 'application/json': ['.json'] } }]
+          });
+          await hasPermission(h, true);
+          fileHandle = h;
+          await idbSet(FILE_NAME, h);
+          /* Estructura vacía compatible con sec.html / anda.html */
+          const empty = {
+            causas: [], ausencias: [], empleados: [],
+            chatInterno: [], chatDefensor: [],
+            meta: { exportado: new Date().toISOString(), version: '2.0' }
+          };
+          const w = await h.createWritable();
+          await w.write(JSON.stringify(empty, null, 2));
+          await w.close();
+          await readFromDisk();
+          finish(empty);
+        } catch (e) {
+          if (!e || e.name !== 'AbortError') {
+            showMsg('No se pudo crear: ' + (e.message || e));
+            fileHandle = null;
+          }
+        }
+      };
+
+      ov.querySelector('#dfInput').onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        showMsg('');
+        try {
+          const valid = validate(JSON.parse(await f.text()));
+          currentData  = valid;
+          rebuildAllIndexes(valid);
+          fileHandle   = null;
+          lastFileMod  = 0;
+          finish(valid);
+        } catch (er) { showMsg(er.message || String(er)); }
+      };
+    });
+  }
+
+  /* ---------- API pública ---------- */
+  api.load = async function () {
+    if (!fileHandle && !currentData && canUseFSA) {
+      const saved = await idbGet(FILE_NAME);
+      if (saved && await hasPermission(saved, false)) fileHandle = saved;
+    }
+    if (fileHandle) {
+      try {
+        await readFromDisk();
+        setStatus(dirtyFlag ? 'saving' : 'ok');
+        return currentData;
+      } catch (e) {
+        if (currentData) { setStatus('error', 'No se pudo leer datos.json'); return currentData; }
+        fileHandle = null;
+      }
+    }
+    if (!fileHandle && currentData) return currentData;
+    await showConnectScreen();
+    setStatus('ok');
+    return currentData;
+  };
+
+  api.reload = async function () {
+    if (!fileHandle && canUseFSA) {
+      const saved = await idbGet(FILE_NAME);
+      if (saved && await hasPermission(saved, false)) fileHandle = saved;
+    }
+    if (fileHandle) {
+      try { return await readFromDisk(); }
+      catch (e) { setStatus('error', e.message || String(e)); throw e; }
+    }
+    await showConnectScreen();
+    return currentData;
+  };
+
+  api.save = function (getter) {
+    snapshotGetter = getter;
+    scheduleSave();
+  };
+
+  api.flush = async function () {
+    if (pendingWrite) { clearTimeout(saveTimer); await flushSave(); }
+  };
+
+  api.data = () => currentData;
+  api.onExternalChange = function (fn) { onExternal = fn; };
+
+  /* ---------- Polling por cambios externos ---------- */
+  setInterval(async () => {
+    if (!fileHandle || pendingWrite || savingNow || document.hidden) return;
+    try {
+      const f = await fileHandle.getFile();
+      if (f.lastModified === lastFileMod) return;
+      const valid = validate(JSON.parse(await f.text()));
+      lastFileMod  = f.lastModified;
+      currentData  = valid;
+      rebuildAllIndexes(valid);
+      if (onExternal) onExternal(valid);
+    } catch (_) {}
+  }, 4000);
+
+  /* ---------- Persistencia al ocultar/pestaña ---------- */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && pendingWrite) { clearTimeout(saveTimer); flushSave(); }
+  });
+  window.addEventListener('beforeunload', (e) => {
+    if (dirtyFlag) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  return api;
+})();
+
+/* ============================================================
+   Aplicación · Empleado (modo local)
+   ============================================================ */
+(function () {
+'use strict';
+
+const CONFIG = {
+  empleados: [
+    { id:'emp1',  nombre:'Bazante Nadia Romina',     clave:'101' },
+    { id:'emp2',  nombre:'Bolillat Cesar Enrique',   clave:'202' },
+    { id:'emp3',  nombre:'Cardozo Maria Raquel',     clave:'222' },
+    { id:'emp4',  nombre:'Cedron Noelia',            clave:'444' },
+    { id:'emp6',  nombre:'Fioravante Rómulo',        clave:'505' },
+    { id:'emp7',  nombre:'Gonzalez Alberto Misael',  clave:'606' },
+    { id:'emp8',  nombre:'Gonzalez Juan Jose',       clave:'707' },
+    { id:'emp9',  nombre:'Gudiño Natalia Esther',    clave:'808' },
+    { id:'emp15', nombre:'Martinis Carlos Esteban',  clave:'114' },
+    { id:'emp10', nombre:'Ortega Lucia Noemi',       clave:'909' },
+    { id:'emp11', nombre:'Pablos Patricia Tamara',   clave:'333' },
+    { id:'emp12', nombre:'Palacios Ana Gabriela',    clave:'112' },
+    { id:'emp13', nombre:'Sosa Rita Cecilia',        clave:'113' }
+  ],
+  secretarios: [
+    { id:'sec1', nombre:'Corrales A.Mariela' },
+    { id:'sec2', nombre:'Magnani Enzo' },
+    { id:'sec3', nombre:'Riveros Patricia' }
+  ],
+  nivelesDias: { 1:5, 2:3, 3:3, 4:2 }
+};
+
+const PER_PAGE     = 10;
+const SESSION_KEY  = 'paseDigitalEmpleadoId';
+
+let state = { causas: [] };      // todas las causas (sin filtrar)
+let currentEmpId   = '';
+let currentEmpNombre = '';
+let searchTerm     = '';
+let pagination     = { page: 1 };
+let filtroKPI      = 'total';
+let enviarId       = null;
+let justId         = null;
+
+const columnState = { sortBy: 'fechaAsignacion', sortDir: 'desc', filterNivel: '', filterSecretario: '' };
+
+let _detCache = new Map();
+function getDetalleTiempoCached(c) {
+  const sig = `${c.id}|${c.fechaAsignacion||''}|${c.fechaFinalizacion||''}|${c.fechaResolucionEmpleado||''}|${c.estado||''}|${c.nivelSecretario||c.nivelOperador||''}|${(c.historial||[]).length}`;
+  if (_detCache.has(sig)) return _detCache.get(sig);
+  const d = getDetalleTiempo(c);
+  _detCache.set(sig, d);
+  return d;
+}
+
+const KPI_LABELS = {
+  total:'Total', proceso:'En Proceso', paraFin:'Para Finalizar',
+  finalizadas:'Finalizadas', antesPlazo:'Finalizados antes del Plazo', demora:'Con Demora'
+};
+
+/* ---------- Utilidades ---------- */
+function fmtDt(iso) { if (!iso) return '—'; const d = new Date(iso); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '—'; }
+function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '—'; }
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2,6); }
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const icons = { success:'bi-check-circle-fill', warning:'bi-exclamation-triangle-fill', danger:'bi-x-circle-fill', info:'bi-info-circle-fill' };
+  const d = document.createElement('div');
+  d.className = `toast-custom ${type}`;
+  d.innerHTML = `<i class="bi ${icons[type]||icons.info}"></i><span>${msg}</span>`;
+  c.appendChild(d);
+  setTimeout(() => d.remove(), 3800);
+}
+
+/* ---------- Feriados / días hábiles ---------- */
+function calcPascua(y) {
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return new Date(y, month-1, day);
+}
+function nesimoDia(y,m,dow,n) {
+  let first=new Date(y,m,1), fdow=(first.getDay()+6)%7, diff=(dow-fdow+7)%7, day=1+diff+(n-1)*7;
+  return day>new Date(y,m+1,0).getDate() ? null : new Date(y,m,day);
+}
+function getFeriados(y) {
+  const p = calcPascua(y), f = [];
+  f.push(new Date(y,0,1),new Date(y,2,24),new Date(y,3,2),new Date(y,4,1),new Date(y,4,25),new Date(y,6,9),new Date(y,11,8),new Date(y,11,25));
+  const cl = new Date(p); cl.setDate(cl.getDate()-47); f.push(cl);
+  const cm = new Date(p); cm.setDate(cm.getDate()-46); f.push(cm);
+  const js = new Date(p); js.setDate(js.getDate()-3); f.push(js);
+  const vs = new Date(p); vs.setDate(vs.getDate()-2); f.push(vs);
+  const tlj = nesimoDia(y,5,0,3); if (tlj) f.push(tlj);
+  const tla = nesimoDia(y,7,0,3); if (tla) f.push(tla);
+  const slo = nesimoDia(y,9,0,2); if (slo) f.push(slo);
+  const cln = nesimoDia(y,10,0,4); if (cln) f.push(cln);
+  return f;
+}
+function esFeriado(f) { const y = f.getFullYear(); return getFeriados(y).some(x => x.getMonth() === f.getMonth() && x.getDate() === f.getDate()); }
+function esDiaHabil(f) { const d = f.getDay(); if (d === 0 || d === 6) return false; return !esFeriado(f); }
+function sumarDiasHabiles(fi, cant) { let f = new Date(fi), n = 0; while (n < cant) { f.setDate(f.getDate()+1); if (esDiaHabil(f)) n++; } return f; }
+function diasHabilesTranscurridos(fi, ff) {
+  if (!fi) return 0;
+  const ini = new Date(fi), fin = ff ? new Date(ff) : new Date();
+  if (ini > fin) return 0;
+  let d = 0, cur = new Date(ini);
+  while (!esDiaHabil(cur) && cur <= fin) cur.setDate(cur.getDate()+1);
+  while (cur <= fin) { if (esDiaHabil(cur)) d++; cur.setDate(cur.getDate()+1); }
+  return d;
+}
+function calcFechaInicio(fIso) {
+  const fA = new Date(fIso), h = fA.getHours(), m = fA.getMinutes();
+  let fIni = new Date(fA);
+  if (h > 12 || (h === 12 && m > 0)) fIni.setDate(fIni.getDate()+1);
+  while (!esDiaHabil(fIni)) fIni.setDate(fIni.getDate()+1);
+  fIni.setHours(7,0,0,0);
+  return fIni;
+}
+function calcFechaLimite(fIni, nivel) {
+  const d = CONFIG.nivelesDias[nivel] || 5;
+  const f = sumarDiasHabiles(fIni, d);
+  f.setHours(12,0,0,0);
+  return f;
+}
+function getEstadoPlazo(fLim, ref) {
+  if (!fLim) return { estado:'plazo', color:'gris', label:'—' };
+  const h = ref ? new Date(ref) : new Date();
+  const f = new Date(fLim);
+  h.setHours(0,0,0,0); f.setHours(0,0,0,0);
+  const diff = Math.floor((h - f) / 86400000);
+  if (diff <= 0) return { estado:'plazo',      color:'verde',   label:'En plazo' };
+  if (diff <= 2) return { estado:'vencido',    color:'naranja', label:'Vencido' };
+  if (diff <= 5) return { estado:'fueraplazo', color:'rojo',    label:'Fuera de plazo' };
+  return           { estado:'exceso',    color:'violeta', label:'Exceso' };
+}
+function getNivelEfectivo(c) { return parseInt(c.nivelSecretario || c.nivelOperador || 1) || 1; }
+function getFechaAsignacionEfectiva(c) {
+  if (c.fechaAsignacion) return c.fechaAsignacion;
+  if (c.historial && c.historial.length) {
+    for (let i = c.historial.length - 1; i >= 0; i--) {
+      const h = c.historial[i];
+      if (h.accion && /Asignad/i.test(h.accion) && h.fecha) return h.fecha;
+    }
+  }
+  return null;
+}
+function getFechaFinEfectiva(c) {
+  if (c.estado === 'finalizada') return c.fechaFinalizacion || c.fechaResolucionEmpleado || null;
+  if (c.estado === 'para_finalizar' || c.estado === 'en_secretaria') return c.fechaResolucionEmpleado || null;
+  return new Date();
+}
+function getDetalleTiempo(c) {
+  const fIso = getFechaAsignacionEfectiva(c);
+  if (!fIso) return { error:'Sin fecha de asignación' };
+  const fechaAsig = new Date(fIso);
+  const fIni = calcFechaInicio(fIso);
+  const n = getNivelEfectivo(c);
+  const fLim = calcFechaLimite(fIni, n);
+  const fechaFin = getFechaFinEfectiva(c);
+  const trans = diasHabilesTranscurridos(fIni, fechaFin);
+  const est = getEstadoPlazo(fLim, fechaFin);
+  return {
+    fechaAsignacion: fechaAsig, fechaInicio: fIni, fechaLimite: fLim, fechaFin: fechaFin,
+    diasTranscurridos: trans, estado: est, nivel: n, esFinalizada: c.estado === 'finalizada'
+  };
+}
+function esFinalizadaAntesDelPlazo(c) {
+  if (c.estado !== 'finalizada') return false;
+  const det = getDetalleTiempo(c);
+  if (det.error || !det.fechaLimite || !det.fechaFin) return false;
+  return new Date(det.fechaFin).getTime() <= new Date(det.fechaLimite).getTime();
+}
+function getCumplimientoInfo(c, detOpt) {
+  if (c.estado !== 'finalizada') return null;
+  const det = detOpt || getDetalleTiempo(c);
+  if (det.error || !det.fechaLimite || !det.fechaFin) return null;
+  const nivel = det.nivel;
+  const diasNivel = CONFIG.nivelesDias[nivel] || 5;
+  const finDate = new Date(det.fechaFin);
+  const limDate = new Date(det.fechaLimite);
+  const cumplidoAntes = finDate.getTime() <= limDate.getTime();
+  let margenDias = 0;
+  if (cumplidoAntes) {
+    const finD = new Date(finDate); finD.setHours(0,0,0,0);
+    const limD = new Date(limDate); limD.setHours(0,0,0,0);
+    const cur = new Date(finD);
+    while (cur < limD) { cur.setDate(cur.getDate()+1); if (esDiaHabil(cur)) margenDias++; }
+  }
+  return { cumplidoAntes, margenDias, diasNivel, nivel, fechaLimite: limDate, fechaFin: finDate, diasTranscurridos: det.diasTranscurridos };
+}
+function renderPlazoBadge(c, det) {
+  if (!det || det.error) return '<span class="text-muted">—</span>';
+  if (c.estado === 'finalizada') {
+    const cumpl = getCumplimientoInfo(c, det);
+    if (cumpl && cumpl.cumplidoAntes) {
+      const margenTxt = cumpl.margenDias > 0
+        ? `${cumpl.margenDias} día${cumpl.margenDias !== 1 ? 's' : ''} hábil${cumpl.margenDias !== 1 ? 'es' : ''} antes del límite`
+        : 'justo en el límite del plazo';
+      return `<span class="crono verde" title="Plazo del nivel N${cumpl.nivel}: ${cumpl.diasNivel} días hábiles · Cumplido ${margenTxt}">✅ Cumplido (N${cumpl.nivel} · ${cumpl.diasNivel}d)</span>`;
+    }
+    if (cumpl) return `<span class="crono rojo" title="Plazo del nivel N${cumpl.nivel}: ${cumpl.diasNivel} días hábiles · No cumplido">❌ Excedido (N${cumpl.nivel} · ${cumpl.diasNivel}d)</span>`;
+  }
+  return `<span class="crono ${det.estado.color}">${det.estado.label}</span>`;
+}
+
+/* ---------- Filtros ---------- */
+function obtenerTodasCausas() {
+  if (!currentEmpId) return [];
+  return state.causas.filter(c => {
+    if (!c.numero) return false;
+    return (
+      (c.empleadoId       && (c.empleadoId       === currentEmpId || c.empleadoId       === currentEmpNombre)) ||
+      (c.empleadoAsignado && (c.empleadoAsignado === currentEmpId || c.empleadoAsignado === currentEmpNombre)) ||
+      (c.empleadoOriginal === currentEmpId)
+    );
+  });
+}
+function pasaFiltroKPI(c, kpi) {
+  if (!kpi || kpi === 'total') return true;
+  if (kpi === 'proceso')     return c.estado === 'en_proceso';
+  if (kpi === 'paraFin')     return c.estado === 'para_finalizar' || c.estado === 'en_secretaria';
+  if (kpi === 'finalizadas') return c.estado === 'finalizada';
+  if (kpi === 'antesPlazo')  return esFinalizadaAntesDelPlazo(c);
+  if (kpi === 'demora') {
+    if (c.estado !== 'en_proceso') return false;
+    const d = getDetalleTiempo(c);
+    return d.estado && ['vencido','fueraplazo','exceso'].includes(d.estado.estado);
+  }
+  return true;
+}
+function pasaFiltrosColumna(c) {
+  if (columnState.filterNivel && String(getNivelEfectivo(c)) !== columnState.filterNivel) return false;
+  if (columnState.filterSecretario) {
+    const opt = CONFIG.secretarios.find(s => s.id === columnState.filterSecretario);
+    if (!opt) return false;
+    const display = (c.secretarioNombre || getSecName(c.secretarioId) || '').toLowerCase();
+    const words = opt.nombre.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    if (!words.some(w => display.includes(w))) return false;
+  }
+  return true;
+}
+
+/* ---------- Orden ---------- */
+function aplicarOrden(list) {
+  const by = columnState.sortBy, dir = columnState.sortDir === 'asc' ? 1 : -1;
+  return list.sort((a, b) => {
+    if (by === 'numero') {
+      const na = parseFloat(a.numero), nb = parseFloat(b.numero);
+      if (!isNaN(na) && !isNaN(nb)) return (na - nb) * dir;
+      return String(a.numero || '').localeCompare(String(b.numero || '')) * dir;
+    }
+    if (by === 'tipo') return String(a.tipo || '').localeCompare(String(b.tipo || '')) * dir;
+    if (by === 'fechaAsignacion') {
+      const va = new Date(getFechaAsignacionEfectiva(a) || 0).getTime();
+      const vb = new Date(getFechaAsignacionEfectiva(b) || 0).getTime();
+      return (va - vb) * dir;
+    }
+    if (by === 'dias') {
+      const va = getDetalleTiempoCached(a).diasTranscurridos || 0;
+      const vb = getDetalleTiempoCached(b).diasTranscurridos || 0;
+      return (va - vb) * dir;
+    }
+    if (by === 'estadoPlazo') {
+      const order = { plazo:0, vencido:1, fueraplazo:2, exceso:3 };
+      const da = getDetalleTiempoCached(a).estado?.estado || 'plazo';
+      const db = getDetalleTiempoCached(b).estado?.estado || 'plazo';
+      return ((order[da] ?? 4) - (order[db] ?? 4)) * dir;
+    }
+    if (by === 'estado') return String(a.estado || '').localeCompare(String(b.estado || '')) * dir;
+    return 0;
+  });
+}
+
+/* ---------- Persistencia local ---------- */
+function guardarLocal(snapshotFn) {
+  DataFile.save(snapshotFn || (() => ({ causas: state.causas })));
+}
+
+function aplicarDatosDesdeDataFile(data) {
+  state.causas = (data.causas || []).map(c => {
+    if (!c.id) c.id = generateId();
+    if (!c.empleadoAsignado && c.empleadoId) c.empleadoAsignado = c.empleadoId;
+    return c;
+  });
+  _detCache.clear();
+}
+
+async function cargarDatos() {
+  try {
+    const d = await DataFile.load();
+    aplicarDatosDesdeDataFile(d || { causas: [] });
+    return true;
+  } catch (e) {
+    console.error(e);
+    showToast('No se pudo leer datos.json: ' + (e.message || e), 'danger');
+    return false;
+  }
+}
+
+/* ---------- Render ---------- */
+function render() {
+  renderKPIs();
+  renderTabla();
+  renderFiltrosActivos();
+}
+
+function renderKPIs() {
+  const panel = document.getElementById('kpiPanel');
+  if (!panel) return;
+  const list = obtenerTodasCausas();
+  const total       = list.length;
+  const proceso     = list.filter(c => c.estado === 'en_proceso').length;
+  const paraFin     = list.filter(c => c.estado === 'para_finalizar' || c.estado === 'en_secretaria').length;
+  const finalizadas = list.filter(c => c.estado === 'finalizada').length;
+  const antesPlazo  = list.filter(esFinalizadaAntesDelPlazo).length;
+  const demora      = list.filter(c => {
+    if (c.estado !== 'en_proceso') return false;
+    const d = getDetalleTiempo(c);
+    return d.estado && ['vencido','fueraplazo','exceso'].includes(d.estado.estado);
+  }).length;
+
+  const items = [
+    { key:'total',       label:'Total',           num: total,       cls:'total', color:'' },
+    { key:'proceso',     label:'En Proceso',      num: proceso,     cls:'',      color:'' },
+    { key:'paraFin',     label:'Para Finalizar',  num: paraFin,     cls:'',      color:'#d97706' },
+    { key:'finalizadas', label:'Finalizadas',     num: finalizadas, cls:'',      color:'#059669' },
+    { key:'antesPlazo',  label:'Antes del Plazo', num: antesPlazo,  cls:'',      color:'#0891b2' },
+    { key:'demora',      label:'Con Demora',      num: demora,      cls:'',      color:'#dc2626' }
+  ];
+
+  panel.innerHTML = items.map(it => `
+    <div class="kpi-card ${it.cls} ${filtroKPI === it.key ? 'active' : ''}"
+         data-kpi="${it.key}" role="button" tabindex="0"
+         title="Filtrar por: ${KPI_LABELS[it.key] || it.label}">
+      <div class="num" ${it.color ? `style="color:${it.color}"` : ''}>${it.num}</div>
+      <div class="lbl">${it.label}</div>
+    </div>
+  `).join('');
+
+  panel.querySelectorAll('.kpi-card').forEach(card => {
+    const handler = () => handleKpiClick(card.dataset.kpi);
+    card.addEventListener('click', handler);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+  });
+}
+
+function handleKpiClick(kpi) {
+  if (filtroKPI === kpi && kpi !== 'total') filtroKPI = 'total';
+  else filtroKPI = kpi;
+  pagination.page = 1;
+  _detCache.clear();
+  render();
+  const tabla = document.getElementById('tablaContainer');
+  if (tabla) tabla.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderFiltrosActivos() {
+  const cont = document.getElementById('filtrosActivos');
+  if (!cont) return;
+  const chips = [];
+  if (filtroKPI && filtroKPI !== 'total') chips.push({ label:`KPI: ${KPI_LABELS[filtroKPI] || filtroKPI}`, type:'kpi' });
+  if (columnState.filterNivel) chips.push({ label:`Nivel: N${columnState.filterNivel}`, type:'nivel' });
+  if (columnState.filterSecretario) {
+    const s = CONFIG.secretarios.find(x => x.id === columnState.filterSecretario);
+    if (s) chips.push({ label:`Secretario: ${s.nombre}`, type:'secretario' });
+  }
+  if (!chips.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = chips.map(ch => `
+    <span class="filtro-chip">${ch.label}
+      <button class="chip-close" data-type="${ch.type}" title="Quitar filtro">✕</button>
+    </span>
+  `).join('') + `<button class="btn-clear-filters" id="btnClearAll">Limpiar todo</button>`;
+
+  cont.querySelectorAll('.chip-close').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.type;
+      if (t === 'kpi') filtroKPI = 'total';
+      if (t === 'nivel') columnState.filterNivel = '';
+      if (t === 'secretario') columnState.filterSecretario = '';
+      pagination.page = 1;
+      _detCache.clear();
+      render();
+    });
+  });
+  const clr = document.getElementById('btnClearAll');
+  if (clr) clr.addEventListener('click', () => {
+    filtroKPI = 'total'; columnState.filterNivel = ''; columnState.filterSecretario = '';
+    pagination.page = 1; _detCache.clear(); render();
+  });
+}
+
+function getBadgeEstado(estado) {
+  const map = {
+    'en_proceso':'<span class="badge-status badge-proceso">🔄 En proceso</span>',
+    'para_finalizar':'<span class="badge-status badge-para-finalizar">📋 Para finalizar</span>',
+    'en_secretaria':'<span class="badge-status badge-para-finalizar">📋 En Secretaría</span>',
+    'finalizada':'<span class="badge-status badge-finalizada">✅ Finalizada</span>',
+    'en_defensor':'<span class="badge-status badge-defensor">⚖️ Defensor</span>',
+    'devuelto_siged':'<span class="badge-status badge-defensor">↩️ Devuelto a SIGED</span>',
+    'remitido':'<span class="badge-status badge-defensor">📤 Remitido</span>',
+    'rechazado':'<span class="badge-status badge-defensor">🚫 Rechazado</span>'
+  };
+  return map[estado] || `<span class="badge-status">${estado}</span>`;
+}
+
+function headerSortable(key, label) {
+  const isActive = columnState.sortBy === key;
+  const icon = isActive
+    ? (columnState.sortDir === 'asc'
+        ? '<i class="bi bi-caret-up-fill sort-icon"></i>'
+        : '<i class="bi bi-caret-down-fill sort-icon"></i>')
+    : '<i class="bi bi-arrow-down-up sort-icon"></i>';
+  return `<th class="th-sortable ${isActive ? 'th-active' : ''}" data-sort-key="${key}" title="Ordenar por ${label}">${label} ${icon}</th>`;
+}
+function headerSelectNivel() {
+  const opts = [ {v:'1',t:'N1'},{v:'2',t:'N2'},{v:'3',t:'N3'},{v:'4',t:'N4'} ];
+  return `<th class="th-filter">Nivel
+    <select id="filterNivel" class="${columnState.filterNivel ? 'th-filter-active' : ''}">
+      <option value="">Todos</option>
+      ${opts.map(o => `<option value="${o.v}" ${columnState.filterNivel === o.v ? 'selected' : ''}>${o.t}</option>`).join('')}
+    </select>
+  </th>`;
+}
+function headerSelectSecretario() {
+  return `<th class="th-filter">Secretario Asignado
+    <select id="filterSecretario" class="${columnState.filterSecretario ? 'th-filter-active' : ''}">
+      <option value="">Todos</option>
+      ${CONFIG.secretarios.map(s => `<option value="${s.id}" ${columnState.filterSecretario === s.id ? 'selected' : ''}>${s.nombre}</option>`).join('')}
+    </select>
+  </th>`;
+}
+
+function renderTabla() {
+  const container = document.getElementById('tablaContainer');
+  if (!container) return;
+
+  let list = obtenerTodasCausas();
+  if (searchTerm) list = list.filter(c => String(c.numero || '').toLowerCase().includes(searchTerm.toLowerCase()));
+  list = list.filter(c => pasaFiltroKPI(c, filtroKPI));
+  list = list.filter(pasaFiltrosColumna);
+  list = aplicarOrden(list);
+
+  const total      = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  if (pagination.page > totalPages) pagination.page = totalPages;
+  const start = (pagination.page - 1) * PER_PAGE;
+  const items = list.slice(start, start + PER_PAGE);
+
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i>No hay tareas que coincidan con el filtro.</div>';
+    document.getElementById('paginationContainer').innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="table-modern">
+      <thead>
+        <tr>
+          ${headerSortable('fechaAsignacion', 'Fecha y Hora Asignación')}
+          ${headerSortable('numero', 'Expediente')}
+          ${headerSortable('tipo', 'Tipo')}
+          ${headerSelectNivel()}
+          ${headerSelectSecretario()}
+          ${headerSortable('dias', 'Días Hábiles')}
+          ${headerSortable('estadoPlazo', 'Estado del Plazo')}
+          ${headerSortable('estado', 'Estado')}
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(c => {
+          const det = getDetalleTiempoCached(c);
+          const hasTiempo = !det.error;
+          const dias = hasTiempo ? det.diasTranscurridos : null;
+          const est  = hasTiempo ? det.estado : { color:'gris', label:'—', estado:'plazo' };
+          const estaVencido = hasTiempo && ['vencido','fueraplazo','exceso'].includes(est.estado);
+          const fAsigIso = getFechaAsignacionEfectiva(c);
+          const fAsig    = fAsigIso ? fmtDt(fAsigIso) : '—';
+          const nivelMostrar = getNivelEfectivo(c);
+          const secMostrar   = c.secretarioNombre || getSecName(c.secretarioId);
+
+          return `
+            <tr>
+              <td style="font-size:.75rem; white-space:nowrap;">${fAsig}</td>
+              <td><strong class="expediente-link" data-id="${c.id}" title="Ver historial y tiempo hábil">${c.numero}</strong></td>
+              <td style="font-size:.78rem;">${c.tipo || '—'}</td>
+              <td>N${nivelMostrar}</td>
+              <td><span style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-person-badge-fill"></i> ${secMostrar}</span></td>
+              <td>${hasTiempo ? `<span class="crono ${est.color}">${dias} día${dias !== 1 ? 's' : ''}</span>` : '<span class="text-muted">—</span>'}</td>
+              <td>${hasTiempo ? renderPlazoBadge(c, det) : '<span class="text-muted">—</span>'}</td>
+              <td>${getBadgeEstado(c.estado)}</td>
+              <td style="white-space:nowrap;">
+                ${c.estado === 'en_proceso' ? `
+                  <button class="btn-modern btn-success-modern btn-sm-modern btn-enviar" data-id="${c.id}" title="Enviar a Secretario"><i class="bi bi-send-fill"></i> Enviar</button>
+                  ${estaVencido ? `<button class="btn-modern btn-warning-modern btn-sm-modern btn-just" data-id="${c.id}" title="Justificar demora"><i class="bi bi-clock-history"></i></button>` : ''}
+                ` : '<span class="text-muted" style="font-size:.72rem;">—</span>'}
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  container.querySelectorAll('.th-sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sortKey;
+      if (columnState.sortBy === key) columnState.sortDir = columnState.sortDir === 'asc' ? 'desc' : 'asc';
+      else { columnState.sortBy = key; columnState.sortDir = 'asc'; }
+      pagination.page = 1; _detCache.clear(); renderTabla();
+    });
+  });
+  const selNivel = document.getElementById('filterNivel');
+  if (selNivel) selNivel.addEventListener('change', e => { columnState.filterNivel = e.target.value; pagination.page = 1; _detCache.clear(); render(); });
+  const selSec = document.getElementById('filterSecretario');
+  if (selSec) selSec.addEventListener('change', e => { columnState.filterSecretario = e.target.value; pagination.page = 1; _detCache.clear(); render(); });
+
+  renderPagination(total, totalPages, pagination.page);
+
+  container.querySelectorAll('.expediente-link').forEach(b => b.addEventListener('click', () => abrirHistorial(b.dataset.id)));
+  container.querySelectorAll('.btn-enviar').forEach(b => b.addEventListener('click', () => abrirEnviar(b.dataset.id)));
+  container.querySelectorAll('.btn-just').forEach(b => b.addEventListener('click', () => abrirJustificar(b.dataset.id)));
+}
+
+function renderPagination(total, totalPages, page) {
+  const el = document.getElementById('paginationContainer');
+  if (!el) return;
+  if (totalPages <= 1) {
+    el.innerHTML = `<div class="text-muted" style="font-size:.72rem;text-align:center;">${total} registro${total !== 1 ? 's' : ''}</div>`;
+    return;
+  }
+  const pages = [], win = 2;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= page - win && i <= page + win)) pages.push(i);
+    else if (pages[pages.length-1] !== '…') pages.push('…');
+  }
+  let html = `<div class="d-flex justify-content-between align-items-center flex-wrap gap-2" style="font-size:.78rem;">
+    <span class="text-muted">Mostrando ${(page-1)*PER_PAGE + 1}–${Math.min(page*PER_PAGE, total)} de ${total} · ${PER_PAGE} por página</span>
+    <div>`;
+  html += `<button class="btn-modern btn-sm-modern btn-outline-modern page-btn" data-p="prev" ${page <= 1 ? 'disabled style="opacity:.4;pointer-events:none"' : ''}><i class="bi bi-chevron-left"></i></button>`;
+  pages.forEach(p => {
+    if (p === '…') { html += `<span style="padding:0 6px;color:var(--muted)">…</span>`; return; }
+    html += `<button class="btn-modern btn-sm-modern ${p === page ? 'btn-success-modern' : 'btn-outline-modern'} page-btn" data-p="${p}">${p}</button>`;
+  });
+  html += `<button class="btn-modern btn-sm-modern btn-outline-modern page-btn" data-p="next" ${page >= totalPages ? 'disabled style="opacity:.4;pointer-events:none"' : ''}><i class="bi bi-chevron-right"></i></button></div></div>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll('.page-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const p = b.dataset.p;
+      let newPage = page;
+      if (p === 'prev') newPage = Math.max(1, page - 1);
+      else if (p === 'next') newPage = Math.min(totalPages, page + 1);
+      else newPage = parseInt(p);
+      if (newPage !== page) { pagination.page = newPage; renderTabla(); }
+    });
+  });
+}
+
+/* ---------- Historial ---------- */
+function abrirHistorial(id) {
+  const c = state.causas.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modalHistorialExp').textContent = c.numero;
+  const body = document.getElementById('modalHistorialBody');
+
+  const det = getDetalleTiempo(c);
+  let tiempoHtml = '';
+  if (!det.error) {
+    const fAsig   = fmtDt(det.fechaAsignacion.toISOString());
+    const fInicio = fmtDt(det.fechaInicio.toISOString());
+    const fLim    = fmtDt(det.fechaLimite.toISOString());
+    const colorCls = det.estado.color;
+    const label = det.estado.label;
+    const cumpl = c.estado === 'finalizada' ? getCumplimientoInfo(c, det) : null;
+
+    let cumplimientoHtml = '';
+    if (cumpl) {
+      if (cumpl.cumplidoAntes) {
+        const margenTxt = cumpl.margenDias > 0
+          ? `${cumpl.margenDias} día${cumpl.margenDias !== 1 ? 's' : ''} hábil${cumpl.margenDias !== 1 ? 'es' : ''} de margen`
+          : 'justo en el límite del plazo';
+        cumplimientoHtml = `
+          <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:12px;padding:.9rem 1.1rem;margin-bottom:1rem;">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#065f46;font-size:.92rem;margin-bottom:.55rem;">
+              <i class="bi bi-check-circle-fill" style="font-size:1.2rem;"></i>
+              Expediente cumplido antes del plazo
+            </div>
+            <div style="font-size:.82rem;color:#064e3b;line-height:1.7;">
+              <div><strong>Plazo del Nivel N${cumpl.nivel}:</strong> ${cumpl.diasNivel} día${cumpl.diasNivel !== 1 ? 's' : ''} hábil${cumpl.diasNivel !== 1 ? 'es' : ''} permitido${cumpl.diasNivel !== 1 ? 's' : ''}</div>
+              <div><strong>Días hábiles utilizados:</strong> ${cumpl.diasTranscurridos}</div>
+              <div><strong>Resultado:</strong> Finalizado con ${margenTxt}</div>
+            </div>
+          </div>`;
+      } else {
+        cumplimientoHtml = `
+          <div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:.9rem 1.1rem;margin-bottom:1rem;">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#991b1b;font-size:.92rem;margin-bottom:.55rem;">
+              <i class="bi bi-x-circle-fill" style="font-size:1.2rem;"></i>
+              Expediente finalizado fuera del plazo
+            </div>
+            <div style="font-size:.82rem;color:#7f1d1d;line-height:1.7;">
+              <div><strong>Plazo del Nivel N${cumpl.nivel}:</strong> ${cumpl.diasNivel} día${cumpl.diasNivel !== 1 ? 's' : ''} hábil${cumpl.diasNivel !== 1 ? 'es' : ''} permitido${cumpl.diasNivel !== 1 ? 's' : ''}</div>
+              <div><strong>Días hábiles utilizados:</strong> ${cumpl.diasTranscurridos}</div>
+            </div>
+          </div>`;
+      }
+    }
+    const badgeLabel = (c.estado === 'finalizada' && cumpl)
+      ? (cumpl.cumplidoAntes ? 'Cumplido antes del plazo' : 'Finalizado fuera del plazo')
+      : label;
+
+    tiempoHtml = `
+      ${cumplimientoHtml}
+      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:1.2rem;">
+        <h6 style="font-weight:800;font-size:.85rem;color:#0f172a;margin-bottom:.8rem;display:flex;align-items:center;gap:8px;">
+          <i class="bi bi-hourglass-split" style="color:var(--success);"></i> Detalle de Tiempo Hábil
+        </h6>
+        <div style="display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-bottom:.8rem;">
+          <div style="text-align:center;min-width:96px;">
+            <div class="crono ${colorCls}" style="font-size:1.4rem;padding:.4rem 1rem;cursor:default;">${det.diasTranscurridos}</div>
+            <div style="font-size:.7rem;color:var(--muted);margin-top:4px;">día${det.diasTranscurridos !== 1 ? 's' : ''} hábil${det.diasTranscurridos !== 1 ? 'es' : ''}</div>
+          </div>
+          <div style="flex:1;min-width:180px;font-size:.82rem;line-height:1.6;">
+            <div><span style="color:var(--muted);font-weight:600;">Expediente:</span> <strong>${c.numero}</strong></div>
+            <div><span style="color:var(--muted);font-weight:600;">Nivel:</span> <strong>N${det.nivel}</strong> <span style="color:var(--muted);font-size:.75rem;">(${CONFIG.nivelesDias[det.nivel] || 5} días hábiles)</span></div>
+            <div><span style="color:var(--muted);font-weight:600;">Estado del plazo:</span> <span class="crono ${colorCls}" style="font-size:.7rem;padding:2px 10px;cursor:default;">${badgeLabel}</span></div>
+          </div>
+        </div>
+        <div style="font-size:.8rem;border-top:1px dashed var(--border);padding-top:.7rem;">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--muted);font-weight:600;">Fecha de asignación:</span><span style="font-weight:600;">${fAsig}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--muted);font-weight:600;">Fecha de inicio (regla):</span><span style="font-weight:600;">${fInicio}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--muted);font-weight:600;">Fecha límite:</span><span style="font-weight:600;">${fLim}</span></div>
+          ${det.esFinalizada && det.fechaFin ? `<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:var(--muted);font-weight:600;">Fecha de finalización:</span><span style="font-weight:600;">${fmtDt(det.fechaFin.toISOString ? det.fechaFin.toISOString() : det.fechaFin)}</span></div>` : ''}
+        </div>
+        <div style="margin-top:.6rem;font-size:.7rem;color:var(--muted);font-style:italic;line-height:1.4;">
+          * La fecha de inicio se calcula así: si la asignación es después de las 12:00, se inicia al siguiente día hábil a las 7:00. La fecha límite se calcula sumando los días hábiles del nivel (N1: 5d · N2: 3d · N3: 3d · N4: 2d).
+        </div>
+      </div>`;
+  } else {
+    tiempoHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1.2rem;color:#991b1b;font-size:.85rem;"><i class="bi bi-info-circle me-1"></i> ${det.error}</div>`;
+  }
+
+  let historialHtml = '';
+  if (!c.historial || !c.historial.length) {
+    historialHtml = '<div class="text-muted" style="font-size:.85rem;">Sin movimientos registrados.</div>';
+  } else {
+    historialHtml = `
+      <h6 style="font-weight:800;font-size:.85rem;color:#0f172a;margin-bottom:.6rem;display:flex;align-items:center;gap:8px;">
+        <i class="bi bi-list-check" style="color:var(--success);"></i> Historial de movimientos
+      </h6>
+      ${c.historial.slice().reverse().map(m => `
+        <div style="border-bottom:1px solid var(--border);padding:.7rem 0;">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <strong style="font-size:.85rem;">${m.accion}</strong>
+            <span class="text-muted" style="font-size:.75rem;">${fmtDt(m.fecha)}</span>
+          </div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:4px;"><i class="bi bi-person"></i> ${m.usuario || 'Sistema'} — ${m.comentario || '—'}</div>
+        </div>`).join('')}`;
+  }
+  body.innerHTML = tiempoHtml + historialHtml;
+  new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+}
+
+/* ---------- Enviar / Justificar ---------- */
+function abrirEnviar(id) {
+  const c = state.causas.find(x => x.id === id);
+  if (!c) return;
+  enviarId = id;
+  document.getElementById('enviarExp').textContent = c.numero;
+  document.getElementById('enviarSec').innerHTML = `<span style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;padding:3px 10px;border-radius:20px;font-weight:700;font-size:.75rem;">${c.secretarioNombre || getSecName(c.secretarioId)}</span>`;
+  document.getElementById('enviarObs').value = '';
+  new bootstrap.Modal(document.getElementById('modalEnviar')).show();
+}
+
+function confirmarEnviar() {
+  const c = state.causas.find(x => x.id === enviarId);
+  if (!c) return;
+  const obs = document.getElementById('enviarObs').value.trim();
+  c.estado = 'en_secretaria';
+  c.fechaResolucionEmpleado = new Date().toISOString();
+  if (!c.historial) c.historial = [];
+  c.historial.push({
+    fecha: new Date().toISOString(),
+    accion: `Enviado a Secretario para finalización (${c.secretarioNombre || getSecName(c.secretarioId)})`,
+    usuario: currentEmpNombre,
+    comentario: obs || 'Pase a Secretario para finalizar'
+  });
+  guardarLocal();
+  _detCache.clear();
+  render();
+  showToast(`✅ ${c.numero} enviado a Secretario`, 'success');
+  bootstrap.Modal.getInstance(document.getElementById('modalEnviar')).hide();
+}
+
+function abrirJustificar(id) {
+  const c = state.causas.find(x => x.id === id);
+  if (!c) return;
+  justId = id;
+  document.getElementById('justificarExp').textContent = c.numero;
+  document.getElementById('justificarMotivo').value = '';
+  new bootstrap.Modal(document.getElementById('modalJustificar')).show();
+}
+
+function confirmarJustificar() {
+  const c = state.causas.find(x => x.id === justId);
+  if (!c) return;
+  const motivo = document.getElementById('justificarMotivo').value.trim();
+  if (!motivo) { showToast('Ingrese un motivo', 'warning'); return; }
+  if (!c.justificaciones) c.justificaciones = [];
+  c.justificaciones.push({
+    id: Date.now().toString(36) + Math.random().toString(36).substring(2,6),
+    empleadoId: currentEmpId,
+    empleadoNombre: currentEmpNombre,
+    motivo: motivo,
+    fecha: new Date().toISOString(),
+    estado: 'pendiente'
+  });
+  if (!c.historial) c.historial = [];
+  c.historial.push({
+    fecha: new Date().toISOString(),
+    accion: 'Justificación de demora (pendiente de aprobación)',
+    usuario: currentEmpNombre,
+    comentario: motivo
+  });
+  guardarLocal();
+  _detCache.clear();
+  render();
+  showToast(`✅ Justificación enviada para ${c.numero}`, 'success');
+  bootstrap.Modal.getInstance(document.getElementById('modalJustificar')).hide();
+}
+
+/* ---------- Reportes ---------- */
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function reporteBase() {
+  return obtenerTodasCausas();
+}
+
+function renderHeaderReporte(titulo) {
+  const now = new Date().toLocaleString('es-AR');
+  return `
+    <h4 style="font-weight:800;color:#022c22;margin-bottom:.3rem;">${titulo}</h4>
+    <p class="text-muted" style="font-size:.82rem;margin-bottom:1rem;">Empleado: <strong>${currentEmpNombre}</strong> · Generado el ${now}</p>
+    <hr style="margin-bottom:1rem;" />`;
+}
+
+function renderResumenGeneral() {
+  const causas = reporteBase();
+  const total = causas.length;
+  const proceso = causas.filter(c => c.estado === 'en_proceso').length;
+  const enSec = causas.filter(c => c.estado === 'en_secretaria' || c.estado === 'para_finalizar').length;
+  const finalizadas = causas.filter(c => c.estado === 'finalizada').length;
+  const antesPlazo = causas.filter(esFinalizadaAntesDelPlazo).length;
+  const demora = causas.filter(c => {
+    if (c.estado !== 'en_proceso') return false;
+    const d = getDetalleTiempo(c);
+    return d.estado && ['vencido','fueraplazo','exceso'].includes(d.estado.estado);
+  }).length;
+  return `
+    <h5 style="font-weight:800;color:#022c22;margin-bottom:.8rem;">Resumen General</h5>
+    <div class="kpi-strip mb-2">
+      <div class="kpi-card total"><div class="num">${total}</div><div class="lbl">Total</div></div>
+      <div class="kpi-card"><div class="num" style="color:#2563eb">${proceso}</div><div class="lbl">En Proceso</div></div>
+      <div class="kpi-card"><div class="num" style="color:#d97706">${enSec}</div><div class="lbl">En Secretaría</div></div>
+      <div class="kpi-card"><div class="num" style="color:#059669">${finalizadas}</div><div class="lbl">Finalizadas</div></div>
+      <div class="kpi-card"><div class="num" style="color:#0891b2">${antesPlazo}</div><div class="lbl">Antes del Plazo</div></div>
+      <div class="kpi-card"><div class="num" style="color:#dc2626">${demora}</div><div class="lbl">Demoras</div></div>
+    </div>`;
+}
+
+function renderAgrupacionReporte(titulo, entries) {
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  return `
+    <h5 style="font-weight:800;color:#022c22;margin-bottom:.8rem;">${titulo} <span class="text-muted" style="font-size:.78rem;font-weight:600;">— Total: ${total}</span></h5>
+    <div class="dim-report-wrap">
+      ${entries.length ? entries.map(([k, v]) => {
+        const pct = total ? ((v / total) * 100).toFixed(1) : '0.0';
+        return `<div class="dim-report-row">
+          <div class="dim-report-name">${k}</div>
+          <div class="d-flex align-items-center gap-3">
+            <span class="dim-report-pct">${pct}%</span>
+            <span class="dim-report-count">${v}</span>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty-state" style="padding:1.5rem;">Sin datos</div>'}
+    </div>
+    <div class="dim-report-total" style="margin-top:0;">
+      <span class="dim-report-name">TOTAL GENERAL</span>
+      <span class="dim-report-count">${total}</span>
+    </div>`;
+}
+
+function agruparPor(causas, keyFn) {
+  const grupos = {};
+  causas.forEach(c => {
+    const key = keyFn(c);
+    if (key === null || key === undefined) return;
+    grupos[key] = (grupos[key] || 0) + 1;
+  });
+  return Object.entries(grupos).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es'));
+}
+
+function renderListaReporte(titulo, items) {
+  return `
+    <h5 style="font-weight:800;color:#022c22;margin-bottom:.8rem;">${titulo} <span class="text-muted" style="font-size:.78rem;font-weight:600;">— ${items.length} registro${items.length !== 1 ? 's' : ''}</span></h5>
+    ${items.length ? `
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <table class="table-modern" style="font-size:.78rem;min-width:auto;">
+          <thead><tr>
+            <th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Secretario</th>
+            <th>Asignación</th><th>Días</th><th>Estado Plazo</th>
+          </tr></thead>
+          <tbody>
+            ${items.map(c => {
+              const det = getDetalleTiempoCached(c);
+              const hasDet = !det.error;
+              const fAsigIso = getFechaAsignacionEfectiva(c);
+              return `<tr>
+                <td><strong>${c.numero}</strong></td>
+                <td style="font-size:.72rem;">${c.tipo || '—'}</td>
+                <td>N${getNivelEfectivo(c)}</td>
+                <td style="font-size:.72rem;">${c.secretarioNombre || getSecName(c.secretarioId)}</td>
+                <td style="font-size:.72rem;">${fAsigIso ? fmtDt(fAsigIso) : '—'}</td>
+                <td>${hasDet ? det.diasTranscurridos : '—'}</td>
+                <td>${renderPlazoBadge(c, det)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div class="empty-state" style="padding:1.5rem;"><i class="bi bi-inbox"></i>Sin registros</div>'}`;
+}
+
+function renderReporteByTipo(tipo) {
+  const body = document.getElementById('modalReporteBody');
+  if (!body) return;
+  const causas = reporteBase();
+  let contenido = '';
+
+  if (tipo === 'resumen') {
+    contenido = renderHeaderReporte('Resumen General') + renderResumenGeneral();
+  } else if (tipo === 'mes') {
+    const entries = agruparPor(causas, c => {
+      const iso = getFechaAsignacionEfectiva(c);
+      if (!iso) return null;
+      const d = new Date(iso);
+      return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+    }).sort((a, b) => {
+      const [ma, ya] = a[0].split(' ');
+      const [mb, yb] = b[0].split(' ');
+      return (parseInt(ya) * 12 + MESES.indexOf(ma)) - (parseInt(yb) * 12 + MESES.indexOf(mb));
+    });
+    contenido = renderHeaderReporte('Expedientes por Mes') + renderAgrupacionReporte('Expedientes por Mes', entries);
+  } else if (tipo === 'tipo') {
+    contenido = renderHeaderReporte('Por Tipo de Causa') + renderAgrupacionReporte('Por Tipo de Causa', agruparPor(causas, c => c.tipo || 'Sin especificar'));
+  } else if (tipo === 'nivel') {
+    contenido = renderHeaderReporte('Por Nivel') + renderAgrupacionReporte('Por Nivel', agruparPor(causas, c => 'Nivel ' + getNivelEfectivo(c)).sort((a, b) => a[0].localeCompare(b[0], 'es')));
+  } else if (tipo === 'secretario') {
+    contenido = renderHeaderReporte('Por Secretario') + renderAgrupacionReporte('Por Secretario', agruparPor(causas, c => c.secretarioNombre || getSecName(c.secretarioId) || 'Sin asignar'));
+  } else if (tipo === 'demoras') {
+    const items = causas.filter(c => {
+      if (c.estado !== 'en_proceso') return false;
+      const d = getDetalleTiempo(c);
+      return d.estado && ['vencido','fueraplazo','exceso'].includes(d.estado.estado);
+    }).sort((a, b) => (getDetalleTiempoCached(b).diasTranscurridos || 0) - (getDetalleTiempoCached(a).diasTranscurridos || 0));
+    contenido = renderHeaderReporte('Demoras') + renderListaReporte('Demoras', items);
+  } else if (tipo === 'proceso') {
+    const items = causas.filter(c => c.estado === 'en_proceso').sort((a, b) => new Date(getFechaAsignacionEfectiva(a) || 0) - new Date(getFechaAsignacionEfectiva(b) || 0));
+    contenido = renderHeaderReporte('En Proceso') + renderListaReporte('En Proceso', items);
+  } else if (tipo === 'secretaria') {
+    const items = causas.filter(c => c.estado === 'en_secretaria' || c.estado === 'para_finalizar').sort((a, b) => new Date(getFechaAsignacionEfectiva(a) || 0) - new Date(getFechaAsignacionEfectiva(b) || 0));
+    contenido = renderHeaderReporte('En Secretaría / Para Finalizar') + renderListaReporte('En Secretaría / Para Finalizar', items);
+  } else if (tipo === 'finalizados') {
+    const items = causas.filter(c => c.estado === 'finalizada').sort((a, b) => new Date(getFechaAsignacionEfectiva(a) || 0) - new Date(getFechaAsignacionEfectiva(b) || 0));
+    contenido = renderHeaderReporte('Finalizados') + renderListaReporte('Finalizados', items);
+  } else if (tipo === 'antesPlazo') {
+    const items = causas.filter(esFinalizadaAntesDelPlazo).sort((a, b) => new Date(getFechaAsignacionEfectiva(a) || 0) - new Date(getFechaAsignacionEfectiva(b) || 0));
+    contenido = renderHeaderReporte('Finalizados antes del Plazo') + renderListaReporte('Finalizados antes del Plazo', items);
+  }
+  body.innerHTML = contenido;
+}
+
+function generarReporte() {
+  const sel = document.getElementById('selectTipoReporte');
+  renderReporteByTipo(sel ? sel.value : 'resumen');
+  new bootstrap.Modal(document.getElementById('modalReporte')).show();
+}
+
+function imprimirReporteEmpleado() {
+  const sel = document.getElementById('selectTipoReporte');
+  const tipo = sel ? sel.value : 'resumen';
+  const labels = {
+    resumen:'Resumen General', mes:'Expedientes por Mes', tipo:'Por Tipo de Causa',
+    nivel:'Por Nivel', secretario:'Por Secretario', demoras:'Demoras',
+    proceso:'En Proceso', secretaria:'En Secretaría', finalizados:'Finalizados',
+    antesPlazo:'Finalizados antes del Plazo'
+  };
+  const body = document.getElementById('modalReporteBody');
+  const now = new Date().toLocaleString('es-AR');
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+  w.document.write(`
+    <!DOCTYPE html><html><head>
+    <title>Reporte — ${labels[tipo] || ''}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <style>
+      body{font-family:Arial,sans-serif;padding:22px;color:#0f172a;}
+      h4{margin:0 0 6px 0;font-size:1.2rem;font-weight:800;color:#022c22;}
+      h5{margin:14px 0 8px 0;font-size:1rem;font-weight:800;color:#022c22;}
+      .text-muted{color:#64748b !important;}
+      hr{border-color:#e2e8f0;}
+      .dim-report-wrap{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;}
+      .dim-report-row{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;}
+      .dim-report-name{font-weight:700;}
+      .dim-report-count{font-weight:800;color:#10b981;}
+      .dim-report-pct{font-size:10px;color:#64748b;margin-right:12px;}
+      .dim-report-total{background:#ecfdf5;font-weight:800;padding:10px 12px;display:flex;justify-content:space-between;border-top:2px solid #6ee7b7;font-size:12px;}
+      .kpi-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+      .kpi-card{flex:1 1 90px;min-width:90px;padding:10px;border:1px solid #e2e8f0;border-radius:10px;text-align:center;border-top:3px solid #10b981;}
+      .kpi-card .num{font-size:1.3rem;font-weight:800;color:#10b981;}
+      .kpi-card .lbl{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+      .kpi-card.total{background:#10b981;border:none;}
+      .kpi-card.total .num,.kpi-card.total .lbl{color:#fff;}
+      .crono{padding:2px 8px;border-radius:10px;font-weight:700;font-size:10px;display:inline-block;}
+      .crono.verde{background:#d1fae5;color:#065f46;}
+      .crono.naranja{background:#fed7aa;color:#9a3412;}
+      .crono.rojo{background:#fecaca;color:#991b1b;}
+      .crono.violeta{background:#e9d5ff;color:#6b21a8;}
+      .crono.gris{background:#f1f5f9;color:#64748b;}
+      .empty-state{padding:20px;text-align:center;color:#64748b;}
+      .table-modern{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;}
+      .table-modern th,.table-modern td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left;}
+      .table-modern th{background:#f1f5f9;font-weight:800;text-transform:uppercase;font-size:9px;letter-spacing:.5px;}
+      @media print{ body{padding:10px;} }
+    </style>
+    </head><body>
+      ${body.innerHTML}
+      <div style="margin-top:16px;font-size:10px;color:#94a3b8;text-align:center;">Generado el ${now} · Defensoría Oficial Civil y Comercial 6 · datos.json</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+/* ---------- Impresión de modales ---------- */
+function imprimirModalContenido(modalId) {
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl) { showToast('No se encontró el modal', 'warning'); return; }
+  const titleEl = modalEl.querySelector('.modal-title');
+  const bodyEl  = modalEl.querySelector('.modal-body');
+  if (!bodyEl) { showToast('No hay contenido para imprimir', 'warning'); return; }
+
+  const title = titleEl ? titleEl.innerText.trim().replace(/\s+/g, ' ') : 'Detalle';
+  const now = new Date().toLocaleString('es-AR');
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Permita ventanas emergentes para imprimir', 'warning'); return; }
+
+  const clon = bodyEl.cloneNode(true);
+  clon.querySelectorAll('textarea').forEach(ta => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;min-height:20px;white-space:pre-wrap;font-size:12px;';
+    div.textContent = ta.value || '(sin contenido)';
+    ta.replaceWith(div);
+  });
+  clon.querySelectorAll('input').forEach(inp => {
+    if (inp.type === 'hidden') return;
+    const span = document.createElement('span');
+    span.style.fontWeight = '600';
+    span.textContent = inp.value || '(vacío)';
+    inp.replaceWith(span);
+  });
+  clon.querySelectorAll('select').forEach(sel => {
+    const span = document.createElement('span');
+    span.style.fontWeight = '600';
+    span.textContent = sel.options[sel.selectedIndex]?.text || '(sin selección)';
+    sel.replaceWith(span);
+  });
+  clon.querySelectorAll('button').forEach(b => b.remove());
+
+  w.document.write(`
+    <!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+    <style>
+      *{box-sizing:border-box;}
+      body{font-family:Arial,sans-serif;padding:22px;color:#0f172a;background:#fff;}
+      h4{margin:0 0 4px 0;font-size:1.2rem;font-weight:800;color:#022c22;}
+      h5{margin:14px 0 8px 0;font-size:1rem;font-weight:800;color:#022c22;}
+      h6{margin:12px 0 6px 0;font-size:.92rem;font-weight:800;color:#0f172a;}
+      .print-meta{font-size:.78rem;color:#64748b;margin-top:4px;}
+      .print-header-print{border-bottom:2px solid #022c22;padding-bottom:8px;margin-bottom:14px;}
+      hr{border-color:#e2e8f0;}
+      .text-muted{color:#64748b !important;}
+      .crono{padding:3px 10px;border-radius:10px;font-weight:700;font-size:11px;display:inline-block;}
+      .crono.verde{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+      .crono.naranja{background:#fed7aa;color:#9a3412;border:1px solid #fdba74;}
+      .crono.rojo{background:#fecaca;color:#991b1b;border:1px solid #fca5a5;}
+      .crono.violeta{background:#e9d5ff;color:#6b21a8;border:1px solid #d8b4fe;}
+      .crono.gris{background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;}
+      .badge-status{display:inline-block;padding:4px 10px;border-radius:30px;font-weight:700;font-size:10px;}
+      .badge-proceso{background:#dbeafe;color:#1e40af;}
+      .badge-finalizada{background:#d1fae5;color:#065f46;}
+      .badge-para-finalizar{background:#fef3c7;color:#92400e;}
+      .badge-defensor{background:#ede9fe;color:#5b21b6;}
+      .table-modern{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px;}
+      .table-modern th,.table-modern td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left;}
+      .table-modern th{background:#f1f5f9;font-weight:800;text-transform:uppercase;font-size:9px;letter-spacing:.4px;}
+      .footer-print{margin-top:18px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px;}
+      button,.btn,.btn-modern,.btn-sm-modern,.chip-close,.btn-clear-filters{display:none !important;}
+      @media print{ body{padding:12px;} }
+    </style>
+    </head><body>
+      <div class="print-header-print">
+        <h4>${title}</h4>
+        <div class="print-meta">Empleado: ${currentEmpNombre || '—'} · Impreso el ${now}</div>
+      </div>
+      <div class="print-content">${clon.innerHTML}</div>
+      <div class="footer-print">Defensoría Oficial Civil y Comercial 6 · Pase Digital · datos.json</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+window.imprimirModalContenido = imprimirModalContenido;
+
+/* ---------- Sesión ---------- */
+async function iniciarSesionEmpleado(emp, opts) {
+  opts = opts || {};
+  currentEmpId = emp.id;
+  currentEmpNombre = emp.nombre;
+  document.getElementById('empleadoNombre').textContent = emp.nombre;
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('appWrapper').classList.add('visible');
+
+  filtroKPI = 'total';
+  pagination.page = 1;
+  columnState.sortBy = 'fechaAsignacion';
+  columnState.sortDir = 'desc';
+  columnState.filterNivel = '';
+  columnState.filterSecretario = '';
+  _detCache.clear();
+
+  const ok = await cargarDatos();
+  if (!ok) return;
+  render();
+  showToast(opts.restored ? `Sesión restaurada · ${emp.nombre}` : `Bienvenido/a ${emp.nombre}`, opts.restored ? 'info' : 'success');
+}
+
+async function handleLogin() {
+  const empId = document.getElementById('loginEmpleado').value;
+  const pass  = document.getElementById('loginPassword').value;
+  const err   = document.getElementById('loginError');
+
+  if (!empId) { err.textContent = '❌ Seleccione un empleado.'; err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 2500); return; }
+  const emp = CONFIG.empleados.find(e => e.id === empId);
+  if (!emp || pass !== emp.clave) { err.textContent = '❌ Clave incorrecta.'; err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 2500); return; }
+  err.style.display = 'none';
+
+  try { localStorage.setItem(SESSION_KEY, empId); } catch (_) {}
+
+  await iniciarSesionEmpleado(emp);
+}
+
+function cerrarSesion() {
+  document.getElementById('logoutAlert').classList.remove('show');
+  try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+  document.getElementById('appWrapper').classList.remove('visible');
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginEmpleado').value = '';
+  currentEmpId = '';
+  currentEmpNombre = '';
+  state.causas = [];
+  filtroKPI = 'total';
+  pagination.page = 1;
+  _detCache.clear();
+  showToast('Sesión cerrada', 'warning');
+}
+
+/* ---------- Recarga manual de datos.json ---------- */
+async function actualizarManual() {
+  try {
+    await DataFile.flush();
+    const d = await DataFile.reload();
+    aplicarDatosDesdeDataFile(d || { causas: [] });
+    render();
+    showToast('✅ Datos recargados desde datos.json', 'success');
+  } catch (e) {
+    showToast('No se pudo recargar: ' + (e.message || e), 'danger');
+  }
+}
+
+/* ---------- Init ---------- */
+document.addEventListener('DOMContentLoaded', function () {
+  // Lista de empleados
+  const sel = document.getElementById('loginEmpleado');
+  CONFIG.empleados.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nombre;
+    sel.appendChild(o);
+  });
+
+  document.getElementById('btnLogin').addEventListener('click', handleLogin);
+  document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+
+  document.getElementById('globalSearch').addEventListener('input', function () {
+    searchTerm = this.value.trim();
+    pagination.page = 1;
+    renderTabla();
+  });
+
+  document.getElementById('btnReporte').addEventListener('click', generarReporte);
+  document.getElementById('btnActualizar').addEventListener('click', actualizarManual);
+  document.getElementById('btnCerrarSesion').addEventListener('click', () => document.getElementById('logoutAlert').classList.add('show'));
+  document.getElementById('btnCancelarSalida').addEventListener('click', () => document.getElementById('logoutAlert').classList.remove('show'));
+  document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+
+  document.getElementById('btnConfirmarEnviar').addEventListener('click', confirmarEnviar);
+  document.getElementById('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
+
+  document.getElementById('selectTipoReporte').addEventListener('change', function () {
+    renderReporteByTipo(this.value);
+  });
+  document.getElementById('btnImprimirReporte').addEventListener('click', imprimirReporteEmpleado);
+
+  // Cambios externos en el archivo
+  DataFile.onExternalChange = function (data) {
+    aplicarDatosDesdeDataFile(data);
+    if (currentEmpId) {
+      render();
+      showToast('🔄 Datos actualizados desde datos.json', 'info');
+    }
+  };
+
+  // Restaurar sesión si existe
+  let savedId = null;
+  try { savedId = localStorage.getItem(SESSION_KEY); } catch (_) {}
+  if (savedId) {
+    const emp = CONFIG.empleados.find(e => e.id === savedId);
+    if (emp) {
+      iniciarSesionEmpleado(emp, { restored: true }).catch(err => {
+        console.error(err);
+        try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+      });
+    } else {
+      try { localStorage.removeItem(SESSION_KEY); } catch (_) {}
+    }
+  }
+});
+})();
+</script>
+</body>
+</html>
