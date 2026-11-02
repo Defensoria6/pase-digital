@@ -7,15 +7,31 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
     <style>
+        :root {
+            --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --ink: #0b1f3a;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --surface: #eef1f6;
+            --stage: #f5f7fb;
+        }
+        @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @property --arc { syntax: '<angle>'; initial-value: 70deg; inherits: false; }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             height: 100%;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(145deg, #eef2f9 0%, #d9e2ef 100%);
+            font-family: var(--font);
+            color: var(--ink);
+            background: var(--surface);
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
         .app-container {
             display: flex;
@@ -25,380 +41,318 @@
             padding: 1.5rem 2rem 1rem 2rem;
             overflow: hidden;
         }
+
+        /* ===== CABECERA ===== */
         .app-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 0.8rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(25, 118, 210, 0.15);
+            padding-bottom: 0.9rem;
+            border-bottom: 1px solid var(--line);
             margin-bottom: 1.2rem;
             flex-shrink: 0;
             position: relative;
         }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            flex: 1 1 auto;
-        }
+        .header-left { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; flex: 1 1 auto; }
         .header-left h1 {
-            font-weight: 700;
-            font-size: 1.8rem;
-            color: #0a2a44;
-            margin: 0;
-            letter-spacing: -0.5px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            font-weight: 800;
+            font-size: 1.55rem;
+            color: var(--ink);
+            margin: 0 0.6rem 0 0;
+            letter-spacing: -0.03em;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.7rem;
             white-space: nowrap;
         }
-        .header-left h1 i { color: #1976d2; }
+        .header-left h1 i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.7rem;
+            font-size: 1.15rem;
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            box-shadow: 0 6px 14px -6px rgba(37, 99, 235, 0.55);
+        }
 
-        .btn-manual, .btn-video {
-            background: rgba(25, 118, 210, 0.08);
-            border: 1px solid #1976d2;
-            color: #1976d2;
-            padding: 6px 18px;
-            border-radius: 40px;
+        /* Botones de cabecera: una sola base, el color de cada uno vive en --c */
+        .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor, .btn-back {
+            --c: #2563eb;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            min-height: 44px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-family: var(--font);
             font-weight: 600;
-            font-size: 0.9rem;
-            transition: 0.2s;
+            font-size: 0.86rem;
+            letter-spacing: -0.005em;
+            color: var(--ink);
+            background: #fff;
+            border: 1px solid var(--line);
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 44px;
-            white-space: nowrap;
-        }
-        .btn-manual:hover, .btn-video:hover {
-            background: #1976d2;
-            color: #fff;
-            border-color: #1976d2;
-        }
-        .btn-manual i, .btn-video i { font-size: 1.2rem; }
-        .btn-video {
-            border-color: #e67e22;
-            color: #e67e22;
-            background: rgba(230, 126, 34, 0.08);
-        }
-        .btn-video:hover {
-            background: #e67e22;
-            color: #fff;
-            border-color: #e67e22;
-        }
-
-        /* Botón de respaldo */
-        .btn-respaldo {
-            background: #ffffff;
-            border: 1px solid #e67e22;
-            color: #d32f2f;
-            font-weight: 700;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 44px;
-            white-space: nowrap;
-        }
-        .btn-respaldo:hover {
-            background: #e67e22;
-            color: #fff;
-            border-color: #e67e22;
-        }
-        .btn-respaldo i { font-size: 1.2rem; }
-
-        /* Nuevo botón Calendario Pases */
-        .btn-calendario {
-            background: #ffffff;
-            border: 1px solid #2e7d32;
-            color: #2e7d32;
-            font-weight: 700;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 44px;
-            white-space: nowrap;
-        }
-        .btn-calendario:hover {
-            background: #2e7d32;
-            color: #fff;
-            border-color: #2e7d32;
-        }
-        .btn-calendario i, .btn-reporte i { font-size: 1.2rem; }
-
-        /* Nuevo botón Reporte Total */
-        .btn-reporte {
-            background: #ffffff;
-            border: 1px solid #1565c0;
-            color: #1565c0;
-            font-weight: 700;
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 44px;
-            white-space: nowrap;
-        }
-        .btn-reporte:hover {
-            background: #1565c0;
-            color: #fff;
-            border-color: #1565c0;
-        }
-        .btn-reporte i { font-size: 1.2rem; }
-
-        /* ===== NUEVO BOTÓN AUDITOR IA ===== */
-        .btn-auditor {
-            background: rgba(255, 140, 0, 0.08);
-            border: 1px solid #ff8c00;
-            color: #ff8c00;
-            font-weight: 700;
-            padding: 6px 18px 6px 14px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 44px;
             white-space: nowrap;
             text-decoration: none;
-            background: #fff;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
         }
-        .btn-auditor:hover {
-            background: #ff8c00;
+        .btn-manual:hover, .btn-video:hover, .btn-respaldo:hover, .btn-calendario:hover,
+        .btn-reporte:hover, .btn-auditor:hover, .btn-back:hover {
+            background: var(--c);
+            border-color: var(--c);
             color: #fff;
-            border-color: #ff8c00;
+            box-shadow: 0 8px 18px -10px var(--c);
         }
-        .btn-auditor img {
-            height: 28px;
-            width: auto;
-            display: inline-block;
-            vertical-align: middle;
-            border-radius: 4px;
+        .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i, .btn-reporte i, .btn-back i {
+            font-size: 1.15rem;
+            color: var(--c);
+            transition: color 0.2s;
         }
-        .btn-auditor strong {
-            font-weight: 700;
-            color: #ff8c00;
-        }
-        .btn-auditor:hover strong {
-            color: #fff;
-        }
+        .btn-manual:hover i, .btn-video:hover i, .btn-respaldo:hover i, .btn-calendario:hover i,
+        .btn-reporte:hover i, .btn-back:hover i { color: #fff; }
+        .btn-manual { --c: #2563eb; }
+        .btn-video { --c: #e67e22; }
+        .btn-respaldo { --c: #dc2626; }
+        .btn-calendario { --c: #15803d; }
+        .btn-reporte { --c: #1d4ed8; }
+        .btn-auditor { --c: #f97316; padding: 6px 18px 6px 12px; }
+        .btn-auditor img { height: 28px; width: auto; display: inline-block; vertical-align: middle; border-radius: 6px; }
+        .btn-auditor strong { font-weight: 700; color: inherit; }
+        .btn-back { --c: #0b1f3a; display: none; padding: 8px 20px; flex-shrink: 0; }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            position: relative;
-            flex: 0 1 auto;
-        }
+        .header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; position: relative; flex: 0 1 auto; }
         .header-text {
             text-align: right;
-            font-weight: 600;
-            font-size: 1.15rem;
-            color: #0a2a44;
+            font-weight: 700;
+            font-size: 1.02rem;
+            color: var(--ink);
             line-height: 1.3;
+            letter-spacing: -0.015em;
             flex-shrink: 0;
         }
-        .header-text span {
-            font-weight: 400;
-            font-size: 0.9rem;
-            color: #5f7f9f;
-            display: block;
-        }
+        .header-text span { font-weight: 500; font-size: 0.85rem; color: var(--muted); display: block; letter-spacing: 0; }
 
         .info-modal {
             position: absolute;
             top: calc(100% + 6px);
             right: 0;
-            background: #ffffff;
+            background: #fff;
             padding: 10px 16px 12px 16px;
             border-radius: 14px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.18);
             font-size: 0.8rem;
-            color: #0a2a44;
+            color: var(--ink);
             min-width: 170px;
             text-align: left;
             z-index: 200;
             opacity: 1;
             transition: opacity 0.5s ease, transform 0.3s ease;
             transform: translateY(0);
-            border: 1px solid rgba(25,118,210,0.08);
+            border: 1px solid var(--line);
             line-height: 1.6;
             pointer-events: auto;
         }
-        .info-modal.hidden {
-            opacity: 0;
-            transform: translateY(-6px);
-            pointer-events: none;
-        }
-        .info-modal strong { font-weight: 700; color: #0a2a44; }
-        .info-modal .version { color: #5f7f9f; font-size: 0.75rem; margin-top: 2px; }
+        .info-modal.hidden { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+        .info-modal strong { font-weight: 700; color: #0b5cff; }
+        .info-modal .version { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
 
-        .btn-back {
-            background: rgba(25, 118, 210, 0.08);
-            border: 1px solid #d0e0f0;
-            color: #0a2a44;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-            min-height: 44px;
-        }
-        .btn-back:hover {
-            background: #1976d2;
-            color: #fff;
-            border-color: #1976d2;
-        }
-
+        /* ===== ÁREA PRINCIPAL ===== */
         .main-content {
             flex: 1;
             position: relative;
             overflow: hidden;
             border-radius: 28px;
-            background: #ffffff;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.04);
-            border: 1px solid rgba(25,118,210,0.08);
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 20px 40px -24px rgba(15, 23, 42, 0.14);
+            border: 1px solid var(--line);
             min-height: 0;
         }
         .grid-view {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             height: 100%;
             padding: 2rem;
+            background: var(--stage);
+            overflow-y: auto;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .grid-view.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            position: absolute;
-            width: 100%;
-        }
+        .grid-view.hidden { opacity: 0; visibility: hidden; pointer-events: none; position: absolute; width: 100%; }
         .launcher-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            max-width: 1100px;
+            gap: 1.75rem;
+            max-width: 1040px;
             width: 100%;
+            margin: auto;
         }
+
+        /* ============================================================
+           TARJETAS DE MÓDULO
+           Interior blanco + borde fino con un arco de luz que orbita.
+           Cada módulo solo define sus variables de color.
+           ============================================================ */
         .module-card {
-            background: #ffffff;
-            border-radius: 32px;
-            padding: 3rem 2rem;
-            text-align: center;
-            text-decoration: none;
-            color: #0a2a44;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid rgba(25,118,210,0.10);
-            transition: all 0.25s ease;
+            /* Operador: cabecera #1e1b4b → #4338ca · ícono de marca #06b6d4 → #818cf8 */
+            --a1: #06b6d4; --a2: #818cf8; --a3: #4338ca;
+            --g1: #06b6d4; --g2: #818cf8;
+            --accent: #4f46e5;
+            --tint: #eef0ff;
+            --ink-c: #312e81;
+            --line-c: #e3e5f6;
+            --glow: rgba(67, 56, 202, 0.30);
+            --ring: 7px;
+            --ang: 0deg;
+            --arc: 70deg;
+            position: relative;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 260px;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1.5rem;
+            min-height: 240px;
+            padding: 2rem;
+            border-radius: 28px;
+            text-align: left;
+            text-decoration: none;
+            color: var(--ink);
             cursor: pointer;
+            border: 1.5px solid transparent;
+            background:
+                linear-gradient(#fff, #fff) padding-box,
+                conic-gradient(from var(--ang),
+                    transparent 0deg,
+                    transparent calc(360deg - var(--arc)),
+                    var(--a1) calc(360deg - var(--arc) * 0.65),
+                    var(--a2) calc(360deg - var(--arc) * 0.3),
+                    var(--a3) calc(360deg - 4deg),
+                    transparent 360deg) border-box,
+                linear-gradient(var(--line-c), var(--line-c)) border-box;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px -16px rgba(15, 23, 42, 0.14);
+            animation: orbit 9s linear infinite;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, --arc 0.5s ease;
             -webkit-tap-highlight-color: transparent;
         }
+        @keyframes orbit { to { --ang: 360deg; } }
         .module-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.02);
-            border-color: #1976d2;
-            background: #f9fcff;
+            --arc: 150deg;
+            transform: translateY(-4px);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 26px 46px -20px var(--glow);
         }
+        .module-card:active { transform: translateY(-1px) scale(0.995); }
+        .module-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
         .module-card i {
-            font-size: 4.5rem;
-            margin-bottom: 1rem;
-            transition: transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            font-size: 2.2rem;
+            color: var(--accent);
+            background: linear-gradient(135deg, var(--g1), var(--g2)) center / 0% 0% no-repeat, var(--tint);
+            box-shadow: 0 0 0 var(--ring) var(--line-c);
+            box-shadow: 0 0 0 var(--ring) color-mix(in srgb, var(--accent) 9%, transparent);
+            flex-shrink: 0;
+            transition: background-size 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .module-card:hover i { transform: scale(1.05); }
+        .module-card:hover i {
+            background-size: 100% 100%, auto;
+            color: #fff;
+            transform: rotate(-4deg) scale(1.05);
+            box-shadow: 0 0 0 calc(var(--ring) + 3px) var(--line-c);
+            box-shadow: 0 0 0 calc(var(--ring) + 3px) color-mix(in srgb, var(--accent) 14%, transparent);
+        }
+        .module-card .card-text-group { display: flex; flex-direction: column; gap: 0.45rem; }
         .module-card .card-title {
-            font-weight: 700;
-            font-size: 1.6rem;
-            margin-bottom: 0.4rem;
-            color: #0a2a44;
+            font-weight: 800;
+            font-size: 1.7rem;
+            line-height: 1.1;
+            letter-spacing: -0.035em;
+            color: var(--ink);
         }
         .module-card .card-sub {
-            font-size: 0.95rem;
-            color: #5f7f9f;
-            font-weight: 400;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--muted);
         }
-        .module-card.operador i { color: #1976d2; }
-        .module-card.secretario i { color: #e67e22; }
-        .module-card.empleados i { color: #2e7d32; }
-        .module-card.defensor i { color: #7b1fa2; }
-        .module-card.operador { border-left: 4px solid #1976d2; }
-        .module-card.secretario { border-left: 4px solid #e67e22; }
-        .module-card.empleados { border-left: 4px solid #2e7d32; }
-        .module-card.defensor { border-left: 4px solid #7b1fa2; }
+        /* el span trae color inline en el HTML: se pisa con !important para que se lea sobre blanco */
+        .module-card .card-sub span {
+            display: inline-block;
+            padding: 0.18rem 0.65rem;
+            border-radius: 999px;
+            background: var(--tint);
+            color: var(--ink-c) !important;
+            font-weight: 700 !important;
+            font-size: 0.76rem;
+            letter-spacing: 0.005em;
+        }
 
-        .iframe-view {
-            display: none;
-            height: 100%;
-            width: 100%;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+        .module-card.operador   { animation-delay: 0s; }
+        /* Secretario: naranja */
+        .module-card.secretario {
+            --a1: #f5a25d; --a2: #e67e22; --a3: #c2570a;
+            --g1: #f59a3c; --g2: #d96a0c;
+            --accent: #d96a0c; --tint: #fdf0e3; --ink-c: #8a4108;
+            --line-c: #f3e6d8; --glow: rgba(217, 106, 12, 0.32);
+            animation-delay: -2.25s;
         }
-        .iframe-view.active {
-            display: block;
-            opacity: 1;
+        /* Empleado: cabecera #022c22 → #065f46 · ícono de marca #06b6d4 → #10b981 */
+        .module-card.empleados {
+            --a1: #06b6d4; --a2: #10b981; --a3: #065f46;
+            --g1: #06b6d4; --g2: #10b981;
+            --accent: #065f46; --tint: #e5f6ee; --ink-c: #064e3b;
+            --line-c: #dbeee5; --glow: rgba(16, 185, 129, 0.30);
+            animation-delay: -4.5s;
         }
-        .iframe-view iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 0 0 28px 28px;
-            background: #fff;
+        /* Defensor: cabecera #0f172a → #1e40af · ícono de marca #2563eb → #1e3a8a */
+        .module-card.defensor {
+            --a1: #3b82f6; --a2: #2563eb; --a3: #1e3a8a;
+            --g1: #2563eb; --g2: #1e3a8a;
+            --accent: #1e3a8a; --tint: #e9eef9; --ink-c: #172554;
+            --line-c: #dfe5f2; --glow: rgba(30, 58, 138, 0.32);
+            animation-delay: -6.75s;
         }
+
+        .iframe-view { display: none; height: 100%; width: 100%; opacity: 0; transition: opacity 0.4s ease; }
+        .iframe-view.active { display: block; opacity: 1; }
+        .iframe-view iframe { width: 100%; height: 100%; border: none; border-radius: 0 0 28px 28px; background: #fff; }
 
         .app-footer {
             flex-shrink: 0;
             text-align: center;
             font-size: 0.75rem;
-            color: #8aa3bc;
+            font-weight: 500;
+            color: #94a3b8;
             padding-top: 0.8rem;
             margin-top: 0.5rem;
-            border-top: 1px solid rgba(0,0,0,0.04);
+            border-top: 1px solid var(--line);
         }
+        .app-footer i { margin-right: 0.4rem; }
 
         /* ===== MODAL DE VIDEO ===== */
         .video-modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
+            inset: 0;
+            background: rgba(11, 31, 58, 0.7);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
             padding: 1.5rem;
         }
         .video-modal-overlay.active { display: flex; }
@@ -407,7 +361,7 @@
             border-radius: 24px;
             width: 100%;
             padding: 2rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
             position: relative;
             animation: fadeInUp 0.3s ease;
             text-align: center;
@@ -417,9 +371,10 @@
             to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .video-modal-content .modal-title {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: #0a2a44;
+            font-weight: 800;
+            font-size: 1.45rem;
+            letter-spacing: -0.03em;
+            color: var(--ink);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
@@ -433,7 +388,7 @@
             right: 18px;
             font-size: 2rem;
             font-weight: 300;
-            color: #0a2a44;
+            color: var(--muted);
             cursor: pointer;
             transition: 0.2s;
             line-height: 1;
@@ -442,59 +397,63 @@
             padding: 0 8px;
             z-index: 10;
         }
-        .video-modal-content .close-modal:hover {
-            color: #e67e22;
-            transform: scale(1.15);
-        }
-        
-        /* Contenedor del video con proporción 16:9 */
+        .video-modal-content .close-modal:hover { color: #e67e22; transform: scale(1.15); }
         .video-container {
             position: relative;
             padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-top: 1.5rem;
             background: #000;
         }
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        /* ===== MOVIMIENTO REDUCIDO: borde estático ===== */
+        @media (prefers-reduced-motion: reduce) {
+            .module-card {
+                animation: none;
+                background:
+                    linear-gradient(#fff, #fff) padding-box,
+                    linear-gradient(135deg, var(--a1), var(--a3)) border-box;
+                transition: box-shadow 0.2s ease;
+            }
+            .module-card:hover, .module-card:active { transform: none; }
+            .module-card i, .module-card:hover i { transition: none; transform: none; }
+            .video-modal-content { animation: none; }
         }
 
         /* ========== RESPONSIVE ========== */
         @media (max-width: 992px) {
-            .launcher-grid { gap: 1.5rem; }
-            .module-card { min-height: 220px; padding: 2.5rem 1.8rem; }
-            .module-card i { font-size: 4rem; }
-            .module-card .card-title { font-size: 1.4rem; }
+            .launcher-grid { gap: 1.4rem; }
+            .module-card { min-height: 210px; padding: 1.6rem; }
+            .module-card i { width: 62px; height: 62px; font-size: 1.9rem; border-radius: 19px; --ring: 6px; }
+            .module-card .card-title { font-size: 1.45rem; }
         }
         @media (max-width: 768px) {
             .app-container { padding: 1rem 1.2rem 0.8rem 1.2rem; }
-            .header-left h1 { font-size: 1.4rem; }
+            .header-left h1 { font-size: 1.35rem; }
+            .header-left h1 i { width: 2rem; height: 2rem; font-size: 1.05rem; }
             .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.8rem; padding: 4px 14px; min-height: 40px; }
             .btn-auditor img { height: 22px; }
-            .header-text { font-size: 1rem; }
+            .header-text { font-size: 0.95rem; }
             .header-text span { font-size: 0.8rem; }
-            .launcher-grid { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-            .module-card { min-height: 200px; padding: 2rem 1.5rem; }
-            .module-card i { font-size: 3.6rem; }
-            .module-card .card-title { font-size: 1.3rem; }
+            .launcher-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+            .grid-view { padding: 1.4rem; }
+            .module-card { min-height: 190px; padding: 1.3rem; border-radius: 22px; }
+            .module-card i { width: 56px; height: 56px; font-size: 1.7rem; border-radius: 17px; }
+            .module-card .card-title { font-size: 1.25rem; }
             .module-card .card-sub { font-size: 0.85rem; }
             .info-modal { font-size: 0.75rem; min-width: 150px; padding: 8px 14px; }
             .video-modal-content { padding: 1.5rem; }
-            .video-modal-content .modal-title { font-size: 1.3rem; }
+            .video-modal-content .modal-title { font-size: 1.25rem; }
         }
         @media (max-width: 576px) {
             .app-container { padding: 0.5rem 0.6rem 0.4rem 0.6rem; }
-            .app-header { gap: 0.4rem; margin-bottom: 0.8rem; }
+            .app-header { gap: 0.4rem; margin-bottom: 0.8rem; padding-bottom: 0.6rem; }
             .header-left { width: 100%; justify-content: space-between; gap: 0.5rem; }
-            .header-left h1 { font-size: 1.1rem; white-space: normal; word-break: break-word; }
-            .header-left h1 i { font-size: 1.2rem; }
+            .header-left h1 { font-size: 1.1rem; white-space: normal; word-break: break-word; margin-right: 0; gap: 0.5rem; }
+            .header-left h1 i { width: 1.7rem; height: 1.7rem; font-size: 1rem; border-radius: 0.55rem; }
             .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
             .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i, .btn-reporte i { font-size: 1rem; }
             .btn-auditor img { height: 18px; }
@@ -505,22 +464,21 @@
             .btn-back i { font-size: 1.1rem; }
             .main-content { border-radius: 18px; }
             .grid-view { padding: 0.8rem; }
-            .launcher-grid { grid-template-columns: 1fr; gap: 0.8rem; max-width: 100%; }
+            .launcher-grid { grid-template-columns: 1fr; gap: 0.7rem; max-width: 100%; }
             .module-card {
-                min-height: 140px;
-                padding: 1.2rem 1rem;
+                --ring: 4px;
+                min-height: 96px;
+                padding: 1rem 1.1rem;
                 border-radius: 20px;
                 flex-direction: row;
                 align-items: center;
                 justify-content: flex-start;
                 gap: 1rem;
-                text-align: left;
-                border-left-width: 6px;
             }
-            .module-card i { font-size: 2.6rem; margin-bottom: 0; flex-shrink: 0; }
-            .module-card .card-title { font-size: 1.2rem; margin-bottom: 0.1rem; }
-            .module-card .card-sub { font-size: 0.8rem; }
-            .module-card .card-text-group { display: flex; flex-direction: column; }
+            .module-card i { width: 56px; height: 56px; font-size: 1.7rem; border-radius: 16px; }
+            .module-card .card-title { font-size: 1.15rem; }
+            .module-card .card-sub { font-size: 0.78rem; }
+            .module-card .card-text-group { gap: 0.3rem; }
             .iframe-view iframe { border-radius: 0 0 18px 18px; }
             .app-footer { font-size: 0.6rem; padding-top: 0.4rem; margin-top: 0.3rem; }
             .info-modal { font-size: 0.7rem; min-width: 130px; padding: 6px 12px; right: 0; top: calc(100% + 4px); }
@@ -531,29 +489,29 @@
         @media (max-width: 400px) {
             .app-container { padding: 0.3rem; }
             .header-left h1 { font-size: 0.95rem; }
-            .header-left h1 i { font-size: 1rem; }
+            .header-left h1 i { width: 1.5rem; height: 1.5rem; font-size: 0.9rem; }
             .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { font-size: 0.6rem; padding: 2px 8px; min-height: 32px; }
             .btn-manual i, .btn-video i, .btn-respaldo i, .btn-calendario i, .btn-reporte i { font-size: 0.9rem; }
             .btn-auditor img { height: 16px; }
             .header-text { font-size: 0.8rem; }
             .header-text span { font-size: 0.65rem; }
             .btn-back { font-size: 0.7rem; padding: 4px 10px; min-height: 36px; }
-            .module-card { min-height: 110px; padding: 0.8rem; gap: 0.8rem; }
-            .module-card i { font-size: 2rem; }
+            .module-card { min-height: 84px; padding: 0.8rem 0.9rem; gap: 0.8rem; border-radius: 16px; }
+            .module-card i { width: 48px; height: 48px; font-size: 1.45rem; border-radius: 13px; }
             .module-card .card-title { font-size: 1rem; }
             .module-card .card-sub { font-size: 0.7rem; }
             .info-modal { font-size: 0.6rem; min-width: 110px; padding: 4px 10px; }
         }
         @media (max-height: 600px) and (orientation: landscape) {
             .app-container { padding: 0.4rem 1rem 0.2rem 1rem; }
-            .app-header { margin-bottom: 0.4rem; }
+            .app-header { margin-bottom: 0.4rem; padding-bottom: 0.4rem; }
             .header-left h1 { font-size: 1.2rem; }
             .btn-manual, .btn-video, .btn-respaldo, .btn-calendario, .btn-reporte, .btn-auditor { min-height: 32px; font-size: 0.75rem; padding: 2px 12px; }
             .btn-auditor img { height: 20px; }
-            .module-card { min-height: 100px; padding: 0.8rem 1rem; flex-direction: row; gap: 0.8rem; }
-            .module-card i { font-size: 2rem; }
-            .module-card .card-title { font-size: 1rem; }
-            .module-card .card-sub { font-size: 0.7rem; }
+            .module-card { min-height: 96px; padding: 0.8rem 1rem; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.8rem; }
+            .module-card i { width: 52px; height: 52px; font-size: 1.6rem; border-radius: 14px; --ring: 4px; }
+            .module-card .card-title { font-size: 1.05rem; }
+            .module-card .card-sub { font-size: 0.72rem; }
             .launcher-grid { gap: 0.6rem; }
             .grid-view { padding: 0.5rem; }
         }
@@ -565,20 +523,13 @@
 
     <header class="app-header">
         <div class="header-left">
-            <h1><i class="bi bi-shield-check"></i> Sistema Digital de Pase de Causas</h1>
-            <button class="btn-manual" id="btnManual"><i class="bi bi-book"></i> Manual para uso</button>
-            <button class="btn-video" id="btnVideo"><i class="bi bi-play-circle"></i> Video Presentación</button>
-            <!-- Botón de respaldo existente -->
-            <button class="btn-respaldo" id="btnRespaldo"><i class="bi bi-database"></i> Respaldo</button>
-            <!-- NUEVO BOTÓN: Calendario Pases -->
+            <h1><i class="bi bi-shield-check"></i> Pase Digital de Causas</h1>
             <button class="btn-calendario" id="btnCalendario"><i class="bi bi-calendar-event"></i> Calendario Pases</button>
-            <!-- NUEVO BOTÓN: Reporte Total -->
-            <button class="btn-reporte" id="btnReporte"><i class="bi bi-file-earmark-bar-graph"></i> Reporte Total</button>
-            <!-- NUEVO BOTÓN: Auditor IA (texto + gif) -->
             <span class="btn-auditor" id="btnAuditor">
                 <img src="https://raw.githubusercontent.com/sistemadigital/iconos/main/vector.gif" alt="Auditor IA" />
                 <strong>Auditor IA</strong>
             </span>
+            <button class="btn-respaldo" id="btnRespaldo"><i class="bi bi-database"></i> Histórico</button>
         </div>
         <div class="header-right">
             <div class="header-text">
@@ -586,9 +537,9 @@
                 <span>Ministerio Público de Misiones</span>
             </div>
             <div class="info-modal" id="infoModal">
-                <div>Diseño y Programación:</div>
+                <div>Desarrollo y programación:</div>
                 <div><strong>Rómulo Fioravante</strong></div>
-                <div class="version">Versión 1.0.2026</div>
+                <div class="version">Versión 11.2026</div>
             </div>
             <button class="btn-back" id="btnVolver"><i class="bi bi-arrow-left"></i> Volver al inicio</button>
         </div>
@@ -597,32 +548,36 @@
     <div class="main-content">
         <div class="grid-view" id="gridView">
             <div class="launcher-grid">
-                <div class="module-card operador" data-url="operador.html">
+                <!-- Operador: replica header de operadores.html -->
+                <div class="module-card operador" data-url="operadores.html">
                     <i class="bi bi-inbox"></i>
                     <div class="card-text-group">
                         <div class="card-title">Operador</div>
-                        <div class="card-sub">Registro de Entrada y Salida de causas</div>
+                        <div class="card-sub">Pase Digital <span style="color:#7dd3fc;font-weight:700;">Actualizado</span></div>
                     </div>
                 </div>
-                <div class="module-card secretario" data-url="secretario.html">
+                <!-- Secretario: replica header de secretarios.html -->
+                <div class="module-card secretario" data-url="secretarios.html">
                     <i class="bi bi-share"></i>
                     <div class="card-text-group">
                         <div class="card-title">Secretario</div>
-                        <div class="card-sub">Distribución y gestión de tareas</div>
+                        <div class="card-sub">Pase Digital <span style="color:#7dd3fc;font-weight:700;">Actualizado</span></div>
                     </div>
                 </div>
-                <div class="module-card empleados" data-url="empleado.html">
+                <!-- Empleado: replica header de empleados.html -->
+                <div class="module-card empleados" data-url="empleados.html">
                     <i class="bi bi-person-check"></i>
                     <div class="card-text-group">
-                        <div class="card-title">Empleados</div>
-                        <div class="card-sub">Visualización de tareas asignadas</div>
+                        <div class="card-title">Empleado</div>
+                        <div class="card-sub">Pase Digital <span style="color:#7dd3fc;font-weight:700;">Actualizado</span></div>
                     </div>
                 </div>
+                <!-- Defensor: replica header de defensor.html -->
                 <div class="module-card defensor" data-url="defensor.html">
                     <i class="bi bi-shield-check"></i>
                     <div class="card-text-group">
                         <div class="card-title">Defensor</div>
-                        <div class="card-sub">Resolución y control general</div>
+                        <div class="card-sub">Pase Digital <span style="color:#7dd3fc;font-weight:700;">Actualizado</span></div>
                     </div>
                 </div>
             </div>
@@ -638,69 +593,17 @@
 
 </div>
 
-<!-- ===== MODAL DE VIDEO ===== -->
-<div class="video-modal-overlay" id="videoModal">
-    <div class="video-modal-content" style="max-width: 800px;">
-        <button class="close-modal" id="closeVideoModal">&times;</button>
-        <div class="modal-title"><i class="bi bi-play-circle"></i> Video de presentación</div>
-        
-        <div class="video-container">
-            <iframe 
-                id="youtubeIframe" 
-                src="https://www.youtube.com/embed/8N5HSFgJsac?si=UO2uE1Iuk0xNrx3V" 
-                title="Presentación del Sistema Digital" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen>
-            </iframe>
-        </div>
-    </div>
-</div>
-
 <script>
     (function() {
         const gridView = document.getElementById('gridView');
         const iframeView = document.getElementById('iframeView');
         const moduleFrame = document.getElementById('moduleFrame');
         const btnVolver = document.getElementById('btnVolver');
-        const btnManual = document.getElementById('btnManual');
         const infoModal = document.getElementById('infoModal');
         const btnRespaldo = document.getElementById('btnRespaldo');
         const btnCalendario = document.getElementById('btnCalendario');
-        const btnReporte = document.getElementById('btnReporte');
         // Nuevo botón Auditor IA
         const btnAuditor = document.getElementById('btnAuditor');
-
-        const videoModal = document.getElementById('videoModal');
-        const btnVideo = document.getElementById('btnVideo');
-        const closeVideoModal = document.getElementById('closeVideoModal');
-        const youtubeIframe = document.getElementById('youtubeIframe');
-
-        function abrirVideoModal() {
-            videoModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function cerrarVideoModal() {
-            videoModal.classList.remove('active');
-            document.body.style.overflow = '';
-            
-            // Detener el video de YouTube recargando su iframe
-            if (youtubeIframe) {
-                const urlVideo = youtubeIframe.src;
-                youtubeIframe.src = '';
-                youtubeIframe.src = urlVideo;
-            }
-        }
-
-        btnVideo.addEventListener('click', abrirVideoModal);
-        closeVideoModal.addEventListener('click', cerrarVideoModal);
-        videoModal.addEventListener('click', function(e) {
-            if (e.target === videoModal) cerrarVideoModal();
-        });
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && videoModal.classList.contains('active')) cerrarVideoModal();
-        });
 
         // Evento para el botón de respaldo (abre en nueva ventana)
         btnRespaldo.addEventListener('click', function() {
@@ -712,19 +615,64 @@
             mostrarModulo('https://defensoria6.github.io/pase-digital/calendario-pase');
         });
 
-        // Evento para el botón Reporte Total (abre en el iframe)
-        btnReporte.addEventListener('click', function() {
-            mostrarModulo('https://defensoria6.github.io/pase-digital/reporte-p');
-        });
-
         // Evento para el botón Auditor IA (abre en el iframe)
         btnAuditor.addEventListener('click', function() {
             mostrarModulo('https://defensoria6.github.io/ayudanteIA/index2.html');
         });
 
-        setTimeout(function() {
+        // ===== Sonido de clic al pasar el puntero (solo escritorio) =====
+        // Se sintetiza con Web Audio (sin archivos). El navegador solo habilita el audio
+        // después de la primera interacción del usuario (clic, toque o tecla) en la página.
+        const esEscritorio = window.matchMedia('(hover: hover) and (pointer: fine)');
+        let audioCtx = null;
+        let ultimoSonido = 0;
+
+        ['pointerdown', 'keydown'].forEach(function(ev) {
+            document.addEventListener(ev, function() {
+                if (!audioCtx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return;
+                    audioCtx = new AC();
+                }
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }, { passive: true });
+        });
+
+        function sonidoClic() {
+            if (!esEscritorio.matches || !audioCtx || audioCtx.state !== 'running') return;
+            const ahora = performance.now();
+            if (ahora - ultimoSonido < 60) return;
+            ultimoSonido = ahora;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1900, t);
+            osc.frequency.exponentialRampToValueAtTime(700, t + 0.03);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(0.07, t + 0.002);   // volumen: 0.07
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+            osc.connect(gain).connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + 0.05);
+        }
+
+        document.querySelectorAll('.module-card, .btn-calendario, .btn-auditor, .btn-respaldo, .btn-back')
+            .forEach(function(el) { el.addEventListener('mouseenter', sonidoClic); });
+
+        // ===== Modal "Desarrollo y programación": visible al inicio y al pulsar el título =====
+        let infoTimer = setTimeout(function() {
             infoModal.classList.add('hidden');
         }, 4000);
+
+        function mostrarInfo() {
+            clearTimeout(infoTimer);
+            infoModal.classList.remove('hidden');
+            infoTimer = setTimeout(function() {
+                infoModal.classList.add('hidden');
+            }, 4000);
+        }
+        document.querySelector('.header-left h1').addEventListener('click', mostrarInfo);
 
         function mostrarModulo(url) {
             gridView.classList.add('hidden');
@@ -747,10 +695,6 @@
                 const url = this.dataset.url;
                 if (url) mostrarModulo(url);
             });
-        });
-
-        btnManual.addEventListener('click', function() {
-            mostrarModulo('https://defensoria6.github.io/pase-digital/manual');
         });
 
         btnVolver.addEventListener('click', volverInicio);
