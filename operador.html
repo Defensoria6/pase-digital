@@ -180,6 +180,12 @@ textarea.form-control{resize:vertical}
 .rotation-preview .rotation-item .value{font-weight:700;color:var(--text)}
 .rotation-preview .rotation-item .value.text-warning{color:#b45309}
 .rotation-preview .rotation-item .pos{font-size:.7rem;color:var(--muted);font-weight:600}
+.rotation-preview .rotation-item .rot-label{font-weight:600;min-width:78px}
+.rotation-preview .rot-select{flex:1;min-width:170px;border-radius:12px;border:2px solid var(--border);background:#fff;font-size:.85rem;font-weight:700;padding:6px 10px}
+.rotation-preview .rot-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.rotation-preview .rot-hint{font-size:.7rem;color:var(--muted);font-weight:600;padding:0 0 4px 30px;margin-top:-2px}
+.rotation-preview .rot-manual{color:#b45309;font-weight:700}
+.rotation-preview .rot-reset{background:none;border:none;padding:0 0 0 4px;color:var(--primary-dark);font-weight:700;font-size:.7rem;text-decoration:underline;cursor:pointer}
 
 .emp-ausente-badge{display:inline-block;background:#6b7280;color:#fff;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:800;margin:3px 4px 3px 0;text-decoration:line-through;text-decoration-color:#fff;letter-spacing:.2px;box-shadow:0 2px 6px rgba(107,114,128,.35)}
 tr.row-empleado-ausente{background:#f3f4f6 !important;opacity:.85}
@@ -524,9 +530,11 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
           </div>
 
           <div class="rotation-preview" id="rotationPreview">
-            <h6><i class="bi bi-arrow-repeat"></i> Próxima Asignación (Rotación Estricta)</h6>
-            <div class="rotation-item"><i class="bi bi-person-fill"></i><span>Empleado:</span><span class="value" id="previewEmpleado">—</span><span class="pos" id="previewEmpleadoPos"></span></div>
-            <div class="rotation-item"><i class="bi bi-person-badge-fill"></i><span>Secretario:</span><span class="value" id="previewSecretario">—</span><span class="pos" id="previewSecretarioPos"></span></div>
+            <h6><i class="bi bi-arrow-repeat"></i> Asignación (sugerida por rotación · editable)</h6>
+            <div class="rotation-item"><i class="bi bi-person-fill"></i><span class="rot-label">Empleado:</span><select id="previewEmpleado" class="form-select form-select-sm rot-select"></select></div>
+            <div class="rot-hint" id="previewEmpleadoPos"></div>
+            <div class="rotation-item"><i class="bi bi-person-badge-fill"></i><span class="rot-label">Secretario:</span><select id="previewSecretario" class="form-select form-select-sm rot-select"></select></div>
+            <div class="rot-hint" id="previewSecretarioPos"></div>
             <div class="absence-summary" id="ausentesList"></div>
             <div class="absence-summary" id="excluidosTipoList" style="display:none;border-top:none;margin-top:4px;padding-top:0;"></div>
           </div>
@@ -1153,21 +1161,39 @@ function toggleNuevoTipoField(){
 // ============================================================
 // REGISTRO DE CAUSA
 // ============================================================
-async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia, modo, fuentes){
+async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia, modo, fuentes, manual){
   if(!num.trim()){ showToast('Ingrese número de expediente','warning'); return false; }
 
   const now = new Date().toISOString();
   let estado, empleadoAsignado=null, secretarioId=null, fechaAsignacion=null, fechaLimite=null, accionHist='';
+  let asignacionManual=false, empleadoSugerido=null, secretarioSugerido=null;
 
   if(accion === 'asignar'){
     const emp = getEmpleadoParaPase(tipo);
     const sec = getNextSecretarioSinSideEffects();
 
-    if(emp.sinDisponibles) showToast('⚠️ No hay empleados disponibles para este tipo (ausentes o excluidos). Se registrará sin asignar.','warning');
-    if(sec.sinDisponibles) showToast('⚠️ No hay secretarios disponibles. Se registrará sin secretario.','warning');
+    // Elecciones manuales del operador (vacío = respetar la rotación)
+    const manualEmpId = manual && manual.empleadoId ? manual.empleadoId : null;
+    const manualSecId = manual && manual.secretarioId ? manual.secretarioId : null;
+    if(manualEmpId && empleadoNoAsignable(manualEmpId, tipo)){
+      showToast(`⚠️ ${getEmpName(manualEmpId)} no está disponible para este pase. Elija otro empleado.`,'warning'); return false;
+    }
+    if(manualSecId && estaSecretarioAusente(manualSecId, now)){
+      showToast(`⚠️ ${getSecName(manualSecId)} está ausente hoy. Elija otro secretario.`,'warning'); return false;
+    }
+    const sugEmpId = emp.empleado ? emp.empleado.id : null;
+    const sugSecId = sec.secretario ? sec.secretario.id : null;
+    const empCambiado = !!manualEmpId && manualEmpId !== sugEmpId;
+    const secCambiado = !!manualSecId && manualSecId !== sugSecId;
+    asignacionManual = empCambiado || secCambiado;
+    if(empCambiado) empleadoSugerido = sugEmpId;
+    if(secCambiado) secretarioSugerido = sugSecId;
 
-    if(emp.empleado) empleadoAsignado = emp.empleado.id;
-    if(sec.secretario) secretarioId = sec.secretario.id;
+    if(!manualEmpId && emp.sinDisponibles) showToast('⚠️ No hay empleados disponibles para este tipo (ausentes o excluidos). Se registrará sin asignar.','warning');
+    if(!manualSecId && sec.sinDisponibles) showToast('⚠️ No hay secretarios disponibles. Se registrará sin secretario.','warning');
+
+    empleadoAsignado = manualEmpId || sugEmpId;
+    secretarioId = manualSecId || sugSecId;
 
     estado = 'en_proceso';
     fechaAsignacion = now;
@@ -1178,9 +1204,15 @@ async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia
     const empNombre = empleadoAsignado ? getEmpName(empleadoAsignado) : 'Sin asignar (sin empleados disponibles)';
     const secNombre = secretarioId ? getSecName(secretarioId) : 'Sin secretario';
     accionHist = `Asignado (Nivel ${nivel}) a ${empNombre} — Secretario: ${secNombre}`;
+    const notas = [];
+    if(empCambiado) notas.push(`empleado elegido manualmente (rotación sugería: ${sugEmpId ? getEmpName(sugEmpId) : 'nadie'})`);
+    if(secCambiado) notas.push(`secretario elegido manualmente (rotación sugería: ${sugSecId ? getSecName(sugSecId) : 'nadie'})`);
+    if(notas.length) accionHist += ' · ' + notas.join('; ');
 
-    if(emp.empleado && !emp.porTipo) state.lastEmployeeIndex = emp.newIndex;
-    if(sec.secretario) state.lastIndex = sec.newIndex;
+    // El turno de rotación solo avanza si se respetó la sugerencia; si el operador
+    // eligió a otra persona, quien correspondía por turno conserva su lugar.
+    if(emp.empleado && !emp.porTipo && !empCambiado) state.lastEmployeeIndex = emp.newIndex;
+    if(sec.secretario && !secCambiado) state.lastIndex = sec.newIndex;
     await guardarConfiguracion();
   } else if(accion === 'devolver'){
     estado = 'devuelto_siged'; accionHist = 'Devuelto a SIGED';
@@ -1215,6 +1247,9 @@ async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia
     fuenteSiged: fuentes.siged||false,
     fuenteZimbra: fuentes.zimbra||false,
     fuenteDeut: fuentes.deut||false,
+    asignacionManual,
+    empleadoSugerido,
+    secretarioSugerido,
     historial: [{
       fecha: now,
       accion: accionHist,
@@ -1309,33 +1344,71 @@ function limpiarFiltrosPanel(){
 // ============================================================
 function render(){ renderPreview(); renderKPIs(); renderRecientes(); renderRechazados(); renderSecretariosEstado(); }
 
+function motivoNoAsignable(id, tipo){
+  if(estaEmpleadoAusente(id)) return 'ausente';
+  if(estaExcluidoDeTipo(id, tipo)) return 'excluido de este tipo';
+  if(EMPLEADOS_EXCLUIDOS.includes(id) || esOperadorActivo(id)) return 'no recibe pases';
+  return '';
+}
+function setSelectHtml(sel, html){
+  if(sel.dataset.sig !== html){ sel.innerHTML = html; sel.dataset.sig = html; }
+}
+
 function renderPreview(){
-  const emp = getEmpleadoParaPase(document.getElementById('inpTipo')?.value || '');
+  const tipo = document.getElementById('inpTipo')?.value || '';
+  const emp = getEmpleadoParaPase(tipo);
   const sec = getNextSecretarioSinSideEffects();
+  const hoyISO = new Date().toISOString();
 
-  const empEl = document.getElementById('previewEmpleado');
-  const empPos = document.getElementById('previewEmpleadoPos');
-  const secEl = document.getElementById('previewSecretario');
-  const secPos = document.getElementById('previewSecretarioPos');
+  const selE = document.getElementById('previewEmpleado');
+  const selS = document.getElementById('previewSecretario');
+  const hintE = document.getElementById('previewEmpleadoPos');
+  const hintS = document.getElementById('previewSecretarioPos');
+  if(!selE || !selS) return;
 
-  if(emp.empleado){
-    empEl.textContent = emp.empleado.nombre;
-    empEl.className = 'value';
-    empPos.textContent = emp.porTipo ? `(${emp.cantidad} en ${emp.etiqueta})` : `(${emp.position}/${emp.total} disp.)`;
-  } else {
-    empEl.textContent = '⚠️ Sin empleados disponibles';
-    empEl.className = 'value text-warning';
-    empPos.textContent = '';
+  // Selección manual vigente (vacío = automático). Si dejó de estar disponible, se vuelve a automático.
+  let curE = selE.value, curS = selS.value;
+  if(curE && empleadoNoAsignable(curE, tipo)){
+    showToast(`⚠️ ${getEmpName(curE)} ya no está disponible para este pase — se volvió a la asignación automática`,'warning');
+    curE = '';
   }
-  if(sec.secretario){
-    secEl.textContent = sec.secretario.nombre;
-    secEl.className = 'value';
-    secPos.textContent = `(${sec.position}/${sec.total} disp.)`;
-  } else {
-    secEl.textContent = '⚠️ Sin secretarios';
-    secEl.className = 'value text-warning';
-    secPos.textContent = '';
+  if(curS && estaSecretarioAusente(curS, hoyISO)){
+    showToast(`⚠️ ${getSecName(curS)} ya no está disponible — se volvió a la asignación automática`,'warning');
+    curS = '';
   }
+
+  // Empleado
+  const autoE = emp.empleado ? `⟳ Automático · ${emp.empleado.nombre}` : '⚠️ Sin empleados disponibles (elija uno)';
+  setSelectHtml(selE,
+    `<option value="">${autoE}</option><optgroup label="Elegir manualmente">` +
+    getSortedEmployees().map(e => {
+      const m = motivoNoAsignable(e.id, tipo);
+      return `<option value="${e.id}"${m ? ' disabled' : ''}>${e.nombre}${m ? ` (${m})` : ''}</option>`;
+    }).join('') + `</optgroup>`);
+  selE.value = curE;
+
+  if(curE && !(emp.empleado && emp.empleado.id === curE)){
+    hintE.innerHTML = `<span class="rot-manual"><i class="bi bi-pencil-fill"></i> Modificado manualmente</span> · sugerido: ${emp.empleado ? emp.empleado.nombre : '—'}<button type="button" class="rot-reset" data-sel="previewEmpleado">Restablecer</button>`;
+  } else if(emp.empleado){
+    hintE.textContent = emp.porTipo ? `${emp.cantidad} en ${emp.etiqueta}` : `Turno ${emp.position} de ${emp.total} disponibles`;
+  } else { hintE.textContent = ''; }
+
+  // Secretario
+  const autoS = sec.secretario ? `⟳ Automático · ${sec.secretario.nombre}` : '⚠️ Sin secretarios disponibles (elija uno)';
+  setSelectHtml(selS,
+    `<option value="">${autoS}</option><optgroup label="Elegir manualmente">` +
+    getSortedSecretarios().map(x => {
+      const aus = estaSecretarioAusente(x.id, hoyISO);
+      return `<option value="${x.id}"${aus ? ' disabled' : ''}>${x.nombre}${aus ? ' (ausente)' : ''}</option>`;
+    }).join('') + `</optgroup>`);
+  selS.value = curS;
+
+  if(curS && !(sec.secretario && sec.secretario.id === curS)){
+    hintS.innerHTML = `<span class="rot-manual"><i class="bi bi-pencil-fill"></i> Modificado manualmente</span> · sugerido: ${sec.secretario ? sec.secretario.nombre : '—'}<button type="button" class="rot-reset" data-sel="previewSecretario">Restablecer</button>`;
+  } else if(sec.secretario){
+    hintS.textContent = `Turno ${sec.position} de ${sec.total} disponibles`;
+  } else { hintS.textContent = ''; }
+
   renderAusentesList();
   renderExcluidosTipo();
 }
@@ -1821,15 +1894,18 @@ document.addEventListener('DOMContentLoaded', function(){
       if(accion==='remitir' && !dependencia){ showToast('Ingrese la dependencia','warning'); return; }
     }
 
-    const empPrev = getEmpleadoParaPase(tipo);
-    const secPrev = getNextSecretarioSinSideEffects();
+    const manual = {
+      empleadoId: document.getElementById('previewEmpleado').value || null,
+      secretarioId: document.getElementById('previewSecretario').value || null
+    };
 
-    const ok = await registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia, modo, fuentes);
+    const ok = await registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia, modo, fuentes, manual);
     if(ok){
       if(accion==='asignar'){
-        const empTxt = empPrev.empleado ? empPrev.empleado.nombre : 'Sin asignar';
-        const secTxt = secPrev.secretario ? secPrev.secretario.nombre : 'Sin secretario';
-        showToast(`✅ ${num.toUpperCase()} → ${empTxt} · Secretario: ${secTxt}`);
+        const reg = state.causas[state.causas.length-1] || {};
+        const empTxt = reg.empleadoNombre || 'Sin asignar';
+        const secTxt = reg.secretarioNombre || 'Sin secretario';
+        showToast(`✅ ${num.toUpperCase()} → ${empTxt} · Secretario: ${secTxt}${reg.asignacionManual ? ' (manual)' : ''}`);
       } else {
         showToast(`✅ ${num.toUpperCase()} registrado como ${accion}`);
       }
@@ -1839,7 +1915,19 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 
+  // Cambios manuales de empleado / secretario y botón "Restablecer"
+  document.getElementById('previewEmpleado').addEventListener('change', renderPreview);
+  document.getElementById('previewSecretario').addEventListener('change', renderPreview);
+  document.getElementById('rotationPreview').addEventListener('click', function(e){
+    const btn = e.target.closest('.rot-reset');
+    if(!btn) return;
+    document.getElementById(btn.dataset.sel).value = '';
+    renderPreview();
+  });
+
   function resetForm(){
+    document.getElementById('previewEmpleado').value='';
+    document.getElementById('previewSecretario').value='';
     document.getElementById('inpExpediente').value='';
     document.getElementById('inpTipo').value='';
     document.getElementById('inpNivel').value='2';
