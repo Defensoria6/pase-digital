@@ -965,10 +965,10 @@ function getNextSecretarioSinSideEffects(){
 
 // ============================================================
 // ASIGNACIÓN POR TIPO DE CAUSA (según tablas del panel de Secretarios)
-//  - Nuevo patrocinio ................... columna "Total" de la tabla Nuevo Patrocinio
-//  - Nuevo patrocinio Violencia Familiar . columna "N.P.V.F." de la tabla Nuevo Patrocinio
+//  - Nuevo patrocinio y Nuevo patrocinio Violencia Familiar ... ROTACIÓN ALFABÉTICA COMPARTIDA
+//    (una sola rueda para ambos tipos, sin importar el secretario; ver getNextEmployeeRotacionNP)
 //  - CEJUME Formulario .................. total del año en curso de la tabla FormCEJUME
-// Recibe el pase el empleado disponible con MENOR cantidad registrada.
+// CEJUME Formulario: recibe el pase el empleado disponible con MENOR cantidad registrada.
 // ============================================================
 const TIPO_NP = 'nuevo patrocinio';
 const TIPO_NPVF = 'nuevo patrocinio violencia familiar';
@@ -1006,7 +1006,67 @@ function getNextEmployeePorTipo(tipo){
   });
   return { empleado:mejor, newIndex:sorted.findIndex(e=>e.id===mejor.id), position:disponibles.findIndex(e=>e.id===mejor.id)+1, total:disponibles.length, totalGlobal:sorted.length, porTipo:true, cantidad:mejorCant, etiqueta };
 }
+// ------------------------------------------------------------
+// ROTACIÓN ALFABÉTICA COMPARTIDA: Nuevo patrocinio + Nuevo patrocinio Violencia Familiar
+//  - Ambos tipos comparten UNA sola rueda, cualquiera sea el secretario del pase.
+//  - Se calcula revisando los pases ya registrados (no depende de un índice guardado).
+//  - Nadie repite hasta que todos los empleados disponibles hayan recibido un pase de
+//    estos tipos; al completarse la ronda vuelve al primero de la lista (Bazante...).
+//  - Se sugiere siempre al primer empleado, en orden alfabético, que todavía no recibió
+//    en la ronda en curso (quien se saltó por ausencia/exclusión conserva su lugar).
+// ------------------------------------------------------------
+function esTipoRotacionNP(tipo){ const t = normTipoEq(tipo); return t===TIPO_NP || t===TIPO_NPVF; }
+function empleadoDePaseNP(c){ return c.empleadoAsignado || c.empleadoOriginal || c.empleadoId || null; }
+function fechaOrdenPaseNP(c){
+  const f = c.fechaPaseSecretario || (c.historial && c.historial[0] && c.historial[0].fecha) || c.fechaAsignacion;
+  const d = f ? new Date(f) : null;
+  return d && !isNaN(d.getTime()) ? d.getTime() : 0;
+}
+// Pases de N.P. y N.P.V.F. con empleado, del más antiguo al más reciente
+function getPasesRotacionNP(){
+  const validos = new Set(CONFIG.empleados.map(e => e.id));
+  return state.causas
+    .map((c,i) => ({c,i}))
+    .filter(x => { const ct = normTipoEq(x.c.tipo); return (ct===TIPO_NP || ct===TIPO_NPVF) && validos.has(empleadoDePaseNP(x.c)); })
+    .sort((a,b) => fechaOrdenPaseNP(a.c) - fechaOrdenPaseNP(b.c) || a.i - b.i)
+    .map(x => x.c);
+}
+// Recorre los pases en orden y devuelve quiénes ya recibieron en la ronda en curso
+function calcularRondaNP(tipo){
+  const sorted = getSortedEmployees();
+  // Disponibilidad "global": no depende de qué operador tiene la sesión abierta
+  const globales = sorted.filter(e => !(EMPLEADOS_EXCLUIDOS.includes(e.id) || estaEmpleadoAusente(e.id) || estaExcluidoDeTipo(e.id, tipo)));
+  let ronda = new Set();
+  const ultimaVez = {};
+  getPasesRotacionNP().forEach((c, n) => {
+    const id = empleadoDePaseNP(c);
+    ultimaVez[id] = n;
+    ronda.add(id);
+    if(globales.length && globales.every(e => ronda.has(e.id))) ronda = new Set(); // ronda completa → empieza otra
+  });
+  return { ronda, globales, ultimaVez };
+}
+function getNextEmployeeRotacionNP(tipo){
+  const sorted = getSortedEmployees();
+  const disponibles = sorted.filter(e => !empleadoNoAsignable(e.id, tipo));
+  if(disponibles.length === 0) return { empleado:null, position:0, total:sorted.length, sinDisponibles:true };
+  const { ronda, globales, ultimaVez } = calcularRondaNP(tipo);
+  let elegido = disponibles.find(e => !ronda.has(e.id)) || null;
+  let soloFalta = false;
+  if(!elegido){
+    // Solo falta quien tiene la sesión abierta (no puede asignarse a sí mismo): se sugiere a quien hace más tiempo no recibe
+    soloFalta = true;
+    elegido = disponibles.reduce((m,e) => ((ultimaVez[e.id] ?? -1) < (ultimaVez[m.id] ?? -1)) ? e : m, disponibles[0]);
+  }
+  const hechos = globales.filter(e => ronda.has(e.id)).length;
+  const hint = soloFalta
+    ? 'Ronda N.P. / N.P.V.F.: falta solo el empleado de esta sesión · se sugiere a quien hace más tiempo no recibe'
+    : `Ronda N.P. / N.P.V.F. · turno ${hechos+1} de ${globales.length}${hechos===0 ? ' · nueva ronda' : ''}`;
+  return { empleado:elegido, newIndex:sorted.findIndex(e => e.id===elegido.id), position:Math.min(hechos+1, globales.length), total:globales.length, totalGlobal:sorted.length, porTipo:true, rotacionNP:true, hint };
+}
+
 function getEmpleadoParaPase(tipo){
+  if(esTipoRotacionNP(tipo)) return getNextEmployeeRotacionNP(tipo);
   return esTipoPorEquidad(tipo) ? getNextEmployeePorTipo(tipo) : getNextEmployeeSinSideEffects(tipo);
 }
 
@@ -1169,6 +1229,8 @@ async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia
   let asignacionManual=false, empleadoSugerido=null, secretarioSugerido=null;
 
   if(accion === 'asignar'){
+    // N.P. / N.P.V.F.: se vuelven a leer los pases justo antes de asignar, para no repetir empleado
+    if(esTipoRotacionNP(tipo)) await loadState();
     const emp = getEmpleadoParaPase(tipo);
     const sec = getNextSecretarioSinSideEffects();
 
@@ -1357,6 +1419,7 @@ function setSelectHtml(sel, html){
 function renderPreview(){
   const tipo = document.getElementById('inpTipo')?.value || '';
   const emp = getEmpleadoParaPase(tipo);
+  const rondaNP = esTipoRotacionNP(tipo) ? calcularRondaNP(tipo).ronda : null;
   const sec = getNextSecretarioSinSideEffects();
   const hoyISO = new Date().toISOString();
 
@@ -1383,14 +1446,15 @@ function renderPreview(){
     `<option value="">${autoE}</option><optgroup label="Elegir manualmente">` +
     getSortedEmployees().map(e => {
       const m = motivoNoAsignable(e.id, tipo);
-      return `<option value="${e.id}"${m ? ' disabled' : ''}>${e.nombre}${m ? ` (${m})` : ''}</option>`;
+      const ya = (!m && rondaNP && rondaNP.has(e.id)) ? ' · ya recibió en esta ronda' : '';
+      return `<option value="${e.id}"${m ? ' disabled' : ''}>${e.nombre}${m ? ` (${m})` : ya}</option>`;
     }).join('') + `</optgroup>`);
   selE.value = curE;
 
   if(curE && !(emp.empleado && emp.empleado.id === curE)){
     hintE.innerHTML = `<span class="rot-manual"><i class="bi bi-pencil-fill"></i> Modificado manualmente</span> · sugerido: ${emp.empleado ? emp.empleado.nombre : '—'}<button type="button" class="rot-reset" data-sel="previewEmpleado">Restablecer</button>`;
   } else if(emp.empleado){
-    hintE.textContent = emp.porTipo ? `${emp.cantidad} en ${emp.etiqueta}` : `Turno ${emp.position} de ${emp.total} disponibles`;
+    hintE.textContent = emp.hint ? emp.hint : (emp.porTipo ? `${emp.cantidad} en ${emp.etiqueta}` : `Turno ${emp.position} de ${emp.total} disponibles`);
   } else { hintE.textContent = ''; }
 
   // Secretario
