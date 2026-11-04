@@ -187,6 +187,7 @@
         .badge-dev{background:#fee2e2;color:#991b1b}
         .badge-rem{background:#e0e7ff;color:#3730a3}
         .badge-rech{background:#fce7f3;color:#9d174d}
+        .badge-esp{background:#f1f5f9;color:#475569}
         .badge-tipo-nuevo{background:#dbeafe;color:#1e40af;font-weight:700;padding:2px 10px;border-radius:30px;font-size:.6rem}
         .badge-tipo-seguimiento{background:#fef3c7;color:#92400e;font-weight:700;padding:2px 10px;border-radius:30px;font-size:.6rem}
         .badge-fuente{display:inline-block;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:#e0e7ff;color:#1e3a8a;margin-right:2px}
@@ -246,6 +247,75 @@
         .kpi-item .value.warning{color:#d97706}
         .kpi-item .value.success{color:#1e3a8a}
         .kpi-item .value.info{color:#2563eb}
+
+        /* ===== KPIs y gráficos · mejoras ===== */
+        .kpi-item .value{font-variant-numeric:tabular-nums}
+        .kpi-item .sub{font-size:.65rem;color:#94a3b8;margin-top:2px}
+
+        .charts-head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-bottom:.9rem;flex-wrap:wrap}
+        .charts-head h6{margin:0;font-size:.8rem;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.4px}
+        .charts-head h6 i{color:var(--primary)}
+
+        .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:.8rem;margin-bottom:1.1rem}
+        .kpi-card{--kc:#2563eb;--kc-bg:#eff6ff;--kc-ring:rgba(37,99,235,.18);position:relative;display:flex;align-items:center;gap:.8rem;width:100%;min-width:0;text-align:left;background:#fff;border:1px solid var(--border);border-radius:16px;padding:.85rem .95rem .85rem 1.15rem;font-family:inherit;color:var(--text);box-shadow:var(--shadow-sm);transition:transform .15s,box-shadow .15s,border-color .15s;overflow:hidden}
+        .kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--kc)}
+        .kpi-card .kpi-icon{flex:0 0 40px;height:40px;border-radius:12px;background:var(--kc-bg);color:var(--kc);display:flex;align-items:center;justify-content:center;font-size:1.15rem}
+        .kpi-card .kpi-body{min-width:0;flex:1}
+        .kpi-card .kpi-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .kpi-card .kpi-value{font-size:1.65rem;font-weight:800;line-height:1.15;color:var(--text);font-variant-numeric:tabular-nums}
+        .kpi-card .kpi-value small{font-size:.8rem;font-weight:700;color:var(--muted);margin-left:2px}
+        .kpi-card .kpi-sub{font-size:.66rem;color:#94a3b8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .kpi-card.k-blue{--kc:#2563eb;--kc-bg:#eff6ff;--kc-ring:rgba(37,99,235,.18)}
+        .kpi-card.k-violet{--kc:#7c3aed;--kc-bg:#f3e8ff;--kc-ring:rgba(124,58,237,.18)}
+        .kpi-card.k-amber{--kc:#d97706;--kc-bg:#fef3c7;--kc-ring:rgba(217,119,6,.18)}
+        .kpi-card.k-red{--kc:#c62828;--kc-bg:#fee2e2;--kc-ring:rgba(198,40,40,.18)}
+        .kpi-card.k-red .kpi-value{color:var(--kc)}
+        .kpi-card.k-navy{--kc:#1e3a8a;--kc-bg:#e0e7ff;--kc-ring:rgba(30,58,138,.18)}
+        .kpi-card.is-clickable{cursor:pointer}
+        .kpi-card.is-clickable:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:#c7d2fe}
+        .kpi-card.is-active{border-color:var(--kc);box-shadow:0 0 0 3px var(--kc-ring)}
+        .kpi-card:focus-visible{outline:3px solid rgba(59,130,246,.45);outline-offset:2px}
+
+        .charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem;margin-bottom:.2rem}
+        .chart-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:.9rem 1rem 1rem;box-shadow:var(--shadow-sm);min-width:0}
+        .chart-card .chart-title{font-size:.78rem;font-weight:800;color:#1e293b;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+        .chart-card .chart-title span{font-size:.65rem;font-weight:600;color:var(--muted)}
+        .chart-card .chart-box{position:relative;height:240px;margin-top:.6rem}
+        .tot-filtros{display:flex;flex-wrap:wrap;gap:.8rem;align-items:flex-end;justify-content:space-between}
+        .tot-filtros .form-select{width:auto;min-width:150px}
+        .tot-tabla th.mes-sel,.tot-tabla td.mes-sel{background:#dbeafe !important;font-weight:800}
+        .tot-tabla td.num,.tot-tabla th.num{text-align:right;white-space:nowrap}
+        .tot-tabla tfoot td{font-weight:800;background:#eff3fa}
+        .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+        .chart-head .chart-title{flex:1;min-width:0;font-size:.78rem;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+        .chart-head .chart-title span{font-size:.65rem;font-weight:600;color:var(--muted)}
+        .btn-print-chart{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);background:#fff;color:var(--primary);border-radius:8px;padding:3px 9px;font-size:.62rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s;font-family:inherit}
+        .btn-print-chart:hover{background:#eff3fa;border-color:var(--primary-light)}
+        /* Títulos de panel: azul y negrita */
+        .card-modern .card-title,.glass-card .card-title,.charts-head h6,.chart-head .chart-title,.chart-card .chart-title,.panel-titulo{color:#1d4ed8 !important;font-weight:800 !important}
+        .chart-empty{height:240px;margin-top:.6rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#94a3b8;font-size:.78rem;text-align:center;padding:0 1rem}
+        .chart-empty i{font-size:1.6rem}
+        .chart-container .chart-empty{height:100%;margin-top:0}
+        .charts-grid>.chart-empty{grid-column:1/-1;height:120px}
+
+        .filtro-activo{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:12px;padding:.5rem .8rem;margin-bottom:.8rem;font-size:.78rem}
+        .filtro-activo i{color:var(--primary-light)}
+        .filtro-activo button{margin-left:auto;background:#fff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:30px;padding:3px 12px;font-size:.7rem;font-weight:700;cursor:pointer;transition:.15s}
+        .filtro-activo button:hover{background:#dbeafe}
+
+        @media (max-width:768px){
+            .charts-grid{grid-template-columns:1fr}
+            .kpi-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+            .kpi-card{padding:.7rem .7rem .7rem 1rem;gap:.6rem}
+            .kpi-card .kpi-icon{flex-basis:34px;height:34px;font-size:1rem;border-radius:10px}
+            .kpi-card .kpi-value{font-size:1.35rem}
+        }
+        @media (max-width:576px){
+            .kpi-card .kpi-icon{display:none}
+            .kpi-card .kpi-label,.kpi-card .kpi-sub{white-space:normal;line-height:1.25}
+            .kpi-card .kpi-label{font-size:.58rem}
+        }
+        @media (prefers-reduced-motion:reduce){.kpi-card{transition:none}.kpi-card.is-clickable:hover{transform:none}}
 
         .destacados-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem}
         .destacado-item{background:#fff;border-radius:16px;padding:.9rem 1.2rem;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
@@ -422,6 +492,7 @@
             .badge-dev{background:#fee2e2 !important;color:#991b1b !important}
             .badge-rem{background:#e0e7ff !important;color:#3730a3 !important}
             .badge-rech{background:#fce7f3 !important;color:#9d174d !important}
+            .badge-esp{background:#f1f5f9 !important;color:#475569 !important}
             .solapa-badge{background:#1e40af !important;color:#fff !important;padding:2px 10px !important;border-radius:30px !important;font-weight:600 !important;font-size:.6rem !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
             .crono{font-family:monospace !important;padding:1px 6px !important;border-radius:20px !important;font-weight:600 !important;font-size:.55rem !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
             .crono.azul{background:#dbeafe !important;color:#1e40af !important}
@@ -482,6 +553,7 @@
         <div id="panelAuditoria" class="tab-panel"></div>
         <div id="panelReporteCompleto" class="tab-panel"></div>
         <div id="panelPuntajeEmpleados" class="tab-panel"></div>
+        <div id="panelTotales" class="tab-panel"></div>
 
         <footer class="text-center text-muted-light mt-4" style="font-size:.72rem;border-top:1px solid var(--border);padding-top:1rem;">
             <i class="bi bi-cloud-check-fill"></i> Datos en la nube · Sincronización automática · Todos los módulos integrados
@@ -492,7 +564,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial · <span id="modalHistorialExp"></span> <small class="ms-2 text-light-emphasis" id="modalHistorialEmpleado"></small></h5>
+                    <h5 class="modal-title">Historial · <span id="modalHistorialExp"></span> <small class="ms-2 text-light-emphasis" id="modalHistorialEmpleado"></small></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalHistorialBody"><div class="text-muted">Cargando...</div></div>
@@ -508,7 +580,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>Reporte de Actividad</h5>
+                    <h5 class="modal-title">Reporte de Actividad</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalReporteBody"><div class="text-muted">Cargando...</div></div>
@@ -540,7 +612,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalEquidadTitle"><i class="bi bi-printer me-2"></i>Informe</h5>
+                    <h5 class="modal-title" id="modalEquidadTitle">Informe</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalEquidadBody"><div class="text-muted">Cargando...</div></div>
@@ -556,7 +628,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Justificar demora</h5>
+                    <h5 class="modal-title">Justificar demora</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -578,7 +650,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-search me-2" id="modalBusquedaTitulo">Detalle del expediente</i></h5>
+                    <h5 class="modal-title"><span id="modalBusquedaTitulo">Detalle del expediente</span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalBusquedaBody">
@@ -598,7 +670,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-share me-2"></i>Enviar al Secretario</h5>
+                    <h5 class="modal-title">Enviar al Secretario</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalEnviarSecretarioBody">
@@ -646,7 +718,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clock me-2"></i>Detalle de Tiempo</h5>
+                    <h5 class="modal-title">Detalle de Tiempo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="modalDetalleTiempoBody">
@@ -761,6 +833,8 @@
             const COEF_BONO_PRODUCTIVIDAD_EXTRA = 0.5;
             const COEF_HISTORICO_BAJO = 2;
             const COEF_HISTORICO_ALTO = 1.5;
+            /* Días hábiles en la bandeja del Defensor a partir de los cuales un pase se considera "demorado" (KPI y filtro) */
+            const DEFENSOR_UMBRAL_DIAS = 5;
 
             const TIPOS = CONFIG.tipos;
             const MODOS_INTERVENCION = CONFIG.modosIntervencion;
@@ -780,8 +854,14 @@
             let filtroAnio = '';
             let puntajesManualesCache = {};
             let chatUnsubscribe = null;
+            let causasUnsubscribe = null;
+            let _renderRemotoTimer = null;
             let justificarCausaId = null;
             let filtroExpedienteUnico = null;
+            let filtroDefensor = null;            /* filtro activo de la tabla del Defensor (desde KPIs / gráficos) */
+            let _metricasDefensor = null;
+            let _sigGraficosDefensor = '';
+            let defensorGraficosVisibles = (function() { try { return localStorage.getItem('defensor_graficos_visibles') !== '0'; } catch (_) { return true; } })();
 
             function getEmpName(id) { const e = CONFIG.empleados.find(x => x.id === id); return e ? e.nombre : '-'; }
             function getSecName(id) { const s = CONFIG.secretarios.find(x => x.id === id); return s ? s.nombre : '-'; }
@@ -875,13 +955,14 @@
                     'en_defensor': '<span class="badge-estado badge-def">⚖️ Defensor</span>',
                     'devuelto_siged': '<span class="badge-estado badge-dev">↩️ Devuelto a SIGED</span>',
                     'remitido': '<span class="badge-estado badge-rem">📤 Remitido</span>',
-                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>'
+                    'rechazado': '<span class="badge-estado badge-rech">🚫 Rechazado</span>',
+                    'en_espera': '<span class="badge-estado badge-esp">⏳ En espera</span>'
                 };
                 return map[estado] || `<span class="badge-estado">${estado}</span>`;
             }
 
             function getEstadoBadgePlain(estado) {
-                const map = { 'en_secretaria': 'Secretaría', 'en_proceso': 'En proceso', 'finalizada': 'Finalizada', 'en_defensor': 'Defensor', 'devuelto_siged': 'Devuelto a SIGED', 'remitido': 'Remitido', 'rechazado': 'Rechazado' };
+                const map = { 'en_secretaria': 'Secretaría', 'en_proceso': 'En proceso', 'finalizada': 'Finalizada', 'en_defensor': 'Defensor', 'devuelto_siged': 'Devuelto a SIGED', 'remitido': 'Remitido', 'rechazado': 'Rechazado', 'en_espera': 'En espera' };
                 return map[estado] || estado;
             }
 
@@ -1023,41 +1104,102 @@
                 return conIA.length === 0 ? null : conIA[0].id;
             }
 
+            /* Documentos de la colección 'operador' que NO son causas (configuración / auxiliares) */
+            const DOCS_NO_CAUSA = ['ausencias', 'secretario_config', 'config', 'tipos_causa_config'];
+
+            function empleadosPorDefecto() {
+                return CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+            }
+
+            /* Vuelca un snapshot de 'operador' en el estado local. Devuelve las causas que acaban de llegar a Defensor. */
+            function aplicarSnapshotOperador(snapshot) {
+                const causas = []; let ausencias = []; let empleadosConfig = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data() || {};
+                    if (doc.id === 'ausencias') { ausencias = data.ausencias || []; return; }
+                    if (doc.id === 'secretario_config') { empleadosConfig = data.empleados || empleadosPorDefecto(); return; }
+                    if (DOCS_NO_CAUSA.includes(doc.id)) return;
+                    if (!data.numero) return; /* ignora cualquier documento que no sea una causa */
+                    if (!data.id) data.id = doc.id;
+                    if (!data.empleadoAsignado && data.empleadoId) data.empleadoAsignado = data.empleadoId;
+                    causas.push(data);
+                });
+                const previos = new Set(state.causas.filter(c => c.estado === 'en_defensor').map(c => c.id));
+                const nuevosPases = causas.filter(c => c.estado === 'en_defensor' && !previos.has(c.id));
+                state.causas = causas;
+                state.ausencias = ausencias;
+                state.empleados = empleadosConfig.length ? empleadosConfig : empleadosPorDefecto();
+                return nuevosPases;
+            }
+
+            /* Lectura puntual (botón "Actualizar" y recuperación tras un error de escritura) */
             async function loadStateFromFirestore() {
                 if (!db) {
                     console.warn('Firestore no disponible. Se usarán datos vacíos.');
                     state.causas = [];
                     state.ausencias = [];
-                    state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+                    state.empleados = empleadosPorDefecto();
                     puntajesManualesCache = {};
                     return;
                 }
                 try {
                     const snapshot = await db.collection('operador').get();
-                    const causas = []; let ausencias = []; let empleadosConfig = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (doc.id === 'ausencias') ausencias = data.ausencias || [];
-                        else if (doc.id === 'secretario_config') empleadosConfig = data.empleados || CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
-                        else {
-                            if (!data.id) data.id = doc.id;
-                            if (!data.empleadoAsignado && data.empleadoId) data.empleadoAsignado = data.empleadoId;
-                            causas.push(data);
-                        }
-                    });
-                    state.causas = causas;
-                    state.ausencias = ausencias;
-                    state.empleados = empleadosConfig.length ? empleadosConfig : CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
+                    aplicarSnapshotOperador(snapshot);
                     await cargarPuntajesManuales();
-                    console.log('Datos cargados:', causas.length, 'causas');
+                    console.log('Datos cargados:', state.causas.length, 'causas');
                 } catch (error) {
                     console.error('Error cargando datos:', error);
                     showToast('Error al conectar con Firestore: ' + error.message, 'danger');
-                    state.causas = [];
-                    state.ausencias = [];
-                    state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
-                    puntajesManualesCache = {};
                 }
+            }
+
+            function hayEdicionEnCurso() {
+                const a = document.activeElement;
+                if (a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && !a.closest('#chatWidget') && a.id !== 'globalSearch') return true;
+                return !!document.querySelector('.modal.show');
+            }
+
+            /* Redibuja con retardo y sin pisar lo que el defensor está escribiendo o seleccionando */
+            function programarRenderRemoto() {
+                clearTimeout(_renderRemotoTimer);
+                const intentar = () => {
+                    const w = document.getElementById('appWrapper');
+                    if (!w || !w.classList.contains('visible')) return;
+                    if (hayEdicionEnCurso()) { _renderRemotoTimer = setTimeout(intentar, 3000); return; }
+                    renderAll();
+                };
+                _renderRemotoTimer = setTimeout(intentar, 400);
+            }
+
+            function detenerEscuchaCausas() {
+                if (causasUnsubscribe) { causasUnsubscribe(); causasUnsubscribe = null; }
+                clearTimeout(_renderRemotoTimer);
+            }
+
+            /* Escucha en tiempo real (igual que secretario.html): los pases elevados aparecen sin recargar */
+            function iniciarEscuchaCausas() {
+                return new Promise((resolve) => {
+                    if (!db) { resolve(); return; }
+                    detenerEscuchaCausas();
+                    let primera = true;
+                    causasUnsubscribe = db.collection('operador').onSnapshot((snapshot) => {
+                        const nuevos = aplicarSnapshotOperador(snapshot);
+                        if (primera) {
+                            primera = false;
+                            cargarPuntajesManuales().then(resolve, resolve);
+                            return;
+                        }
+                        if (nuevos.length) {
+                            const lista = nuevos.slice(0, 3).map(c => c.numero).join(', ') + (nuevos.length > 3 ? '…' : '');
+                            showToast(`⚖️ ${nuevos.length === 1 ? 'Nuevo pase recibido' : nuevos.length + ' nuevos pases recibidos'} de Secretaría (${lista})`, 'info');
+                        }
+                        programarRenderRemoto();
+                    }, (error) => {
+                        console.error('Error en onSnapshot:', error);
+                        showToast('Error al conectar con Firestore: ' + error.message, 'danger');
+                        if (primera) { primera = false; resolve(); }
+                    });
+                });
             }
 
             async function updateCausaInFirestore(causa) {
@@ -1066,7 +1208,7 @@
                     return;
                 }
                 try {
-                    await db.collection('operador').doc(causa.id).set(causa);
+                    await db.collection('operador').doc(causa.id).set(causa, { merge: true });
                 } catch (error) {
                     console.error('Error actualizando causa:', error);
                     showToast('Error al actualizar en Firestore: ' + error.message, 'danger');
@@ -1157,7 +1299,7 @@
             function obtenerSecretarioAsignante(causa) {
                 if (!causa.historial) return null;
                 for (const entry of causa.historial) {
-                    if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignó')) && entry.usuario) {
+                    if (entry.accion && (entry.accion.includes('Asignada') || entry.accion.includes('Asignado') || entry.accion.includes('Asignó')) && entry.usuario) {
                         const sec = CONFIG.secretarios.find(s => entry.usuario.includes(s.nombre) || s.nombre.includes(entry.usuario));
                         if (sec) return sec.id;
                     }
@@ -1173,9 +1315,9 @@
 
             async function asignarCausa(id, nivSec, empId, com = '', secId = null, tipo = null, modoIntervencion = null) {
                 const c = state.causas.find(x => x.id === id);
-                if (!c || c.estado !== 'en_secretaria') { showToast('Causa no disponible', 'warning'); return false; }
+                if (!c || (c.estado !== 'en_secretaria' && c.estado !== 'en_defensor')) { showToast('Causa no disponible', 'warning'); return false; }
                 if (isAusente(empId)) { showToast('El empleado está ausente', 'warning'); return false; }
-                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
+                const existing = state.causas.filter(doc => doc.id !== c.id && doc.numero === c.numero && doc.empleadoAsignado);
                 let empleadoOriginal = null; let tipoAsignacion = 'Nuevo Patrocinio'; let esReingreso = false;
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
@@ -1189,7 +1331,8 @@
                 c.tipoAsignacion = tipoAsignacion; c.esReingreso = esReingreso;
                 c.estado = 'en_proceso';
                 c.fechaAsignacion = new Date().toISOString();
-                c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[c.nivelSecretario] || 3) * 86400000).toISOString();
+                c.fechaResolucionEmpleado = null;
+                c.fechaLimite = calcularFechaLimite(calcularFechaInicio(c.fechaAsignacion), c.nivelSecretario).toISOString();
                 if (tipo !== null && tipo !== undefined) c.tipo = tipo;
                 if (modoIntervencion !== null && modoIntervencion !== undefined) c.modoIntervencion = modoIntervencion;
                 let userRoleName = getSecName(secId || c.secretarioId) || 'Defensor';
@@ -1207,7 +1350,7 @@
                 const c = state.causas.find(x => x.id === causaId);
                 if (!c) return false;
                 const operadorNombre = c.operador;
-                const existing = state.causas.filter(doc => doc.numero === c.numero && doc.empleadoAsignado);
+                const existing = state.causas.filter(doc => doc.id !== c.id && doc.numero === c.numero && doc.empleadoAsignado);
                 if (existing.length > 0) {
                     existing.sort((a, b) => new Date(a.fechaAsignacion) - new Date(b.fechaAsignacion));
                     const empId = existing[0].empleadoAsignado;
@@ -1261,7 +1404,7 @@
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title"><i class="bi bi-shield-check me-2"></i>Confirmar asignación automática</h5>
+                                        <h5 class="modal-title">Confirmar asignación automática</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body" id="modalConfirmacionBody"></div>
@@ -1502,24 +1645,506 @@
                 new bootstrap.Modal(modalEl).show();
             }
 
+            /* =====================================================================
+               KPIs y gráficos del panel Defensor
+               ===================================================================== */
+
+            function escHtml(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+            }
+            function recortarTexto(s, max) { s = String(s); return s.length > max ? s.slice(0, max - 1) + '…' : s; }
+            function nombreCorto(nombre) {
+                const p = String(nombre || '').trim().split(/\s+/);
+                return p.length > 1 ? `${p[0]} ${p[1].charAt(0)}.` : (p[0] || '-');
+            }
+            function fmt1(n) { return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+            function _aFecha(v) {
+                if (!v) return null;
+                const d = (typeof v.toDate === 'function') ? v.toDate() : new Date(v);
+                return isNaN(d) ? null : d;
+            }
+            function _claveDia(d) { return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+
+            /* Día hábil con feriados cacheados por año (evita recalcular Pascua en cada vuelta de los bucles) */
+            const _feriadosCache = {};
+            function _esHabilCacheado(f) {
+                const ds = f.getDay();
+                if (ds === 0 || ds === 6) return false;
+                const y = f.getFullYear();
+                if (!_feriadosCache[y]) _feriadosCache[y] = new Set(getFeriados(y).map(x => `${x.getMonth()}-${x.getDate()}`));
+                return !_feriadosCache[y].has(`${f.getMonth()}-${f.getDate()}`);
+            }
+            /* Días hábiles transcurridos desde el día de ingreso (mismo día = 0; vie → lun = 1) */
+            function diasHabilesEnBandeja(desde, hasta) {
+                const d = _aFecha(desde);
+                if (!d) return null;
+                const fin0 = hasta || new Date();
+                const cur = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                const fin = new Date(fin0.getFullYear(), fin0.getMonth(), fin0.getDate());
+                let n = 0;
+                while (cur < fin) { cur.setDate(cur.getDate() + 1); if (_esHabilCacheado(cur)) n++; }
+                return n;
+            }
+
+            /* Fecha en que el pase llegó a la bandeja del Defensor.
+               Se toma la última acción del historial que menciona "Defensor" o "elevado" realizada por otro usuario;
+               si no existe, se usan fechaResolucionEmpleado → fechaPaseSecretario → último movimiento. */
+            function getFechaIngresoDefensor(c) {
+                const hist = Array.isArray(c.historial) ? c.historial : [];
+                for (let i = hist.length - 1; i >= 0; i--) {
+                    const h = hist[i];
+                    if (h && h.fecha && /defensor|elev/i.test(h.accion || '') && !/defensor/i.test(h.usuario || '')) return h.fecha;
+                }
+                return c.fechaResolucionEmpleado || c.fechaPaseSecretario || (hist.length ? hist[hist.length - 1].fecha : null) || null;
+            }
+            /* Fecha en que el propio Defensor finalizó el pase (null si no lo finalizó él) */
+            function getFechaResolucionDefensor(c) {
+                if (c.estado !== 'finalizada') return null;
+                const hist = Array.isArray(c.historial) ? c.historial : [];
+                for (let i = hist.length - 1; i >= 0; i--) {
+                    const h = hist[i];
+                    if (h && /defensor/i.test(h.usuario || '') && /finaliz/i.test(h.accion || '')) return h.fecha || c.fechaFinalizacion || null;
+                }
+                return null;
+            }
+
+            function calcularMetricasDefensor() {
+                const ahora = new Date();
+                const hoy = _claveDia(ahora);
+                const bandeja = state.causas.filter(c => c.estado === 'en_defensor');
+
+                const diasPorId = {};
+                const ingresoHoy = new Set();
+                const buckets = [
+                    { label: '0–1', min: 0, max: 1, n: 0 },
+                    { label: '2–3', min: 2, max: 3, n: 0 },
+                    { label: '4–5', min: 4, max: 5, n: 0 },
+                    { label: '6–10', min: 6, max: 10, n: 0 },
+                    { label: '+10', min: 11, max: Infinity, n: 0 }
+                ];
+                const porTipo = {};
+                let sumaDias = 0, conDias = 0, masAntiguo = null, demorados = 0;
+
+                bandeja.forEach(c => {
+                    const ing = getFechaIngresoDefensor(c);
+                    const fIng = _aFecha(ing);
+                    if (fIng && _claveDia(fIng) === hoy) ingresoHoy.add(c.id);
+                    const dias = diasHabilesEnBandeja(ing, ahora);
+                    if (dias !== null) {
+                        diasPorId[c.id] = dias;
+                        sumaDias += dias; conDias++;
+                        if (!masAntiguo || dias > masAntiguo.dias) masAntiguo = { numero: c.numero, dias };
+                        if (dias > DEFENSOR_UMBRAL_DIAS) demorados++;
+                        const b = buckets.find(x => dias >= x.min && dias <= x.max);
+                        if (b) b.n++;
+                    }
+                    const t = c.tipo || 'Sin tipo';
+                    porTipo[t] = (porTipo[t] || 0) + 1;
+                });
+
+                /* Tipos: los 7 más frecuentes + "Otros" */
+                const ordenados = Object.entries(porTipo).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+                const TOP = 7;
+                const tipos = ordenados.slice(0, TOP).map(([t, n]) => ({ etiqueta: t, n, valores: [t], otros: false }));
+                if (ordenados.length > TOP) {
+                    const resto = ordenados.slice(TOP);
+                    tipos.push({ etiqueta: `Otros (${resto.length})`, n: resto.reduce((s, [, n]) => s + n, 0), valores: resto.map(([t]) => t), otros: true });
+                }
+
+                /* Resueltos por el Defensor */
+                const resueltosPorDia = {};
+                let resueltosHoy = 0, resueltosSemana = 0;
+                const inicioSemana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - ((ahora.getDay() + 6) % 7));
+                state.causas.forEach(c => {
+                    const f = _aFecha(getFechaResolucionDefensor(c));
+                    if (!f) return;
+                    const k = _claveDia(f);
+                    resueltosPorDia[k] = (resueltosPorDia[k] || 0) + 1;
+                    if (k === hoy) resueltosHoy++;
+                    if (f >= inicioSemana) resueltosSemana++;
+                });
+                const DIAS_SEM = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+                const serieResueltos = [];
+                const cur = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+                for (let i = 0; i < 30 && serieResueltos.length < 10; i++) {
+                    const n = resueltosPorDia[_claveDia(cur)] || 0;
+                    if (_esHabilCacheado(cur) || n > 0) {
+                        serieResueltos.unshift({
+                            label: [DIAS_SEM[cur.getDay()], `${String(cur.getDate()).padStart(2, '0')}/${String(cur.getMonth() + 1).padStart(2, '0')}`],
+                            n, hoy: i === 0
+                        });
+                    }
+                    cur.setDate(cur.getDate() - 1);
+                }
+
+                /* Carga activa por empleado (cantidad de pases en proceso) */
+                const carga = CONFIG.empleados.map(e => {
+                    const act = state.causas.filter(c => c.empleadoAsignado === e.id && c.estado === 'en_proceso');
+                    return { id: e.id, nombre: e.nombre, corto: nombreCorto(e.nombre), causas: act.length, ausente: !!isAusente(e.id) };
+                }).sort((a, b) => (b.causas - a.causas) || a.nombre.localeCompare(b.nombre)); /* mayor cantidad de pases primero */
+                const cargaDisp = carga.filter(x => !x.ausente);
+                const cargaProm = cargaDisp.length ? cargaDisp.reduce((sum, x) => sum + x.causas, 0) / cargaDisp.length : 0;
+
+                const empTotal = CONFIG.empleados.length;
+                const empDisp = CONFIG.empleados.filter(e => !isAusente(e.id)).length;
+
+                return {
+                    total: bandeja.length, nuevosHoy: ingresoHoy.size,
+                    edadProm: conDias ? sumaDias / conDias : null, masAntiguo, demorados,
+                    resueltosHoy, resueltosSemana, empTotal, empDisp,
+                    diasPorId, ingresoHoy, buckets, tipos, tiposTodos: ordenados.map(([t, n]) => ({ etiqueta: t, n })), serieResueltos, carga, cargaProm
+                };
+            }
+
+            /* ----- Filtros de la tabla disparados desde KPIs y gráficos ----- */
+            const FILTROS_DEFENSOR = {
+                hoy: () => ({ clave: 'hoy', etiqueta: 'Nuevos hoy', test: (c, m) => m.ingresoHoy.has(c.id) }),
+                demorados: () => ({ clave: 'demorados', etiqueta: `Demorados (más de ${DEFENSOR_UMBRAL_DIAS} días hábiles)`, test: (c, m) => (m.diasPorId[c.id] !== undefined) && m.diasPorId[c.id] > DEFENSOR_UMBRAL_DIAS }),
+                edad: (b) => ({ clave: 'edad:' + b.label, etiqueta: `Antigüedad ${b.label} días hábiles`, test: (c, m) => { const d = m.diasPorId[c.id]; return d !== undefined && d >= b.min && d <= b.max; } }),
+                tipo: (etiqueta, valores) => ({ clave: 'tipo:' + etiqueta, etiqueta: `Tipo: ${etiqueta}`, test: (c) => valores.includes(c.tipo || 'Sin tipo') })
+            };
+            function setFiltroDefensor(f) {
+                if (f && filtroDefensor && filtroDefensor.clave === f.clave) f = null; /* segundo clic = quitar */
+                filtroDefensor = f;
+                paginationState.defensor.page = 1;
+                renderDefensor();
+            }
+
+            /* ----- Gráficos: utilidades ----- */
+            let _chartDefaultsListos = false;
+            function configurarChartDefaults() {
+                if (_chartDefaultsListos || typeof Chart === 'undefined') return;
+                Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+                Chart.defaults.font.size = 11;
+                Chart.defaults.color = '#475569';
+                const tt = Chart.defaults.plugins.tooltip;
+                tt.backgroundColor = 'rgba(15,23,42,.95)'; tt.cornerRadius = 10; tt.padding = 10; tt.boxPadding = 4; tt.titleFont = { weight: '700' };
+                _chartDefaultsListos = true;
+            }
+            function crearGrafico(clave, canvasId, config) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || typeof Chart === 'undefined') return null;
+                if (chartInstances[clave]) { try { chartInstances[clave].destroy(); } catch (_) {} delete chartInstances[clave]; }
+                chartInstances[clave] = new Chart(canvas, config);
+                return chartInstances[clave];
+            }
+            function destruirGraficos(prefijo) {
+                Object.keys(chartInstances).filter(k => k.startsWith(prefijo)).forEach(k => { try { chartInstances[k].destroy(); } catch (_) {} delete chartInstances[k]; });
+            }
+            function atenuarColor(hex) { return hex + '55'; }
+            function cursorClicable(evt, els) { const t = evt && evt.native && evt.native.target; if (t) t.style.cursor = els.length ? 'pointer' : 'default'; }
+
+            /* Muestra el valor al final de cada barra */
+            const pluginValorBarras = {
+                id: 'valorBarras',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    const horizontal = chart.options.indexAxis === 'y';
+                    ctx.save();
+                    ctx.font = "700 11px 'Plus Jakarta Sans', sans-serif";
+                    ctx.fillStyle = '#334155';
+                    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+                        const v = chart.data.datasets[0].data[i];
+                        if (!v) return;
+                        const txt = Number.isInteger(v) ? String(v) : v.toFixed(1);
+                        if (horizontal) { ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, bar.x + 6, bar.y); }
+                        else { ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(txt, bar.x, bar.y - 5); }
+                    });
+                    ctx.restore();
+                }
+            };
+            /* Texto en el centro de un doughnut */
+            const pluginTextoCentro = {
+                id: 'textoCentro',
+                afterDatasetsDraw(chart, args, opts) {
+                    if (!opts || opts.texto == null) return;
+                    const arc = chart.getDatasetMeta(0).data[0];
+                    if (!arc) return;
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#0f172a'; ctx.font = "800 24px 'Plus Jakarta Sans', sans-serif";
+                    ctx.fillText(opts.texto, arc.x, arc.y - (opts.sub ? 8 : 0));
+                    if (opts.sub) { ctx.fillStyle = '#64748b'; ctx.font = "600 10px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(opts.sub, arc.x, arc.y + 14); }
+                    ctx.restore();
+                }
+            };
+
+            /* ----- Panorama del Defensor: HTML ----- */
+            function htmlKpiCard(k) {
+                const tag = k.clave ? 'button' : 'div';
+                const attrs = k.clave ? ` type="button" data-kpi="${k.clave}" aria-pressed="${k.activo ? 'true' : 'false'}"` : '';
+                return `<${tag} class="kpi-card k-${k.color}${k.clave ? ' is-clickable' : ''}${k.activo ? ' is-active' : ''}"${attrs} title="${escHtml(k.titulo || '')}">
+                    <div class="kpi-icon"><i class="bi ${k.icono}"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-label">${k.label}</div>
+                        <div class="kpi-value">${k.valor}</div>
+                        <div class="kpi-sub">${k.sub}</div>
+                    </div>
+                </${tag}>`;
+            }
+
+            function htmlKpisDefensor(m) {
+                const f = filtroDefensor ? filtroDefensor.clave : null;
+                const ausentes = m.empTotal - m.empDisp;
+                const kpis = [
+                    { clave: filtroDefensor ? 'todos' : null, icono: 'bi-inbox-fill', label: 'A resolución', valor: m.total, color: 'violet',
+                      sub: filtroDefensor ? 'Clic: ver todos' : 'pases en bandeja', titulo: filtroDefensor ? 'Quitar el filtro y ver todos los pases' : 'Pases que esperan resolución del Defensor' },
+                    { clave: 'hoy', activo: f === 'hoy', icono: 'bi-box-arrow-in-down', label: 'Nuevos hoy', valor: m.nuevosHoy, color: 'blue',
+                      sub: 'aún sin resolver', titulo: 'Pases que ingresaron hoy y siguen en la bandeja. Clic para filtrar la tabla.' },
+                    { icono: 'bi-hourglass-split', label: 'Antigüedad prom.', color: 'blue',
+                      valor: m.edadProm === null ? '—' : `${fmt1(Math.round(m.edadProm * 10) / 10)}<small>d háb.</small>`,
+                      sub: m.masAntiguo ? `máx. ${m.masAntiguo.dias} d · ${escHtml(m.masAntiguo.numero)}` : 'sin pases en bandeja',
+                      titulo: 'Promedio de días hábiles que llevan los pases en la bandeja del Defensor' },
+                    { clave: 'demorados', activo: f === 'demorados', icono: 'bi-alarm-fill', label: `Demorados (+${DEFENSOR_UMBRAL_DIAS} d)`, valor: m.demorados, color: m.demorados ? 'red' : 'navy',
+                      sub: 'días hábiles en bandeja', titulo: `Pases con más de ${DEFENSOR_UMBRAL_DIAS} días hábiles en la bandeja. Clic para filtrar la tabla.` },
+                    { icono: 'bi-check2-circle', label: 'Resueltos hoy', valor: m.resueltosHoy, color: 'navy',
+                      sub: `${m.resueltosSemana} en la semana`, titulo: 'Pases finalizados por el Defensor' },
+                    { icono: 'bi-people-fill', label: 'Empleados disp.', valor: `${m.empDisp}<small>/ ${m.empTotal}</small>`, color: ausentes ? 'amber' : 'blue',
+                      sub: ausentes ? `${ausentes} ausente${ausentes === 1 ? '' : 's'}` : 'todos presentes', titulo: 'Empleados disponibles para recibir asignaciones' }
+                ];
+                return `<div class="kpi-strip">${kpis.map(htmlKpiCard).join('')}</div>`;
+            }
+
+            function _cardGrafico(id, titulo, sub, vacio, aria) {
+                return `<div class="chart-card">
+                    <div class="chart-head">
+                        <div class="chart-title">${titulo}<span>${sub}</span></div>
+                        ${vacio ? '' : `<button type="button" class="btn-print-chart" data-print-chart="${id}" title="Imprimir como reporte de tabla"><i class="bi bi-printer"></i> Imprimir tabla</button>`}
+                    </div>
+                    ${vacio
+                        ? `<div class="chart-empty"><i class="bi bi-bar-chart"></i>${vacio}</div>`
+                        : `<div class="chart-box"><canvas id="${id}" role="img" aria-label="${escHtml(aria)}"></canvas></div>`}
+                </div>`;
+            }
+
+            function htmlGraficosDefensor(m) {
+                if (typeof Chart === 'undefined') {
+                    return `<div class="chart-empty"><i class="bi bi-wifi-off"></i>No se pudo cargar la librería de gráficos. Revise la conexión y presione Actualizar.</div>`;
+                }
+                const sinPases = m.total === 0 ? 'Sin pases en la bandeja' : '';
+                const cargaVacia = m.carga.every(x => x.causas === 0) ? 'Ningún empleado tiene pases en proceso' : '';
+                const resVacia = m.serieResueltos.every(x => x.n === 0) ? 'Sin resoluciones en los últimos 10 días hábiles' : '';
+                return [
+                    _cardGrafico('chartDefTipo', 'Pases por tipo', 'clic en una barra para filtrar', sinPases, 'Cantidad de pases en bandeja por tipo de causa'),
+                    _cardGrafico('chartDefEdad', 'Antigüedad en bandeja', 'días hábiles · clic para filtrar', sinPases, 'Cantidad de pases según días hábiles en la bandeja'),
+                    _cardGrafico('chartDefCarga', 'Carga activa por empleado', `pases en proceso · prom. ${fmt1(Math.round(m.cargaProm * 10) / 10)}`, cargaVacia, 'Cantidad de pases en proceso por empleado'),
+                    _cardGrafico('chartDefResueltos', 'Resueltos por el Defensor', 'últimos 10 días hábiles', resVacia, 'Pases finalizados por el Defensor por día')
+                ].join('');
+            }
+
+            /* ----- Panorama del Defensor: gráficos ----- */
+            function renderGraficosDefensor(m) {
+                if (!defensorGraficosVisibles || typeof Chart === 'undefined') return;
+                configurarChartDefaults();
+
+                /* Anima solo cuando cambian los datos (no al paginar ni al filtrar) */
+                const sig = JSON.stringify([m.tipos, m.buckets.map(b => b.n), m.carga.map(c => [c.causas, c.ausente]), m.serieResueltos]);
+                const animar = sig !== _sigGraficosDefensor;
+                _sigGraficosDefensor = sig;
+                const base = () => ({
+                    responsive: true, maintainAspectRatio: false,
+                    animation: animar ? { duration: 600, easing: 'easeOutQuart' } : false,
+                    plugins: { legend: { display: false } }
+                });
+                const ejeNum = (extra) => Object.assign({ beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#eef2f7' }, border: { display: false } }, extra || {});
+                const fClave = filtroDefensor ? filtroDefensor.clave : null;
+                const diferir = (fn) => setTimeout(fn, 0); /* no destruir el gráfico dentro de su propio evento */
+
+                /* 1) Por tipo */
+                if (m.total > 0) {
+                    const colores = m.tipos.map(t => {
+                        const col = t.otros ? '#94a3b8' : '#2563eb';
+                        return (fClave && fClave.startsWith('tipo:') && fClave !== 'tipo:' + t.etiqueta) ? atenuarColor(col) : col;
+                    });
+                    const o = base();
+                    crearGrafico('defTipo', 'chartDefTipo', {
+                        type: 'bar',
+                        data: { labels: m.tipos.map(t => t.etiqueta), datasets: [{ data: m.tipos.map(t => t.n), backgroundColor: colores, borderRadius: 6, borderSkipped: false, maxBarThickness: 22 }] },
+                        options: Object.assign(o, {
+                            indexAxis: 'y', layout: { padding: { right: 26 } },
+                            scales: { x: ejeNum(), y: { grid: { display: false }, border: { display: false }, ticks: { callback(v) { return recortarTexto(this.getLabelForValue(v), 26); } } } },
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.parsed.x} pase${c.parsed.x === 1 ? '' : 's'}` } } },
+                            onClick: (e, els) => { if (els.length) { const t = m.tipos[els[0].index]; diferir(() => setFiltroDefensor(FILTROS_DEFENSOR.tipo(t.etiqueta, t.valores))); } },
+                            onHover: cursorClicable
+                        }),
+                        plugins: [pluginValorBarras]
+                    });
+
+                    /* 2) Antigüedad */
+                    const COL_EDAD = ['#93c5fd', '#60a5fa', '#2563eb', '#f59e0b', '#ef4444'];
+                    const coloresEdad = m.buckets.map((b, i) => (fClave && fClave.startsWith('edad:') && fClave !== 'edad:' + b.label) ? atenuarColor(COL_EDAD[i]) : COL_EDAD[i]);
+                    crearGrafico('defEdad', 'chartDefEdad', {
+                        type: 'bar',
+                        data: { labels: m.buckets.map(b => b.label), datasets: [{ data: m.buckets.map(b => b.n), backgroundColor: coloresEdad, borderRadius: 8, borderSkipped: false, maxBarThickness: 54 }] },
+                        options: Object.assign(base(), {
+                            layout: { padding: { top: 18 } },
+                            scales: { x: { grid: { display: false }, border: { display: false } }, y: ejeNum() },
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { title: it => `${it[0].label} días hábiles`, label: c => ` ${c.parsed.y} pase${c.parsed.y === 1 ? '' : 's'}` } } },
+                            onClick: (e, els) => { if (els.length) { const b = m.buckets[els[0].index]; diferir(() => setFiltroDefensor(FILTROS_DEFENSOR.edad(b))); } },
+                            onHover: cursorClicable
+                        }),
+                        plugins: [pluginValorBarras]
+                    });
+                }
+
+                /* 3) Carga por empleado */
+                if (!m.carga.every(x => x.causas === 0)) {
+                    const coloresCarga = m.carga.map(c => c.ausente ? '#cbd5e1' : (m.cargaProm > 0 && c.causas > m.cargaProm * 1.25 ? '#f59e0b' : '#2563eb'));
+                    crearGrafico('defCarga', 'chartDefCarga', {
+                        type: 'bar',
+                        data: { labels: m.carga.map(c => c.ausente ? `${c.corto} (aus.)` : c.corto), datasets: [{ data: m.carga.map(c => c.causas), backgroundColor: coloresCarga, borderRadius: 6, borderSkipped: false, maxBarThickness: 16 }] },
+                        options: Object.assign(base(), {
+                            indexAxis: 'y', layout: { padding: { right: 28 } },
+                            scales: { x: ejeNum(), y: { grid: { display: false }, border: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } } },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: {
+                                    title: it => m.carga[it[0].dataIndex].nombre,
+                                    label: c => { const e = m.carga[c.dataIndex]; return ` ${e.causas} pase${e.causas === 1 ? '' : 's'} en proceso`; },
+                                    afterLabel: c => m.carga[c.dataIndex].ausente ? ' Ausente: no recibe asignaciones' : ''
+                                } }
+                            }
+                        }),
+                        plugins: [pluginValorBarras]
+                    });
+                }
+
+                /* 4) Resueltos por el Defensor */
+                if (!m.serieResueltos.every(x => x.n === 0)) {
+                    crearGrafico('defResueltos', 'chartDefResueltos', {
+                        type: 'bar',
+                        data: { labels: m.serieResueltos.map(d => d.label), datasets: [{ data: m.serieResueltos.map(d => d.n), backgroundColor: m.serieResueltos.map(d => d.hoy ? '#7c3aed' : '#93c5fd'), borderRadius: 8, borderSkipped: false, maxBarThickness: 34 }] },
+                        options: Object.assign(base(), {
+                            layout: { padding: { top: 18 } },
+                            scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 } } }, y: ejeNum() },
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { title: it => (Array.isArray(it[0].label) ? it[0].label.join(' ') : it[0].label), label: c => ` ${c.parsed.y} resuelto${c.parsed.y === 1 ? '' : 's'}` } } }
+                        }),
+                        plugins: [pluginValorBarras]
+                    });
+                }
+            }
+
+            /* ----- Imprimir un gráfico como reporte de tabla ----- */
+            function _pctTabla(n, t) { return (t ? (n * 100 / t).toFixed(1).replace('.', ',') : '0,0') + '%'; }
+            function armarTablaCantidades(titulo, sub, colEtiqueta, colCantidad, items, extra) {
+                const t = items.reduce((sum, x) => sum + x.n, 0);
+                return {
+                    titulo, sub,
+                    head: [colEtiqueta, colCantidad, '%'].concat(extra ? [extra.titulo] : []),
+                    body: items.map(x => [x.label, x.n, _pctTabla(x.n, t)].concat(extra ? [extra.valor(x)] : [])),
+                    foot: ['Total', t, t ? '100,0%' : '0,0%'].concat(extra ? [''] : [])
+                };
+            }
+            function datosTablaGrafico(id, m) {
+                switch (id) {
+                    case 'chartDefTipo':
+                        return armarTablaCantidades('Pases por tipo', 'Pases en la bandeja del Defensor', 'Tipo', 'Cantidad de pases',
+                            m.tiposTodos.map(t => ({ label: t.etiqueta, n: t.n })));
+                    case 'chartDefEdad':
+                        return armarTablaCantidades('Antigüedad en bandeja', 'Pases en la bandeja del Defensor según días hábiles', 'Antigüedad', 'Cantidad de pases',
+                            m.buckets.map(b => ({ label: `${b.label} días hábiles`, n: b.n })));
+                    case 'chartDefCarga':
+                        return armarTablaCantidades('Carga activa por empleado', `Pases en proceso · promedio ${fmt1(Math.round(m.cargaProm * 10) / 10).replace('.', ',')} por empleado disponible`, 'Empleado', 'Pases en proceso',
+                            m.carga.map(c => ({ label: c.nombre, n: c.causas, ausente: c.ausente })),
+                            { titulo: 'Situación', valor: x => x.ausente ? 'Ausente' : 'Disponible' });
+                    case 'chartDefResueltos':
+                        return armarTablaCantidades('Resueltos por el Defensor', 'Últimos 10 días hábiles', 'Día', 'Resueltos',
+                            m.serieResueltos.map(d => ({ label: d.label.join(' '), n: d.n })));
+                }
+                return null;
+            }
+            function abrirReporteTabla(d) {
+                if (!d) return;
+                const alinear = (i) => (i === 1 || i === 2) ? 'text-align:right;' : 'text-align:left;';
+                const th = d.head.map((h, i) => `<th style="${alinear(i)}">${escHtml(h)}</th>`).join('');
+                const filas = d.body.map(r => `<tr>${r.map((v, i) => `<td style="${alinear(i)}${i === 0 ? 'font-weight:600;' : ''}">${escHtml(String(v))}</td>`).join('')}</tr>`).join('');
+                const pie = `<tr>${d.foot.map((v, i) => `<td style="${alinear(i)}font-weight:800;background:#eff3fa;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escHtml(String(v))}</td>`).join('')}</tr>`;
+                document.getElementById('modalReporteBody').innerHTML = `
+                    <div style="font-family:'Plus Jakarta Sans',sans-serif; color:#1f2937;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:1rem; border-bottom:2px solid #0f172a; padding-bottom:.5rem;">
+                            <div>
+                                <h5 style="margin:0; font-weight:800; color:#1d4ed8;">${escHtml(d.titulo)}</h5>
+                                <div style="font-size:.8rem; color:#64748b; margin-top:2px;">${escHtml(d.sub)}</div>
+                            </div>
+                            <div style="font-size:.75rem; color:#64748b; white-space:nowrap;">Fecha: ${fmtDt(new Date().toISOString())}</div>
+                        </div>
+                        <div class="table-wrap"><table class="table-modern table"><thead><tr>${th}</tr></thead><tbody>${filas}</tbody><tfoot>${pie}</tfoot></table></div>
+                    </div>`;
+                new bootstrap.Modal(document.getElementById('modalReporte')).show();
+            }
+            function imprimirTablaGrafico(id) {
+                if (!_metricasDefensor) return;
+                abrirReporteTabla(datosTablaGrafico(id, _metricasDefensor));
+            }
+
+            function alternarGraficosDefensor() {
+                defensorGraficosVisibles = !defensorGraficosVisibles;
+                try { localStorage.setItem('defensor_graficos_visibles', defensorGraficosVisibles ? '1' : '0'); } catch (_) {}
+                const grid = document.getElementById('defensorChartsGrid');
+                const btn = document.getElementById('btnToggleGraficosDef');
+                if (grid) grid.classList.toggle('d-none', !defensorGraficosVisibles);
+                if (btn) {
+                    btn.setAttribute('aria-expanded', defensorGraficosVisibles ? 'true' : 'false');
+                    btn.innerHTML = defensorGraficosVisibles ? '<i class="bi bi-eye-slash"></i> Ocultar gráficos' : '<i class="bi bi-bar-chart-line"></i> Mostrar gráficos';
+                }
+                if (defensorGraficosVisibles && _metricasDefensor) { _sigGraficosDefensor = ''; renderGraficosDefensor(_metricasDefensor); }
+                else destruirGraficos('def');
+            }
+
+            function enlazarPanoramaDefensor(panel) {
+                panel.querySelectorAll('[data-kpi]').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const k = el.dataset.kpi;
+                        if (k === 'todos') setFiltroDefensor(null);
+                        else if (FILTROS_DEFENSOR[k]) setFiltroDefensor(FILTROS_DEFENSOR[k]());
+                    });
+                });
+                const btnQuitar = panel.querySelector('#btnQuitarFiltroDef');
+                if (btnQuitar) btnQuitar.addEventListener('click', () => setFiltroDefensor(null));
+                const btnToggle = panel.querySelector('#btnToggleGraficosDef');
+                if (btnToggle) btnToggle.addEventListener('click', alternarGraficosDefensor);
+                panel.querySelectorAll('[data-print-chart]').forEach(b => b.addEventListener('click', () => imprimirTablaGrafico(b.dataset.printChart)));
+            }
+
             function renderDefensor() {
                 const panel = document.getElementById('panelDefensor');
+                const metricas = calcularMetricasDefensor();
+                _metricasDefensor = metricas;
                 let lista = state.causas.filter(c => c.estado === 'en_defensor');
                 if (filtroExpedienteUnico) lista = lista.filter(c => c.numero === filtroExpedienteUnico);
+                const totalBase = lista.length;
+                if (filtroDefensor) lista = lista.filter(c => filtroDefensor.test(c, metricas));
                 lista.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
                 const pState = paginationState.defensor;
+                pState.page = Math.min(pState.page, Math.ceil(lista.length / pState.perPage) || 1);
                 const { items, total, totalPages, page } = paginateData(lista, pState.page, pState.perPage);
                 const optsEmpleados = CONFIG.empleados.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
 
+                destruirGraficos('def');
+                const chipFiltro = filtroDefensor
+                    ? `<div class="filtro-activo" role="status"><i class="bi bi-funnel-fill"></i><span>Filtrando por <strong>${escHtml(filtroDefensor.etiqueta)}</strong> · ${total} de ${totalBase}</span><button type="button" id="btnQuitarFiltroDef"><i class="bi bi-x-lg"></i> Quitar filtro</button></div>`
+                    : '';
+
                 panel.innerHTML = `
                     <div class="card-modern">
+                        <div class="charts-head">
+                            <h6>Panorama de la bandeja</h6>
+                            <button type="button" class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnToggleGraficosDef" aria-expanded="${defensorGraficosVisibles ? 'true' : 'false'}" aria-controls="defensorChartsGrid">${defensorGraficosVisibles ? '<i class="bi bi-eye-slash"></i> Ocultar gráficos' : '<i class="bi bi-bar-chart-line"></i> Mostrar gráficos'}</button>
+                        </div>
+                        ${htmlKpisDefensor(metricas)}
+                        <div class="charts-grid${defensorGraficosVisibles ? '' : ' d-none'}" id="defensorChartsGrid">${htmlGraficosDefensor(metricas)}</div>
+                    </div>
+
+                    <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-gavel"></i> A Resolución · Defensor</div>
+                            <div class="card-title mb-0">A Resolución · Defensor</div>
                             <div>
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteGeneralDef"><i class="bi bi-file-earmark-text"></i> Reporte</button>
                                 <button class="btn btn-modern btn-modern-success btn-modern-sm" id="btnDistribuirMasivoDef"><i class="bi bi-magic"></i> Distribuir automático</button>
                             </div>
                         </div>
+                        ${chipFiltro}
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
@@ -1530,7 +2155,7 @@
                                             <td>${c.dni || '-'}</td>
                                             <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
-                                            <td>N${c.nivelOperador}</td>
+                                            <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
                                             <td>
                                                 <div class="d-flex gap-1">
                                                     <select class="form-select form-select-sm" id="def_em_${c.id}" style="max-width:130px;"><option value="">Seleccionar...</option>${optsEmpleados}</select>
@@ -1545,11 +2170,13 @@
                                         </tr>`).join('')}</tbody>
                                 </table>
                             </div><div id="paginationDefensor"></div>
-                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Sin causas en Defensor</div>`}
+                        ` : `<div class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>${filtroDefensor ? 'Ningún pase coincide con el filtro actual' : 'Sin causas en Defensor'}</div>`}
                     </div>
                 `;
 
                 if (total > 0) renderPagination('paginationDefensor', total, totalPages, page, pState.perPage, (np, npp) => { paginationState.defensor.page = np; paginationState.defensor.perPage = npp; renderDefensor(); });
+                enlazarPanoramaDefensor(panel);
+                requestAnimationFrame(() => { if (panel.isConnected && panel.classList.contains('active')) renderGraficosDefensor(metricas); });
 
                 document.querySelectorAll('.btn-def-asignar').forEach(btn => {
                     btn.addEventListener('click', async function() {
@@ -1560,9 +2187,14 @@
                         const c = state.causas.find(x => x.id === id);
                         if (c) {
                             c.estado = 'en_proceso'; c.empleadoId = empId; c.empleadoAsignado = empId;
+                            if (!c.empleadoOriginal) c.empleadoOriginal = empId;
                             c.fechaAsignacion = new Date().toISOString();
+                            c.fechaResolucionEmpleado = null;
                             const nLvl = c.nivelSecretario || c.nivelOperador || 2;
-                            c.fechaLimite = new Date(Date.now() + (CONFIG.nivelesDias[nLvl] || 3) * 86400000).toISOString();
+                            if (!c.nivelSecretario) c.nivelSecretario = nLvl;
+                            if (!c.puntos) c.puntos = CONFIG.nivelesPuntos[nLvl] || 2;
+                            c.fechaLimite = calcularFechaLimite(calcularFechaInicio(c.fechaAsignacion), nLvl).toISOString();
+                            if (!c.historial) c.historial = [];
                             c.historial.push({ fecha: new Date().toISOString(), accion: `Asignado (Nivel ${nLvl}) a ${getEmpName(empId)}`, usuario: 'Defensor', comentario: 'Reasignado desde Defensor' });
                             try { await updateCausaInFirestore(c); showToast(`📌 Reasignado a ${getEmpName(empId)}`); renderAll(); }
                             catch (error) { showToast('Error al reasignar', 'danger'); }
@@ -1638,12 +2270,12 @@
                 panel.innerHTML = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                            <div class="card-title mb-0"><i class="bi bi-camera-reels"></i> Cámara Gesell</div>
+                            <div class="card-title mb-0">Cámara Gesell</div>
                             <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnImprimirGesell"><i class="bi bi-printer"></i> Imprimir informe</button>
                         </div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <h6 style="font-size:0.8rem; font-weight:700; color:#0f172a;">Resumen</h6>
+                                <h6 class="panel-titulo" style="font-size:0.8rem;">Resumen</h6>
                                 <div class="kpi-grid" style="grid-template-columns: repeat(2,1fr);">
                                     <div class="kpi-item"><div class="label">Total</div><div class="value">${causasGesell.length}</div></div>
                                     <div class="kpi-item"><div class="label">En Defensor</div><div class="value warning">${enDefensorGesell.length}</div></div>
@@ -1651,23 +2283,43 @@
                                     <div class="kpi-item"><div class="label">Con Asistencia</div><div class="value info">${conAsistencia.length}</div></div>
                                 </div>
                             </div>
-                            <div class="col-md-6"><div class="chart-container"><canvas id="chartCamaraGesell"></canvas></div></div>
+                            <div class="col-md-6">
+                                <div class="chart-head">
+                                    <div class="chart-title">Asistencia a audiencias</div>
+                                    ${causasGesell.length ? '<button type="button" class="btn-print-chart" id="btnImprimirTablaGesell" title="Imprimir como reporte de tabla"><i class="bi bi-printer"></i> Imprimir tabla</button>' : ''}
+                                </div>
+                                <div class="chart-container"><canvas id="chartCamaraGesell" role="img" aria-label="Asistencia a audiencias de Cámara Gesell"></canvas></div>
+                            </div>
                         </div>
                         <hr />
                         ${tablaGesell}
                     </div>
                 `;
 
-                setTimeout(() => {
+                requestAnimationFrame(() => {
                     const canvas = document.getElementById('chartCamaraGesell');
                     if (!canvas) return;
-                    if (chartInstances.camaraGesell) chartInstances.camaraGesell.destroy();
+                    if (chartInstances.camaraGesell) { try { chartInstances.camaraGesell.destroy(); } catch (_) {} delete chartInstances.camaraGesell; }
+                    if (!causasGesell.length) { canvas.parentElement.innerHTML = '<div class="chart-empty"><i class="bi bi-pie-chart"></i>Sin causas de Cámara Gesell</div>'; return; }
+                    if (typeof Chart === 'undefined') { canvas.parentElement.innerHTML = '<div class="chart-empty"><i class="bi bi-wifi-off"></i>No se pudo cargar la librería de gráficos</div>'; return; }
+                    configurarChartDefaults();
+                    const nAsistio = conAsistencia.length;
+                    const nNoAsistio = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio').length;
+                    const nPendiente = causasGesell.length - nAsistio - nNoAsistio;
                     chartInstances.camaraGesell = new Chart(canvas, {
-                        type: 'bar',
-                        data: { labels: ['En Defensor','Finalizadas','Asistencia','Pendientes'], datasets: [{ label: 'Cantidad', data: [enDefensorGesell.length, finalizadasGesell.length, conAsistencia.length, sinAsistencia.length], backgroundColor: ['#f59e0b','#1e40af','#1d4ed8','#ef4444'], borderRadius: 6 }] },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                        type: 'doughnut',
+                        data: { labels: ['Asistió', 'No asistió', 'Pendiente'], datasets: [{ data: [nAsistio, nNoAsistio, nPendiente], backgroundColor: ['#1e3a8a', '#ef4444', '#f59e0b'], borderColor: '#fff', borderWidth: 3, hoverOffset: 6 }] },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, cutout: '64%',
+                            plugins: {
+                                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, padding: 14 } },
+                                tooltip: { callbacks: { label: c => { const t = causasGesell.length; return ` ${c.label}: ${c.parsed} (${t ? Math.round(c.parsed * 100 / t) : 0}%)`; } } },
+                                textoCentro: { texto: String(causasGesell.length), sub: 'audiencias' }
+                            }
+                        },
+                        plugins: [pluginTextoCentro]
                     });
-                }, 150);
+                });
 
                 document.querySelectorAll('.btn-guardar-gesell').forEach(btn => {
                     btn.addEventListener('click', async function() {
@@ -1694,6 +2346,16 @@
 
                 const btnGesell = document.getElementById('btnImprimirGesell');
                 if (btnGesell) btnGesell.addEventListener('click', generarInformeGesell);
+                const btnTablaGesell = document.getElementById('btnImprimirTablaGesell');
+                if (btnTablaGesell) btnTablaGesell.addEventListener('click', () => {
+                    const nAs = conAsistencia.length;
+                    const nNo = causasGesell.filter(c => c.asistenciaGesell === 'no_asistio').length;
+                    abrirReporteTabla(armarTablaCantidades('Asistencia a audiencias · Cámara Gesell', 'Causas de Cámara Gesell según asistencia', 'Asistencia', 'Cantidad de audiencias', [
+                        { label: 'Asistió', n: nAs },
+                        { label: 'No asistió', n: nNo },
+                        { label: 'Pendiente', n: causasGesell.length - nAs - nNo }
+                    ]));
+                });
             }
 
             function renderEmpleado() {
@@ -1759,7 +2421,7 @@
                 panel.innerHTML = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-person-check"></i> Mis Tareas</div>
+                            <div class="card-title mb-0">Tarea del Empleado seleccionado</div>
                             <div class="d-flex flex-wrap gap-2">
                                 <label class="form-label me-1" style="font-size:0.75rem; margin:0;">Empleado:</label>
                                 <select id="${selectorId}" class="form-select form-select-sm" style="width:auto;display:inline-block;">${optsEmpleados}</select>
@@ -1789,12 +2451,12 @@
                             <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnLimpiarFiltrosEmp"><i class="bi bi-eraser"></i> Limpiar</button>
                         </div>
                         <div class="mb-4">
-                            <h6 style="font-weight:700;color:#1e293b;"><i class="bi bi-inbox" style="color:#1e40af;"></i> Bandeja Activa (En Proceso)</h6>
+                            <h6 class="panel-titulo">Bandeja Activa (En Proceso)</h6>
                             ${generarTablaActivas(itemsAct)}
                             <div id="paginationEmpleado"></div>
                         </div>
                         <div>
-                            <h6 style="font-weight:700;color:#1e293b;"><i class="bi bi-clock-history" style="color:#64748b;"></i> Historial</h6>
+                            <h6 class="panel-titulo">Historial</h6>
                             <div id="tablaHistorialEmpleadoContainer"></div>
                         </div>
                     </div>
@@ -1849,7 +2511,7 @@
 
             function mostrarModalDetalleKPIs(titulo, lista, colFecha, colExtra) {
                 const body = document.getElementById('modalBusquedaBody');
-                document.getElementById('modalBusquedaTitulo').innerHTML = `<i class="bi bi-list-ul me-2"></i>${titulo}`;
+                document.getElementById('modalBusquedaTitulo').innerHTML = `${titulo}`;
                 if (lista.length === 0) body.innerHTML = `<div class="text-muted">No hay expedientes en esta categoría.</div>`;
                 else {
                     let html = `<div class="table-wrap"><table class="table-modern table"><thead><tr><th>Expediente</th><th>${colFecha}</th><th>${colExtra}</th></tr></thead><tbody>`;
@@ -1884,7 +2546,7 @@
                 panel.innerHTML = `
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-check2-circle"></i> Pases Finalizados</div>
+                            <div class="card-title mb-0">Pases Finalizados</div>
                             <div>
                                 <span class="badge bg-primary">${total} registros</span>
                                 <button class="btn btn-modern btn-modern-primary btn-modern-sm ms-2" id="btnReportePasesFinalizados"><i class="bi bi-printer"></i> Reporte</button>
@@ -1987,7 +2649,7 @@
                 panel.innerHTML = `
                     <div class="card-modern" style="padding-bottom:.8rem;">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="card-title mb-0"><i class="bi bi-person-lock"></i> Tarea de Secretarios</div>
+                            <div class="card-title mb-0">Tarea de Secretarios</div>
                             <button class="btn btn-modern btn-modern-outline btn-modern-sm" id="btnImprimirKPIs"><i class="bi bi-printer"></i> Imprimir KPIs</button>
                         </div>
                         <div class="kpi-grid">
@@ -1999,16 +2661,16 @@
                         </div>
                     </div>
                     <div class="card-modern" style="padding-top:.2rem; padding-bottom:.8rem;">
-                        <div class="card-title mb-2"><i class="bi bi-people-fill"></i> Tarea de Empleados</div>
+                        <div class="card-title mb-2">Tarea de Empleados</div>
                         <div class="destacados-grid">
-                            <div class="destacado-item"><div class="dest-label">🏆 Mejor Cumplimiento</div><div class="dest-nombre">${mejorCumplimiento.nombre}</div><div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div></div>
-                            <div class="destacado-item"><div class="dest-label">📊 Mayor Carga</div><div class="dest-nombre">${mayorCarga.nombre}</div><div class="dest-detalle">${mayorCarga.count} expedientes total</div></div>
-                            <div class="destacado-item"><div class="dest-label">⏳ Mayor Demora</div><div class="dest-nombre text-danger">${mayorDemora.nombre}</div><div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días' : 'Sin retrasos'}</div></div>
+                            <div class="destacado-item"><div class="dest-label">Mejor Cumplimiento</div><div class="dest-nombre">${mejorCumplimiento.nombre}</div><div class="dest-detalle">${mejorCumplimiento.count} causas finalizadas</div></div>
+                            <div class="destacado-item"><div class="dest-label">Mayor Carga</div><div class="dest-nombre">${mayorCarga.nombre}</div><div class="dest-detalle">${mayorCarga.count} expedientes total</div></div>
+                            <div class="destacado-item"><div class="dest-label">Mayor Demora</div><div class="dest-nombre text-danger">${mayorDemora.nombre}</div><div class="dest-detalle">${mayorDemora.dias > 0 ? mayorDemora.dias.toFixed(1) + ' días' : 'Sin retrasos'}</div></div>
                         </div>
                     </div>
                     <div class="card-modern">
                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-                            <div class="card-title mb-0"><i class="bi bi-clipboard-data"></i> Tarea de Operador</div>
+                            <div class="card-title mb-0">Tarea de Operador</div>
                             <button class="btn btn-modern btn-modern-primary btn-modern-sm" id="btnReporteAuditoria"><i class="bi bi-printer"></i> Reporte</button>
                         </div>
                         <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -2153,7 +2815,7 @@
                         <h6 style="font-weight:600; color:#0f172a; margin-bottom:.5rem;">Detalle</h6>
                         <div class="table-wrap"><table class="table-modern table" style="width:100%; min-width:600px;">
                             <thead><tr><th>Expediente</th><th>DNI</th><th>Modo</th><th>Tipo</th><th>Nivel</th><th>Asignación</th><th>Finalización</th><th>Estado</th></tr></thead>
-                            <tbody>${causas.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni||'-'}</td><td>${c.modoIntervencion||'-'}</td><td>${c.tipo||'-'}</td><td>N${c.nivelSecretario||c.nivelOperador}</td><td style="font-size:.7rem;">${getFechaAsignacion(c)}</td><td style="font-size:.7rem;">${c.fechaFinalizacion ? fmtDt(c.fechaFinalizacion) : '-'}</td><td>${getEstadoBadgePlain(c.estado)}</td></tr>`).join('')}
+                            <tbody>${causas.map(c => `<tr><td><strong>${c.numero}</strong></td><td>${c.dni||'-'}</td><td>${c.modoIntervencion||'-'}</td><td>${c.tipo||'-'}</td><td>N${c.nivelSecretario||c.nivelOperador||1}</td><td style="font-size:.7rem;">${getFechaAsignacion(c)}</td><td style="font-size:.7rem;">${c.fechaFinalizacion ? fmtDt(c.fechaFinalizacion) : '-'}</td><td>${getEstadoBadgePlain(c.estado)}</td></tr>`).join('')}
                             ${causas.length === 0 ? '<tr><td colspan="8" style="padding:20px; text-align:center; color:#94a3b8;">No hay expedientes.</td></tr>' : ''}</tbody>
                         </table></div>
                     </div>`;
@@ -2313,6 +2975,88 @@
                 if (pps) pps.addEventListener('change', function() { callback(1, parseInt(this.value)); });
             }
 
+            /* ----- Pestaña Totales: Operador / Empleados / Secretarios ----- */
+            const MESES_TOT = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            const MESES_TOT_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+            let totalesFiltro = { anio: String(new Date().getFullYear()), mes: String(new Date().getMonth() + 1) };
+
+            function _grupoTotales(nombre) { return { nombre, total: 0, porAnio: {}, porMes: {} }; }
+            function _sumarTotales(mapa, nombre, fecha) {
+                const g = mapa[nombre] || (mapa[nombre] = _grupoTotales(nombre));
+                g.total++;
+                if (fecha) {
+                    const y = fecha.getFullYear(), k = `${y}-${fecha.getMonth() + 1}`;
+                    g.porAnio[y] = (g.porAnio[y] || 0) + 1;
+                    g.porMes[k] = (g.porMes[k] || 0) + 1;
+                }
+            }
+            function calcularTotalesPorRol() {
+                const operadores = {}, empleados = {}, secretarios = {};
+                CONFIG.operadores.forEach(n => operadores[n] = _grupoTotales(n));
+                CONFIG.empleados.forEach(e => empleados[e.nombre] = _grupoTotales(e.nombre));
+                CONFIG.secretarios.forEach(x => secretarios[x.nombre] = _grupoTotales(x.nombre));
+                state.causas.forEach(c => {
+                    const fPase = _aFecha(c.fechaPaseSecretario) || _aFecha(c.fechaAsignacion);
+                    const fAsig = _aFecha(c.fechaAsignacion) || _aFecha(c.fechaPaseSecretario);
+                    const op = (c.operador || '').trim();
+                    if (op) _sumarTotales(operadores, op, fPase);
+                    if (c.empleadoAsignado) _sumarTotales(empleados, getEmpName(c.empleadoAsignado), fAsig);
+                    const secId = c.secretarioId || obtenerSecretarioAsignante(c);
+                    if (secId) _sumarTotales(secretarios, getSecName(secId), fAsig);
+                });
+                const ordenar = (m) => Object.values(m).sort((a, b) => (b.total - a.total) || a.nombre.localeCompare(b.nombre));
+                return { operadores: ordenar(operadores), empleados: ordenar(empleados), secretarios: ordenar(secretarios) };
+            }
+            function _seccionTotales(titulo, colNombre, grupos, anio, mes) {
+                const cant = (g, tipo, a, m) => tipo === 'total' ? g.total : tipo === 'anio' ? (g.porAnio[a] || 0) : (g.porMes[`${a}-${m}`] || 0);
+                const suma = (tipo) => grupos.reduce((s, g) => s + cant(g, tipo, anio, mes), 0);
+                const hayAnio = anio !== '', hayMes = hayAnio && mes !== '';
+                const kpis = [
+                    `<div class="kpi-item"><div class="label">Total general</div><div class="value">${suma('total')}</div></div>`,
+                    hayAnio ? `<div class="kpi-item"><div class="label">Total año ${anio}</div><div class="value success">${suma('anio')}</div></div>` : '',
+                    hayMes ? `<div class="kpi-item"><div class="label">${MESES_TOT[mes - 1]} ${anio}</div><div class="value warning">${suma('mes')}</div></div>` : ''
+                ].join('');
+                const cols = hayAnio ? Array.from({ length: 12 }, (_, i) => i + 1) : [];
+                const th = cols.map(m => `<th class="num${hayMes && m == mes ? ' mes-sel' : ''}">${MESES_TOT_CORTO[m - 1]}</th>`).join('');
+                const fila = (g) => `<tr><td><strong>${escHtml(g.nombre)}</strong></td>${cols.map(m => `<td class="num${hayMes && m == mes ? ' mes-sel' : ''}">${g.porMes[`${anio}-${m}`] || 0}</td>`).join('')}${hayAnio ? `<td class="num"><strong>${cant(g, 'anio', anio)}</strong></td>` : ''}<td class="num"><strong>${g.total}</strong></td></tr>`;
+                const pie = `<tr><td>Total</td>${cols.map(m => `<td class="num${hayMes && m == mes ? ' mes-sel' : ''}">${grupos.reduce((s, g) => s + (g.porMes[`${anio}-${m}`] || 0), 0)}</td>`).join('')}${hayAnio ? `<td class="num">${suma('anio')}</td>` : ''}<td class="num">${suma('total')}</td></tr>`;
+                return `<div class="card-modern">
+                    <div class="card-title">${titulo}</div>
+                    <div class="kpi-grid">${kpis}</div>
+                    <div class="table-wrap"><table class="table-modern table tot-tabla">
+                        <thead><tr><th>${colNombre}</th>${th}${hayAnio ? `<th class="num">Total ${anio}</th>` : ''}<th class="num">Total general</th></tr></thead>
+                        <tbody>${grupos.length ? grupos.map(fila).join('') : '<tr><td colspan="16" class="text-muted">Sin registros</td></tr>'}</tbody>
+                        <tfoot>${pie}</tfoot>
+                    </table></div>
+                </div>`;
+            }
+            function renderTotales() {
+                const panel = document.getElementById('panelTotales');
+                const t = calcularTotalesPorRol();
+                const anios = new Set([String(new Date().getFullYear())]);
+                [t.operadores, t.empleados, t.secretarios].forEach(l => l.forEach(g => Object.keys(g.porAnio).forEach(y => anios.add(y))));
+                const listaAnios = [...anios].sort((a, b) => b - a);
+                if (totalesFiltro.anio !== '' && !anios.has(totalesFiltro.anio)) totalesFiltro.anio = String(listaAnios[0]);
+                const { anio, mes } = totalesFiltro;
+                panel.innerHTML = `
+                    <div class="card-modern">
+                        <div class="tot-filtros">
+                            <div class="card-title mb-0" style="border:0;padding:0;">Totales</div>
+                            <div class="d-flex flex-wrap gap-2 align-items-end">
+                                <div><label class="form-label">Año</label>
+                                    <select class="form-select form-select-sm" id="totAnio"><option value="">Todos</option>${listaAnios.map(y => `<option value="${y}" ${y === anio ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
+                                <div><label class="form-label">Mes</label>
+                                    <select class="form-select form-select-sm" id="totMes" ${anio === '' ? 'disabled' : ''}><option value="">Todos</option>${MESES_TOT.map((n, i) => `<option value="${i + 1}" ${String(i + 1) === mes ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+                            </div>
+                        </div>
+                    </div>
+                    ${_seccionTotales('Operador', 'Operador', t.operadores, anio, mes)}
+                    ${_seccionTotales('Empleados', 'Empleado', t.empleados, anio, mes)}
+                    ${_seccionTotales('Secretarios', 'Secretario', t.secretarios, anio, mes)}`;
+                panel.querySelector('#totAnio').addEventListener('change', e => { totalesFiltro.anio = e.target.value; if (!totalesFiltro.anio) totalesFiltro.mes = ''; renderTotales(); });
+                panel.querySelector('#totMes').addEventListener('change', e => { totalesFiltro.mes = e.target.value; renderTotales(); });
+            }
+
             function renderReporteCompleto() {
                 const panel = document.getElementById('panelReporteCompleto');
                 if (!panel.querySelector('iframe')) {
@@ -2348,23 +3092,25 @@
                     case 'panelAuditoria': renderAuditoria(); break;
                     case 'panelReporteCompleto': renderReporteCompleto(); break;
                     case 'panelPuntajeEmpleados': renderPuntajeEmpleados(); break;
+                    case 'panelTotales': renderTotales(); break;
                 }
             }
 
             function renderTabs() {
                 const container = document.getElementById('tabContainer');
                 const allTabs = [
-                    { id: 'panelDefensor', label: '⚖️ Defensor', icon: 'bi-gavel' },
-                    { id: 'panelEmpleado', label: '📋 Empleado', icon: 'bi-person-check' },
-                    { id: 'panelPasesFinalizados', label: '✅ Pases Finalizados', icon: 'bi-check2-circle' },
-                    { id: 'panelCamaraGesell', label: '🎥 Cámara Gesell', icon: 'bi-camera-reels' },
-                    { id: 'panelAuditoria', label: '📜 Auditoría', icon: 'bi-clipboard-data' },
-                    { id: 'panelReporteCompleto', label: '📊 Reporte Completo', icon: 'bi-file-earmark-text' },
-                    { id: 'panelPuntajeEmpleados', label: '⭐ Puntaje', icon: 'bi-star-fill' }
+                    { id: 'panelDefensor', label: 'Defensor' },
+                    { id: 'panelEmpleado', label: 'Tarea de Empleados' },
+                    { id: 'panelPasesFinalizados', label: 'Pases Finalizados' },
+                    { id: 'panelCamaraGesell', label: 'Cámara Gesell' },
+                    { id: 'panelAuditoria', label: 'Auditoría' },
+                    { id: 'panelReporteCompleto', label: 'Reporte Completo' },
+                    { id: 'panelPuntajeEmpleados', label: 'Puntaje' },
+                    { id: 'panelTotales', label: 'Totales' }
                 ];
                 const cur = container.querySelector('.tab-btn.active');
                 let active = cur ? cur.dataset.target : 'panelDefensor';
-                container.innerHTML = allTabs.map(t => `<button class="tab-btn ${t.id === active ? 'active' : ''}" data-target="${t.id}"><i class="bi ${t.icon}"></i> ${t.label}</button>`).join('');
+                container.innerHTML = allTabs.map(t => `<button class="tab-btn ${t.id === active ? 'active' : ''}" data-target="${t.id}">${t.label}</button>`).join('');
                 document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
                 document.getElementById(active)?.classList.add('active');
                 container.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2410,7 +3156,7 @@
                 window._ultimoDetalleCausa = causa;
                 const modalBody = document.getElementById('modalBusquedaBody');
                 const titulo = document.getElementById('modalBusquedaTitulo');
-                titulo.innerHTML = `<i class="bi bi-file-text me-2"></i>Detalle completo de ${causa.numero}`;
+                titulo.innerHTML = `Detalle completo de ${causa.numero}`;
                 const ubic = (() => {
                     if (causa.estado === 'en_proceso' && causa.empleadoAsignado) return `En poder de: ${getEmpName(causa.empleadoAsignado)}`;
                     if (causa.estado === 'en_defensor') return 'En Defensoría';
@@ -2475,7 +3221,7 @@
                 } else if (resultados.length === 1) {
                     mostrarDetalleConHistorial(resultados[0]);
                 } else {
-                    titulo.innerHTML = `<i class="bi bi-list-ul me-2"></i>${resultados.length} resultados para "${termino}"`;
+                    titulo.innerHTML = `${resultados.length} resultados para "${termino}"`;
                     let listHtml = `<div class="list-group">`;
                     resultados.forEach(c => {
                         let ub = getEstadoBadgePlain(c.estado);
@@ -2594,7 +3340,7 @@
                         state.empleados = CONFIG.empleados.map(e => ({ id: e.id, ausente: false, fechaReintegro: null }));
                         puntajesManualesCache = {};
                     } else {
-                        await loadStateFromFirestore();
+                        await iniciarEscuchaCausas();
                     }
                     renderAll();
                     iniciarChatDespuesLogin();
@@ -2612,11 +3358,13 @@
                 document.getElementById('logoutAlert').style.display = 'none';
                 if (cronoInterval) clearInterval(cronoInterval);
                 if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+                detenerEscuchaCausas();
                 document.getElementById('appWrapper').classList.remove('visible');
                 document.getElementById('loginOverlay').classList.remove('hidden');
                 document.getElementById('loginPassword').value = '';
                 Object.values(chartInstances).forEach(ch => { try { ch.destroy(); } catch (_) {} });
                 chartInstances = {};
+                filtroDefensor = null; _sigGraficosDefensor = ''; _metricasDefensor = null;
                 document.getElementById('chatWidget').classList.remove('visible');
                 const si = document.getElementById('globalSearch'); if (si) si.value = '';
                 filtroExpedienteUnico = null;
