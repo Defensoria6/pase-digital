@@ -171,6 +171,13 @@ textarea.form-control{resize:vertical}
 .btn-outline-modern{background:#fff;border:2px solid var(--border);color:#475569}
 .btn-outline-modern:hover{background:#f1f5f9;border-color:#cbd5e1}
 .btn-sm-modern{padding:6px 14px;font-size:.75rem;border-radius:10px}
+.btn-ausente{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.btn-ausente:hover{background:#fecaca;color:#b91c1c}
+.btn-reintegrado{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.btn-reintegrado:hover{background:#bfdbfe;color:#1e40af}
+.row-ausente{background-color:#fee2e2 !important;border-left:4px solid #ef4444}
+.row-ausente td{background-color:#fee2e2 !important;color:#991b1b !important;font-weight:500}
+.row-presente{background-color:#fff}
 
 .rotation-preview{background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);border:2px dashed var(--primary-light);border-radius:16px;padding:1rem 1.2rem;margin-top:1rem;position:relative;overflow:hidden}
 .rotation-preview::before{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle,rgba(99,102,241,.15) 0%,transparent 70%);pointer-events:none}
@@ -540,11 +547,18 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
           </div>
 
           <div class="mb-3 mt-3">
+            <label class="form-label">Gestión de Ausencias de Empleados</label>
+            <button type="button" class="btn btn-modern btn-outline-modern btn-sm-modern w-100" id="btnGestionAusenciasEmpleados">
+              <i class="bi bi-people"></i> Marcar ausencias de empleados
+            </button>
+            <div class="text-muted mt-1" style="font-size:.68rem;">Los cambios se sincronizan automáticamente con el panel del Secretario.</div>
+          </div>
+
+          <div class="mb-3 mt-3">
             <label class="form-label">Gestión de Ausencias de Secretarios</label>
             <button type="button" class="btn btn-modern btn-outline-modern btn-sm-modern w-100" id="btnGestionAusencias">
               <i class="bi bi-person-x"></i> Gestionar ausencias de secretarios
             </button>
-            <div class="text-muted mt-1" style="font-size:.68rem;">Las ausencias de <strong>empleados</strong> se gestionan desde el panel del Secretario y se reflejan aquí automáticamente.</div>
             <div id="secretariosEstado"></div>
           </div>
 
@@ -651,6 +665,23 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
   </div>
 </div>
 
+<!-- MODAL AUSENCIAS EMPLEADOS -->
+<div class="modal fade modal-modern" id="modalAusenciasEmpleados" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-people me-2"></i>Gestión de Ausencias de Empleados</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="ausenciasEmpleadosList"></div>
+        <small class="text-muted d-block mt-2" style="font-size:.7rem;">Los empleados ausentes quedan excluidos de la rotación hasta que se los reintegre.</small>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- LOGOUT -->
 <div id="logoutAlert" class="logout-alert">
   <div class="hdr"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
@@ -743,6 +774,7 @@ let state = {
   causas: [],
   ausencias: [],
   empleadosAusentes: [],
+  empleadosCfg: [],
   exclusiones: {},
   lastIndex: -1,
   lastEmployeeIndex: -1
@@ -887,6 +919,61 @@ function renderAusenciasModal(){
   list.querySelectorAll('.btn-eliminar-ausencia').forEach(btn => {
     btn.addEventListener('click', async function(){ await eliminarAusencia(this.dataset.id); });
   });
+}
+
+// ============================================================
+// AUSENCIAS EMPLEADOS (misma lógica que el panel del Secretario)
+// Se guardan en operador/secretario_config -> empleados: [{id, ausente, fechaReintegro}]
+// ============================================================
+async function toggleAusenciaEmpleado(empId){
+  if(!Array.isArray(state.empleadosCfg) || state.empleadosCfg.length === 0){
+    state.empleadosCfg = CONFIG.empleados.map(e => ({id:e.id, ausente:false, fechaReintegro:null}));
+  }
+  let e = state.empleadosCfg.find(se => se.id === empId);
+  if(!e){ e = {id:empId, ausente:false, fechaReintegro:null}; state.empleadosCfg.push(e); }
+  const previo = {ausente:e.ausente, fechaReintegro:e.fechaReintegro};
+
+  e.ausente = !e.ausente;
+  e.fechaReintegro = e.ausente ? null : new Date().toISOString();
+  // Se actualiza antes de guardar para que el listener de Firestore no duplique el aviso
+  state.empleadosAusentes = state.empleadosCfg.filter(x => x.ausente === true).map(x => x.id);
+  renderAusenciasEmpleadosModal();
+  renderPreview();
+  renderRecientes();
+
+  try{
+    await db.collection('operador').doc('secretario_config').set({empleados: state.empleadosCfg},{merge:true});
+    if(e.ausente) showToast(`⛔ ${getEmpName(empId)} ausente`,'warning');
+    else showToast(`✅ ${getEmpName(empId)} reintegrado`,'success');
+  }catch(err){
+    console.error('toggleAusenciaEmpleado', err);
+    const r = state.empleadosCfg.find(x => x.id === empId);
+    if(r){ r.ausente = previo.ausente; r.fechaReintegro = previo.fechaReintegro; }
+    state.empleadosAusentes = state.empleadosCfg.filter(x => x.ausente === true).map(x => x.id);
+    renderAusenciasEmpleadosModal();
+    renderPreview();
+    renderRecientes();
+    showToast('Error al guardar config','danger');
+  }
+}
+function renderAusenciasEmpleadosModal(){
+  const cont = document.getElementById('ausenciasEmpleadosList');
+  if(!cont) return;
+  cont.innerHTML = `<div class="table-wrap">
+    <table class="table-modern table" style="min-width:0;width:100%;">
+      <thead><tr><th>Empleado</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        ${getSortedEmployees().map(emp => {
+          const aus = estaEmpleadoAusente(emp.id);
+          return `<tr class="${aus ? 'row-ausente' : 'row-presente'}">
+            <td><strong>${emp.nombre}</strong></td>
+            <td>${aus ? '<span class="badge bg-danger">Ausente</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+            <td><button type="button" class="btn btn-sm ${aus ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${emp.id}">${aus ? 'Reintegro' : 'Ausente'}</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
 }
 
 // ============================================================
@@ -1104,9 +1191,11 @@ async function loadState(){
     const cfgDoc = await db.collection('operador').doc('secretario_config').get();
     if(cfgDoc.exists){
       const empCfg = cfgDoc.data().empleados || [];
+      state.empleadosCfg = empCfg;
       state.empleadosAusentes = empCfg.filter(e => e.ausente === true).map(e => e.id);
       state.exclusiones = cfgDoc.data().exclusionesTipo || {};
     } else {
+      state.empleadosCfg = [];
       state.empleadosAusentes = [];
       state.exclusiones = {};
     }
@@ -1123,6 +1212,7 @@ function iniciarListenerEmpleadosAusentes(){
     if(doc.exists){
       const empCfg = doc.data().empleados || [];
       const antes = state.empleadosAusentes.slice();
+      state.empleadosCfg = empCfg;
       state.empleadosAusentes = empCfg.filter(e => e.ausente === true).map(e => e.id);
 
       // Exclusiones por tipo de tarea
@@ -1143,6 +1233,7 @@ function iniciarListenerEmpleadosAusentes(){
         const reintegrados = antes.filter(id => !state.empleadosAusentes.includes(id));
         nuevos.forEach(id => showToast(`⛔ ${getEmpName(id)} marcado como ausente — excluido de rotación`,'warning'));
         reintegrados.forEach(id => showToast(`✅ ${getEmpName(id)} reintegrado — vuelve a rotación`,'success'));
+        renderAusenciasEmpleadosModal();
         renderPreview();
         renderRecientes();
       }
@@ -1854,6 +1945,7 @@ function cerrarSesion(){
   state.causas=[];
   state.ausencias=[];
   state.empleadosAusentes=[];
+  state.empleadosCfg=[];
   state.lastIndex=-1;
   state.lastEmployeeIndex=-1;
   showToast('Sesión cerrada','warning');
@@ -2038,6 +2130,17 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('logoutAlert').classList.remove('show');
   });
   document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+
+  document.getElementById('btnGestionAusenciasEmpleados').addEventListener('click', function(){
+    renderAusenciasEmpleadosModal();
+    new bootstrap.Modal(document.getElementById('modalAusenciasEmpleados')).show();
+  });
+  document.getElementById('ausenciasEmpleadosList').addEventListener('click', async function(ev){
+    const btn = ev.target.closest('.btn-toggle-ausencia');
+    if(!btn) return;
+    btn.disabled = true;
+    await toggleAusenciaEmpleado(btn.dataset.emp);
+  });
 
   document.getElementById('btnGestionAusencias').addEventListener('click', function(){
     const select = document.getElementById('ausenciaSecretario');
