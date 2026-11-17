@@ -177,6 +177,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .th-filter select.th-filter-active{background:#e0f2fe;color:#0369a1;border-color:#7dd3fc}
 
 .badge-status{display:inline-block;padding:5px 12px;border-radius:30px;font-weight:700;font-size:.65rem;white-space:nowrap}
+.chip-devuelto{display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:4px 10px;border-radius:30px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;font-weight:700;font-size:.65rem;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip-devuelto:hover{background:#fef3c7;transform:translateY(-1px)}
+.modal-obs-sec .modal-header{background:linear-gradient(135deg,#92400e,#d97706) !important}
+.obs-sec-box{background:#fffbeb;border:1px solid #fcd34d;border-radius:14px;padding:1rem 1.1rem;color:#0f172a;font-size:.9rem;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+@media (max-width:576px){ .modal-obs-sec .modal-body{padding:1.1rem;max-height:none} }
 .badge-proceso{background:#dbeafe;color:#1e40af}
 .badge-finalizada{background:#d1fae5;color:#065f46}
 .badge-para-finalizar{background:#fef3c7;color:#92400e}
@@ -372,6 +377,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <button type="button" class="btn btn-modern btn-outline-modern" onclick="imprimirModalContenido('modalEnviar')"><i class="bi bi-printer"></i> Imprimir</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-modern btn-success-modern" id="btnConfirmarEnviar"><i class="bi bi-send-fill"></i> Enviar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OBSERVACIÓN DEL SECRETARIO (devolución) -->
+<div class="modal fade modal-modern modal-obs-sec" id="modalObsSecretario" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-arrow-return-left me-2"></i>Expediente devuelto por el Secretario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-1"><strong>Expediente:</strong> <span id="obsSecExp"></span></p>
+        <p class="mb-3" style="font-size:.8rem;color:var(--muted);"><i class="bi bi-calendar-event me-1"></i><span id="obsSecFecha"></span></p>
+        <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#92400e;margin-bottom:.35rem;">Observación del Secretario</div>
+        <div class="obs-sec-box" id="obsSecTexto"></div>
+        <div class="form-text mt-3" style="font-size:.75rem;">Cuando termine de corregirlo, use <strong>Enviar</strong> para volver a pasarlo al Secretario.</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
@@ -933,6 +960,7 @@ function aplicarOrden(list){
 // ============================================================
 function loadState(){
   if(unsubscribe) unsubscribe();
+  window._devCargaInicial = false;
   unsubscribe = db.collection('operador').onSnapshot(snap=>{
     const causas = [];
     const empId = currentEmpId;
@@ -951,6 +979,18 @@ function loadState(){
       );
       if(esSuPase) causas.push(data);
     });
+    const _devVistas = window._devVistas || (window._devVistas = new Set());
+    const _primeraCarga = !window._devCargaInicial;
+    causas.forEach(c=>{
+      if(c.estado === 'en_proceso' && c.devolucionSecretario && c.devolucionSecretario.fecha){
+        const k = c.id + '|' + c.devolucionSecretario.fecha;
+        if(!_devVistas.has(k)){
+          _devVistas.add(k);
+          if(!_primeraCarga) showToast(`↩️ El Secretario te devolvió el expediente ${c.numero}`,'warning');
+        }
+      }
+    });
+    window._devCargaInicial = true;
     state.causas = causas;
     _detCache.clear();
     render();
@@ -1179,7 +1219,7 @@ function renderTabla(){
               <td><span style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-person-badge-fill"></i> ${secMostrar}</span></td>
               <td>${hasTiempo ? `<span class="crono ${est.color}">${dias} día${dias!==1?'s':''}</span>` : '<span class="text-muted">—</span>'}</td>
               <td>${hasTiempo ? renderPlazoBadge(c, det) : '<span class="text-muted">—</span>'}</td>
-              <td>${getBadgeEstado(c.estado)}</td>
+              <td>${getBadgeEstado(c.estado)}${(c.estado==='en_proceso' && c.devolucionSecretario) ? `<button type="button" class="chip-devuelto btn-ver-obs-sec" data-id="${c.id}" title="Ver observación del Secretario"><i class="bi bi-chat-left-text-fill"></i> Devuelto</button>` : ''}</td>
               <td style="white-space:nowrap;">
                 ${c.estado === 'en_proceso' ? `
                   <button class="btn-modern btn-success-modern btn-sm-modern btn-enviar" data-id="${c.id}" title="Enviar a Secretario"><i class="bi bi-send-fill"></i> Enviar</button>
@@ -1228,6 +1268,7 @@ function renderTabla(){
 
   container.querySelectorAll('.expediente-link').forEach(b=>b.addEventListener('click',()=>abrirHistorial(b.dataset.id)));
   container.querySelectorAll('.btn-enviar').forEach(b=>b.addEventListener('click',()=>abrirEnviar(b.dataset.id)));
+  container.querySelectorAll('.btn-ver-obs-sec').forEach(b=>b.addEventListener('click',()=>abrirObsSecretario(b.dataset.id)));
   container.querySelectorAll('.btn-just').forEach(b=>b.addEventListener('click',()=>abrirJustificar(b.dataset.id)));
 }
 
@@ -1399,6 +1440,16 @@ function abrirHistorial(id){
   new bootstrap.Modal(document.getElementById('modalHistorial')).show();
 }
 
+function abrirObsSecretario(id){
+  const c = state.causas.find(x=>x.id===id);
+  if(!c || !c.devolucionSecretario) return;
+  const d = c.devolucionSecretario;
+  document.getElementById('obsSecExp').textContent = c.numero;
+  document.getElementById('obsSecFecha').textContent = 'Devuelto el ' + (d.fecha ? fmtDt(d.fecha) : '—');
+  document.getElementById('obsSecTexto').textContent = d.observacion || 'Sin observación';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalObsSecretario')).show();
+}
+
 function abrirEnviar(id){
   const c = state.causas.find(x=>x.id===id);
   if(!c) return;
@@ -1414,6 +1465,7 @@ async function confirmarEnviar(){
   if(!c) return;
   const obs = document.getElementById('enviarObs').value.trim();
   c.estado = 'en_secretaria';
+  c.devolucionSecretario = null;
   c.fechaResolucionEmpleado = new Date().toISOString();
   if(!c.historial) c.historial = [];
   c.historial.push({
