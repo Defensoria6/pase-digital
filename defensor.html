@@ -890,12 +890,28 @@
                 }).sort((a, b) => new Date(b.fechaFinalizacion || b.fechaPaseSecretario || 0) - new Date(a.fechaFinalizacion || a.fechaPaseSecretario || 0));
             }
 
+            /* Observación del pase: prevalece observacionPase (la que guarda "Editar pase");
+               si la causa nunca fue editada se toma del último movimiento "Asignado (Nivel N)". */
+            function getObservacionPase(causa) {
+                if (typeof causa.observacionPase === 'string') return causa.observacionPase;
+                const asignaciones = (causa.historial || []).filter(h => h && h.accion && String(h.accion).includes('Asignado (Nivel'));
+                if (!asignaciones.length) return '';
+                let com = String(asignaciones[asignaciones.length - 1].comentario || '');
+                const pref = `Asignado a ${getEmpName(causa.empleadoAsignado)}`;
+                if (com.startsWith(pref)) com = com.slice(pref.length);
+                com = com.trim();
+                return com === 'Sin observación adicional' ? '' : com;
+            }
+
             function getComentarioAsignacion(causa) {
-                if (!causa.historial || !causa.historial.length) return '-';
-                const asignaciones = causa.historial.filter(h => h.accion && h.accion.includes('Asignado (Nivel'));
-                if (asignaciones.length === 0) return '-';
-                const ultima = asignaciones[asignaciones.length - 1];
-                return ultima.comentario || '-';
+                return escHtml(getObservacionPase(causa)) || '-';
+            }
+
+            /* Motivo con el que el Secretario elevó el pase al Defensor (último "Elevado a Defensor" del historial) */
+            function getMotivoElevacion(causa) {
+                const elev = (causa.historial || []).filter(h => h && h.accion && /^Elevado a Defensor/i.test(String(h.accion).trim()));
+                if (!elev.length) return '-';
+                return String(elev[elev.length - 1].comentario || '').trim() || '-';
             }
 
             function getTiempoTranscurrido(fechaAsignacion, fechaCierre) {
@@ -966,7 +982,7 @@
                 return map[estado] || estado;
             }
 
-            function showToast(msg, type = 'success') {
+            function showToast(msg, type = 'success', duracion = 3500) {
                 const container = document.getElementById('toastContainer');
                 if (!container) return;
                 const icons = { success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', danger: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
@@ -974,7 +990,7 @@
                 div.className = `toast-custom ${type}`;
                 div.innerHTML = `<i class="bi ${icons[type] || 'bi-info-circle-fill'}"></i> <span>${msg}</span>`;
                 container.appendChild(div);
-                setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, 3500);
+                setTimeout(() => { div.classList.add('removing'); setTimeout(() => div.remove(), 300); }, duracion);
             }
 
             function getFactorTipo(tipo) {
@@ -1190,8 +1206,11 @@
                             return;
                         }
                         if (nuevos.length) {
-                            const lista = nuevos.slice(0, 3).map(c => c.numero).join(', ') + (nuevos.length > 3 ? '…' : '');
-                            showToast(`⚖️ ${nuevos.length === 1 ? 'Nuevo pase recibido' : nuevos.length + ' nuevos pases recibidos'} de Secretaría (${lista})`, 'info');
+                            const lista = nuevos.slice(0, 3).map(c => {
+                                const motivo = getMotivoElevacion(c);
+                                return `${escHtml(c.numero)} — Motivo: ${escHtml(recortarTexto(motivo, 90))}`;
+                            }).join('<br>') + (nuevos.length > 3 ? `<br>… y ${nuevos.length - 3} más` : '');
+                            showToast(`⚖️ ${nuevos.length === 1 ? 'Nuevo pase recibido' : nuevos.length + ' nuevos pases recibidos'} de Secretaría<br>${lista}`, 'info', 8000);
                         }
                         programarRenderRemoto();
                     }, (error) => {
@@ -2148,7 +2167,7 @@
                         ${total ? `
                             <div class="table-wrap">
                                 <table class="table-modern table">
-                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
+                                    <thead><tr><th>Expediente</th><th>DNI</th><th>Modo Intervención</th><th>Tipo</th><th>Nivel</th><th>Motivo de elevación</th><th>Asignar a Empleado</th><th>Acciones</th></tr></thead>
                                     <tbody>${items.map(c => `
                                         <tr>
                                             <td><strong>${c.numero}</strong></td>
@@ -2156,6 +2175,7 @@
                                             <td>${c.modoIntervencion || '-'}</td>
                                             <td>${c.tipo}</td>
                                             <td>N${c.nivelSecretario || c.nivelOperador || 1}</td>
+                                            <td style="font-size:0.8rem; max-width:220px; word-break:break-word;">${escHtml(getMotivoElevacion(c))}</td>
                                             <td>
                                                 <div class="d-flex gap-1">
                                                     <select class="form-select form-select-sm" id="def_em_${c.id}" style="max-width:130px;"><option value="">Seleccionar...</option>${optsEmpleados}</select>

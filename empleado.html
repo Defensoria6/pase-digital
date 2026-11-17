@@ -242,6 +242,26 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .logout-alert .actions .cancel{background:#f1f5f9;color:#475569}
 .logout-alert .actions .confirm{background:var(--danger);color:#fff}
 
+/* ALERTA DE CONFIRMACIÓN: ENVÍO A SECRETARIO */
+.alerta-envio{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);backdrop-filter:blur(2px)}
+.alerta-envio.show{display:flex}
+.alerta-envio .ae-card{background:#fff;border-radius:20px;border-top:5px solid var(--warning);width:100%;max-width:420px;max-height:calc(100vh - 32px);overflow-y:auto;padding:1.5rem 1.5rem 1.25rem;box-shadow:var(--shadow-lg);animation:aeIn .25s cubic-bezier(.16,1,.3,1)}
+.alerta-envio .ae-hdr{display:flex;align-items:center;gap:12px;margin-bottom:.9rem;font-weight:800;font-size:1.05rem;line-height:1.25;color:#92400e}
+.alerta-envio .ae-ico{width:44px;height:44px;flex-shrink:0;border-radius:14px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.4rem}
+.alerta-envio .ae-body{font-size:.9rem;line-height:1.5;color:#475569}
+.alerta-envio .ae-datos{margin-top:.9rem;padding:.8rem 1rem;background:#f8fafc;border:1px solid var(--border);border-radius:12px;font-size:.85rem;color:var(--text);display:grid;gap:.4rem}
+.alerta-envio .ae-datos span.k{display:block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.alerta-envio .ae-datos strong{word-break:break-word}
+.alerta-envio .ae-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem}
+@keyframes aeIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@media (max-width:480px){
+  .alerta-envio{padding:12px}
+  .alerta-envio .ae-card{padding:1.2rem 1.1rem 1rem}
+  .alerta-envio .ae-actions{flex-direction:column-reverse}
+  .alerta-envio .ae-actions .btn{width:100%}
+}
+@media (prefers-reduced-motion:reduce){.alerta-envio .ae-card{animation:none}}
+
 .empty-state{padding:2.5rem 1rem;text-align:center;color:var(--muted)}
 .empty-state i{font-size:2.5rem;display:block;margin-bottom:.6rem;opacity:.4}
 .text-muted{color:var(--muted)}
@@ -377,6 +397,27 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
         <button type="button" class="btn btn-modern btn-outline-modern" onclick="imprimirModalContenido('modalEnviar')"><i class="bi bi-printer"></i> Imprimir</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-modern btn-success-modern" id="btnConfirmarEnviar"><i class="bi bi-send-fill"></i> Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTA DE CONFIRMACIÓN ANTES DE ENVIAR -->
+  <div id="alertaEnvio" class="alerta-envio" role="alertdialog" aria-modal="true" aria-labelledby="alertaEnvioTitulo" aria-describedby="alertaEnvioTexto">
+    <div class="ae-card">
+      <div class="ae-hdr">
+        <span class="ae-ico"><i class="bi bi-exclamation-triangle-fill"></i></span>
+        <span id="alertaEnvioTitulo">Se enviará el expediente a Secretario</span>
+      </div>
+      <div class="ae-body" id="alertaEnvioTexto">
+        Está por pasar el expediente asignado al Secretario para su finalización. Verifique los datos antes de continuar.
+      </div>
+      <div class="ae-datos">
+        <div><span class="k">Expediente</span><strong id="alertaEnvioExp"></strong></div>
+        <div><span class="k">Secretario asignado</span><strong id="alertaEnvioSec"></strong></div>
+      </div>
+      <div class="ae-actions">
+        <button type="button" class="btn btn-secondary" id="btnAlertaEnvioCancelar">Cancelar</button>
+        <button type="button" class="btn btn-modern btn-success-modern" id="btnAlertaEnvioConfirmar"><i class="bi bi-send-fill"></i> Sí, enviar</button>
       </div>
     </div>
   </div>
@@ -521,8 +562,8 @@ const CONFIG = {
   ],
   secretarios: [
     {id:'sec1', nombre:'Corrales A.Mariela'},
-    {id:'sec2', nombre:'Magnani Enzo'},
-    {id:'sec3', nombre:'Riveros Patricia'}
+    {id:'sec2', nombre:'Riveros Patricia'},
+    {id:'sec3', nombre:'Magnani Enzo'}
   ],
   nivelesDias: {1:5, 2:3, 3:3, 4:2}
 };
@@ -624,6 +665,17 @@ function sincronizarSecretarioConHistorial(c){
   if(s){ c.secretarioId = s.id; c.secretarioNombre = s.nombre; }
   return c;
 }
+function getObservacionPase(c){
+  if(typeof c.observacionPase==='string') return c.observacionPase;
+  const asig=(c.historial||[]).filter(h=>h&&h.accion&&String(h.accion).includes('Asignado (Nivel'));
+  if(!asig.length) return '';
+  let com=String(asig[asig.length-1].comentario||'');
+  const pref=`Asignado a ${getEmpName(c.empleadoAsignado)}`;
+  if(com.startsWith(pref)) com=com.slice(pref.length);
+  com=com.trim();
+  return com==='Sin observación adicional'?'':com;
+}
+function _escObs(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg,type='success'){
   const c = document.getElementById('toastContainer');
   const icons = {success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};
@@ -1192,6 +1244,7 @@ function renderTabla(){
           ${headerSortable('tipo', 'Tipo')}
           ${headerSelectNivel()}
           ${headerSelectSecretario()}
+          <th>Observación</th>
           ${headerSortable('dias', 'Días Hábiles')}
           ${headerSortable('estadoPlazo', 'Estado del Plazo')}
           ${headerSortable('estado', 'Estado')}
@@ -1217,6 +1270,7 @@ function renderTabla(){
               <td style="font-size:.78rem;">${c.tipo||'—'}</td>
               <td>N${nivelMostrar}</td>
               <td><span style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;"><i class="bi bi-person-badge-fill"></i> ${secMostrar}</span></td>
+              <td style="font-size:.75rem; max-width:220px; word-break:break-word;">${(() => { const ob = getObservacionPase(c); return ob ? _escObs(ob) : '<span class="text-muted">—</span>'; })()}</td>
               <td>${hasTiempo ? `<span class="crono ${est.color}">${dias} día${dias!==1?'s':''}</span>` : '<span class="text-muted">—</span>'}</td>
               <td>${hasTiempo ? renderPlazoBadge(c, det) : '<span class="text-muted">—</span>'}</td>
               <td>${getBadgeEstado(c.estado)}${(c.estado==='en_proceso' && c.devolucionSecretario) ? `<button type="button" class="chip-devuelto btn-ver-obs-sec" data-id="${c.id}" title="Ver observación del Secretario"><i class="bi bi-chat-left-text-fill"></i> Devuelto</button>` : ''}</td>
@@ -1480,6 +1534,23 @@ async function confirmarEnviar(){
     showToast(`✅ ${c.numero} enviado a Secretario`,'success');
     bootstrap.Modal.getInstance(document.getElementById('modalEnviar')).hide();
   }catch(e){ showToast('Error al enviar','danger'); }
+}
+
+// Alerta previa al envío: avisa al empleado y recién al confirmar ejecuta confirmarEnviar()
+function abrirAlertaEnvio(){
+  const c = state.causas.find(x=>x.id===enviarId);
+  if(!c) return;
+  document.getElementById('alertaEnvioExp').textContent = c.numero;
+  document.getElementById('alertaEnvioSec').textContent = c.secretarioNombre||getSecName(c.secretarioId);
+  document.getElementById('alertaEnvio').classList.add('show');
+  document.getElementById('btnAlertaEnvioCancelar').focus();
+}
+function cerrarAlertaEnvio(){
+  document.getElementById('alertaEnvio').classList.remove('show');
+}
+function confirmarAlertaEnvio(){
+  cerrarAlertaEnvio();
+  confirmarEnviar();
 }
 
 function abrirJustificar(id){
@@ -1995,7 +2066,22 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('btnCancelarSalida').addEventListener('click', ()=> document.getElementById('logoutAlert').classList.remove('show'));
   document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
 
-  document.getElementById('btnConfirmarEnviar').addEventListener('click', confirmarEnviar);
+  document.getElementById('btnConfirmarEnviar').addEventListener('click', abrirAlertaEnvio);
+  document.getElementById('btnAlertaEnvioCancelar').addEventListener('click', cerrarAlertaEnvio);
+  document.getElementById('btnAlertaEnvioConfirmar').addEventListener('click', confirmarAlertaEnvio);
+  const alertaEnvioEl = document.getElementById('alertaEnvio');
+  alertaEnvioEl.addEventListener('click', e=>{ if(e.target === alertaEnvioEl) cerrarAlertaEnvio(); });
+  alertaEnvioEl.addEventListener('keydown', e=>{
+    if(e.key === 'Escape'){ e.stopPropagation(); cerrarAlertaEnvio(); return; }
+    if(e.key === 'Tab'){
+      const btns = [document.getElementById('btnAlertaEnvioCancelar'), document.getElementById('btnAlertaEnvioConfirmar')];
+      const i = btns.indexOf(document.activeElement);
+      if(i === -1){ e.preventDefault(); btns[0].focus(); }
+      else if(e.shiftKey && i === 0){ e.preventDefault(); btns[1].focus(); }
+      else if(!e.shiftKey && i === 1){ e.preventDefault(); btns[0].focus(); }
+    }
+  });
+  document.getElementById('modalEnviar').addEventListener('hidden.bs.modal', cerrarAlertaEnvio);
   document.getElementById('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
 
   document.getElementById('selectTipoReporte').addEventListener('change', function(){
