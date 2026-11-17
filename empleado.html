@@ -603,7 +603,7 @@ let pagination = { page: 1 };
 let filtroKPI = 'total';
 let unsubscribe = null;
 let refreshInterval = null;
-let enviarId = null, justId = null;
+let enviarId = null, justId = null, enviando = false;
 
 // Estado de columnas (orden + filtros)
 const columnState = {
@@ -1511,29 +1511,44 @@ function abrirEnviar(id){
   document.getElementById('enviarExp').textContent = c.numero;
   document.getElementById('enviarSec').innerHTML = `<span style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);color:#5b21b6;padding:3px 10px;border-radius:20px;font-weight:700;font-size:.75rem;">${c.secretarioNombre||getSecName(c.secretarioId)}</span>`;
   document.getElementById('enviarObs').value = '';
-  new bootstrap.Modal(document.getElementById('modalEnviar')).show();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEnviar')).show();
 }
 
 async function confirmarEnviar(){
+  if(enviando) return;
   const c = state.causas.find(x=>x.id===enviarId);
   if(!c) return;
+  if(c.estado !== 'en_proceso'){ showToast('Este expediente ya no está en proceso','warning'); return; }
   const obs = document.getElementById('enviarObs').value.trim();
-  c.estado = 'en_secretaria';
-  c.devolucionSecretario = null;
-  c.fechaResolucionEmpleado = new Date().toISOString();
-  if(!c.historial) c.historial = [];
-  c.historial.push({
-    fecha: new Date().toISOString(),
-    accion: `Enviado a Secretario para finalización (${c.secretarioNombre||getSecName(c.secretarioId)})`,
-    usuario: currentEmpNombre,
-    comentario: obs || 'Pase a Secretario para finalizar'
+  const ahora = new Date().toISOString();
+  // Se arma una copia: el estado local solo cambia cuando Firestore confirma (evita historial duplicado si falla y se reintenta)
+  const nueva = Object.assign({}, c, {
+    estado: 'en_secretaria',
+    devolucionSecretario: null,
+    fechaResolucionEmpleado: ahora,
+    fechaPaseEmpleado: ahora,           // fecha en que el empleado pasó el expediente al Secretario
+    historial: (c.historial || []).concat([{
+      fecha: ahora,
+      accion: `Enviado a Secretario para finalización (${c.secretarioNombre||getSecName(c.secretarioId)})`,
+      usuario: currentEmpNombre,
+      comentario: obs || 'Pase a Secretario para finalizar'
+    }])
   });
+  enviando = true;
   try{
-    await updateCausa(c);
-    _detCache.clear();
-    showToast(`✅ ${c.numero} enviado a Secretario`,'success');
-    bootstrap.Modal.getInstance(document.getElementById('modalEnviar')).hide();
-  }catch(e){ showToast('Error al enviar','danger'); }
+    await updateCausa(nueva);
+  }catch(e){
+    console.error('Error al enviar el pase:', e);
+    showToast('Error al enviar el pase ('+((e&&(e.code||e.message))||'sin detalle')+')','danger');
+    enviando = false;
+    return;
+  }
+  enviando = false;
+  _detCache.clear();
+  showToast(`✅ ${c.numero} enviado a Secretario`,'success');
+  const mEl = document.getElementById('modalEnviar');
+  const m = bootstrap.Modal.getInstance(mEl) || bootstrap.Modal.getOrCreateInstance(mEl);
+  m.hide();
 }
 
 // Alerta previa al envío: avisa al empleado y recién al confirmar ejecuta confirmarEnviar()
