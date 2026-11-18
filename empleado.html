@@ -619,7 +619,6 @@ function guardarSesion(id){
   try{
     document.cookie = SESSION_KEY+'='+encodeURIComponent(id)+'; max-age='+(SESSION_COOKIE_DIAS*86400)+'; path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');
   }catch(e){}
-  // Pide al navegador que no elimine los datos del sitio por falta de espacio
   try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 }
 function leerSesion(){
@@ -675,8 +674,6 @@ function getSecName(id){ const s=CONFIG.secretarios.find(x=>x.id===id); return s
 
 
 // ---- Secretario del pase: el HISTORIAL es la fuente de verdad ----
-// La tabla, filtros, reportes y modales deben mostrar el mismo secretario que figura
-// en el movimiento "Asignado (Nivel N)..." del historial (quien realmente hizo el pase).
 function _secNorm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
 function resolverSecretario(txt){
   const raw = String(txt||'').trim();
@@ -684,7 +681,6 @@ function resolverSecretario(txt){
   if(!t) return null;
   const porId = CONFIG.secretarios.find(s => s.id === raw);
   if(porId) return porId;
-  // Se compara por apellido (1.ª palabra del nombre) para no confundir con empleados que comparten nombre de pila
   return CONFIG.secretarios.find(s => {
     const apellido = _secNorm(s.nombre).split(' ')[0];
     return apellido && (' ' + t + ' ').includes(' ' + apellido + ' ');
@@ -734,15 +730,28 @@ function calcPascua(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/
 function nesimoDia(y,m,dow,n){ let first=new Date(y,m,1),fdow=(first.getDay()+6)%7,diff=(dow-fdow+7)%7,day=1+diff+(n-1)*7; return day>new Date(y,m+1,0).getDate()?null:new Date(y,m,day); }
 function getFeriados(y){
   const p=calcPascua(y), f=[];
+  // Inamovibles
   f.push(new Date(y,0,1),new Date(y,2,24),new Date(y,3,2),new Date(y,4,1),new Date(y,4,25),new Date(y,6,9),new Date(y,11,8),new Date(y,11,25));
+  // Móviles (Semana Santa + Carnaval)
   const cl=new Date(p); cl.setDate(cl.getDate()-47); f.push(cl);
   const cm=new Date(p); cm.setDate(cm.getDate()-46); f.push(cm);
   const js=new Date(p); js.setDate(js.getDate()-3); f.push(js);
   const vs=new Date(p); vs.setDate(vs.getDate()-2); f.push(vs);
+  // Trasladables (nesimoDia conserva el comportamiento original)
   const tlj=nesimoDia(y,5,0,3); if(tlj) f.push(tlj);
   const tla=nesimoDia(y,7,0,3); if(tla) f.push(tla);
   const slo=nesimoDia(y,9,0,2); if(slo) f.push(slo);
   const cln=nesimoDia(y,10,0,4); if(cln) f.push(cln);
+
+  // ===== Feriados especiales / puentes 2026 =====
+  // 23/11 (traslado del 20/11) ya lo cubre nesimoDia(y,10,0,4) → 4º lunes nov 2026 = 23/11
+  // 8/12 (Virgen) ya está en la lista base: new Date(y,11,8)
+  if(y === 2026){
+    f.push(new Date(2026, 10, 9));   // 9/11  - Visita del Papa a la Argentina
+    f.push(new Date(2026, 10, 16));  // 16/11 - Feriado (puente)
+    f.push(new Date(2026, 11, 7));   // 7/12  - Puente turístico
+  }
+
   return f;
 }
 function esFeriado(f){ const y=f.getFullYear(); return getFeriados(y).some(x=>x.getMonth()===f.getMonth()&&x.getDate()===f.getDate()); }
@@ -884,16 +893,13 @@ function imprimirModalContenido(modalId){
   const w = window.open('', '_blank');
   if(!w){ showToast('Permita ventanas emergentes para imprimir','warning'); return; }
 
-  // Clonamos el body para poder limpiar inputs/textarea sin afectar el modal
   const clon = bodyEl.cloneNode(true);
-  // Reemplazar textareas por contenido formateado
   clon.querySelectorAll('textarea').forEach(ta => {
     const div = document.createElement('div');
     div.style.cssText = 'background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;min-height:20px;white-space:pre-wrap;font-size:12px;';
     div.textContent = ta.value || '(sin contenido)';
     ta.replaceWith(div);
   });
-  // Reemplazar inputs/selects por su valor
   clon.querySelectorAll('input').forEach(inp => {
     if(inp.type === 'hidden') return;
     const span = document.createElement('span');
@@ -907,7 +913,6 @@ function imprimirModalContenido(modalId){
     span.textContent = sel.options[sel.selectedIndex]?.text || '(sin selección)';
     sel.replaceWith(span);
   });
-  // Quitar botones internos del body
   clon.querySelectorAll('button').forEach(b => b.remove());
 
   w.document.write(`
@@ -976,7 +981,6 @@ function imprimirModalContenido(modalId){
   w.document.close();
   setTimeout(()=>w.print(), 400);
 }
-// Exponer al window para los onclick del HTML
 window.imprimirModalContenido = imprimirModalContenido;
 
 // ============================================================
@@ -1564,12 +1568,11 @@ async function confirmarEnviar(){
   if(c.estado !== 'en_proceso'){ showToast('Este expediente ya no está en proceso','warning'); return; }
   const obs = document.getElementById('enviarObs').value.trim();
   const ahora = new Date().toISOString();
-  // Se arma una copia: el estado local solo cambia cuando Firestore confirma (evita historial duplicado si falla y se reintenta)
   const nueva = Object.assign({}, c, {
     estado: 'en_secretaria',
     devolucionSecretario: null,
     fechaResolucionEmpleado: ahora,
-    fechaPaseEmpleado: ahora,           // fecha en que el empleado pasó el expediente al Secretario
+    fechaPaseEmpleado: ahora,
     historial: (c.historial || []).concat([{
       fecha: ahora,
       accion: `Enviado a Secretario para finalización (${c.secretarioNombre||getSecName(c.secretarioId)})`,
@@ -1594,7 +1597,6 @@ async function confirmarEnviar(){
   m.hide();
 }
 
-// Alerta previa al envío: avisa al empleado y recién al confirmar ejecuta confirmarEnviar()
 function abrirAlertaEnvio(){
   const c = state.causas.find(x=>x.id===enviarId);
   if(!c) return;
@@ -1870,7 +1872,7 @@ function imprimirReporteEmpleado(){
     </style>
     </head><body>
       ${body.innerHTML}
-      <div style="margin-top:16px;font-size:10px;color:#94a3b8;text-align:center;">Generado el ${now} · Defensoría Oficial Civil y Comercial 6</div>
+      <div style="margin-top:16px;font-size:10px;color:#94a3b8;text-align:center;">Generado el ${now} · Defensoría Oficial Civil y Comercial 6 · Pase Digital</div>
     </body></html>
   `);
   w.document.close();
@@ -1880,591 +1882,313 @@ function imprimirReporteEmpleado(){
 // ============================================================
 // CHAT CON SECRETARIOS
 // ============================================================
-const CHAT_COL = 'chat_interno';
-let chatUnsub = null;
-let chatMsgs = [];
-let chatPrimeraCarga = true;
-let chatLeidosLocal = new Set();
-let chatAudioCtx = null;
-let chatTituloOriginal = document.title;
+const CHAT_COL = 'mensajes';   // colección de Firestore. Ajustar si tu app usa otro nombre.
+let chatUnsubscribe = null;
+let chatAbierto = false;
 
-function chatEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function chatUnesc(s){ return String(s==null?'':s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&'); }
-function chatTs(t){ if(t && typeof t.toMillis==='function') return t.toMillis(); if(typeof t==='string'){ const n=Date.parse(t); if(!isNaN(n)) return n; } return Date.now(); }
-function chatEsMio(m){ return m.remitente === currentEmpNombre; }
-function chatEsPendiente(m){ return !chatEsMio(m) && m.leido !== true && !chatLeidosLocal.has(m._id); }
-function chatPanelAbierto(){ const p=document.getElementById('chatPanel'); return !!p && !p.classList.contains('hidden'); }
-function chatVisto(){ return chatPanelAbierto() && !document.hidden; }
+function initChat(){
+  const widget = document.getElementById('chatWidget');
+  if(widget) widget.style.display = 'block';
 
-function chatHora(ms){
-  const d=new Date(ms), h=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  return d.toDateString()===new Date().toDateString() ? h : `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${h}`;
+  const toggleBtn = document.getElementById('chatToggleBtn');
+  const panel = document.getElementById('chatPanel');
+  const closeBtn = document.getElementById('chatCloseBtn');
+  const sendBtn = document.getElementById('chatSendBtn');
+  const input = document.getElementById('chatInput');
+
+  if(toggleBtn){
+    toggleBtn.addEventListener('click', () => {
+      chatAbierto = !chatAbierto;
+      panel.classList.toggle('hidden', !chatAbierto);
+      if(chatAbierto) marcarMensajesLeidos();
+    });
+  }
+  if(closeBtn){
+    closeBtn.addEventListener('click', () => {
+      chatAbierto = false;
+      panel.classList.add('hidden');
+    });
+  }
+  if(sendBtn) sendBtn.addEventListener('click', enviarMensaje);
+  if(input){
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); enviarMensaje(); }
+    });
+  }
+
+  suscribirMensajes();
 }
 
-function chatBeep(){
-  try{
-    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-    if(!chatAudioCtx) chatAudioCtx=new AC();
-    const ctx=chatAudioCtx; if(ctx.state==='suspended') ctx.resume();
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type='sine'; o.frequency.value=880;
-    g.gain.setValueAtTime(.0001,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.15,ctx.currentTime+.02);
-    g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.35);
-    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+.4);
-  }catch(e){}
+function suscribirMensajes(){
+  if(chatUnsubscribe){ chatUnsubscribe(); chatUnsubscribe = null; }
+  if(!currentEmpId) return;
+  chatUnsubscribe = db.collection(CHAT_COL)
+    .where('empleadoId', '==', currentEmpId)
+    .onSnapshot(snap => {
+      const msgs = [];
+      snap.forEach(doc => msgs.push(Object.assign({id: doc.id}, doc.data())));
+      msgs.sort((a,b) => String(a.fecha||'').localeCompare(String(b.fecha||'')));
+      renderMensajes(msgs);
+      const noLeidos = msgs.filter(m => m.rol !== 'empleado' && !m.leido).length;
+      const badge = document.getElementById('chatBadge');
+      const btn = document.getElementById('chatToggleBtn');
+      if(badge){
+        badge.textContent = noLeidos;
+        badge.style.display = noLeidos > 0 ? 'inline-block' : 'none';
+      }
+      if(btn) btn.classList.toggle('has-unread', noLeidos > 0);
+      if(chatAbierto && noLeidos > 0) marcarMensajesLeidos();
+    }, err => console.error('Chat:', err));
 }
 
-function chatRender(){
-  const md=document.getElementById('chatMessages'); if(!md) return;
-  const alFinal = (md.scrollHeight - md.scrollTop - md.clientHeight) < 80;
-  if(!chatMsgs.length){
-    md.innerHTML='<div class="chat-empty"><i class="bi bi-chat-square-text"></i>Aún no hay mensajes.<br>Escribe tu consulta a los secretarios.</div>';
+function renderMensajes(msgs){
+  const cont = document.getElementById('chatMessages');
+  if(!cont) return;
+  if(!msgs.length){
+    cont.innerHTML = '<div class="chat-empty"><i class="bi bi-chat-square-dots"></i>Sin mensajes aún</div>';
     return;
   }
-  md.innerHTML = chatMsgs.map(m=>{
-    const mio=chatEsMio(m);
-    const txt=chatEsc(chatUnesc(m.texto));
-    const rem=chatEsc(chatUnesc(m.remitente||'Secretario'));
-    const reloj=m._pend?' <i class="bi bi-clock"></i>':'';
-    return `<div class="chat-message ${mio?'sent':'received'}"><span class="sender">${mio?'Tú':rem}</span>${txt}<span class="time">${chatHora(m._ts)}${reloj}</span></div>`;
+  cont.innerHTML = msgs.map(m => {
+    const esMio = m.rol === 'empleado';
+    const t = m.fecha ? new Date(m.fecha) : new Date();
+    const hh = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+    return `<div class="chat-message ${esMio?'sent':'received'}">
+      <span class="sender">${escapeHtmlChat(m.autor || (esMio?'Yo':'Secretaría'))}</span>
+      ${escapeHtmlChat(m.texto || '')}
+      <span class="time">${hh}</span>
+    </div>`;
   }).join('');
-  if(alFinal || chatPanelAbierto()) md.scrollTop=md.scrollHeight;
+  cont.scrollTop = cont.scrollHeight;
 }
 
-function chatActualizarBadge(){
-  const n=chatMsgs.filter(chatEsPendiente).length;
-  const b=document.getElementById('chatBadge'), btn=document.getElementById('chatToggleBtn');
-  if(!b||!btn) return;
-  if(n>0){ b.textContent=n>99?'99+':String(n); b.style.display='block'; }
-  else b.style.display='none';
-  btn.classList.toggle('has-unread', n>0);
-  document.title = n>0 ? `(${n}) ${chatTituloOriginal}` : chatTituloOriginal;
+function escapeHtmlChat(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-async function chatMarcarLeidos(){
-  if(!chatVisto()) return;
-  const pend=chatMsgs.filter(chatEsPendiente);
-  if(!pend.length) return;
-  pend.forEach(m=>chatLeidosLocal.add(m._id));
-  chatActualizarBadge();
-  await Promise.all(pend.map(m=>
-    db.collection(CHAT_COL).doc(m._id).update({leido:true}).catch(e=>console.warn('Chat: no se pudo marcar leído',e.code||e))
-  ));
-}
-
-function iniciarChat(){
-  detenerChat();
-  chatTituloOriginal=document.title;
-  document.getElementById('chatWidget').style.display='block';
-  chatPrimeraCarga=true;
-  chatUnsub=db.collection(CHAT_COL).where('empleadoId','==',currentEmpId).onSnapshot(snap=>{
-    const nuevos=[];
-    if(!chatPrimeraCarga){
-      snap.docChanges().forEach(ch=>{
-        if(ch.type==='added' && !ch.doc.metadata.hasPendingWrites){
-          const d=ch.doc.data();
-          if(d.remitente!==currentEmpNombre) nuevos.push(d);
-        }
-      });
-    }
-    chatPrimeraCarga=false;
-    chatMsgs=snap.docs.map(doc=>{
-      const x=doc.data({serverTimestamps:'estimate'});
-      x._id=doc.id; x._ts=chatTs(x.timestamp); x._pend=doc.metadata.hasPendingWrites;
-      return x;
-    }).sort((a,b)=>a._ts-b._ts);
-    chatRender();
-    chatActualizarBadge();
-    chatMarcarLeidos();
-    if(nuevos.length && !chatVisto()){
-      let t=chatUnesc(nuevos[nuevos.length-1].texto||''); if(t.length>60) t=t.slice(0,57)+'…';
-      showToast('💬 Secretaría: '+chatEsc(t),'info');
-      chatBeep();
-    }
-  },err=>{
-    console.error('Chat:',err);
-    showToast('Error de conexión con el chat','danger');
-  });
-}
-
-function detenerChat(){
-  if(chatUnsub){ chatUnsub(); chatUnsub=null; }
-  chatMsgs=[]; chatLeidosLocal=new Set(); chatPrimeraCarga=true;
-  const w=document.getElementById('chatWidget'), p=document.getElementById('chatPanel');
-  if(w) w.style.display='none';
-  if(p) p.classList.add('hidden');
-  const md=document.getElementById('chatMessages'); if(md) md.innerHTML='';
-  const inp=document.getElementById('chatInput'); if(inp) inp.value='';
-  chatActualizarBadge();
-  document.title=chatTituloOriginal;
-}
-
-function chatEnviar(){
-  const inp=document.getElementById('chatInput');
-  const txt=inp.value.trim();
-  if(!txt || !currentEmpId) return;
-  inp.value='';
-  db.collection(CHAT_COL).add({
-    empleadoId:currentEmpId,
-    remitente:currentEmpNombre,
-    texto:chatEsc(txt),
-    timestamp:firebase.firestore.FieldValue.serverTimestamp(),
-    leido:false
-  }).catch(e=>{
-    console.error('Chat envío:',e);
-    if(!inp.value) inp.value=txt;
+async function enviarMensaje(){
+  const input = document.getElementById('chatInput');
+  if(!input) return;
+  const texto = (input.value||'').trim();
+  if(!texto) return;
+  if(texto.length > 1000){ showToast('Mensaje demasiado largo','warning'); return; }
+  input.value = '';
+  try{
+    await db.collection(CHAT_COL).add({
+      empleadoId: currentEmpId,
+      empleadoNombre: currentEmpNombre,
+      rol: 'empleado',
+      autor: currentEmpNombre,
+      texto,
+      fecha: new Date().toISOString(),
+      leido: true
+    });
+  }catch(e){
+    console.error(e);
     showToast('No se pudo enviar el mensaje','danger');
+  }
+}
+
+async function marcarMensajesLeidos(){
+  if(!currentEmpId) return;
+  try{
+    const snap = await db.collection(CHAT_COL)
+      .where('empleadoId','==',currentEmpId)
+      .where('leido','==',false)
+      .get();
+    if(snap.empty) return;
+    const batch = db.batch();
+    snap.forEach(doc => {
+      const data = doc.data();
+      if(data.rol !== 'empleado') batch.update(doc.ref, {leido:true});
+    });
+    await batch.commit();
+  }catch(e){ /* silencioso */ }
+}
+
+// ============================================================
+// LOGIN / SESIÓN
+// ============================================================
+let _empleadosPoblados = false;
+function poblarEmpleados(){
+  if(_empleadosPoblados) return;
+  _empleadosPoblados = true;
+  const sel = document.getElementById('loginEmpleado');
+  if(!sel) return;
+  CONFIG.empleados.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id;
+    o.textContent = e.nombre;
+    sel.appendChild(o);
   });
-  inp.focus();
 }
 
-function chatAlternar(){
-  const p=document.getElementById('chatPanel');
-  if(chatPanelAbierto()){ p.classList.add('hidden'); return; }
-  p.classList.remove('hidden');
-  chatRender();
-  chatMarcarLeidos();
-  const md=document.getElementById('chatMessages'); md.scrollTop=md.scrollHeight;
-  setTimeout(()=>{ const i=document.getElementById('chatInput'); if(i) i.focus(); },250);
+function manejarLogin(){
+  const id = document.getElementById('loginEmpleado').value;
+  const pwd = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if(!id){ errEl.textContent = '❌ Seleccione un usuario'; errEl.style.display = 'block'; return; }
+  const emp = CONFIG.empleados.find(x => x.id === id);
+  if(!emp){ errEl.textContent = '❌ Usuario inválido'; errEl.style.display = 'block'; return; }
+  if(emp.clave !== pwd){ errEl.textContent = '❌ Clave incorrecta'; errEl.style.display = 'block'; return; }
+  guardarSesion(id);
+  document.getElementById('loginPassword').value = '';
+  iniciarSesion(id);
 }
 
-document.getElementById('chatToggleBtn').addEventListener('click',chatAlternar);
-document.getElementById('chatCloseBtn').addEventListener('click',()=>document.getElementById('chatPanel').classList.add('hidden'));
-document.getElementById('chatSendBtn').addEventListener('click',chatEnviar);
-document.getElementById('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); chatEnviar(); } });
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden && currentEmpId) chatMarcarLeidos(); });
-
-// ============================================================
-// INGRESO LIMPIO: pantalla de carga + limpieza de datos previos
-// ============================================================
-let _cargaTimer = null, _bienvenida = null;
-function limpiarVista(){
-  // Borra todo rastro del usuario anterior (datos, búsqueda y paneles) antes de cargar desde Firestore
-  state.causas = []; _detCache.clear();
-  searchTerm = ''; pagination.page = 1;
-  const gs = document.getElementById('globalSearch'); if(gs) gs.value = '';
-  const lp = document.getElementById('loginPassword'); if(lp) lp.value = '';
-  ['kpiPanel','tablaContainer','paginationContainer','filtrosActivos'].forEach(id=>{ const e = document.getElementById(id); if(e) e.innerHTML = ''; });
-}
-function mostrarCarga(){
-  const el = document.getElementById('appCarga'); if(!el) return;
-  el.classList.remove('error'); el.classList.add('show');
-  document.getElementById('acSub').textContent = currentEmpNombre ? 'Ingresando como ' + currentEmpNombre + '… cargando expedientes' : 'Cargando expedientes…';
-  clearTimeout(_cargaTimer);
-  _cargaTimer = setTimeout(()=>errorCarga('La carga tarda más de lo normal. Verifique su conexión a internet.'), 20000);
-}
-function ocultarCarga(sinMensaje){
-  clearTimeout(_cargaTimer);
-  const el = document.getElementById('appCarga'); if(el) el.classList.remove('show','error');
-  document.documentElement.classList.remove('tiene-sesion');
-  if(_bienvenida && !sinMensaje) showToast(_bienvenida[0], _bienvenida[1]);
-  _bienvenida = null;
-}
-function errorCarga(msg){
-  clearTimeout(_cargaTimer);
-  const el = document.getElementById('appCarga'); if(!el) return;
-  document.getElementById('acMsg').textContent = msg || 'No se pudieron cargar los datos.';
-  el.classList.add('show','error');
-}
-document.getElementById('acReintentar').addEventListener('click', ()=>{ if(currentEmpId) loadState(); });
-document.getElementById('acSalir').addEventListener('click', ()=>cerrarSesion());
-
-// ============================================================
-// SESIÓN: INICIO / RESTAURACIÓN / CIERRE
-// ============================================================
-function iniciarSesionEmpleado(emp, opts){
-  opts = opts || {};
-  limpiarVista();
+function iniciarSesion(id){
+  const emp = CONFIG.empleados.find(x => x.id === id);
+  if(!emp){ mostrarLogin(); return; }
   currentEmpId = emp.id;
   currentEmpNombre = emp.nombre;
-  document.getElementById('empleadoNombre').textContent = emp.nombre;
-  document.getElementById('loginOverlay').style.display='none';
+  const nomEl = document.getElementById('empleadoNombre');
+  if(nomEl) nomEl.textContent = emp.nombre;
+  document.documentElement.classList.add('tiene-sesion');
+  document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('appWrapper').classList.add('visible');
+  mostrarCarga();
+  loadState();
+  initChat();
+}
 
-  filtroKPI = 'total';
+function mostrarLogin(){
+  const ac = document.getElementById('appCarga');
+  ac.classList.remove('show','error');
+  ac.style.display = 'none';
+  document.documentElement.classList.remove('tiene-sesion');
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('appWrapper').classList.remove('visible');
+  const cw = document.getElementById('chatWidget');
+  if(cw) cw.style.display = 'none';
+  const cp = document.getElementById('chatPanel');
+  if(cp) cp.classList.add('hidden');
+}
+
+function mostrarCarga(){
+  const el = document.getElementById('appCarga');
+  if(!el) return;
+  el.style.display = '';
+  el.classList.add('show');
+  el.classList.remove('error');
+  const sub = document.getElementById('acSub');
+  if(sub) sub.textContent = 'Cargando expedientes…';
+  const msg = document.getElementById('acMsg');
+  if(msg) msg.textContent = '';
+}
+
+function ocultarCarga(){
+  const el = document.getElementById('appCarga');
+  if(!el) return;
+  el.classList.remove('show');
+  el.style.display = 'none';
+}
+
+function errorCarga(msg){
+  const el = document.getElementById('appCarga');
+  if(!el) return;
+  el.style.display = '';
+  el.classList.add('show','error');
+  const m = document.getElementById('acMsg');
+  if(m) m.textContent = msg || 'No se pudo conectar con el servidor.';
+}
+
+function pedirCierreSesion(){
+  document.getElementById('logoutAlert').classList.add('show');
+}
+function cancelarCierreSesion(){
+  document.getElementById('logoutAlert').classList.remove('show');
+}
+function cerrarSesionActual(){
+  if(unsubscribe){ unsubscribe(); unsubscribe = null; }
+  if(chatUnsubscribe){ chatUnsubscribe(); chatUnsubscribe = null; }
+  state.causas = [];
+  _detCache.clear();
+  searchTerm = '';
   pagination.page = 1;
+  filtroKPI = 'total';
   columnState.sortBy = 'fechaAsignacion';
   columnState.sortDir = 'desc';
   columnState.filterNivel = '';
   columnState.filterSecretario = '';
-  _detCache.clear();
-
-  loadState();
-  iniciarChat();
-
-  _bienvenida = opts.restored ? [`Sesión restaurada · ${emp.nombre}`,'info'] : [`Bienvenido/a ${emp.nombre}`,'success'];
-
-  if(refreshInterval) clearInterval(refreshInterval);
-  refreshInterval = setInterval(()=>{ if(!document.hidden){ } }, 15*60*1000);
-}
-
-async function handleLogin(){
-  const empId = document.getElementById('loginEmpleado').value;
-  const pass = document.getElementById('loginPassword').value;
-  const err = document.getElementById('loginError');
-
-  if(!empId){ err.textContent='❌ Seleccione un empleado.'; err.style.display='block'; setTimeout(()=>err.style.display='none',2500); return; }
-  const emp = CONFIG.empleados.find(e=>e.id===empId);
-  if(!emp || pass !== emp.clave){ err.textContent='❌ Clave incorrecta.'; err.style.display='block'; setTimeout(()=>err.style.display='none',2500); return; }
-
-  err.style.display='none';
-
-  // Persistir sesión (solo se borra al pulsar "Salir")
-  guardarSesion(empId);
-
-  iniciarSesionEmpleado(emp);
-}
-
-function cerrarSesion(){
-  detenerChat();
-  if(unsubscribe) unsubscribe();
-  if(refreshInterval) clearInterval(refreshInterval);
+  currentEmpId = '';
+  currentEmpNombre = '';
   borrarSesion();
   document.getElementById('logoutAlert').classList.remove('show');
   document.getElementById('appWrapper').classList.remove('visible');
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('loginPassword').value='';
-  document.getElementById('loginEmpleado').value='';
-  currentEmpId=''; currentEmpNombre=''; state.causas=[];
-  limpiarVista(); ocultarCarga(true);
-  filtroKPI = 'total'; pagination.page = 1;
-  _detCache.clear();
-  showToast('Sesión cerrada','warning');
+  const chatMessages = document.getElementById('chatMessages');
+  if(chatMessages) chatMessages.innerHTML = '<div class="chat-empty"><i class="bi bi-chat-square-dots"></i>Sin mensajes aún</div>';
+  mostrarLogin();
 }
 
 // ============================================================
-// INIT
+// WIRING GLOBAL
 // ============================================================
-document.addEventListener('DOMContentLoaded', function(){
-  const sel = document.getElementById('loginEmpleado');
-  CONFIG.empleados.forEach(e=>{
-    const o = document.createElement('option'); o.value = e.id; o.textContent = e.nombre; sel.appendChild(o);
+function wireAll(){
+  const $ = id => document.getElementById(id);
+
+  // Login
+  if($('btnLogin')) $('btnLogin').addEventListener('click', manejarLogin);
+  if($('loginPassword')) $('loginPassword').addEventListener('keydown', e => { if(e.key === 'Enter') manejarLogin(); });
+
+  // Header
+  if($('btnReporte')) $('btnReporte').addEventListener('click', generarReporte);
+  if($('btnActualizar')) $('btnActualizar').addEventListener('click', () => {
+    if(!currentEmpId) return;
+    loadState();
+    showToast('Actualizando…','info');
   });
+  if($('btnCerrarSesion')) $('btnCerrarSesion').addEventListener('click', pedirCierreSesion);
 
-  document.getElementById('btnLogin').addEventListener('click', handleLogin);
-  document.getElementById('loginPassword').addEventListener('keypress', e=>{ if(e.key==='Enter') handleLogin(); });
-
-  document.getElementById('globalSearch').addEventListener('input', function(){
-    searchTerm = this.value.trim();
+  // Búsqueda
+  if($('globalSearch')) $('globalSearch').addEventListener('input', e => {
+    searchTerm = e.target.value.trim();
     pagination.page = 1;
+    _detCache.clear();
     renderTabla();
   });
 
-  document.getElementById('btnReporte').addEventListener('click', generarReporte);
-  document.getElementById('btnActualizar').addEventListener('click', ()=> showToast('Datos en tiempo real','info'));
-  document.getElementById('btnCerrarSesion').addEventListener('click', ()=> document.getElementById('logoutAlert').classList.add('show'));
-  document.getElementById('btnCancelarSalida').addEventListener('click', ()=> document.getElementById('logoutAlert').classList.remove('show'));
-  document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
+  // Logout alert
+  if($('btnCancelarSalida')) $('btnCancelarSalida').addEventListener('click', cancelarCierreSesion);
+  if($('btnConfirmarSalida')) $('btnConfirmarSalida').addEventListener('click', cerrarSesionActual);
 
-  document.getElementById('btnConfirmarEnviar').addEventListener('click', abrirAlertaEnvio);
-  document.getElementById('btnAlertaEnvioCancelar').addEventListener('click', cerrarAlertaEnvio);
-  document.getElementById('btnAlertaEnvioConfirmar').addEventListener('click', confirmarAlertaEnvio);
-  const alertaEnvioEl = document.getElementById('alertaEnvio');
-  alertaEnvioEl.addEventListener('click', e=>{ if(e.target === alertaEnvioEl) cerrarAlertaEnvio(); });
-  alertaEnvioEl.addEventListener('keydown', e=>{
-    if(e.key === 'Escape'){ e.stopPropagation(); cerrarAlertaEnvio(); return; }
-    if(e.key === 'Tab'){
-      const btns = [document.getElementById('btnAlertaEnvioCancelar'), document.getElementById('btnAlertaEnvioConfirmar')];
-      const i = btns.indexOf(document.activeElement);
-      if(i === -1){ e.preventDefault(); btns[0].focus(); }
-      else if(e.shiftKey && i === 0){ e.preventDefault(); btns[1].focus(); }
-      else if(!e.shiftKey && i === 1){ e.preventDefault(); btns[0].focus(); }
-    }
+  // Pantalla de carga (error)
+  if($('acReintentar')) $('acReintentar').addEventListener('click', () => {
+    if(currentEmpId){ mostrarCarga(); loadState(); }
+    else mostrarLogin();
   });
-  document.getElementById('modalEnviar').addEventListener('hidden.bs.modal', cerrarAlertaEnvio);
-  document.getElementById('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
+  if($('acSalir')) $('acSalir').addEventListener('click', cerrarSesionActual);
 
-  document.getElementById('selectTipoReporte').addEventListener('change', function(){
-    renderReporteByTipo(this.value);
+  // Modales: envío
+  if($('btnConfirmarEnviar')) $('btnConfirmarEnviar').addEventListener('click', abrirAlertaEnvio);
+  if($('btnAlertaEnvioCancelar')) $('btnAlertaEnvioCancelar').addEventListener('click', cerrarAlertaEnvio);
+  if($('btnAlertaEnvioConfirmar')) $('btnAlertaEnvioConfirmar').addEventListener('click', confirmarAlertaEnvio);
+
+  // Modal justificar
+  if($('btnConfirmarJustificar')) $('btnConfirmarJustificar').addEventListener('click', confirmarJustificar);
+
+  // Modal reporte
+  if($('selectTipoReporte')) $('selectTipoReporte').addEventListener('change', () => {
+    renderReporteByTipo(document.getElementById('selectTipoReporte').value);
   });
-  document.getElementById('btnImprimirReporte').addEventListener('click', imprimirReporteEmpleado);
+  if($('btnImprimirReporte')) $('btnImprimirReporte').addEventListener('click', imprimirReporteEmpleado);
+}
 
-  // === RESTAURACIÓN DE SESIÓN ===
-  // Si hay una sesión guardada y NO se pulsó "Salir", se reingresa automáticamente.
+function init(){
+  poblarEmpleados();
+  wireAll();
+
   const savedId = leerSesion();
   if(savedId){
-    const emp = CONFIG.empleados.find(e => e.id === savedId);
-    if(emp){
-      guardarSesion(emp.id); // renueva la persistencia en cada visita
-      try{
-        iniciarSesionEmpleado(emp, {restored: true});
-      }catch(err){
-        console.error('Error al restaurar la sesión:', err);
-      }
-    } else {
-      // ID guardado inválido (empleado eliminado de la lista): limpiar
-      borrarSesion();
-    }
+    const emp = CONFIG.empleados.find(x => x.id === savedId);
+    if(emp) iniciarSesion(savedId);
+    else { borrarSesion(); mostrarLogin(); }
   } else {
-    document.documentElement.classList.remove('tiene-sesion');
-  }
-
-  // Sincroniza entre pestañas: si se pulsa "Salir" en una, se cierra en todas
-  window.addEventListener('storage', function(e){
-    if(e.key !== SESSION_KEY) return;
-    if(!e.newValue && currentEmpId){
-      cerrarSesion();
-    } else if(e.newValue && !currentEmpId){
-      const emp = CONFIG.empleados.find(x => x.id === e.newValue);
-      if(emp) iniciarSesionEmpleado(emp, {restored: true});
-    }
-  });
-});
-})();
-</script>
-
-<!-- ===== MODAL: DEVUELTOS POR SECRETARIO (bloque añadido) ===== -->
-<div class="modal fade modal-modern modal-dev" id="modalDevueltos" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-arrow-return-left me-2"></i>Devueltos por Secretario</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="dvLista"></div>
-        <div id="dvEnviar" hidden>
-          <p class="mb-1"><strong>Expediente:</strong> <span id="dvEnvExp"></span></p>
-          <p class="mb-1"><strong>Se enviará a:</strong> <span id="dvEnvSec"></span></p>
-          <p class="mb-3" style="font-size:.8rem;color:var(--muted);"><i class="bi bi-calendar-event me-1"></i><span id="dvEnvFecha"></span></p>
-          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#92400e;margin-bottom:.35rem;">Observación del Secretario</div>
-          <div class="obs-sec-box mb-3" id="dvEnvObsSec"></div>
-          <label class="form-label" for="dvEnvObs">Observación del pase (opcional)</label>
-          <textarea id="dvEnvObs" class="form-control" rows="3" placeholder="Detalle lo que corrigió o resolvió…"></textarea>
-          <div class="form-text mb-3" style="font-size:.75rem;">Al confirmar, el expediente pasa a <strong>En Secretaría</strong> y sale de esta lista.</div>
-          <div class="d-flex gap-2 justify-content-end flex-wrap">
-            <button type="button" class="btn btn-secondary" id="dvBtnVolver"><i class="bi bi-arrow-left"></i> Volver</button>
-            <button type="button" class="btn btn-modern btn-success-modern" id="dvBtnConfirmar"><i class="bi bi-send-fill"></i> Enviar al Secretario</button>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-modern btn-success-modern" id="dvBtnImprimir" onclick="imprimirModalContenido('modalDevueltos')"><i class="bi bi-printer"></i> Imprimir</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ===== KPI "Devueltos por Secretario": bloque independiente, no modifica el código original ===== */
-(function(){
-'use strict';
-// Misma lista de Secretarios que CONFIG.secretarios del código original
-const SECS=[{id:'sec1',nombre:'Corrales A.Mariela'},{id:'sec2',nombre:'Riveros Patricia'},{id:'sec3',nombre:'Magnani Enzo'}];
-const $=id=>document.getElementById(id);
-const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-const p2=n=>String(n).padStart(2,'0');
-function fmt(v){
-  if(!v) return '—';
-  const d=(v&&v.toDate)?v.toDate():new Date(v);
-  if(isNaN(d)) return '—';
-  return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
-}
-function toast(msg,type){
-  const c=$('toastContainer'); if(!c) return;
-  const ic={success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};
-  const d=document.createElement('div');
-  d.className='toast-custom '+(type||'info');
-  d.innerHTML='<i class="bi '+(ic[type]||ic.info)+'"></i><span>'+msg+'</span>';
-  c.appendChild(d); setTimeout(()=>d.remove(),3800);
-}
-function leerSesion(){
-  let id=null;
-  try{ id=localStorage.getItem('paseDigitalEmpleadoId'); }catch(e){}
-  if(!id){ try{ const m=document.cookie.match(/(?:^|; )paseDigitalEmpleadoId=([^;]*)/); if(m) id=decodeURIComponent(m[1]); }catch(e){} }
-  return id||'';
-}
-
-// ---- Secretarios ----
-function resolver(txt){
-  const raw=String(txt||'').trim(), t=norm(raw);
-  if(!t) return null;
-  const porId=SECS.find(s=>s.id===raw); if(porId) return porId;
-  return SECS.find(s=>{ const ap=norm(s.nombre).split(' ')[0]; return ap&&(' '+t+' ').includes(' '+ap+' '); })||null;
-}
-// Secretario del pase (historial = fuente de verdad, igual que en la app)
-function secAsignado(c){
-  const h=c.historial||[];
-  for(let i=h.length-1;i>=0;i--){
-    const m=h[i];
-    if(m&&m.accion&&String(m.accion).includes('Asignado (Nivel')){ const s=resolver(m.usuario); if(s) return s; }
-  }
-  return resolver(c.secretarioId)||resolver(c.secretarioNombre);
-}
-// Secretario que devolvió: campos de la devolución → historial → secretario asignado
-function secDevolvio(c){
-  const d=c.devolucionSecretario||{};
-  const cands=[d.secretarioNombre,d.secretario,d.secretarioId,d.devueltoPor,d.usuario,d.por,d.nombre];
-  for(const v of cands){
-    const x=(v&&typeof v==='object')?(v.nombre||v.id):v;
-    if(typeof x==='string'&&x.trim()){ const s=resolver(x); return s?s.nombre:x.trim(); }
-  }
-  const h=c.historial||[];
-  for(let i=h.length-1;i>=0;i--){
-    const m=h[i];
-    if(m&&/devuel/i.test(m.accion||'')){ const s=resolver(m.usuario); if(s) return s.nombre; }
-  }
-  const a=secAsignado(c); return a?a.nombre:(c.secretarioNombre||'—');
-}
-
-// ---- Estado ----
-let lista=[], unsub=null, empId='', empNombre='', envRef=null, sending=false, visible=false;
-const fs=()=>firebase.firestore();
-
-function detener(){
-  if(unsub){ unsub(); unsub=null; }
-  lista=[]; envRef=null; pintarKpi();
-}
-function iniciar(){
-  detener();
-  empNombre=($('empleadoNombre').textContent||'').trim();
-  if(!empNombre||empNombre==='—') return;
-  const opt=[].slice.call($('loginEmpleado').options).find(o=>o.value&&o.textContent.trim()===empNombre);
-  empId=opt?opt.value:leerSesion();
-  unsub=fs().collection('operador').onSnapshot(snap=>{
-    const out=[];
-    snap.forEach(doc=>{
-      if(doc.id==='config'||doc.id==='secretario_config') return;
-      const c=doc.data();
-      if(!c||!c.numero||c.estado!=='en_proceso'||!c.devolucionSecretario) return;
-      const suyo=(c.empleadoId&&(c.empleadoId===empId||c.empleadoId===empNombre))||
-                 (c.empleadoAsignado&&(c.empleadoAsignado===empId||c.empleadoAsignado===empNombre))||
-                 (c.empleadoOriginal===empId);
-      if(!suyo) return;
-      const d=c.devolucionSecretario;
-      const f=(d.fecha&&d.fecha.toDate)?d.fecha.toDate():new Date(d.fecha);
-      out.push({ref:doc.id,c:c,sec:secDevolvio(c),obs:String(d.observacion||d.comentario||d.motivo||''),ts:f.getTime()||0});
-    });
-    out.sort((a,b)=>b.ts-a.ts);
-    lista=out;
-    pintarKpi();
-    if(envRef&&!sending&&!lista.some(x=>x.ref===envRef)) mostrarLista();
-    else if(!$('dvLista').hidden) renderLista();
-  },err=>{ console.error('Devueltos por Secretario:',err); });
-}
-
-// ---- KPI ----
-const panel=$('kpiPanel');
-function pintarKpi(){
-  let card=panel.querySelector('.kpi-dev');
-  if(!card){
-    if(!panel.children.length) return; // espera a que el KPI original se dibuje
-    card=document.createElement('div');
-    card.className='kpi-card kpi-dev';
-    card.setAttribute('role','button'); card.tabIndex=0;
-    card.title='Ver expedientes devueltos por el Secretario';
-    card.innerHTML='<div class="num">0</div><div class="lbl"><i class="bi bi-arrow-return-left"></i>Devueltos por Secretario</div>';
-    card.addEventListener('click',abrir);
-    card.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrir(); } });
-    panel.appendChild(card);
-  }
-  card.querySelector('.num').textContent=lista.length;
-  card.classList.toggle('tiene',lista.length>0);
-}
-// El KPI original se redibuja completo en cada render: se vuelve a añadir la tarjeta si desaparece
-new MutationObserver(()=>{ if(!panel.querySelector('.kpi-dev')) pintarKpi(); }).observe(panel,{childList:true});
-
-// ---- Modal: tabla ----
-function renderLista(){
-  const box=$('dvLista');
-  if(!lista.length){
-    box.innerHTML='<div class="empty-state"><i class="bi bi-check2-circle"></i>No tiene expedientes devueltos por el Secretario.</div>';
-    return;
-  }
-  box.innerHTML='<div class="dv-info"><i class="bi bi-info-circle me-1"></i>'+lista.length+' expediente'+(lista.length!==1?'s':'')+' pendiente'+(lista.length!==1?'s':'')+' de corrección. Cuando lo resuelva, use <strong>Enviar al Secretario</strong>.</div>'+
-  '<div class="table-wrap"><table class="table-modern dv-table"><thead><tr>'+
-  '<th>Expediente</th><th>Tipo</th><th>Secretario que devuelve</th><th>Fecha y hora de devolución</th><th>Observación</th><th>Acción</th>'+
-  '</tr></thead><tbody>'+
-  lista.map(it=>{
-    const c=it.c;
-    return '<tr>'+
-      '<td><strong style="color:var(--primary-dark);">'+esc(c.numero)+'</strong></td>'+
-      '<td style="font-size:.78rem;">'+esc(c.tipo||'—')+'</td>'+
-      '<td><span class="dv-sec" style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;white-space:nowrap;"><i class="bi bi-person-badge-fill"></i> '+esc(it.sec)+'</span></td>'+
-      '<td style="white-space:nowrap;font-size:.78rem;">'+fmt(c.devolucionSecretario.fecha)+'</td>'+
-      '<td style="white-space:pre-wrap;word-break:break-word;max-width:340px;font-size:.78rem;">'+(it.obs?esc(it.obs):'<span class="text-muted">Sin observación</span>')+'</td>'+
-      '<td style="white-space:nowrap;"><button type="button" class="btn-modern btn-success-modern btn-sm-modern dv-btn-env" data-ref="'+esc(it.ref)+'"><i class="bi bi-send-fill"></i> Enviar al Secretario</button></td>'+
-    '</tr>';
-  }).join('')+'</tbody></table></div>';
-  box.querySelectorAll('.dv-btn-env').forEach(b=>b.addEventListener('click',()=>abrirEnvio(b.dataset.ref)));
-}
-function mostrarLista(){
-  envRef=null;
-  $('dvEnviar').hidden=true; $('dvLista').hidden=false; $('dvBtnImprimir').hidden=false;
-  renderLista();
-}
-function abrir(){
-  mostrarLista();
-  bootstrap.Modal.getOrCreateInstance($('modalDevueltos')).show();
-}
-
-// ---- Modal: enviar al Secretario ----
-function abrirEnvio(ref){
-  const it=lista.find(x=>x.ref===ref); if(!it) return;
-  const c=it.c, s=secAsignado(c);
-  envRef=ref;
-  $('dvEnvExp').textContent=c.numero;
-  $('dvEnvSec').innerHTML='<span class="dv-sec" style="background:#ede9fe;color:#5b21b6;">'+esc(s?s.nombre:(c.secretarioNombre||'—'))+'</span>';
-  $('dvEnvFecha').textContent='Devuelto por '+it.sec+' el '+fmt(c.devolucionSecretario.fecha);
-  $('dvEnvObsSec').textContent=it.obs||'Sin observación';
-  $('dvEnvObs').value='';
-  $('dvLista').hidden=true; $('dvEnviar').hidden=false; $('dvBtnImprimir').hidden=true;
-  setTimeout(()=>$('dvEnvObs').focus(),150);
-}
-async function confirmar(){
-  if(sending||!envRef) return;
-  const it=lista.find(x=>x.ref===envRef); if(!it){ mostrarLista(); return; }
-  const numero=it.c.numero, obs=$('dvEnvObs').value.trim(), btn=$('dvBtnConfirmar');
-  sending=true; btn.disabled=true;
-  try{
-    const ref=fs().collection('operador').doc(it.ref), ahora=new Date().toISOString();
-    // Transacción: evita duplicar el pase si el estado cambió mientras tanto
-    await fs().runTransaction(async tx=>{
-      const snap=await tx.get(ref);
-      if(!snap.exists) throw new Error('El expediente ya no existe');
-      const c=snap.data();
-      if(c.estado!=='en_proceso') throw new Error('Este expediente ya no está en proceso');
-      const sec=secAsignado(c), nom=sec?sec.nombre:(c.secretarioNombre||'—');
-      // Mismos campos que el envío original ("Enviar") de la tabla principal
-      const upd={
-        estado:'en_secretaria',
-        devolucionSecretario:null,
-        fechaResolucionEmpleado:ahora,
-        fechaPaseEmpleado:ahora,
-        historial:(c.historial||[]).concat([{fecha:ahora,accion:'Enviado a Secretario para finalización ('+nom+')',usuario:empNombre,comentario:obs||'Pase a Secretario para finalizar'}])
-      };
-      if(sec){ upd.secretarioId=sec.id; upd.secretarioNombre=sec.nombre; }
-      if(!c.empleadoAsignado&&c.empleadoId) upd.empleadoAsignado=c.empleadoId;
-      tx.update(ref,upd);
-    });
-    toast('✅ '+esc(numero)+' enviado a Secretario','success');
-    sending=false; mostrarLista();
-  }catch(e){
-    console.error('Error al enviar el pase:',e);
-    toast('Error al enviar el pase ('+esc((e&&(e.message||e.code))||'sin detalle')+')','danger');
-  }finally{
-    sending=false; btn.disabled=false;
+    mostrarLogin();
   }
 }
 
-// ---- Eventos y sesión ----
-$('dvBtnVolver').addEventListener('click',mostrarLista);
-$('dvBtnConfirmar').addEventListener('click',confirmar);
-$('modalDevueltos').addEventListener('hidden.bs.modal',mostrarLista);
+document.addEventListener('DOMContentLoaded', init);
 
-// Arranca/para el listener según el empleado conectado (login, restauración de sesión y "Salir")
-const app=$('appWrapper');
-function sync(){
-  const v=app.classList.contains('visible');
-  if(v===visible) return;
-  visible=v;
-  if(v) iniciar(); else { detener(); }
-}
-new MutationObserver(sync).observe(app,{attributes:true,attributeFilter:['class']});
-sync();
 })();
 </script>
 </body>
