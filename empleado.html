@@ -309,8 +309,49 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .chat-input-area button:hover{background:#059669}
 @media (max-width:576px){.chat-widget{left:14px;bottom:14px}.chat-panel{width:calc(100vw - 28px);height:420px}}
 </style>
+<style id="dv-css">
+/* ===== KPI "Devueltos por Secretario" (bloque añadido) ===== */
+.kpi-card.kpi-dev{border-top-color:#d97706}
+.kpi-card.kpi-dev .num{color:#d97706}
+.kpi-card.kpi-dev .lbl i{margin-right:4px}
+.kpi-card.kpi-dev.tiene{background:linear-gradient(135deg,#fffbeb,#fff);border-color:#fcd34d}
+.modal-dev .modal-header{background:linear-gradient(135deg,#92400e,#d97706)!important}
+.table-modern.dv-table{min-width:880px}
+.dv-sec{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.dv-info{font-size:.82rem;color:var(--muted);margin-bottom:.8rem}
+@media (max-width:576px){.modal-dev .modal-body{padding:1rem}}
+</style>
+<style id="carga-css">
+/* ===== Pantalla de carga del ingreso ===== */
+#appCarga{position:fixed;inset:0;z-index:9990;display:none;flex-direction:column;align-items:center;justify-content:center;gap:.9rem;text-align:center;padding:24px;background:#fff radial-gradient(circle at 20% 15%,rgba(16,185,129,.08) 0%,transparent 45%),radial-gradient(circle at 80% 85%,rgba(6,182,212,.08) 0%,transparent 45%)}
+#appCarga.show,html.tiene-sesion #appCarga{display:flex}
+#appCarga .ac-spin{width:48px;height:48px;border-radius:50%;border:4px solid #d1fae5;border-top-color:var(--success);animation:acSpin .8s linear infinite}
+@keyframes acSpin{to{transform:rotate(360deg)}}
+#appCarga .ac-t{font-weight:800;font-size:1.1rem;color:#064e3b}
+#appCarga .ac-s{font-size:.85rem;color:var(--muted);max-width:360px}
+#appCarga .ac-err{display:none;flex-direction:column;align-items:center;gap:.8rem}
+#appCarga .ac-err i{font-size:2.2rem;color:var(--warning)}
+#appCarga .ac-btns{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+#appCarga.error .ac-spin{display:none}
+#appCarga.error .ac-err{display:flex}
+@media (prefers-reduced-motion:reduce){#appCarga .ac-spin{animation-duration:2.4s}}
+</style>
 </head>
 <body>
+
+<div id="appCarga" role="status" aria-live="polite">
+  <div class="ac-spin"></div>
+  <div class="ac-t">Pase Digital</div>
+  <div class="ac-s" id="acSub">Cargando expedientes…</div>
+  <div class="ac-err">
+    <i class="bi bi-wifi-off"></i>
+    <div class="ac-s" id="acMsg"></div>
+    <div class="ac-btns">
+      <button type="button" class="btn btn-modern btn-success-modern" id="acReintentar"><i class="bi bi-arrow-repeat"></i> Reintentar</button>
+      <button type="button" class="btn btn-modern btn-outline-modern" id="acSalir"><i class="bi bi-power"></i> Salir</button>
+    </div>
+  </div>
+</div>
 
 <div id="loginOverlay" class="login-overlay">
   <div class="login-card">
@@ -1013,6 +1054,7 @@ function aplicarOrden(list){
 function loadState(){
   if(unsubscribe) unsubscribe();
   window._devCargaInicial = false;
+  mostrarCarga();
   unsubscribe = db.collection('operador').onSnapshot(snap=>{
     const causas = [];
     const empId = currentEmpId;
@@ -1046,7 +1088,8 @@ function loadState(){
     state.causas = causas;
     _detCache.clear();
     render();
-  }, err=>{ console.error(err); showToast('Error de conexión','danger'); });
+    if(!snap.metadata.fromCache) ocultarCarga();
+  }, err=>{ console.error(err); showToast('Error de conexión','danger'); errorCarga('No se pudo conectar con Firestore.'); });
 }
 
 async function updateCausa(c){ await db.collection('operador').doc(c.id).set(c); }
@@ -1993,10 +2036,46 @@ document.getElementById('chatInput').addEventListener('keydown',e=>{ if(e.key===
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && currentEmpId) chatMarcarLeidos(); });
 
 // ============================================================
+// INGRESO LIMPIO: pantalla de carga + limpieza de datos previos
+// ============================================================
+let _cargaTimer = null, _bienvenida = null;
+function limpiarVista(){
+  // Borra todo rastro del usuario anterior (datos, búsqueda y paneles) antes de cargar desde Firestore
+  state.causas = []; _detCache.clear();
+  searchTerm = ''; pagination.page = 1;
+  const gs = document.getElementById('globalSearch'); if(gs) gs.value = '';
+  const lp = document.getElementById('loginPassword'); if(lp) lp.value = '';
+  ['kpiPanel','tablaContainer','paginationContainer','filtrosActivos'].forEach(id=>{ const e = document.getElementById(id); if(e) e.innerHTML = ''; });
+}
+function mostrarCarga(){
+  const el = document.getElementById('appCarga'); if(!el) return;
+  el.classList.remove('error'); el.classList.add('show');
+  document.getElementById('acSub').textContent = currentEmpNombre ? 'Ingresando como ' + currentEmpNombre + '… cargando expedientes' : 'Cargando expedientes…';
+  clearTimeout(_cargaTimer);
+  _cargaTimer = setTimeout(()=>errorCarga('La carga tarda más de lo normal. Verifique su conexión a internet.'), 20000);
+}
+function ocultarCarga(sinMensaje){
+  clearTimeout(_cargaTimer);
+  const el = document.getElementById('appCarga'); if(el) el.classList.remove('show','error');
+  document.documentElement.classList.remove('tiene-sesion');
+  if(_bienvenida && !sinMensaje) showToast(_bienvenida[0], _bienvenida[1]);
+  _bienvenida = null;
+}
+function errorCarga(msg){
+  clearTimeout(_cargaTimer);
+  const el = document.getElementById('appCarga'); if(!el) return;
+  document.getElementById('acMsg').textContent = msg || 'No se pudieron cargar los datos.';
+  el.classList.add('show','error');
+}
+document.getElementById('acReintentar').addEventListener('click', ()=>{ if(currentEmpId) loadState(); });
+document.getElementById('acSalir').addEventListener('click', ()=>cerrarSesion());
+
+// ============================================================
 // SESIÓN: INICIO / RESTAURACIÓN / CIERRE
 // ============================================================
 function iniciarSesionEmpleado(emp, opts){
   opts = opts || {};
+  limpiarVista();
   currentEmpId = emp.id;
   currentEmpNombre = emp.nombre;
   document.getElementById('empleadoNombre').textContent = emp.nombre;
@@ -2014,11 +2093,7 @@ function iniciarSesionEmpleado(emp, opts){
   loadState();
   iniciarChat();
 
-  if(opts.restored){
-    showToast(`Sesión restaurada · ${emp.nombre}`,'info');
-  } else {
-    showToast(`Bienvenido/a ${emp.nombre}`,'success');
-  }
+  _bienvenida = opts.restored ? [`Sesión restaurada · ${emp.nombre}`,'info'] : [`Bienvenido/a ${emp.nombre}`,'success'];
 
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{ if(!document.hidden){ } }, 15*60*1000);
@@ -2052,6 +2127,7 @@ function cerrarSesion(){
   document.getElementById('loginPassword').value='';
   document.getElementById('loginEmpleado').value='';
   currentEmpId=''; currentEmpNombre=''; state.causas=[];
+  limpiarVista(); ocultarCarga(true);
   filtroKPI = 'total'; pagination.page = 1;
   _detCache.clear();
   showToast('Sesión cerrada','warning');
@@ -2135,6 +2211,260 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 });
+})();
+</script>
+
+<!-- ===== MODAL: DEVUELTOS POR SECRETARIO (bloque añadido) ===== -->
+<div class="modal fade modal-modern modal-dev" id="modalDevueltos" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width:95%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-arrow-return-left me-2"></i>Devueltos por Secretario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="dvLista"></div>
+        <div id="dvEnviar" hidden>
+          <p class="mb-1"><strong>Expediente:</strong> <span id="dvEnvExp"></span></p>
+          <p class="mb-1"><strong>Se enviará a:</strong> <span id="dvEnvSec"></span></p>
+          <p class="mb-3" style="font-size:.8rem;color:var(--muted);"><i class="bi bi-calendar-event me-1"></i><span id="dvEnvFecha"></span></p>
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#92400e;margin-bottom:.35rem;">Observación del Secretario</div>
+          <div class="obs-sec-box mb-3" id="dvEnvObsSec"></div>
+          <label class="form-label" for="dvEnvObs">Observación del pase (opcional)</label>
+          <textarea id="dvEnvObs" class="form-control" rows="3" placeholder="Detalle lo que corrigió o resolvió…"></textarea>
+          <div class="form-text mb-3" style="font-size:.75rem;">Al confirmar, el expediente pasa a <strong>En Secretaría</strong> y sale de esta lista.</div>
+          <div class="d-flex gap-2 justify-content-end flex-wrap">
+            <button type="button" class="btn btn-secondary" id="dvBtnVolver"><i class="bi bi-arrow-left"></i> Volver</button>
+            <button type="button" class="btn btn-modern btn-success-modern" id="dvBtnConfirmar"><i class="bi bi-send-fill"></i> Enviar al Secretario</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-modern btn-success-modern" id="dvBtnImprimir" onclick="imprimirModalContenido('modalDevueltos')"><i class="bi bi-printer"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== KPI "Devueltos por Secretario": bloque independiente, no modifica el código original ===== */
+(function(){
+'use strict';
+// Misma lista de Secretarios que CONFIG.secretarios del código original
+const SECS=[{id:'sec1',nombre:'Corrales A.Mariela'},{id:'sec2',nombre:'Riveros Patricia'},{id:'sec3',nombre:'Magnani Enzo'}];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const p2=n=>String(n).padStart(2,'0');
+function fmt(v){
+  if(!v) return '—';
+  const d=(v&&v.toDate)?v.toDate():new Date(v);
+  if(isNaN(d)) return '—';
+  return p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes());
+}
+function toast(msg,type){
+  const c=$('toastContainer'); if(!c) return;
+  const ic={success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};
+  const d=document.createElement('div');
+  d.className='toast-custom '+(type||'info');
+  d.innerHTML='<i class="bi '+(ic[type]||ic.info)+'"></i><span>'+msg+'</span>';
+  c.appendChild(d); setTimeout(()=>d.remove(),3800);
+}
+function leerSesion(){
+  let id=null;
+  try{ id=localStorage.getItem('paseDigitalEmpleadoId'); }catch(e){}
+  if(!id){ try{ const m=document.cookie.match(/(?:^|; )paseDigitalEmpleadoId=([^;]*)/); if(m) id=decodeURIComponent(m[1]); }catch(e){} }
+  return id||'';
+}
+
+// ---- Secretarios ----
+function resolver(txt){
+  const raw=String(txt||'').trim(), t=norm(raw);
+  if(!t) return null;
+  const porId=SECS.find(s=>s.id===raw); if(porId) return porId;
+  return SECS.find(s=>{ const ap=norm(s.nombre).split(' ')[0]; return ap&&(' '+t+' ').includes(' '+ap+' '); })||null;
+}
+// Secretario del pase (historial = fuente de verdad, igual que en la app)
+function secAsignado(c){
+  const h=c.historial||[];
+  for(let i=h.length-1;i>=0;i--){
+    const m=h[i];
+    if(m&&m.accion&&String(m.accion).includes('Asignado (Nivel')){ const s=resolver(m.usuario); if(s) return s; }
+  }
+  return resolver(c.secretarioId)||resolver(c.secretarioNombre);
+}
+// Secretario que devolvió: campos de la devolución → historial → secretario asignado
+function secDevolvio(c){
+  const d=c.devolucionSecretario||{};
+  const cands=[d.secretarioNombre,d.secretario,d.secretarioId,d.devueltoPor,d.usuario,d.por,d.nombre];
+  for(const v of cands){
+    const x=(v&&typeof v==='object')?(v.nombre||v.id):v;
+    if(typeof x==='string'&&x.trim()){ const s=resolver(x); return s?s.nombre:x.trim(); }
+  }
+  const h=c.historial||[];
+  for(let i=h.length-1;i>=0;i--){
+    const m=h[i];
+    if(m&&/devuel/i.test(m.accion||'')){ const s=resolver(m.usuario); if(s) return s.nombre; }
+  }
+  const a=secAsignado(c); return a?a.nombre:(c.secretarioNombre||'—');
+}
+
+// ---- Estado ----
+let lista=[], unsub=null, empId='', empNombre='', envRef=null, sending=false, visible=false;
+const fs=()=>firebase.firestore();
+
+function detener(){
+  if(unsub){ unsub(); unsub=null; }
+  lista=[]; envRef=null; pintarKpi();
+}
+function iniciar(){
+  detener();
+  empNombre=($('empleadoNombre').textContent||'').trim();
+  if(!empNombre||empNombre==='—') return;
+  const opt=[].slice.call($('loginEmpleado').options).find(o=>o.value&&o.textContent.trim()===empNombre);
+  empId=opt?opt.value:leerSesion();
+  unsub=fs().collection('operador').onSnapshot(snap=>{
+    const out=[];
+    snap.forEach(doc=>{
+      if(doc.id==='config'||doc.id==='secretario_config') return;
+      const c=doc.data();
+      if(!c||!c.numero||c.estado!=='en_proceso'||!c.devolucionSecretario) return;
+      const suyo=(c.empleadoId&&(c.empleadoId===empId||c.empleadoId===empNombre))||
+                 (c.empleadoAsignado&&(c.empleadoAsignado===empId||c.empleadoAsignado===empNombre))||
+                 (c.empleadoOriginal===empId);
+      if(!suyo) return;
+      const d=c.devolucionSecretario;
+      const f=(d.fecha&&d.fecha.toDate)?d.fecha.toDate():new Date(d.fecha);
+      out.push({ref:doc.id,c:c,sec:secDevolvio(c),obs:String(d.observacion||d.comentario||d.motivo||''),ts:f.getTime()||0});
+    });
+    out.sort((a,b)=>b.ts-a.ts);
+    lista=out;
+    pintarKpi();
+    if(envRef&&!sending&&!lista.some(x=>x.ref===envRef)) mostrarLista();
+    else if(!$('dvLista').hidden) renderLista();
+  },err=>{ console.error('Devueltos por Secretario:',err); });
+}
+
+// ---- KPI ----
+const panel=$('kpiPanel');
+function pintarKpi(){
+  let card=panel.querySelector('.kpi-dev');
+  if(!card){
+    if(!panel.children.length) return; // espera a que el KPI original se dibuje
+    card=document.createElement('div');
+    card.className='kpi-card kpi-dev';
+    card.setAttribute('role','button'); card.tabIndex=0;
+    card.title='Ver expedientes devueltos por el Secretario';
+    card.innerHTML='<div class="num">0</div><div class="lbl"><i class="bi bi-arrow-return-left"></i>Devueltos por Secretario</div>';
+    card.addEventListener('click',abrir);
+    card.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrir(); } });
+    panel.appendChild(card);
+  }
+  card.querySelector('.num').textContent=lista.length;
+  card.classList.toggle('tiene',lista.length>0);
+}
+// El KPI original se redibuja completo en cada render: se vuelve a añadir la tarjeta si desaparece
+new MutationObserver(()=>{ if(!panel.querySelector('.kpi-dev')) pintarKpi(); }).observe(panel,{childList:true});
+
+// ---- Modal: tabla ----
+function renderLista(){
+  const box=$('dvLista');
+  if(!lista.length){
+    box.innerHTML='<div class="empty-state"><i class="bi bi-check2-circle"></i>No tiene expedientes devueltos por el Secretario.</div>';
+    return;
+  }
+  box.innerHTML='<div class="dv-info"><i class="bi bi-info-circle me-1"></i>'+lista.length+' expediente'+(lista.length!==1?'s':'')+' pendiente'+(lista.length!==1?'s':'')+' de corrección. Cuando lo resuelva, use <strong>Enviar al Secretario</strong>.</div>'+
+  '<div class="table-wrap"><table class="table-modern dv-table"><thead><tr>'+
+  '<th>Expediente</th><th>Tipo</th><th>Secretario que devuelve</th><th>Fecha y hora de devolución</th><th>Observación</th><th>Acción</th>'+
+  '</tr></thead><tbody>'+
+  lista.map(it=>{
+    const c=it.c;
+    return '<tr>'+
+      '<td><strong style="color:var(--primary-dark);">'+esc(c.numero)+'</strong></td>'+
+      '<td style="font-size:.78rem;">'+esc(c.tipo||'—')+'</td>'+
+      '<td><span class="dv-sec" style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-weight:700;font-size:.75rem;white-space:nowrap;"><i class="bi bi-person-badge-fill"></i> '+esc(it.sec)+'</span></td>'+
+      '<td style="white-space:nowrap;font-size:.78rem;">'+fmt(c.devolucionSecretario.fecha)+'</td>'+
+      '<td style="white-space:pre-wrap;word-break:break-word;max-width:340px;font-size:.78rem;">'+(it.obs?esc(it.obs):'<span class="text-muted">Sin observación</span>')+'</td>'+
+      '<td style="white-space:nowrap;"><button type="button" class="btn-modern btn-success-modern btn-sm-modern dv-btn-env" data-ref="'+esc(it.ref)+'"><i class="bi bi-send-fill"></i> Enviar al Secretario</button></td>'+
+    '</tr>';
+  }).join('')+'</tbody></table></div>';
+  box.querySelectorAll('.dv-btn-env').forEach(b=>b.addEventListener('click',()=>abrirEnvio(b.dataset.ref)));
+}
+function mostrarLista(){
+  envRef=null;
+  $('dvEnviar').hidden=true; $('dvLista').hidden=false; $('dvBtnImprimir').hidden=false;
+  renderLista();
+}
+function abrir(){
+  mostrarLista();
+  bootstrap.Modal.getOrCreateInstance($('modalDevueltos')).show();
+}
+
+// ---- Modal: enviar al Secretario ----
+function abrirEnvio(ref){
+  const it=lista.find(x=>x.ref===ref); if(!it) return;
+  const c=it.c, s=secAsignado(c);
+  envRef=ref;
+  $('dvEnvExp').textContent=c.numero;
+  $('dvEnvSec').innerHTML='<span class="dv-sec" style="background:#ede9fe;color:#5b21b6;">'+esc(s?s.nombre:(c.secretarioNombre||'—'))+'</span>';
+  $('dvEnvFecha').textContent='Devuelto por '+it.sec+' el '+fmt(c.devolucionSecretario.fecha);
+  $('dvEnvObsSec').textContent=it.obs||'Sin observación';
+  $('dvEnvObs').value='';
+  $('dvLista').hidden=true; $('dvEnviar').hidden=false; $('dvBtnImprimir').hidden=true;
+  setTimeout(()=>$('dvEnvObs').focus(),150);
+}
+async function confirmar(){
+  if(sending||!envRef) return;
+  const it=lista.find(x=>x.ref===envRef); if(!it){ mostrarLista(); return; }
+  const numero=it.c.numero, obs=$('dvEnvObs').value.trim(), btn=$('dvBtnConfirmar');
+  sending=true; btn.disabled=true;
+  try{
+    const ref=fs().collection('operador').doc(it.ref), ahora=new Date().toISOString();
+    // Transacción: evita duplicar el pase si el estado cambió mientras tanto
+    await fs().runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      if(!snap.exists) throw new Error('El expediente ya no existe');
+      const c=snap.data();
+      if(c.estado!=='en_proceso') throw new Error('Este expediente ya no está en proceso');
+      const sec=secAsignado(c), nom=sec?sec.nombre:(c.secretarioNombre||'—');
+      // Mismos campos que el envío original ("Enviar") de la tabla principal
+      const upd={
+        estado:'en_secretaria',
+        devolucionSecretario:null,
+        fechaResolucionEmpleado:ahora,
+        fechaPaseEmpleado:ahora,
+        historial:(c.historial||[]).concat([{fecha:ahora,accion:'Enviado a Secretario para finalización ('+nom+')',usuario:empNombre,comentario:obs||'Pase a Secretario para finalizar'}])
+      };
+      if(sec){ upd.secretarioId=sec.id; upd.secretarioNombre=sec.nombre; }
+      if(!c.empleadoAsignado&&c.empleadoId) upd.empleadoAsignado=c.empleadoId;
+      tx.update(ref,upd);
+    });
+    toast('✅ '+esc(numero)+' enviado a Secretario','success');
+    sending=false; mostrarLista();
+  }catch(e){
+    console.error('Error al enviar el pase:',e);
+    toast('Error al enviar el pase ('+esc((e&&(e.message||e.code))||'sin detalle')+')','danger');
+  }finally{
+    sending=false; btn.disabled=false;
+  }
+}
+
+// ---- Eventos y sesión ----
+$('dvBtnVolver').addEventListener('click',mostrarLista);
+$('dvBtnConfirmar').addEventListener('click',confirmar);
+$('modalDevueltos').addEventListener('hidden.bs.modal',mostrarLista);
+
+// Arranca/para el listener según el empleado conectado (login, restauración de sesión y "Salir")
+const app=$('appWrapper');
+function sync(){
+  const v=app.classList.contains('visible');
+  if(v===visible) return;
+  visible=v;
+  if(v) iniciar(); else { detener(); }
+}
+new MutationObserver(sync).observe(app,{attributes:true,attributeFilter:['class']});
+sync();
 })();
 </script>
 </body>
