@@ -337,6 +337,10 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
   .login-card{animation:none;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--a1),var(--a3)) border-box;transition:box-shadow .2s ease}
   .login-card .logo-icon,.login-card:hover .logo-icon{transition:none;transform:none}
 }
+.rotation-preview.modo-directo .rot-emp{display:none!important}
+.directo-nota{display:none;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;font-size:.76rem;font-weight:600;line-height:1.35}
+.rotation-preview.modo-directo .directo-nota{display:flex}
+.badge-directo{display:inline-flex;align-items:center;gap:2px;padding:3px 9px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:.68rem;font-weight:700;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -516,6 +520,7 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
             <label class="form-label">Acción</label>
             <select id="inpAccion" class="form-select">
               <option value="asignar" style="font-weight:700;">Asignar a Empleado y Secretario (por defecto)</option>
+              <option value="directo">Pase directo al Secretario (sin empleado)</option>
               <option value="devolver">Devolución a SIGED</option>
               <option value="remitir">Remisión a otra dependencia</option>
               <option value="rechazar">Rechazo</option>
@@ -538,12 +543,13 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
 
           <div class="rotation-preview" id="rotationPreview">
             <h6><i class="bi bi-arrow-repeat"></i> Asignación (sugerida por rotación · editable)</h6>
-            <div class="rotation-item"><i class="bi bi-person-fill"></i><span class="rot-label">Empleado:</span><select id="previewEmpleado" class="form-select form-select-sm rot-select"></select></div>
-            <div class="rot-hint" id="previewEmpleadoPos"></div>
+            <div class="rotation-item rot-emp"><i class="bi bi-person-fill"></i><span class="rot-label">Empleado:</span><select id="previewEmpleado" class="form-select form-select-sm rot-select"></select></div>
+            <div class="rot-hint rot-emp" id="previewEmpleadoPos"></div>
             <div class="rotation-item"><i class="bi bi-person-badge-fill"></i><span class="rot-label">Secretario:</span><select id="previewSecretario" class="form-select form-select-sm rot-select"></select></div>
             <div class="rot-hint" id="previewSecretarioPos"></div>
-            <div class="absence-summary" id="ausentesList"></div>
-            <div class="absence-summary" id="excluidosTipoList" style="display:none;border-top:none;margin-top:4px;padding-top:0;"></div>
+            <div class="directo-nota"><i class="bi bi-arrow-right-circle-fill"></i><span>Pase directo: el expediente queda en Secretaría <strong>sin empleado</strong>. El secretario lo asignará o lo resolverá desde su panel.</span></div>
+            <div class="absence-summary rot-emp" id="ausentesList"></div>
+            <div class="absence-summary rot-emp" id="excluidosTipoList" style="display:none;border-top:none;margin-top:4px;padding-top:0;"></div>
           </div>
 
           <div class="mb-3 mt-3">
@@ -1367,6 +1373,26 @@ async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia
     if(emp.empleado && !emp.porTipo && !empCambiado) state.lastEmployeeIndex = emp.newIndex;
     if(sec.secretario && !secCambiado) state.lastIndex = sec.newIndex;
     await guardarConfiguracion();
+  } else if(accion === 'directo'){
+    // PASE DIRECTO: va a Secretaría sin empleado; el secretario lo gestiona desde su panel de pases directos
+    const sec = getNextSecretarioSinSideEffects();
+    const manualSecId = manual && manual.secretarioId ? manual.secretarioId : null;
+    if(manualSecId && estaSecretarioAusente(manualSecId, now)){
+      showToast(`⚠️ ${getSecName(manualSecId)} está ausente hoy. Elija otro secretario.`,'warning'); return false;
+    }
+    const sugSecId = sec.secretario ? sec.secretario.id : null;
+    const secCambiado = !!manualSecId && manualSecId !== sugSecId;
+    if(!manualSecId && sec.sinDisponibles) showToast('⚠️ No hay secretarios disponibles. Se registrará sin secretario.','warning');
+    asignacionManual = secCambiado;
+    if(secCambiado) secretarioSugerido = sugSecId;
+    secretarioId = manualSecId || sugSecId;
+    estado = 'en_secretaria';
+    const secNombre = secretarioId ? getSecName(secretarioId) : 'Sin secretario';
+    accionHist = `Pase directo a Secretario (sin empleado) — Secretario: ${secNombre}` +
+      (secCambiado ? ` · secretario elegido manualmente (rotación sugería: ${sugSecId ? getSecName(sugSecId) : 'nadie'})` : '');
+    // El turno de rotación solo avanza si se respetó la sugerencia
+    if(sec.secretario && !secCambiado) state.lastIndex = sec.newIndex;
+    await guardarConfiguracion();
   } else if(accion === 'devolver'){
     estado = 'devuelto_siged'; accionHist = 'Devuelto a SIGED';
   } else if(accion === 'remitir'){
@@ -1401,6 +1427,7 @@ async function registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia
     fuenteZimbra: fuentes.zimbra||false,
     fuenteDeut: fuentes.deut||false,
     asignacionManual,
+    paseDirecto: accion === 'directo',
     empleadoSugerido,
     secretarioSugerido,
     historial: [{
@@ -1665,7 +1692,7 @@ function renderRecientes(){
           if(c.fuenteZimbra) fuentes.push('Z');
           if(c.fuenteDeut) fuentes.push('D');
           const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' : `<span class="badge-fuente">${fuentes.join('/')}</span>`;
-          const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : '—';
+          const empNombre = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : (c.paseDirecto ? '<span class="badge-directo"><i class="bi bi-arrow-right-short"></i>Directo a Secretaría</span>' : '—');
           const empAusente = c.empleadoAsignado && estaEmpleadoAusente(c.empleadoAsignado);
           const secNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
           return `
@@ -2025,9 +2052,14 @@ document.addEventListener('DOMContentLoaded', function(){
     const v = accionSel.value;
     const campos = document.getElementById('camposAccion');
     const dep = document.getElementById('campoDependencia');
-    if(v==='asignar'){ campos.style.display='none'; }
+    const conSecretario = (v==='asignar' || v==='directo');
+    if(conSecretario){ campos.style.display='none'; }
     else { campos.style.display='block'; dep.style.display = v==='remitir'?'block':'none'; }
-    document.getElementById('rotationPreview').style.display = v==='asignar' ? 'block' : 'none';
+    const rp = document.getElementById('rotationPreview');
+    rp.style.display = conSecretario ? 'block' : 'none';
+    rp.classList.toggle('modo-directo', v==='directo');
+    if(v==='directo') document.getElementById('previewEmpleado').value='';
+    renderPreview();
   });
 
   document.getElementById('formIngreso').addEventListener('submit', async function(e){
@@ -2045,19 +2077,22 @@ document.addEventListener('DOMContentLoaded', function(){
       zimbra: document.getElementById('fuenteZimbra').checked,
       deut: document.getElementById('fuenteDeut').checked
     };
-    if(accion!=='asignar'){
+    if(accion!=='asignar' && accion!=='directo'){
       if(!motivo){ showToast('Ingrese un motivo','warning'); return; }
       if(accion==='remitir' && !dependencia){ showToast('Ingrese la dependencia','warning'); return; }
     }
 
     const manual = {
-      empleadoId: document.getElementById('previewEmpleado').value || null,
+      empleadoId: accion==='directo' ? null : (document.getElementById('previewEmpleado').value || null),
       secretarioId: document.getElementById('previewSecretario').value || null
     };
 
     const ok = await registrarCausa(num, tipo, obs, nivel, accion, motivo, dependencia, modo, fuentes, manual);
     if(ok){
-      if(accion==='asignar'){
+      if(accion==='directo'){
+        const reg = state.causas[state.causas.length-1] || {};
+        showToast(`✅ ${num.toUpperCase()} → Pase directo a Secretario: ${reg.secretarioNombre || 'sin secretario'}${reg.asignacionManual ? ' (manual)' : ''}`);
+      } else if(accion==='asignar'){
         const reg = state.causas[state.causas.length-1] || {};
         const empTxt = reg.empleadoNombre || 'Sin asignar';
         const secTxt = reg.secretarioNombre || 'Sin secretario';
@@ -2099,6 +2134,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.getElementById('nuevoTipoContainer').style.display='none';
     document.getElementById('inpNuevoTipo').value='';
     document.getElementById('rotationPreview').style.display='block';
+    document.getElementById('rotationPreview').classList.remove('modo-directo');
     renderPreview();
   }
 
