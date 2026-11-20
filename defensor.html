@@ -2134,7 +2134,9 @@
                 if (filtroExpedienteUnico) lista = lista.filter(c => c.numero === filtroExpedienteUnico);
                 const totalBase = lista.length;
                 if (filtroDefensor) lista = lista.filter(c => filtroDefensor.test(c, metricas));
-                lista.sort((a, b) => new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
+                /* Más recientes primero, según la fecha en que el pase llegó al Defensor (elevación) */
+                const _tsIngreso = (c) => { const d = _aFecha(getFechaIngresoDefensor(c)); return d ? d.getTime() : 0; };
+                lista.sort((a, b) => _tsIngreso(b) - _tsIngreso(a));
                 const pState = paginationState.defensor;
                 pState.page = Math.min(pState.page, Math.ceil(lista.length / pState.perPage) || 1);
                 const { items, total, totalPages, page } = paginateData(lista, pState.page, pState.perPage);
