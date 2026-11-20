@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pases directos · Secretaría</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --primary:#0ea5e9;--primary-dark:#0284c7;--primary-deep:#0c4a6e;--primary-light:#7dd3fc;--cyan:#06b6d4;
+  --tint:#e0f2fe;--tint-2:#f0f9ff;--line:#cfe8f7;
+  --success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --text:#0f172a;--muted:#64748b;--border:#e2e8f0;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.04);
+  --shadow-md:0 4px 16px rgba(15,23,42,.06);
+  --shadow-lg:0 20px 50px rgba(15,23,42,.12);
+}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#fff;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+button,input,select{font-family:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--primary-dark);outline-offset:2px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{to{opacity:0;transform:translateX(30px)}}
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+@property --arc{syntax:'<angle>';initial-value:70deg;inherits:false}
+@keyframes orbit{to{--ang:360deg}}
+
+/* ===== Login ===== */
+#login{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+#login::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 30% 20%,rgba(14,165,233,.09) 0%,transparent 55%),radial-gradient(circle at 70% 80%,rgba(6,182,212,.07) 0%,transparent 55%)}
+.lg{
+  --a1:#22d3ee;--a2:#38bdf8;--a3:#0369a1;--accent:#0284c7;--ink-c:#0c4a6e;--line-c:#d6ebf8;--glow:rgba(2,132,199,.30);
+  --ring:7px;--ang:0deg;--arc:70deg;
+  position:relative;border:1.5px solid transparent;border-radius:28px;padding:3rem 2.5rem 2.5rem;width:100%;max-width:440px;text-align:center;
+  background:linear-gradient(#fff,#fff) padding-box,
+    conic-gradient(from var(--ang),transparent 0deg,transparent calc(360deg - var(--arc)),var(--a1) calc(360deg - var(--arc) * .65),var(--a2) calc(360deg - var(--arc) * .3),var(--a3) calc(360deg - 4deg),transparent 360deg) border-box,
+    linear-gradient(var(--line-c),var(--line-c)) border-box;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -16px rgba(15,23,42,.14);
+  animation:slideUp .6s cubic-bezier(.16,1,.3,1),orbit 9s linear infinite;
+  transition:box-shadow .35s ease,--arc .5s ease;
+}
+.lg:hover{--arc:150deg;box-shadow:0 1px 2px rgba(15,23,42,.05),0 26px 46px -20px var(--glow)}
+.lg .logo-icon{width:72px;height:72px;margin:.2rem auto 1.6rem;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:var(--accent);
+  background:linear-gradient(135deg,var(--a1),var(--a3)) center / 0% 0% no-repeat,var(--tint-2);
+  box-shadow:0 0 0 var(--ring) rgba(14,165,233,.12);
+  transition:background-size .4s cubic-bezier(.16,1,.3,1),color .3s ease,box-shadow .35s ease,transform .35s cubic-bezier(.16,1,.3,1)}
+.lg:hover .logo-icon{background-size:100% 100%,auto;color:#fff;transform:rotate(-4deg) scale(1.05);box-shadow:0 0 0 calc(var(--ring) + 3px) rgba(14,165,233,.18)}
+.lg h1{font-size:1.7rem;font-weight:800;line-height:1.1;color:var(--primary-deep);letter-spacing:-.035em;margin-bottom:.55rem}
+.lg .sub{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem;color:var(--muted);font-size:.9rem;font-weight:500;margin:0 0 2rem}
+.lg .sub .celeste{display:inline-block;padding:.18rem .65rem;border-radius:999px;background:var(--tint);color:var(--primary-deep);font-weight:700;font-size:.76rem}
+.lg .form-select,.lg .form-control{padding:14px 18px;border-radius:14px;margin-bottom:1rem;font-size:.95rem;text-align:left}
+.btn-p{background:linear-gradient(135deg,#0284c7,#0ea5e9);border:0;border-radius:14px;padding:14px;font-weight:700;font-size:.95rem;color:#fff;width:100%;letter-spacing:.3px;box-shadow:0 8px 24px rgba(14,165,233,.35);transition:.25s}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(14,165,233,.5)}
+
+/* ===== App y encabezado ===== */
+#app{display:none;max-width:1600px;margin:0 auto;padding:20px;animation:fadeIn .5s ease}
+main{padding:0}
+.top{position:relative;overflow:hidden;display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding:1.2rem 2rem;
+  background:linear-gradient(135deg,#f9fdff 0%,#e6f5fe 100%);border:1px solid var(--line);border-radius:24px;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 28px -18px rgba(2,132,199,.28)}
+.top::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 100% 0%,rgba(14,165,233,.16) 0%,transparent 55%)}
+.brand,.who{position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{width:52px;height:52px;flex-shrink:0;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;background:linear-gradient(135deg,#22d3ee,#0284c7);box-shadow:0 0 0 5px rgba(14,165,233,.2),0 8px 22px -8px rgba(2,132,199,.6)}
+.brand h1{font-size:1.3rem;font-weight:800;letter-spacing:-.3px;line-height:1.2;margin:0;color:var(--primary-deep)}
+.brand h1 small{display:block;margin-top:2px;font-size:.7rem;font-weight:500;letter-spacing:.3px;color:var(--muted)}
+.who{display:flex;align-items:center;gap:8px;padding:5px 5px 5px 16px;background:#fff;border:1px solid var(--line);border-radius:40px;font-size:.8rem;font-weight:600;color:var(--primary-deep)}
+.who i{color:var(--primary-dark)}
+.who button{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:40px;border:1px solid #fecaca;background:#fff;color:#b91c1c;font-size:.78rem;font-weight:600;transition:.2s}
+.who button:hover{background:#fef2f2;border-color:#fca5a5;transform:translateY(-1px)}
+
+/* ===== Indicadores ===== */
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:1.5rem}
+.stat{flex:1 1 130px;padding:14px 16px;text-align:center;background:linear-gradient(135deg,#fff,#f8fafc);border:1px solid var(--border);border-top:3px solid var(--primary);border-radius:14px;box-shadow:var(--shadow-sm);transition:.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat b{display:block;font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--primary-dark)}
+.stat span{display:block;margin-top:4px;font-size:.62rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+.stat.hero{flex:2 1 280px;position:relative;overflow:hidden;text-align:left;padding:16px 22px;border:0;background:linear-gradient(135deg,#0369a1 0%,#0284c7 55%,#0ea5e9 100%);box-shadow:0 6px 20px rgba(14,165,233,.35)}
+.stat.hero::after{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.22) 0%,transparent 70%)}
+.stat.hero b{font-size:2.6rem;color:#fff}
+.stat.hero span{font-size:.82rem;font-weight:600;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.92)}
+
+/* ===== Barra, solapas y filtros ===== */
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;background:#fff;border:1px solid var(--border);border-bottom:0;border-radius:20px 20px 0 0;box-shadow:var(--shadow-md)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{display:inline-flex;align-items:center;padding:8px 16px;border:0;border-radius:40px;background:transparent;font-size:.82rem;font-weight:700;color:var(--muted);transition:.2s}
+.tabs button:hover{background:var(--tint-2);color:var(--primary-dark)}
+.tabs button.on{background:linear-gradient(135deg,#0284c7,#0ea5e9);color:#fff;box-shadow:0 6px 16px rgba(14,165,233,.3)}
+.tabs i{font-style:normal;margin-left:8px;padding:1px 8px;border-radius:99px;background:var(--tint);color:#0369a1;font-size:.7rem;font-weight:800}
+.tabs .on i{background:rgba(255,255,255,.25);color:#fff}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tools input{min-width:220px;padding:8px 16px;border:2px solid var(--border);border-radius:40px;background:#f8fafc;font-size:.82rem;transition:.2s}
+.tools input:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 4px rgba(14,165,233,.14)}
+.seg{display:flex;padding:3px;border-radius:40px;background:#f1f5f9}
+.seg button{padding:6px 14px;border:0;border-radius:40px;background:transparent;font-size:.78rem;font-weight:700;color:var(--muted);transition:.2s}
+.seg button.on{background:#fff;color:var(--primary-dark);box-shadow:var(--shadow-md)}
+.btn-t{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:2px solid var(--border);border-radius:12px;background:#fff;font-size:.78rem;font-weight:700;color:#475569;transition:.2s}
+.btn-t:hover,.btn-t.show{background:var(--tint-2);border-color:var(--primary-light);color:var(--primary-dark);transform:translateY(-1px)}
+
+/* ===== Tabla ===== */
+.tw{background:#fff;border:1px solid var(--border);border-radius:0 0 20px 20px;overflow-x:auto;box-shadow:var(--shadow-md)}
+table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0;font-size:.82rem}
+th{padding:12px 14px;text-align:left;white-space:nowrap;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-bottom:2px solid var(--border);font-size:.65rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#475569}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--tint-2)}
+tr:last-child td{border:0}
+td small{display:block;color:var(--muted);font-size:.72rem}
+td small.dir{display:inline-flex;align-items:center;margin-top:3px;padding:2px 9px 2px 5px;border-radius:999px;background:#ecfeff;border:1px solid #a5f3fc;color:#0e7490!important;font-weight:700;font-size:.68rem}
+.age,.chip{display:inline-block;padding:5px 12px;border-radius:30px;font-size:.68rem;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.age.ok{background:#d1fae5;color:#065f46}
+.age.warn{background:#fef3c7;color:#92400e}
+.age.late{background:#fee2e2;color:#991b1b}
+.chip{background:var(--tint);color:#0369a1}
+.ac{display:flex;gap:4px;flex-wrap:nowrap}
+.ac button{width:32px;height:32px;display:grid;place-items:center;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:#475569;transition:.2s}
+.ac button:hover{background:var(--tint-2);border-color:var(--primary-light);color:var(--primary-dark);transform:translateY(-1px)}
+.ac button.go{background:linear-gradient(135deg,#0284c7,#0ea5e9);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(14,165,233,.35)}
+.ac button.go:hover{box-shadow:0 6px 16px rgba(14,165,233,.5)}
+.empty{padding:2.5rem 1rem;text-align:center;color:var(--muted)}
+.empty i{opacity:.4}
+.pg{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--border);font-size:.78rem;font-weight:600;color:var(--muted)}
+.pg button{margin-left:6px;padding:4px 12px;border:2px solid var(--border);border-radius:10px;background:#fff;color:#475569;transition:.2s}
+.pg button:hover:not(:disabled){background:var(--tint-2);border-color:var(--primary-light);color:var(--primary-dark)}
+.pg button:disabled{opacity:.4}
+.rc{position:relative;height:300px}
+
+/* ===== Formularios y modales (Bootstrap) ===== */
+.form-label{font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#475569}
+.form-control,.form-select{padding:10px 14px;border:2px solid var(--border);border-radius:12px;background-color:#f8fafc;font-size:.88rem;transition:.2s}
+.form-control:focus,.form-select:focus{border-color:var(--primary);background-color:#fff;box-shadow:0 0 0 4px rgba(14,165,233,.14)}
+.modal-content{border:0;border-radius:24px;overflow:hidden;box-shadow:var(--shadow-lg)}
+.modal-header{padding:1.2rem 1.8rem;border:0;color:#fff;background:linear-gradient(135deg,#0c4a6e,#0284c7)}
+.modal-title{font-weight:800;letter-spacing:-.01em}
+.modal-header .btn-close{filter:brightness(0) invert(1);opacity:.8}
+.modal-body{padding:1.8rem}
+.modal-footer{padding:1rem 1.8rem;border-top:1px solid var(--border);background:#f8fafc}
+.modal .btn{padding:10px 22px;border:0;border-radius:12px;font-size:.85rem;font-weight:700;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#0284c7,#0ea5e9);color:#fff;box-shadow:0 6px 20px rgba(14,165,233,.3)}
+.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 6px 20px rgba(16,185,129,.3)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 6px 20px rgba(239,68,68,.3)}
+.btn-primary:hover,.btn-success:hover,.btn-danger:hover{transform:translateY(-2px);color:#fff;filter:brightness(1.05)}
+.btn-light{background:#fff;border:2px solid var(--border)!important;color:#475569}
+.btn-light:hover{background:#f1f5f9}
+.dropdown-menu{padding:6px;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg)}
+.dropdown-item{border-radius:10px;font-size:.82rem;font-weight:600;padding:8px 14px}
+.dropdown-item:hover{background:var(--tint-2);color:var(--primary-dark)}
+.hi{margin-bottom:12px;padding:8px 14px;border-left:3px solid var(--primary);border-radius:0 12px 12px 0;background:var(--tint-2);font-size:.85rem}
+.hi small{display:block;color:var(--muted)}
+
+/* ===== Avisos ===== */
+#toasts{position:fixed;right:24px;bottom:24px;z-index:2000;display:flex;flex-direction:column;gap:10px;max-width:400px}
+.tt{padding:14px 20px;border-radius:14px;border-left:4px solid var(--success);background:rgba(15,23,42,.95);backdrop-filter:blur(12px);box-shadow:var(--shadow-lg);color:#fff;font-size:.87rem;font-weight:600;animation:slideIn .35s cubic-bezier(.16,1,.3,1)}
+.tt.err{border-left-color:var(--danger);background:rgba(15,23,42,.95)}
+.tt.removing{animation:slideOut .3s forwards}
+
+@media(max-width:700px){
+  #app{padding:12px}
+  .top{padding:1rem;border-radius:20px}
+  .bar{padding:12px}
+  .tools input{min-width:0;flex:1}
+  .lg{padding:2rem 1.5rem;border-radius:22px;--ring:5px}
+  .lg .logo-icon{width:60px;height:60px;font-size:1.8rem;border-radius:18px;margin-bottom:1.3rem}
+  .lg h1{font-size:1.45rem}
+  .brand-icon{width:44px;height:44px;font-size:1.35rem;border-radius:14px}
+  .brand h1{font-size:1.05rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .lg{animation:none;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--a1),var(--a3)) border-box}
+  .lg .logo-icon,.lg:hover .logo-icon{transition:none;transform:none}
+  #app,.tt{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div id="login"><div class="lg">
+  <div class="logo-icon"><i class="bi bi-send-check"></i></div>
+  <h1>Pases directos</h1><p class="sub"><span class="celeste">Secretaría</span>Sus pases de la base del Operador, incluidos los pases directos</p>
+  <select id="lgSec" class="form-select" aria-label="Secretario"></select>
+  <input id="lgPass" type="password" class="form-control" placeholder="Clave" autocomplete="off">
+  <div id="lgErr" class="text-danger small mb-2" style="display:none">Clave incorrecta</div>
+  <button id="lgBtn" class="btn-p">Ingresar</button>
+</div></div>
+
+<div id="app">
+  <header class="top">
+    <div class="brand"><div class="brand-icon"><i class="bi bi-send-check"></i></div><h1>Pases directos <small>Defensoría Oficial Civil y Comercial 6 · actualización en tiempo real</small></h1></div>
+    <div class="who"><i class="bi bi-person-badge"></i><span id="yo"></span><button id="out"><i class="bi bi-power"></i> Salir</button></div>
+  </header>
+  <main>
+    <section class="stats" id="stats"></section>
+    <div class="bar">
+      <div class="tabs" id="tabs"></div>
+      <div class="tools">
+        <input id="q" placeholder="Buscar expediente, tipo o empleado…" autocomplete="off" aria-label="Buscar">
+        <div class="seg" id="seg"><button data-a="todos">Todos</button><button data-a="dir">Directos</button><button data-a="reg">Regulares</button></div>
+        <div class="dropdown"><button class="btn-t dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-printer"></i> Imprimir</button>
+          <ul class="dropdown-menu dropdown-menu-end"><li><button class="dropdown-item" data-pr="fil">Solo lo filtrado</button></li><li><button class="dropdown-item" data-pr="todo">Tabla completa</button></li></ul></div>
+        <button class="btn-t" id="rep"><i class="bi bi-graph-up"></i> Reporte estadístico</button>
+      </div>
+    </div>
+    <div class="tw"><div id="tbl"></div><div class="pg" id="pg"></div></div>
+  </main>
+</div>
+
+<div class="modal fade" id="mAcc" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title" id="aT"></h5><button class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+  <div class="modal-body">
+    <div class="mb-3" id="aInfo"></div>
+    <div class="mb-3" id="aSelW"><label class="form-label fw-semibold" id="aSelL" for="aSel"></label><select id="aSel" class="form-select"></select><div class="form-text" id="aSelH"></div></div>
+    <label class="form-label fw-semibold" id="aTxL" for="aTx"></label>
+    <textarea id="aTx" class="form-control" rows="3" maxlength="1000"></textarea>
+    <div class="form-text">Queda registrado en el historial del expediente.</div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="aOk"></button></div>
+</div></div></div>
+
+<div class="modal fade" id="mHis" tabindex="-1"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title" id="hT"></h5><button class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+  <div class="modal-body" id="hB"></div>
+</div></div></div>
+<div class="modal fade" id="mRep" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="bi bi-graph-up me-2"></i>Reporte estadístico</h5><button class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
+  <div class="modal-body">
+    <div class="d-flex flex-wrap gap-3 align-items-end mb-3">
+      <div><label class="form-label fw-semibold" for="rSec">Secretario</label><select id="rSec" class="form-select"></select></div>
+      <div><label class="form-label fw-semibold" for="rAnio">Año del gráfico mensual</label><select id="rAnio" class="form-select"></select></div>
+    </div>
+    <div class="stats" id="rTot"></div>
+    <h6 class="fw-bold">Evolución mensual · <span id="rAnioT"></span></h6><div class="rc"><canvas id="cMes"></canvas></div>
+    <h6 class="fw-bold mt-4">Evolución anual</h6><div class="rc"><canvas id="cAnio"></canvas></div>
+    <div class="form-text mt-3">Recibidos: por fecha del pase al secretario. Finalizados: por fecha de finalización. Directos: pases enviados por el Operador sin empleado.</div>
+  </div>
+</div></div></div>
+<div id="toasts"></div>
+
+<script>
+(function(){'use strict';
+firebase.initializeApp({apiKey:"AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",authDomain:"pasedefensoria6.firebaseapp.com",projectId:"pasedefensoria6",storageBucket:"pasedefensoria6.firebasestorage.app",messagingSenderId:"785250989941",appId:"1:785250989941:web:1bfb35a5f954144dbb853c"});
+const db=firebase.firestore(), col=db.collection('operador');
+const PER=10, DIAS={1:5,2:3,3:3,4:2}, NO_RECIBEN=['emp10'];
+const SECS=[{id:'sec1',nombre:'Corrales A.Mariela',clave:'1001'},{id:'sec2',nombre:'Riveros Patricia',clave:'2002'},{id:'sec3',nombre:'Magnani Enzo',clave:'3003'}];
+const SEC_E=['en_secretaria','para_finalizar'], ACTIVOS=['en_secretaria','para_finalizar','en_espera','en_proceso'];
+const EMPS=[['emp1','Bazante Nadia Romina'],['emp2','Bolillat Cesar Enrique'],['emp3','Cardozo Maria Raquel'],['emp4','Cedron Noelia'],['emp6','Fioravante Rómulo'],['emp7','Gonzalez Alberto Misael'],['emp8','Gonzalez Juan Jose'],['emp9','Gudiño Natalia Esther'],['emp15','Martinis Carlos Esteban'],['emp10','Ortega Lucia Noemi'],['emp11','Pablos Patricia Tamara'],['emp12','Palacios Ana Gabriela'],['emp13','Sosa Rita Cecilia']].map(([id,nombre])=>({id,nombre}));
+const ESTL={finalizada:'Finalizada',en_defensor:'Elevada a Defensor',devuelto_siged:'Devuelta al operador',remitido:'Remitida',rechazado:'Rechazada'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const fmt=i=>{if(!i)return '—';const d=new Date(i);return isNaN(d)?'—':`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+const nomSec=id=>(SECS.find(s=>s.id===id)||{}).nombre||'Sin secretario';
+const nomEmp=id=>(EMPS.find(e=>e.id===id)||{}).nombre||'—';
+let st={causas:[],emp:[],excl:{}}, yo=null, tab='pend', ori='todos', busq='', pag=1, unsub=null, cur=null;
+
+/* ---------- Días hábiles (misma regla que operador/empleado) ---------- */
+function pascua(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),dy=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,dy)}
+function nesimo(y,m,dow,n){const fd=(new Date(y,m,1).getDay()+6)%7,day=1+((dow-fd+7)%7)+(n-1)*7;return day>new Date(y,m+1,0).getDate()?null:new Date(y,m,day)}
+function feriados(y){const p=pascua(y),f=[[0,1],[2,24],[3,2],[4,1],[4,25],[6,9],[11,8],[11,25]].map(([m,d])=>new Date(y,m,d));[-47,-46,-3,-2].forEach(o=>{const d=new Date(p);d.setDate(d.getDate()+o);f.push(d)});[[5,3],[7,3],[9,2],[10,4]].forEach(([m,n])=>{const d=nesimo(y,m,0,n);if(d)f.push(d)});return f}
+function habil(f){const d=f.getDay();return d!==0&&d!==6&&!feriados(f.getFullYear()).some(x=>x.getMonth()===f.getMonth()&&x.getDate()===f.getDate())}
+function sumar(i,n){const f=new Date(i);let c=0;while(c<n){f.setDate(f.getDate()+1);if(habil(f))c++}return f}
+function inicio(d){const f=new Date(d);if(f.getHours()>12||(f.getHours()===12&&f.getMinutes()>0))f.setDate(f.getDate()+1);while(!habil(f))f.setDate(f.getDate()+1);f.setHours(7,0,0,0);return f}
+function limite(i,n){const f=sumar(i,DIAS[n]||5);f.setHours(12,0,0,0);return f}
+function antig(iso){if(!iso)return 0;const a=new Date(iso),b=new Date();a.setHours(0,0,0,0);b.setHours(0,0,0,0);let n=0;for(const d=new Date(a);d<b;){d.setDate(d.getDate()+1);if(habil(d))n++}return n}
+
+/* ---------- Pertenencia, origen y solapa de cada pase ---------- */
+const sq=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+// Igual que secretario.html: si una asignación del historial la hizo un secretario, ese es el titular
+function secDe(c){
+  const h=c.historial||[];
+  for(let i=h.length-1;i>=0;i--){const m=h[i];
+    if(m&&String(m.accion||'').includes('Asignado (Nivel')){const u=' '+sq(m.usuario)+' ';const s=SECS.find(x=>u.includes(' '+sq(x.nombre).split(' ')[0]+' '));if(s)return s.id}}
+  return c.secretarioId||null;
+}
+const envioFecha=c=>{const h=c.historial||[];for(let i=h.length-1;i>=0;i--){const m=h[i]||{};if(String(m.accion||'').includes('Enviado a Secretario')&&m.usuario!=='Secretario'&&m.usuario!=='Sistema')return m.fecha||c.fechaPaseEmpleado}return null};
+const sinEmp=c=>!(c.empleadoAsignado||c.empleadoId);
+const esDirecto=c=>c.paseDirecto===true||(c.estado==='en_secretaria'&&sinEmp(c)&&!envioFecha(c));
+function tabDe(c){
+  if(SEC_E.includes(c.estado))return (sinEmp(c)&&!envioFecha(c))?'pend':'final';
+  if(c.estado==='en_proceso')return 'proc';
+  if(c.estado==='en_espera')return 'espera';
+  return 'cerr';
+}
+const refF=(c,t)=>t==='final'?(envioFecha(c)||c.fechaResolucionEmpleado||c.fechaPaseSecretario):c.fechaPaseSecretario;
+const T=i=>new Date(i||0).getTime();
+const ult=c=>{const h=c.historial||[];return h.length?T(h[h.length-1].fecha):0};
+const rec=c=>T(c.fechaPaseSecretario);
+
+/* ---------- Acciones del secretario ---------- */
+const ahoraISO=()=>new Date().toISOString();
+const nivelDe=c=>c.nivelSecretario||c.nivelOperador||2;
+const ACC={
+ asignar:{t:'Asignar a un empleado',ic:'person-plus',ok:'Asignar',done:'asignado',sel:'emp',desde:['en_secretaria','en_espera'],
+  run(c,v){if(c.empleadoAsignado||c.empleadoId)throw new Error('El expediente ya tiene empleado');const n=nivelDe(c),ah=new Date(),en=nomEmp(v);
+   return{set:{estado:'en_proceso',empleadoId:v,empleadoAsignado:v,empleadoOriginal:c.empleadoOriginal||v,empleadoNombre:en,secretarioId:yo.id,secretarioNombre:yo.nombre,nivelSecretario:n,fechaAsignacion:ah.toISOString(),fechaLimite:limite(inicio(ah),n).toISOString()},h:`Asignado (Nivel ${n}) a ${en} — Secretario: ${yo.nombre}`}}},
+ reasignar:{t:'Reasignar a otro empleado',ic:'people',ok:'Reasignar',done:'reasignado',sel:'emp',desde:['en_proceso'],
+  run(c,v){const prev=c.empleadoAsignado||c.empleadoId,n=nivelDe(c),ah=new Date(),en=nomEmp(v);if(v===prev)throw new Error('Elija un empleado distinto');
+   return{set:{empleadoId:v,empleadoAsignado:v,empleadoOriginal:(!c.empleadoOriginal||c.empleadoOriginal===prev)?v:c.empleadoOriginal,empleadoNombre:en,fechaAsignacion:ah.toISOString(),fechaLimite:limite(inicio(ah),n).toISOString()},h:`Reasignado (Nivel ${n}) a ${en} — Secretario: ${yo.nombre}${prev?' (antes: '+nomEmp(prev)+')':''}`}}},
+ finalizar:{t:'Finalizar expediente',ic:'check2-circle',ok:'Finalizar',done:'finalizado',cls:'btn-success',desde:ACTIVOS,
+  run:c=>({set:{estado:'finalizada',fechaFinalizacion:ahoraISO(),...((c.empleadoAsignado&&!c.fechaResolucionEmpleado)?{fechaResolucionEmpleado:ahoraISO()}:{})},h:'Finalizado por Secretario'})},
+ elevar:{t:'Elevar al Defensor',ic:'send-check',ok:'Elevar',done:'elevado al Defensor',desde:ACTIVOS,
+  run:()=>({set:{estado:'en_defensor'},h:'Elevado a Defensor'})},
+ espera:{t:'Poner en espera',ic:'pause-circle',ok:'Poner en espera',done:'puesto en espera',ob:true,desde:SEC_E,
+  run:()=>({set:{estado:'en_espera'},h:'Puesto en espera por Secretario'})},
+ reactivar:{t:'Reactivar pase',ic:'play-circle',ok:'Reactivar',done:'reactivado',desde:['en_espera'],
+  run:()=>({set:{estado:'en_secretaria'},h:'Reactivado por Secretario'})},
+ cambiar:{t:'Cambiar de secretario',ic:'arrow-left-right',ok:'Cambiar',done:'pasado a otro secretario',sel:'sec',desde:['en_secretaria','en_espera'],
+  run:(c,v)=>({set:{secretarioId:v,secretarioNombre:nomSec(v)},h:`Cambio de secretario: ${nomSec(c.secretarioId)} → ${nomSec(v)}`})},
+ devolveremp:{t:'Devolver al empleado',ic:'arrow-counterclockwise',ok:'Devolver al empleado',done:'devuelto al empleado',ob:true,desde:SEC_E,
+  run(c,v,txt){const e=c.empleadoAsignado||c.empleadoId||c.empleadoOriginal;if(!e)throw new Error('El expediente no tiene empleado');
+   return{set:{estado:'en_proceso',empleadoAsignado:e,empleadoId:e,fechaResolucionEmpleado:null,devolucionSecretario:{fecha:ahoraISO(),observacion:txt,empleadoId:e}},h:`Devuelto al Empleado por Secretario (${nomEmp(e)})`}}},
+ devolver:{t:'Devolver al Operador',ic:'arrow-return-left',ok:'Devolver',done:'devuelto al operador',cls:'btn-danger',ob:true,desde:ACTIVOS,
+  run:()=>({set:{estado:'devuelto_siged',empleadoId:null,empleadoAsignado:null,empleadoNombre:null,fechaAsignacion:null,fechaLimite:null,fechaResolucionEmpleado:null},h:'Devuelto al Operador por Secretario'})}
+};
+const ACC_TAB={pend:['asignar','finalizar','elevar','espera','cambiar','devolver'],final:['finalizar','elevar','devolveremp','devolver'],proc:['reasignar','finalizar','elevar','devolver'],espera:['asignar','reactivar','finalizar','elevar','devolver'],cerr:[]};
+// Transacción: relee el expediente y verifica su estado, para no pisar cambios de otro usuario
+function mutar(id,desde,fn){
+  const ref=col.doc(id);
+  return db.runTransaction(async t=>{
+    const s=await t.get(ref);if(!s.exists)throw new Error('El expediente ya no existe');
+    const c=s.data();if(!desde.includes(c.estado))throw new Error('El expediente cambió de estado. Se actualizó la lista.');
+    const r=fn(c);t.update(ref,{...r.set,...(esDirecto(c)?{paseDirecto:true}:{}),historial:[...(c.historial||[]),r.hist]});
+  });
+}
+function motivo(id,tipo){
+  if(NO_RECIBEN.includes(id))return 'no recibe pases';
+  const e=st.emp.find(x=>x.id===id);if(e&&e.ausente===true)return 'ausente';
+  const l=st.excl[id];if(Array.isArray(l)&&l.some(t=>norm(t)===norm(tipo)))return 'excluido de este tipo';
+  return '';
+}
+function llenarEmp(c,k){
+  const act=k==='reasignar'?(c.empleadoAsignado||c.empleadoId):null;
+  const b=EMPS.map(e=>({...e,m:act===e.id?'actual':motivo(e.id,c.tipo),n:st.causas.filter(x=>x.estado==='en_proceso'&&x.empleadoAsignado===e.id).length}))
+    .sort((x,y)=>(!!x.m-!!y.m)||x.n-y.n||x.nombre.localeCompare(y.nombre,'es'));
+  const mejor=b.find(e=>!e.m);
+  $('aSelL').textContent='Empleado';
+  $('aSelH').textContent=k==='reasignar'?'Ordenados por menor carga en proceso. El plazo se reinicia desde hoy.':'Ordenados por menor carga en proceso. Al asignar, el expediente pasa a «en proceso» y comienza el plazo.';
+  $('aSel').innerHTML='<option value="">Seleccione…</option>'+b.map(e=>`<option value="${e.id}"${e.m?' disabled':''}${mejor&&e.id===mejor.id?' selected':''}>${esc(e.nombre)} · ${e.n} en proceso${e.m?' ('+e.m+')':''}${mejor&&e.id===mejor.id?' · sugerido':''}</option>`).join('');
+}
+function llenarSec(c){
+  $('aSelL').textContent='Nuevo secretario';$('aSelH').textContent='El pase pasará al panel del secretario elegido.';
+  $('aSel').innerHTML='<option value="">Seleccione…</option>'+SECS.map(s=>`<option value="${s.id}"${s.id===c.secretarioId?' disabled':''}>${esc(s.nombre)}${s.id===c.secretarioId?' (actual)':''}</option>`).join('');
+}
+function abrir(k,id){
+  const c=st.causas.find(x=>x.id===id),a=ACC[k];if(!c)return;cur={k,id};
+  $('aT').textContent=a.t;
+  $('aInfo').innerHTML=`<strong>${esc(c.numero)}</strong><small class="d-block text-muted">${esc(c.tipo||'')} · ${esc(c.modoIntervencion||'sin modo')}</small>`;
+  $('aSelW').style.display=a.sel?'':'none';
+  if(a.sel==='emp')llenarEmp(c,k);if(a.sel==='sec')llenarSec(c);
+  $('aTxL').textContent=a.ob?'Motivo (obligatorio)':'Comentario (opcional)';
+  $('aTx').value='';$('aTx').classList.remove('is-invalid');
+  $('aOk').textContent=a.ok;$('aOk').className='btn '+(a.cls||'btn-primary');$('aOk').disabled=false;
+  bootstrap.Modal.getOrCreateInstance($('mAcc')).show();
+}
+$('aOk').onclick=async()=>{
+  const a=ACC[cur.k],txt=$('aTx').value.trim(),v=$('aSel').value,c=st.causas.find(x=>x.id===cur.id);
+  if(a.ob&&!txt){$('aTx').classList.add('is-invalid');$('aTx').focus();return}
+  if(a.sel&&!v){toast('Elija una opción de la lista','err');return}
+  $('aOk').disabled=true;
+  try{
+    await mutar(cur.id,a.desde,x=>{const r=a.run(x,v,txt);return{set:r.set,hist:{fecha:new Date().toISOString(),accion:r.h,usuario:yo.nombre,comentario:txt||'Sin observaciones'}}});
+    bootstrap.Modal.getInstance($('mAcc')).hide();toast(`${c?c.numero:'Expediente'}: ${a.done}`);
+  }catch(e){console.error(e);toast(e.message||'No se pudo guardar','err')}
+  finally{$('aOk').disabled=false}
+};
+function verHist(id){
+  const c=st.causas.find(x=>x.id===id);if(!c)return;
+  $('hT').textContent='Historial · '+c.numero;
+  const h=[...(c.historial||[])].reverse();
+  $('hB').innerHTML=h.length?h.map(x=>`<div class="hi"><strong>${esc(x.accion)}</strong><small>${fmt(x.fecha)} · ${esc(x.usuario||'—')}</small>${x.comentario?`<div>${esc(x.comentario)}</div>`:''}</div>`).join(''):'<div class="text-muted">Sin movimientos.</div>';
+  bootstrap.Modal.getOrCreateInstance($('mHis')).show();
+}
+function toast(m,t){const d=document.createElement('div');d.className='tt '+(t||'');d.textContent=m;$('toasts').appendChild(d);setTimeout(()=>{d.classList.add('removing');setTimeout(()=>d.remove(),300)},3800)}
+
+/* ---------- Render ---------- */
+function acciones(c,t){
+  return `<div class="ac">`+ACC_TAB[t].map((x,i)=>`<button data-k="${x}" data-id="${esc(c.id)}" title="${ACC[x].t}" aria-label="${ACC[x].t}" class="${i===0?'go':''}"><i class="bi bi-${ACC[x].ic}"></i></button>`).join('')+`<button data-h="${esc(c.id)}" title="Historial" aria-label="Historial"><i class="bi bi-clock-history"></i></button></div>`;
+}
+function situacion(c,t){
+  const emp=c.empleadoAsignado||c.empleadoId,en=emp?esc(nomEmp(emp)):'';
+  if(t==='cerr')return `<span class="chip">${ESTL[c.estado]||esc(c.estado)}</span>${en?`<small>${en}</small>`:''}`;
+  if(t==='proc'){const v=c.fechaLimite&&new Date(c.fechaLimite)<new Date();return `<span class="age ${v?'late':'ok'}">${v?'Vencido':'En plazo'}</span><small>${en||'Sin empleado'}${c.fechaLimite?' · vence '+fmt(c.fechaLimite).slice(0,10):''}</small>`}
+  const n=antig(refF(c,t)),cl=n>=4?'late':n>=2?'warn':'ok',h=c.historial||[],u=h[h.length-1];
+  return `<span class="age ${cl}">${n===0?'Hoy':n+' día'+(n===1?'':'s')+' háb.'}</span>${t==='final'&&en?`<small>${en}</small>`:''}${t==='espera'&&u?`<small>${esc(u.comentario||'')}</small>`:''}`;
+}
+function render(){
+  if(!yo)return;
+  const nom=TN,g=grupos(ori),nDir=Object.values(grupos('todos')).flat().filter(esDirecto).length;
+  const viejo=g.pend.reduce((m,c)=>Math.max(m,antig(c.fechaPaseSecretario)),0);
+  $('stats').innerHTML=`<div class="stat hero"><b>${g.pend.length}</b><span>${g.pend.length?`pendientes de asignar · el más antiguo espera ${viejo} día${viejo===1?'':'s'} háb.`:'Sin pases pendientes de asignar'}</span></div>`+
+   `<div class="stat"><b>${nDir}</b><span>Directos desde operador</span></div>`+['final','proc','espera','cerr'].map(t=>`<div class="stat"><b>${g[t].length}</b><span>${nom[t]}</span></div>`).join('');
+  $('tabs').innerHTML=Object.keys(nom).map(t=>`<button data-t="${t}" class="${t===tab?'on':''}">${nom[t]}<i>${g[t].length}</i></button>`).join('');
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.a===ori));
+  const q=busq.trim();const L=ordenar(g[tab].filter(c=>coincide(c,q)),tab);
+  const tot=L.length,pgs=Math.max(1,Math.ceil(tot/PER));if(pag>pgs)pag=pgs;
+  const it=L.slice((pag-1)*PER,pag*PER);
+  const vacio={pend:'No tiene pases pendientes de asignar.',final:'No tiene pases para finalizar.',proc:'No tiene pases en proceso.',espera:'No tiene pases en espera.',cerr:'Todavía no tiene pases cerrados.'}[tab];
+  $('tbl').innerHTML=it.length?`<table><thead><tr><th>Expediente</th><th>Tipo y modo</th><th>Nivel</th><th>Operador</th><th>Secretario</th><th>Recibido</th><th>Situación</th><th></th></tr></thead><tbody>${it.map(c=>`<tr>
+    <td><strong>${esc(c.numero)}</strong>${ori==='dir'?'<small class="dir"><i class="bi bi-arrow-right-short"></i>Pase directo</small>':''}</td>
+    <td>${esc(c.tipo||'—')}<small>${esc(c.modoIntervencion||'')}</small></td>
+    <td>N${c.nivelSecretario||c.nivelOperador||'—'}</td>
+    <td>${esc(c.operador||'—')}</td>
+    <td>${esc(nomSec(c.secretarioId))}</td>
+    <td>${fmt(c.fechaPaseSecretario)}${c.observaciones?`<small title="${esc(c.observaciones)}">${esc(c.observaciones.slice(0,40))}${c.observaciones.length>40?'…':''}</small>`:''}</td>
+    <td>${situacion(c,tab)}</td><td>${acciones(c,tab)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty"><i class="bi bi-inbox fs-3 d-block mb-2"></i>${q?'Sin resultados para la búsqueda.':vacio}</div>`;
+  $('pg').innerHTML=`<span>${tot?(pag-1)*PER+1:0}–${Math.min(pag*PER,tot)} de ${tot}</span><span>Página ${pag} de ${pgs}<button data-p="-1" ${pag<=1?'disabled':''} aria-label="Anterior">‹</button><button data-p="1" ${pag>=pgs?'disabled':''} aria-label="Siguiente">›</button></span>`;
+}
+
+/* ---------- Grupos, búsqueda e impresión ---------- */
+const TN={pend:'Pendientes',final:'A finalizar',proc:'En proceso',espera:'En espera',cerr:'Cerrados'};
+function grupos(o){
+  const g={pend:[],final:[],proc:[],espera:[],cerr:[]};
+  st.causas.forEach(c=>{
+    const t=tabDe(c),sid=c.secretarioId;
+    if(!(sid===yo.id||(!sid&&t==='pend')))return; // propios, o pendientes que aún no tienen secretario
+    if(o==='dir'&&!esDirecto(c))return;if(o==='reg'&&esDirecto(c))return;
+    g[t].push(c);
+  });
+  return g;
+}
+const empTxt=c=>[c.empleadoAsignado,c.empleadoId,c.empleadoOriginal].filter(Boolean).map(nomEmp).concat(c.empleadoNombre||[]).join(' ');
+const coincide=(c,q)=>{const n=sq(q);return !n||sq(c.numero).includes(n)||sq(c.tipo).includes(n)||sq(empTxt(c)).includes(n)};
+const ordenar=(L,t)=>[...L].sort((a,b)=>t==='cerr'?ult(b)-ult(a):t==='proc'?T(a.fechaLimite)-T(b.fechaLimite):T(refF(a,t))-T(refF(b,t)));
+function situTxt(c,t){
+  if(t==='cerr')return ESTL[c.estado]||c.estado;
+  if(t==='proc'){const v=c.fechaLimite&&new Date(c.fechaLimite)<new Date();return (v?'Vencido':'En plazo')+(c.fechaLimite?' · vence '+fmt(c.fechaLimite).slice(0,10):'')}
+  const n=antig(refF(c,t));return n===0?'Hoy':n+' día'+(n===1?'':'s')+' háb.';
+}
+function imprimir(modo){
+  const todo=modo==='todo',q=todo?'':busq.trim();
+  const L=ordenar(grupos(todo?'todos':ori)[tab].filter(c=>coincide(c,q)),tab);
+  if(!L.length){toast('No hay pases para imprimir en esta tabla','err');return}
+  const p=[];if(!todo){if(ori!=='todos')p.push('origen: '+(ori==='dir'?'directos':'regulares'));if(q)p.push('búsqueda: «'+q+'»')}
+  const fil=todo?'Tabla completa':(p.length?'Filtrado — '+p.join(' · '):'Tabla completa (sin filtros activos)');
+  const w=window.open('','_blank');if(!w){toast('Habilite las ventanas emergentes para imprimir','err');return}
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Pases · ${TN[tab]}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Arial,sans-serif;font-size:11px;color:#111}h2{margin:0 0 4px;font-size:16px}p{margin:0 0 10px;color:#444}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:4px 6px;text-align:left;vertical-align:top}th{background:#eceff5}thead{display:table-header-group}tr{page-break-inside:avoid}</style></head><body><h2>Pases · ${TN[tab]} (${L.length})</h2><p>Secretario: ${esc(yo.nombre)} · ${esc(fil)} · Impreso el ${fmt(new Date().toISOString())}</p><table><thead><tr><th>Expediente</th><th>Tipo</th><th>Modo</th><th>Nivel</th><th>Operador</th><th>Empleado</th><th>Secretario</th><th>Recibido</th><th>Situación</th></tr></thead><tbody>${L.map(c=>`<tr><td><strong>${esc(c.numero)}</strong></td><td>${esc(c.tipo||'—')}</td><td>${esc(c.modoIntervencion||'—')}</td><td>N${nivelDe(c)}</td><td>${esc(c.operador||'—')}</td><td>${esc(nomEmp(c.empleadoAsignado||c.empleadoId))}</td><td>${esc(nomSec(c.secretarioId))}</td><td>${fmt(c.fechaPaseSecretario)}</td><td>${esc(situTxt(c,tab))}</td></tr>`).join('')}</tbody></table></body></html>`);
+  w.document.close();w.focus();setTimeout(()=>w.print(),400);
+}
+
+/* ---------- Reporte estadístico (gráficos lineales por mes y por año) ---------- */
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+let ch={m:null,a:null};
+const dt=i=>{const d=new Date(i);return i&&!isNaN(d)?d:null};
+const fRecibido=c=>dt(c.fechaPaseSecretario||(c.historial&&c.historial[0]&&c.historial[0].fecha)||c.fechaAsignacion);
+const fFin=c=>dt(c.fechaFinalizacion||c.fechaResolucionEmpleado||(c.historial&&c.historial.length?c.historial[c.historial.length-1].fecha:null));
+function dibujar(reset){
+  if(typeof Chart==='undefined'){toast('No se pudo cargar la librería de gráficos','err');return}
+  const L=st.causas.filter(c=>c.secretarioId===$('rSec').value),hoy=new Date().getFullYear(),anios=new Set([hoy]);
+  L.forEach(c=>{const d=fRecibido(c);if(d)anios.add(d.getFullYear())});
+  const lista=[...anios].sort((a,b)=>a-b);
+  if(reset){$('rAnio').innerHTML=[...lista].reverse().map(a=>`<option>${a}</option>`).join('');$('rAnio').value=hoy}
+  const A=+$('rAnio').value,mes={rec:Array(12).fill(0),dir:Array(12).fill(0),fin:Array(12).fill(0)},an={};
+  lista.forEach(a=>an[a]={rec:0,dir:0,fin:0});
+  L.forEach(c=>{
+    const d=fRecibido(c),dir=esDirecto(c);
+    if(d){an[d.getFullYear()].rec++;if(dir)an[d.getFullYear()].dir++;if(d.getFullYear()===A){mes.rec[d.getMonth()]++;if(dir)mes.dir[d.getMonth()]++}}
+    if(c.estado==='finalizada'){const f=fFin(c);if(f){if(an[f.getFullYear()])an[f.getFullYear()].fin++;if(f.getFullYear()===A)mes.fin[f.getMonth()]++}}
+  });
+  const sum=a=>a.reduce((x,y)=>x+y,0);
+  $('rAnioT').textContent=A;
+  $('rTot').innerHTML=[['Recibidos en '+A,sum(mes.rec)],['Directos desde operador',sum(mes.dir)],['Finalizados en '+A,sum(mes.fin)]].map(([l,n])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+  Chart.defaults.font.family="'Plus Jakarta Sans',sans-serif";const ds=(l,d,col,dash)=>({label:l,data:d,borderColor:col,backgroundColor:col,tension:.25,borderDash:dash||[],pointRadius:4,borderWidth:2});
+  const opt={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{position:'bottom'}}};
+  ['m','a'].forEach(k=>{if(ch[k]){ch[k].destroy();ch[k]=null}});
+  ch.m=new Chart($('cMes'),{type:'line',data:{labels:MESES,datasets:[ds('Recibidos',mes.rec,'#0ea5e9'),ds('Directos desde operador',mes.dir,'#0f8f7e',[6,4]),ds('Finalizados',mes.fin,'#b45309')]},options:opt});
+  ch.a=new Chart($('cAnio'),{type:'line',data:{labels:lista.map(String),datasets:[ds('Recibidos',lista.map(a=>an[a].rec),'#0ea5e9'),ds('Directos desde operador',lista.map(a=>an[a].dir),'#0f8f7e',[6,4]),ds('Finalizados',lista.map(a=>an[a].fin),'#b45309')]},options:opt});
+}
+function abrirReporte(){
+  $('rSec').innerHTML=SECS.map(s=>`<option value="${s.id}"${s.id===yo.id?' selected':''}>${esc(s.nombre)}${s.id===yo.id?' (usted)':''}</option>`).join('');
+  bootstrap.Modal.getOrCreateInstance($('mRep')).show();
+}
+
+/* ---------- Datos en tiempo real, sesión y eventos ---------- */
+function iniciar(){
+  if(unsub)unsub();
+  unsub=col.onSnapshot(sn=>{
+    const cs=[];
+    sn.forEach(d=>{const x=d.data();
+      if(d.id==='secretario_config'){st.emp=x.empleados||[];st.excl=x.exclusionesTipo||{};return}
+      if(typeof x.numero!=='string'||!x.numero.trim()||/undefined|null/.test(x.numero))return;
+      if(!x.id)x.id=d.id;x.secretarioId=secDe(x);cs.push(x)});
+    st.causas=cs;render();
+  },e=>{console.error(e);toast('Error de conexión con Firestore','err')});
+}
+$('lgSec').innerHTML='<option value="">Seleccione su usuario…</option>'+SECS.map(s=>`<option value="${s.id}">${esc(s.nombre)}</option>`).join('');
+function entrar(){
+  const s=SECS.find(x=>x.id===$('lgSec').value);
+  if(!s||$('lgPass').value!==s.clave){$('lgErr').style.display='block';setTimeout(()=>$('lgErr').style.display='none',2500);return}
+  yo=s;$('yo').textContent=s.nombre;$('login').style.display='none';$('app').style.display='block';iniciar();
+}
+$('lgBtn').onclick=entrar;$('lgPass').onkeydown=e=>{if(e.key==='Enter')entrar()};
+$('out').onclick=()=>{if(unsub)unsub();unsub=null;yo=null;tab='pend';ori='todos';busq='';pag=1;$('q').value='';$('app').style.display='none';$('login').style.display='flex';$('lgPass').value=''};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-t]');if(b){tab=b.dataset.t;pag=1;render()}};
+$('seg').onclick=e=>{const b=e.target.closest('[data-a]');if(b){ori=b.dataset.a;pag=1;render()}};
+$('q').oninput=e=>{busq=e.target.value;pag=1;render()};
+$('pg').onclick=e=>{const b=e.target.closest('[data-p]');if(b){pag+=+b.dataset.p;render()}};
+document.querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>imprimir(b.dataset.pr));
+$('rep').onclick=abrirReporte;
+$('rSec').onchange=()=>dibujar(true);$('rAnio').onchange=()=>dibujar(false);
+$('mRep').addEventListener('shown.bs.modal',()=>dibujar(true));
+$('mRep').addEventListener('hidden.bs.modal',()=>['m','a'].forEach(k=>{if(ch[k]){ch[k].destroy();ch[k]=null}}));
+$('tbl').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.k)abrir(b.dataset.k,b.dataset.id);else if(b.dataset.h)verHist(b.dataset.h)};
+})();
+</script>
+</body>
+</html>
