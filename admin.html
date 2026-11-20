@@ -65,6 +65,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#ffffff;color:var(--t
 .btn-gradient:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(99,102,241,.5);color:#fff}
 .login-error{color:var(--danger);font-size:.82rem;margin-bottom:.8rem;display:none;font-weight:600}
 .celeste{color:var(--celeste);font-weight:800}
+@media(prefers-reduced-motion:reduce){
+  .login-card{animation:none;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--a1),var(--a3)) border-box;transition:box-shadow .2s ease}
+  .login-card .logo-icon,.login-card:hover .logo-icon{transition:none;transform:none}
+}
 
 /* ===== APP FULL WIDTH ===== */
 .app-wrapper{width:100%;max-width:2400px;margin:0 auto;padding:16px 18px 30px;display:none;animation:fadeIn .5s ease}
@@ -100,25 +104,27 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#ffffff;color:var(--t
 .btn-header.respaldo:hover{background:#ecfdf5;border-color:#6ee7b7}
 .btn-header.mass-del{background:#fff;color:#991b1b;border:2px solid #f87171;font-weight:800;box-shadow:0 0 0 3px rgba(248,113,113,.15)}
 .btn-header.mass-del:hover{background:#fee2e2;border-color:#ef4444}
+.btn-header.dim{background:#fff;color:#5b21b6;border:1px solid #ddd6fe}
+.btn-header.dim:hover{background:#f5f3ff;border-color:#c4b5fd}
 
 /* Header responsive - todos los botones visibles */
-@media (max-width: 992px) {
+@media (max-width: 1100px) {
   .app-header{flex-direction:column;align-items:stretch;padding:1rem}
-  .header-actions{display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;width:100%}
+  .header-actions{display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;width:100%}
   .header-actions .search-box{grid-column:1 / -1;max-width:none;order:-1}
   .header-actions .badge-role{grid-column:1 / -1;justify-content:center;order:0}
   .btn-header{padding:9px 10px;justify-content:center;font-size:.72rem;overflow:hidden;text-overflow:ellipsis}
   .btn-header i{font-size:.85rem;flex-shrink:0}
 }
-@media (max-width: 576px) {
-  .header-actions{grid-template-columns:repeat(2, 1fr)}
+@media (max-width: 700px) {
+  .header-actions{grid-template-columns:repeat(3, 1fr)}
   .btn-header{font-size:.7rem;padding:9px 8px}
   .brand-icon{width:44px;height:44px;font-size:1.35rem;border-radius:14px}
   .brand h1{font-size:1.05rem}
 }
-@media (max-width: 380px) {
-  .header-actions{grid-template-columns:1fr}
-  .btn-header{font-size:.75rem;padding:10px 14px}
+@media (max-width: 440px) {
+  .header-actions{grid-template-columns:repeat(2, 1fr)}
+  .btn-header{font-size:.72rem;padding:9px 8px}
 }
 
 /* ===== CARDS ===== */
@@ -168,6 +174,12 @@ textarea.form-control{resize:vertical;min-height:60px}
 .btn-outline-modern:hover{background:#f1f5f9;border-color:#cbd5e1}
 .btn-sm-modern{padding:6px 14px;font-size:.75rem;border-radius:10px}
 
+/* Botones toggle ausencias empleados (nuevo de operador) */
+.btn-ausente{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px 12px;border-radius:10px;font-weight:700;font-size:.75rem;cursor:pointer;transition:.2s}
+.btn-ausente:hover{background:#fecaca;color:#b91c1c}
+.btn-reintegrado{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;padding:6px 12px;border-radius:10px;font-weight:700;font-size:.75rem;cursor:pointer;transition:.2s}
+.btn-reintegrado:hover{background:#bfdbfe;color:#1e40af}
+
 /* ===== ROTATION PREVIEW ===== */
 .rotation-preview{background:linear-gradient(135deg,#fef3e2 0%,#fee2e2 100%);border:2px dashed #f59e0b;border-radius:16px;padding:1rem 1.2rem;margin-top:1rem;position:relative;overflow:hidden}
 .rotation-preview::before{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle,rgba(245,158,11,.18) 0%,transparent 70%);pointer-events:none}
@@ -177,8 +189,19 @@ textarea.form-control{resize:vertical;min-height:60px}
 .rotation-preview .rotation-item .value{font-weight:700;color:var(--text);word-break:break-word}
 .rotation-preview .rotation-item .value.text-warning{color:#b45309}
 .rotation-preview .rotation-item .pos{font-size:.7rem;color:var(--muted);font-weight:600}
+/* Selects de asignación manual (nuevo de operador) */
+.rotation-preview .rotation-item .rot-label{font-weight:700;min-width:78px;color:#7c2d12}
+.rotation-preview .rot-select{flex:1;min-width:170px;border-radius:12px;border:2px solid #fcd9b6;background:#fff;font-size:.85rem;font-weight:700;padding:6px 10px;color:var(--text)}
+.rotation-preview .rot-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15);outline:none}
+.rotation-preview .rot-hint{font-size:.7rem;color:#7c2d12;font-weight:600;padding:0 0 4px 30px;margin-top:-2px;line-height:1.35}
+.rotation-preview .rot-manual{color:#b45309;font-weight:800}
+.rotation-preview .rot-reset{background:none;border:none;padding:0 0 0 4px;color:var(--primary-dark);font-weight:700;font-size:.7rem;text-decoration:underline;cursor:pointer}
+.rotation-preview.modo-directo .rot-emp{display:none !important}
+.directo-nota{display:none;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;font-size:.76rem;font-weight:600;line-height:1.35}
+.rotation-preview.modo-directo .directo-nota{display:flex}
 
 .emp-ausente-badge{display:inline-block;background:#6b7280;color:#fff;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:800;margin:3px 4px 3px 0;text-decoration:line-through;text-decoration-color:#fff;letter-spacing:.2px;box-shadow:0 2px 6px rgba(107,114,128,.35)}
+.emp-excluido-badge{display:inline-block;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;padding:3px 10px;border-radius:20px;font-size:.65rem;font-weight:800;margin:3px 4px 3px 0}
 tr.row-empleado-ausente{background:#f3f4f6 !important;opacity:.85}
 tr.row-empleado-ausente td{color:#6b7280 !important}
 tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-through}
@@ -194,6 +217,11 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
 .sec-estado-label.ausentes{color:#dc2626}
 .sec-badge-presente{background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-weight:700;font-size:.68rem;border:1px solid #6ee7b7}
 .sec-badge-ausente{background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:20px;font-weight:700;font-size:.68rem;border:1px solid #fca5a5;text-decoration:line-through;text-decoration-color:#991b1b}
+
+/* Filas de la tabla de ausencias empleados */
+.row-ausente{background-color:#fee2e2 !important}
+.row-ausente td{background-color:#fee2e2 !important;color:#991b1b !important;font-weight:500}
+.row-presente{background-color:#fff}
 
 /* ===== TABLE: MODO NORMAL (desktop grande) ===== */
 .table-wrap{overflow-x:auto;border-radius:14px;width:100%}
@@ -264,7 +292,6 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
     text-align:left;
     min-width:0;
   }
-  /* Columna acciones en su propia fila */
   .table-modern td.td-acciones{
     justify-content:flex-end;
     padding-top:12px;
@@ -291,6 +318,7 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
 .badge-remitido{background:#fef3c7;color:#92400e}
 .badge-rechazado{background:#fce7f3;color:#9d174d}
 .badge-fuente{display:inline-block;padding:1px 8px;border-radius:20px;font-size:.6rem;font-weight:700;background:#e0f2fe;color:#0369a1;white-space:nowrap}
+.badge-directo{display:inline-flex;align-items:center;gap:2px;padding:3px 9px;border-radius:999px;background:#ecfeff;color:#0e7490;border:1px solid #a5f3fc;font-size:.68rem;font-weight:700;white-space:nowrap}
 
 /* Botones de acción */
 .btn-accion{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;border:none;transition:.15s;font-size:.82rem;margin-right:2px;cursor:pointer;flex-shrink:0}
@@ -339,6 +367,17 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
   .modal-modern .modal-footer{padding:.9rem 1.2rem}
   .modal-modern .modal-footer .btn{flex:1 1 auto;min-width:0}
 }
+
+/* ===== REPORTE POR DIMENSIONES ===== */
+.dim-report-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .15s}
+.dim-report-row:hover{background:#f8fafc}
+.dim-report-row:last-child{border-bottom:none}
+.dim-report-name{font-weight:700;color:var(--text);font-size:.88rem}
+.dim-report-count{font-weight:800;font-size:1.1rem;color:var(--primary)}
+.dim-report-pct{font-size:.78rem;color:var(--muted);font-weight:600;min-width:60px;text-align:right}
+.dim-report-total{background:linear-gradient(135deg,#eef2ff,#e0e7ff);font-weight:800;padding:12px 14px;border-top:2px solid var(--primary-light);display:flex;justify-content:space-between;align-items:center;border-radius:0 0 12px 12px}
+.dim-report-total .dim-report-name{color:var(--primary-dark)}
+.dim-report-total .dim-report-count{color:var(--primary-dark);font-size:1.3rem}
 
 /* ===== TOAST ===== */
 #toastContainer{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:400px;width:calc(100% - 40px)}
@@ -399,8 +438,6 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
 }
 
 /* ===== LAYOUT PRINCIPAL (responsive) ===== */
-/* En xxl (>=1400px): form 4/12 y tablas 8/12 con tablas en modo normal.
-   Por debajo de 1400px: apilado, ambos full width, tablas en modo tarjeta. */
 .row.g-4 > [class*="col"]{min-width:0}
 </style>
 </head>
@@ -436,6 +473,7 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
       <button class="btn-header respaldo" id="btnRespaldo" title="Sistema de respaldo"><i class="bi bi-cloud-arrow-up"></i> Respaldo</button>
       <button class="btn-header mass-del" id="btnEliminacionMasiva" title="Eliminación masiva"><i class="bi bi-trash3-fill"></i> Eliminación Masiva</button>
       <button class="btn-header primary" id="btnReporte"><i class="bi bi-file-earmark-text"></i> Reporte</button>
+      <button class="btn-header dim" id="btnReporteDimension" title="Reporte por dimensión"><i class="bi bi-pie-chart-fill"></i> Por Dimensión</button>
       <button class="btn-header" id="btnActualizar"><i class="bi bi-arrow-repeat"></i> Actualizar</button>
       <button class="btn-header danger" id="btnCerrarSesion"><i class="bi bi-power"></i> Salir</button>
     </div>
@@ -492,6 +530,10 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
             <div class="filter-item">
               <label class="form-label" for="filterTipo">Tipo</label>
               <select id="filterTipo" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="filter-item">
+              <label class="form-label" for="filterModo">Modo</label>
+              <select id="filterModo" class="form-select"><option value="">Todos</option></select>
             </div>
             <div class="filter-item">
               <label class="form-label" for="filterNivel">Nivel</label>
@@ -572,7 +614,8 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
           <div class="mb-3">
             <label class="form-label">Acción</label>
             <select id="inpAccion" class="form-select">
-              <option value="asignar" style="font-weight:700;">Asignar a Empleado y Secretario</option>
+              <option value="asignar" style="font-weight:700;">Asignar a Empleado y Secretario (por defecto)</option>
+              <option value="directo">Pase directo al Secretario (sin empleado)</option>
               <option value="devolver">Devolución a SIGED</option>
               <option value="remitir">Remisión a otra dependencia</option>
               <option value="rechazar">Rechazo</option>
@@ -594,14 +637,26 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
           </div>
 
           <div class="rotation-preview" id="rotationPreview">
-            <h6><i class="bi bi-arrow-repeat"></i> Próxima Asignación (Rotación)</h6>
-            <div class="rotation-item"><i class="bi bi-person-fill"></i><span>Empleado:</span><span class="value" id="previewEmpleado">—</span><span class="pos" id="previewEmpleadoPos"></span></div>
-            <div class="rotation-item"><i class="bi bi-person-badge-fill"></i><span>Secretario:</span><span class="value" id="previewSecretario">—</span><span class="pos" id="previewSecretarioPos"></span></div>
-            <div class="absence-summary" id="ausentesList"></div>
+            <h6><i class="bi bi-arrow-repeat"></i> Asignación (sugerida por rotación · editable)</h6>
+            <div class="rotation-item rot-emp"><i class="bi bi-person-fill"></i><span class="rot-label">Empleado:</span><select id="previewEmpleado" class="form-select form-select-sm rot-select"></select></div>
+            <div class="rot-hint rot-emp" id="previewEmpleadoPos"></div>
+            <div class="rotation-item"><i class="bi bi-person-badge-fill"></i><span class="rot-label">Secretario:</span><select id="previewSecretario" class="form-select form-select-sm rot-select"></select></div>
+            <div class="rot-hint" id="previewSecretarioPos"></div>
+            <div class="directo-nota"><i class="bi bi-arrow-right-circle-fill"></i><span>Pase directo: el expediente queda en Secretaría <strong>sin empleado</strong>. El secretario lo asignará o lo resolverá desde su panel.</span></div>
+            <div class="absence-summary rot-emp" id="ausentesList"></div>
+            <div class="absence-summary rot-emp" id="excluidosTipoList" style="display:none;border-top:none;margin-top:4px;padding-top:0;"></div>
           </div>
 
           <div class="mb-3 mt-3">
-            <label class="form-label">Gestión de Ausencias</label>
+            <label class="form-label">Gestión de Ausencias de Empleados</label>
+            <button type="button" class="btn btn-modern btn-outline-modern btn-sm-modern w-100" id="btnGestionAusenciasEmpleados">
+              <i class="bi bi-people"></i> Marcar ausencias de empleados
+            </button>
+            <div class="text-muted mt-1" style="font-size:.68rem;">Los cambios se sincronizan automáticamente con el panel del Operador/Secretario.</div>
+          </div>
+
+          <div class="mb-3 mt-3">
+            <label class="form-label">Gestión de Ausencias de Secretarios</label>
             <button type="button" class="btn btn-modern btn-outline-modern btn-sm-modern w-100" id="btnGestionAusencias"><i class="bi bi-person-x"></i> Gestionar ausencias de secretarios</button>
             <div id="secretariosEstado"></div>
           </div>
@@ -762,12 +817,12 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
   </div>
 </div>
 
-<!-- MODAL AUSENCIAS -->
+<!-- MODAL AUSENCIAS SECRETARIOS -->
 <div class="modal fade modal-modern" id="modalAusencias" tabindex="-1">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-person-x me-2"></i>Gestión de Ausencias</h5>
+        <h5 class="modal-title"><i class="bi bi-person-x me-2"></i>Gestión de Ausencias de Secretarios</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -791,6 +846,52 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
   </div>
 </div>
 
+<!-- MODAL AUSENCIAS EMPLEADOS (NUEVO de operador) -->
+<div class="modal fade modal-modern" id="modalAusenciasEmpleados" tabindex="-1">
+  <div class="modal-dialog modal-md modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-people me-2"></i>Gestión de Ausencias de Empleados</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="ausenciasEmpleadosList"></div>
+        <small class="text-muted d-block mt-2" style="font-size:.7rem;">Los empleados ausentes quedan excluidos de la rotación hasta que se los reintegre.</small>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REPORTE POR DIMENSIONES (NUEVO de operador) -->
+<div class="modal fade modal-modern" id="modalReporteDimensiones" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-pie-chart-fill me-2"></i>Reporte Global por Dimensión</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" for="selectDimensionReporte">Seleccione el tipo de reporte</label>
+          <select id="selectDimensionReporte" class="form-select">
+            <option value="tipo">Tipo de Causa</option>
+            <option value="modo">Modo de Intervención</option>
+            <option value="nivel">Nivel</option>
+            <option value="empleado">Empleado</option>
+            <option value="secretario">Secretario</option>
+          </select>
+        </div>
+        <div id="reporteDimensionesBody"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-modern btn-primary-modern" id="btnImprimirDimension"><i class="bi bi-printer"></i> Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LOGOUT -->
 <div id="logoutAlert" class="logout-alert">
   <div class="hdr"><i class="bi bi-exclamation-triangle-fill"></i><span>¿Cerrar sesión?</span></div>
@@ -807,7 +908,9 @@ tr.row-empleado-ausente td strong{color:#6b7280 !important;text-decoration:line-
 (function(){
 'use strict';
 
-// ========== FIREBASE ==========
+// ============================================================
+// FIREBASE
+// ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBiPiBIUTecqjifyZBqbrNw8aQNv7rwqwA",
   authDomain: "pasedefensoria6.firebaseapp.com",
@@ -819,7 +922,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ========== CONFIG ==========
+// ============================================================
+// CONFIG
+// ============================================================
 const CONFIG = {
   adminPassword: 'admin',
   nivelesDias: {1:5, 2:3, 3:3, 4:2},
@@ -864,30 +969,66 @@ const CONFIG = {
   ]
 };
 
-// ========== STATE ==========
-let state = { causas:[], ausencias:[], empleadosAusentes:[], lastIndex:-1, lastEmployeeIndex:-1 };
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  causas: [],
+  ausencias: [],
+  empleadosAusentes: [],
+  empleadosCfg: [],
+  exclusiones: {},
+  lastIndex: -1,
+  lastEmployeeIndex: -1
+};
+let currentOperator = 'Administrador'; // Admin no loguea operador; 'Administrador' no tiene empleado asociado
 let searchTerm = '';
-let pagination = { recientes:{page:1,perPage:10}, rechazados:{page:1,perPage:10} };
+let pagination = {
+  recientes: {page:1, perPage:10},
+  rechazados: {page:1, perPage:10}
+};
 let refreshInterval = null;
 let unsubscribeSecretarioConfig = null;
 let pendingDeleteId = null;
 let pendingEditId = null;
 
-// ========== UTILS ==========
-function genId(){ return Date.now().toString(36)+Math.random().toString(36).substring(2,6); }
+// ============================================================
+// UTILS
+// ============================================================
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).substring(2,6); }
 function fmtDt(iso){ if(!iso) return '-'; const d=new Date(iso); return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 function fmtDateShort(iso){ if(!iso) return '-'; const d=parseLocalDate(iso); if(!d) return '-'; return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
-function parseLocalDate(s){ if(!s) return null; let p=s; if(typeof p==='string'&&p.includes('T')) p=p.split('T')[0]; return new Date(p+'T00:00:00'); }
+function parseLocalDate(dateStr){ if(!dateStr) return null; let p = dateStr; if(typeof p==='string' && p.includes('T')) p = p.split('T')[0]; return new Date(p + 'T00:00:00'); }
 function getEmpName(id){ const e=CONFIG.empleados.find(x=>x.id===id); return e?e.nombre:'—'; }
 function getSecName(id){ const s=CONFIG.secretarios.find(x=>x.id===id); return s?s.nombre:'—'; }
-function esNumeroValido(n){ if(!n||typeof n!=='string') return false; const t=n.trim(); return t!=='' && !t.includes('undefined') && !t.includes('null'); }
+function esNumeroValido(num){ if(!num||typeof num!=='string') return false; const t=num.trim(); return t!=='' && !t.includes('undefined') && !t.includes('null'); }
 function estaEmpleadoAusente(id){ return state.empleadosAusentes.includes(id); }
-const EMPLEADOS_EXCLUIDOS = ['emp10'];
-function empleadoNoAsignable(id){ return EMPLEADOS_EXCLUIDOS.includes(id) || estaEmpleadoAusente(id); }
 
-function showToast(msg,type='success'){
+// Empleados excluidos de toda asignación (aunque no estén marcados como ausentes)
+const EMPLEADOS_EXCLUIDOS = ['emp10']; // Ortega Lucia Noemi
+// El operador activo (en admin = 'Administrador', sin empleado asociado) no recibe pases
+const OPERADOR_EMPLEADO = {
+  'Cardozo Raquel':'emp3',
+  'Cedron Noelia':'emp4',
+  'Fioravante Rómulo':'emp6',
+  'Gonzalez Misael':'emp7',
+  'Pablos Patricia':'emp11'
+};
+function esOperadorActivo(id){ return !!currentOperator && OPERADOR_EMPLEADO[currentOperator] === id; }
+function estaExcluidoDeTipo(empId, tipo){
+  if(!tipo) return false;
+  const lista = (state.exclusiones || {})[empId];
+  if(!Array.isArray(lista) || !lista.length) return false;
+  const n = normTipoEq(tipo);
+  return lista.some(t => normTipoEq(t) === n);
+}
+function empleadoNoAsignable(id, tipo){
+  return EMPLEADOS_EXCLUIDOS.includes(id) || esOperadorActivo(id) || estaEmpleadoAusente(id) || estaExcluidoDeTipo(id, tipo);
+}
+
+function showToast(msg, type='success'){
   const c = document.getElementById('toastContainer');
-  const icons = {success:'bi-check-circle-fill',warning:'bi-exclamation-triangle-fill',danger:'bi-x-circle-fill',info:'bi-info-circle-fill'};
+  const icons = {success:'bi-check-circle-fill', warning:'bi-exclamation-triangle-fill', danger:'bi-x-circle-fill', info:'bi-info-circle-fill'};
   const d = document.createElement('div');
   d.className = `toast-custom ${type}`;
   d.innerHTML = `<i class="bi ${icons[type]||icons.info}"></i><span>${msg}</span>`;
@@ -895,202 +1036,585 @@ function showToast(msg,type='success'){
   setTimeout(()=>{ d.classList.add('removing'); setTimeout(()=>d.remove(),300); }, 3800);
 }
 
-// ========== FERIADOS ==========
+// ============================================================
+// FERIADOS Y DÍAS HÁBILES
+// ============================================================
 function calcPascua(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1; return new Date(y,month-1,day); }
 function nesimoDia(y,m,dow,n){ let first=new Date(y,m,1),fdow=(first.getDay()+6)%7,diff=(dow-fdow+7)%7,day=1+diff+(n-1)*7; return day>new Date(y,m+1,0).getDate()?null:new Date(y,m,day); }
-function getFeriados(y){ const p=calcPascua(y), f=[]; f.push(new Date(y,0,1),new Date(y,2,24),new Date(y,3,2),new Date(y,4,1),new Date(y,4,25),new Date(y,6,9),new Date(y,11,8),new Date(y,11,25)); const cl=new Date(p); cl.setDate(cl.getDate()-47); f.push(cl); const cm=new Date(p); cm.setDate(cm.getDate()-46); f.push(cm); const js=new Date(p); js.setDate(js.getDate()-3); f.push(js); const vs=new Date(p); vs.setDate(vs.getDate()-2); f.push(vs); const tlj=nesimoDia(y,5,0,3); if(tlj) f.push(tlj); const tla=nesimoDia(y,7,0,3); if(tla) f.push(tla); const slo=nesimoDia(y,9,0,2); if(slo) f.push(slo); const cln=nesimoDia(y,10,0,4); if(cln) f.push(cln); return f; }
+function getFeriados(y){
+  const p=calcPascua(y), f=[];
+  f.push(new Date(y,0,1),new Date(y,2,24),new Date(y,3,2),new Date(y,4,1),new Date(y,4,25),new Date(y,6,9),new Date(y,11,8),new Date(y,11,25));
+  const cl=new Date(p); cl.setDate(cl.getDate()-47); f.push(cl);
+  const cm=new Date(p); cm.setDate(cm.getDate()-46); f.push(cm);
+  const js=new Date(p); js.setDate(js.getDate()-3); f.push(js);
+  const vs=new Date(p); vs.setDate(vs.getDate()-2); f.push(vs);
+  const tlj=nesimoDia(y,5,0,3); if(tlj) f.push(tlj);
+  const tla=nesimoDia(y,7,0,3); if(tla) f.push(tla);
+  const slo=nesimoDia(y,9,0,2); if(slo) f.push(slo);
+  const cln=nesimoDia(y,10,0,4); if(cln) f.push(cln);
+  return f;
+}
 function esFeriado(f){ const y=f.getFullYear(); return getFeriados(y).some(x=>x.getMonth()===f.getMonth()&&x.getDate()===f.getDate()); }
 function esDiaHabil(f){ const d=f.getDay(); if(d===0||d===6) return false; if(esFeriado(f)) return false; return true; }
-function sumarDiasHabiles(fi,c){ let f=new Date(fi),n=0; while(n<c){ f.setDate(f.getDate()+1); if(esDiaHabil(f)) n++; } return f; }
-function calcFechaInicio(fIso){ const fA=new Date(fIso),h=fA.getHours(),m=fA.getMinutes(); let fIni=new Date(fA); if(h>12||(h===12&&m>0)) fIni.setDate(fIni.getDate()+1); while(!esDiaHabil(fIni)) fIni.setDate(fIni.getDate()+1); fIni.setHours(7,0,0,0); return fIni; }
+function sumarDiasHabiles(fi,cant){ let f=new Date(fi),n=0; while(n<cant){ f.setDate(f.getDate()+1); if(esDiaHabil(f)) n++; } return f; }
+function calcFechaInicio(fIso){ const fA=new Date(fIso), h=fA.getHours(), m=fA.getMinutes(); let fIni=new Date(fA); if(h>12||(h===12&&m>0)) fIni.setDate(fIni.getDate()+1); while(!esDiaHabil(fIni)) fIni.setDate(fIni.getDate()+1); fIni.setHours(7,0,0,0); return fIni; }
 function calcFechaLimite(fIni,nivel){ const d=CONFIG.nivelesDias[nivel]||5; const f=sumarDiasHabiles(fIni,d); f.setHours(12,0,0,0); return f; }
 
-// ========== AUSENCIAS SECRETARIOS ==========
-function estaSecretarioAusente(secId,fecha){ if(!state.ausencias?.length) return false; const f=parseLocalDate(fecha); if(!f) return false; f.setHours(0,0,0,0); return state.ausencias.some(a=>{ if(a.secretarioId!==secId) return false; const ini=parseLocalDate(a.fechaInicio); ini.setHours(0,0,0,0); const fin=a.fechaFin?parseLocalDate(a.fechaFin):parseLocalDate(a.fechaInicio); fin.setHours(0,0,0,0); return f>=ini && f<=fin; }); }
-async function agregarAusencia(secId,ini,fin){ if(!secId||!ini){ showToast('Seleccione secretario y fecha','warning'); return false; } const i=parseLocalDate(ini); i.setHours(0,0,0,0); const f=fin?parseLocalDate(fin):parseLocalDate(ini); f.setHours(0,0,0,0); if(f<i){ showToast('Fecha fin anterior a inicio','warning'); return false; } const solapada=state.ausencias.some(a=>{ if(a.secretarioId!==secId) return false; const aI=parseLocalDate(a.fechaInicio); aI.setHours(0,0,0,0); const aF=a.fechaFin?parseLocalDate(a.fechaFin):parseLocalDate(a.fechaInicio); aF.setHours(0,0,0,0); return !(f<aI||i>aF); }); if(solapada){ showToast('Ya existe una ausencia en ese período','warning'); return false; } state.ausencias.push({id:genId(),secretarioId:secId,fechaInicio:ini,fechaFin:fin||null}); await updateAusencias(state.ausencias); showToast('Ausencia registrada','success'); return true; }
-async function eliminarAusencia(id){ state.ausencias=state.ausencias.filter(a=>a.id!==id); await updateAusencias(state.ausencias); renderAusenciasModal(); renderSecretariosEstado(); showToast('Ausencia eliminada','info'); }
-async function updateAusencias(arr){ try{ await db.collection('operador').doc('ausencias').set({ausencias:arr}); }catch(e){ console.error(e); showToast('Error al guardar ausencias','danger'); } }
-function renderAusenciasModal(){
-  const l = document.getElementById('ausenciasList');
-  if(!state.ausencias?.length){ l.innerHTML='<div class="text-muted">No hay ausencias registradas.</div>'; return; }
-  l.innerHTML = state.ausencias.map(a=>{ const s=CONFIG.secretarios.find(x=>x.id===a.secretarioId); const n=s?s.nombre:'Desconocido'; return `<div class="ausencia-item"><span class="fechas"><strong>${n}</strong> · ${fmtDateShort(a.fechaInicio)}${a.fechaFin?' → '+fmtDateShort(a.fechaFin):' (solo día)'}</span><button class="btn btn-sm btn-outline-danger btn-eliminar-ausencia" data-id="${a.id}" style="font-size:.7rem;padding:4px 8px;flex-shrink:0;"><i class="bi bi-trash"></i></button></div>`; }).join('');
-  l.querySelectorAll('.btn-eliminar-ausencia').forEach(b=>b.addEventListener('click',async()=>{ await eliminarAusencia(b.dataset.id); }));
+// ============================================================
+// AUSENCIAS SECRETARIOS
+// ============================================================
+function estaSecretarioAusente(secId, fecha){
+  if(!state.ausencias || state.ausencias.length === 0) return false;
+  const f = parseLocalDate(fecha);
+  if(!f) return false;
+  f.setHours(0,0,0,0);
+  return state.ausencias.some(a => {
+    if(a.secretarioId !== secId) return false;
+    const ini = parseLocalDate(a.fechaInicio); ini.setHours(0,0,0,0);
+    const fin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
+    fin.setHours(0,0,0,0);
+    return f >= ini && f <= fin;
+  });
 }
-function renderSecretariosEstado(){
-  const el = document.getElementById('secretariosEstado'); if(!el) return;
-  const hoyISO = new Date().toISOString();
-  const pres=[], aus=[];
-  CONFIG.secretarios.forEach(s=>{ if(estaSecretarioAusente(s.id,hoyISO)) aus.push(s); else pres.push(s); });
-  let h = `<div class="sec-estado-row"><span class="sec-estado-label presentes">✓ Presentes:</span>`;
-  if(pres.length===0) h+=`<span class="text-muted" style="font-size:.7rem;">Ninguno</span>`; else pres.forEach(s=>{ h+=`<span class="sec-badge-presente">${s.nombre}</span>`; });
-  h+=`</div><div class="sec-estado-row"><span class="sec-estado-label ausentes">✗ Ausentes:</span>`;
-  if(aus.length===0) h+=`<span class="text-muted" style="font-size:.7rem;">Ninguno</span>`; else aus.forEach(s=>{ h+=`<span class="sec-badge-ausente">${s.nombre}</span>`; });
-  h+=`</div>`;
-  el.innerHTML = h;
+async function agregarAusencia(secretarioId, fechaInicio, fechaFin){
+  if(!secretarioId || !fechaInicio){ showToast('Debe seleccionar secretario y fecha de inicio','warning'); return false; }
+  const ini = parseLocalDate(fechaInicio); ini.setHours(0,0,0,0);
+  const fin = fechaFin ? parseLocalDate(fechaFin) : parseLocalDate(fechaInicio);
+  fin.setHours(0,0,0,0);
+  if(fin < ini){ showToast('La fecha fin no puede ser anterior a la fecha inicio','warning'); return false; }
+  const solapada = state.ausencias.some(a => {
+    if(a.secretarioId !== secretarioId) return false;
+    const aIni = parseLocalDate(a.fechaInicio); aIni.setHours(0,0,0,0);
+    const aFin = a.fechaFin ? parseLocalDate(a.fechaFin) : parseLocalDate(a.fechaInicio);
+    aFin.setHours(0,0,0,0);
+    return !(fin < aIni || ini > aFin);
+  });
+  if(solapada){ showToast('Ya existe una ausencia para ese período','warning'); return false; }
+  const nueva = { id: genId(), secretarioId, fechaInicio, fechaFin: fechaFin || null };
+  state.ausencias.push(nueva);
+  await updateAusencias(state.ausencias);
+  showToast('Ausencia registrada','success');
+  return true;
+}
+async function eliminarAusencia(id){
+  state.ausencias = state.ausencias.filter(a => a.id !== id);
+  await updateAusencias(state.ausencias);
+  renderAusenciasModal();
+  renderSecretariosEstado();
+  showToast('Ausencia eliminada','info');
+}
+async function updateAusencias(arr){
+  try{ await db.collection('operador').doc('ausencias').set({ ausencias: arr }); }
+  catch(e){ console.error('updateAusencias', e); showToast('Error al guardar ausencias','danger'); }
+}
+function renderAusenciasModal(){
+  const list = document.getElementById('ausenciasList');
+  if(!list) return;
+  if(!state.ausencias || state.ausencias.length === 0){
+    list.innerHTML = '<div class="text-muted">No hay ausencias registradas.</div>';
+    return;
+  }
+  list.innerHTML = state.ausencias.map(a => {
+    const sec = CONFIG.secretarios.find(s => s.id === a.secretarioId);
+    const nombre = sec ? sec.nombre : 'Desconocido';
+    return `<div class="ausencia-item">
+      <span class="fechas"><strong>${nombre}</strong> · ${fmtDateShort(a.fechaInicio)}${a.fechaFin ? ' → ' + fmtDateShort(a.fechaFin) : ' (solo día)'}</span>
+      <button class="btn btn-sm btn-outline-danger btn-eliminar-ausencia" data-id="${a.id}" style="font-size:.7rem;padding:2px 8px;"><i class="bi bi-trash"></i></button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.btn-eliminar-ausencia').forEach(btn => {
+    btn.addEventListener('click', async function(){ await eliminarAusencia(this.dataset.id); });
+  });
 }
 
-// ========== ROTACIÓN ==========
+function renderSecretariosEstado(){
+  const el = document.getElementById('secretariosEstado');
+  if(!el) return;
+  const hoyISO = new Date().toISOString();
+  const presentes = [];
+  const ausentes = [];
+  CONFIG.secretarios.forEach(sec => {
+    if(estaSecretarioAusente(sec.id, hoyISO)) ausentes.push(sec);
+    else presentes.push(sec);
+  });
+
+  let html = '';
+  html += `<div class="sec-estado-row"><span class="sec-estado-label presentes">✓ Presentes:</span>`;
+  if(presentes.length === 0) html += `<span class="text-muted" style="font-size:.7rem;">Ninguno</span>`;
+  else presentes.forEach(s => { html += `<span class="sec-badge-presente">${s.nombre}</span>`; });
+  html += `</div>`;
+
+  html += `<div class="sec-estado-row"><span class="sec-estado-label ausentes">✗ Ausentes:</span>`;
+  if(ausentes.length === 0) html += `<span class="text-muted" style="font-size:.7rem;">Ninguno</span>`;
+  else ausentes.forEach(s => { html += `<span class="sec-badge-ausente">${s.nombre}</span>`; });
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+// ============================================================
+// AUSENCIAS EMPLEADOS (nuevo de operador)
+// ============================================================
+async function toggleAusenciaEmpleado(empId){
+  if(!Array.isArray(state.empleadosCfg) || state.empleadosCfg.length === 0){
+    state.empleadosCfg = CONFIG.empleados.map(e => ({id:e.id, ausente:false, fechaReintegro:null}));
+  }
+  let e = state.empleadosCfg.find(se => se.id === empId);
+  if(!e){ e = {id:empId, ausente:false, fechaReintegro:null}; state.empleadosCfg.push(e); }
+  const previo = {ausente:e.ausente, fechaReintegro:e.fechaReintegro};
+
+  e.ausente = !e.ausente;
+  e.fechaReintegro = e.ausente ? null : new Date().toISOString();
+  state.empleadosAusentes = state.empleadosCfg.filter(x => x.ausente === true).map(x => x.id);
+  renderAusenciasEmpleadosModal();
+  renderPreview();
+  renderRecientes();
+
+  try{
+    await db.collection('operador').doc('secretario_config').set({empleados: state.empleadosCfg},{merge:true});
+    if(e.ausente) showToast(`⛔ ${getEmpName(empId)} ausente`,'warning');
+    else showToast(`✅ ${getEmpName(empId)} reintegrado`,'success');
+  }catch(err){
+    console.error('toggleAusenciaEmpleado', err);
+    const r = state.empleadosCfg.find(x => x.id === empId);
+    if(r){ r.ausente = previo.ausente; r.fechaReintegro = previo.fechaReintegro; }
+    state.empleadosAusentes = state.empleadosCfg.filter(x => x.ausente === true).map(x => x.id);
+    renderAusenciasEmpleadosModal();
+    renderPreview();
+    renderRecientes();
+    showToast('Error al guardar config','danger');
+  }
+}
+function renderAusenciasEmpleadosModal(){
+  const cont = document.getElementById('ausenciasEmpleadosList');
+  if(!cont) return;
+  cont.innerHTML = `<div class="table-wrap">
+    <table class="table-modern table" style="min-width:0;width:100%;">
+      <thead><tr><th>Empleado</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        ${getSortedEmployees().map(emp => {
+          const aus = estaEmpleadoAusente(emp.id);
+          return `<tr class="${aus ? 'row-ausente' : 'row-presente'}">
+            <td><strong>${emp.nombre}</strong></td>
+            <td>${aus ? '<span class="badge bg-danger">Ausente</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+            <td><button type="button" class="btn btn-sm ${aus ? 'btn-ausente' : 'btn-reintegrado'} btn-toggle-ausencia" data-emp="${emp.id}">${aus ? 'Reintegro' : 'Ausente'}</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+  cont.querySelectorAll('.btn-toggle-ausencia').forEach(b => {
+    b.addEventListener('click', () => toggleAusenciaEmpleado(b.dataset.emp));
+  });
+}
+
+// ============================================================
+// ROTACIÓN
+// ============================================================
 function getSortedEmployees(){ return [...CONFIG.empleados].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'})); }
 function getSortedSecretarios(){ return [...CONFIG.secretarios].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'})); }
-function getNextEmployeeSinSideEffects(){
+
+function getNextEmployeeSinSideEffects(tipo){
   const sorted = getSortedEmployees();
-  if(!sorted.length) return {empleado:null,position:0,total:0,sinDisponibles:true};
-  const disp = sorted.filter(e=>!empleadoNoAsignable(e.id));
-  if(!disp.length) return {empleado:null,position:0,total:sorted.length,sinDisponibles:true};
-  let st = state.lastEmployeeIndex<0?0:(state.lastEmployeeIndex+1)%sorted.length;
-  for(let i=0;i<sorted.length;i++){ const idx=(st+i)%sorted.length; if(!empleadoNoAsignable(sorted[idx].id)){ const pos=disp.findIndex(e=>e.id===sorted[idx].id)+1; return {empleado:sorted[idx],newIndex:idx,position:pos,total:disp.length,totalGlobal:sorted.length}; } }
-  return {empleado:null,position:0,total:sorted.length,sinDisponibles:true};
+  if(sorted.length === 0) return { empleado:null, position:0, total:0, sinDisponibles:true };
+  const disponibles = sorted.filter(e => !empleadoNoAsignable(e.id, tipo));
+  if(disponibles.length === 0) return { empleado:null, position:0, total:sorted.length, sinDisponibles:true };
+  let startIdx = state.lastEmployeeIndex < 0 ? 0 : (state.lastEmployeeIndex + 1) % sorted.length;
+  for(let i=0; i<sorted.length; i++){
+    const idx = (startIdx + i) % sorted.length;
+    if(!empleadoNoAsignable(sorted[idx].id, tipo)){
+      const posDisponible = disponibles.findIndex(e=>e.id===sorted[idx].id) + 1;
+      return { empleado:sorted[idx], newIndex:idx, position:posDisponible, total:disponibles.length, totalGlobal:sorted.length };
+    }
+  }
+  return { empleado:null, position:0, total:sorted.length, sinDisponibles:true };
 }
 function getNextSecretarioSinSideEffects(){
   const sorted = getSortedSecretarios();
-  if(!sorted.length) return {secretario:null,position:0,total:0,sinDisponibles:true};
+  if(sorted.length === 0) return { secretario:null, position:0, total:0, sinDisponibles:true };
   const hoy = new Date();
-  const disp = sorted.filter(s=>!estaSecretarioAusente(s.id,hoy.toISOString()));
-  if(!disp.length) return {secretario:null,position:0,total:sorted.length,sinDisponibles:true};
-  let st = state.lastIndex<0?0:(state.lastIndex+1)%sorted.length;
-  for(let i=0;i<sorted.length;i++){ const idx=(st+i)%sorted.length; if(!estaSecretarioAusente(sorted[idx].id,hoy.toISOString())){ const pos=disp.findIndex(s=>s.id===sorted[idx].id)+1; return {secretario:sorted[idx],newIndex:idx,position:pos,total:disp.length,totalGlobal:sorted.length}; } }
-  return {secretario:null,position:0,total:sorted.length,sinDisponibles:true};
+  const disponibles = sorted.filter(s => !estaSecretarioAusente(s.id, hoy.toISOString()));
+  if(disponibles.length === 0) return { secretario:null, position:0, total:sorted.length, sinDisponibles:true };
+  let startIdx = state.lastIndex < 0 ? 0 : (state.lastIndex + 1) % sorted.length;
+  for(let i=0; i<sorted.length; i++){
+    const idx = (startIdx + i) % sorted.length;
+    if(!estaSecretarioAusente(sorted[idx].id, hoy.toISOString())){
+      const posDisponible = disponibles.findIndex(s=>s.id===sorted[idx].id) + 1;
+      return { secretario:sorted[idx], newIndex:idx, position:posDisponible, total:disponibles.length, totalGlobal:sorted.length };
+    }
+  }
+  return { secretario:null, position:0, total:sorted.length, sinDisponibles:true };
 }
-const TIPO_NP='nuevo patrocinio', TIPO_NPVF='nuevo patrocinio violencia familiar', TIPO_FC='cejume formulario';
+
+// ============================================================
+// ASIGNACIÓN POR EQUIDAD (CEJUME) — igual que operador
+// ============================================================
+const TIPO_NP = 'nuevo patrocinio';
+const TIPO_NPVF = 'nuevo patrocinio violencia familiar';
+const TIPO_FC = 'cejume formulario';
 function normTipoEq(t){ return (t||'').toString().trim().toLowerCase().replace(/\s+/g,' '); }
-function esTipoPorEquidad(t){ const x=normTipoEq(t); return x===TIPO_NP||x===TIPO_NPVF||x===TIPO_FC; }
-function fechaCausaEq(c){ const f=c.fechaAsignacion||c.fechaPaseSecretario; if(!f) return null; const d=new Date(f); return isNaN(d.getTime())?null:d; }
-function contarCausasEquidad(tipo,empId){
-  const t=normTipoEq(tipo), anio=new Date().getFullYear();
-  return state.causas.filter(c=>{
-    const ct=normTipoEq(c.tipo);
-    if(t===TIPO_FC){ if(ct!==TIPO_FC) return false; const d=fechaCausaEq(c); if(!d||d.getFullYear()!==anio) return false; return (c.empleadoAsignado||c.empleadoOriginal||c.empleadoId||null)===empId; }
-    const delEmp=(c.empleadoAsignado===empId||c.empleadoOriginal===empId); if(!delEmp) return false;
-    if(t===TIPO_NPVF) return ct===TIPO_NPVF;
-    return ct===TIPO_NP||ct===TIPO_NPVF;
+function esTipoPorEquidad(tipo){ const t = normTipoEq(tipo); return t===TIPO_NP || t===TIPO_NPVF || t===TIPO_FC; }
+function fechaCausaEq(c){ const f = c.fechaAsignacion || c.fechaPaseSecretario; if(!f) return null; const d = new Date(f); return isNaN(d.getTime()) ? null : d; }
+function contarCausasEquidad(tipo, empId){
+  const t = normTipoEq(tipo);
+  const anio = new Date().getFullYear();
+  return state.causas.filter(c => {
+    const ct = normTipoEq(c.tipo);
+    if(t === TIPO_FC){
+      if(ct !== TIPO_FC) return false;
+      const d = fechaCausaEq(c);
+      if(!d || d.getFullYear() !== anio) return false;
+      return (c.empleadoAsignado || c.empleadoOriginal || c.empleadoId || null) === empId;
+    }
+    const delEmp = (c.empleadoAsignado === empId || c.empleadoOriginal === empId);
+    if(!delEmp) return false;
+    if(t === TIPO_NPVF) return ct === TIPO_NPVF;
+    return ct === TIPO_NP || ct === TIPO_NPVF;
   }).length;
 }
 function getNextEmployeePorTipo(tipo){
-  const sorted=getSortedEmployees(), disp=sorted.filter(e=>!empleadoNoAsignable(e.id));
-  if(!disp.length) return {empleado:null,position:0,total:sorted.length,sinDisponibles:true};
-  const t=normTipoEq(tipo);
-  const etiqueta = t===TIPO_FC?`FormCEJUME ${new Date().getFullYear()}`:(t===TIPO_NPVF?'N.P.V.F.':'Nuevo Patrocinio');
-  let mejor=null,mejorCant=Infinity;
-  disp.forEach(e=>{ const n=contarCausasEquidad(tipo,e.id); if(n<mejorCant){ mejor=e; mejorCant=n; } });
-  return {empleado:mejor,newIndex:sorted.findIndex(e=>e.id===mejor.id),position:disp.findIndex(e=>e.id===mejor.id)+1,total:disp.length,totalGlobal:sorted.length,porTipo:true,cantidad:mejorCant,etiqueta};
+  const sorted = getSortedEmployees();
+  const disponibles = sorted.filter(e => !empleadoNoAsignable(e.id, tipo));
+  if(disponibles.length === 0) return { empleado:null, position:0, total:sorted.length, sinDisponibles:true };
+  const t = normTipoEq(tipo);
+  const etiqueta = t===TIPO_FC ? `FormCEJUME ${new Date().getFullYear()}` : (t===TIPO_NPVF ? 'N.P.V.F.' : 'Nuevo Patrocinio');
+  let mejor = null, mejorCant = Infinity;
+  disponibles.forEach(e => {
+    const n = contarCausasEquidad(tipo, e.id);
+    if(n < mejorCant){ mejor = e; mejorCant = n; }
+  });
+  return { empleado:mejor, newIndex:sorted.findIndex(e=>e.id===mejor.id), position:disponibles.findIndex(e=>e.id===mejor.id)+1, total:disponibles.length, totalGlobal:sorted.length, porTipo:true, cantidad:mejorCant, etiqueta };
 }
-function getEmpleadoParaPase(tipo){ return esTipoPorEquidad(tipo)?getNextEmployeePorTipo(tipo):getNextEmployeeSinSideEffects(); }
-async function guardarConfiguracion(){ try{ await db.collection('operador').doc('config').set({lastIndex:state.lastIndex,lastEmployeeIndex:state.lastEmployeeIndex},{merge:true}); }catch(e){ console.error(e); } }
 
-// ========== FIRESTORE ==========
+// ============================================================
+// ROTACIÓN ALFABÉTICA COMPARTIDA N.P. + N.P.V.F. (nuevo de operador)
+// ============================================================
+function esTipoRotacionNP(tipo){ const t = normTipoEq(tipo); return t===TIPO_NP || t===TIPO_NPVF; }
+function empleadoDePaseNP(c){ return c.empleadoAsignado || c.empleadoOriginal || c.empleadoId || null; }
+function fechaOrdenPaseNP(c){
+  const f = c.fechaPaseSecretario || (c.historial && c.historial[0] && c.historial[0].fecha) || c.fechaAsignacion;
+  const d = f ? new Date(f) : null;
+  return d && !isNaN(d.getTime()) ? d.getTime() : 0;
+}
+function getPasesRotacionNP(){
+  const validos = new Set(CONFIG.empleados.map(e => e.id));
+  return state.causas
+    .map((c,i) => ({c,i}))
+    .filter(x => { const ct = normTipoEq(x.c.tipo); return (ct===TIPO_NP || ct===TIPO_NPVF) && validos.has(empleadoDePaseNP(x.c)); })
+    .sort((a,b) => fechaOrdenPaseNP(a.c) - fechaOrdenPaseNP(b.c) || a.i - b.i)
+    .map(x => x.c);
+}
+function calcularRondaNP(tipo){
+  const sorted = getSortedEmployees();
+  const globales = sorted.filter(e => !(EMPLEADOS_EXCLUIDOS.includes(e.id) || estaEmpleadoAusente(e.id) || estaExcluidoDeTipo(e.id, tipo)));
+  let ronda = new Set();
+  const ultimaVez = {};
+  getPasesRotacionNP().forEach((c, n) => {
+    const id = empleadoDePaseNP(c);
+    ultimaVez[id] = n;
+    ronda.add(id);
+    if(globales.length && globales.every(e => ronda.has(e.id))) ronda = new Set();
+  });
+  return { ronda, globales, ultimaVez };
+}
+function getNextEmployeeRotacionNP(tipo){
+  const sorted = getSortedEmployees();
+  const disponibles = sorted.filter(e => !empleadoNoAsignable(e.id, tipo));
+  if(disponibles.length === 0) return { empleado:null, position:0, total:sorted.length, sinDisponibles:true };
+  const { ronda, globales, ultimaVez } = calcularRondaNP(tipo);
+  let elegido = disponibles.find(e => !ronda.has(e.id)) || null;
+  let soloFalta = false;
+  if(!elegido){
+    soloFalta = true;
+    elegido = disponibles.reduce((m,e) => ((ultimaVez[e.id] ?? -1) < (ultimaVez[m.id] ?? -1)) ? e : m, disponibles[0]);
+  }
+  const hechos = globales.filter(e => ronda.has(e.id)).length;
+  const hint = soloFalta
+    ? 'Ronda N.P. / N.P.V.F.: falta solo el empleado de esta sesión · se sugiere a quien hace más tiempo no recibe'
+    : `Ronda N.P. / N.P.V.F. · turno ${hechos+1} de ${globales.length}${hechos===0 ? ' · nueva ronda' : ''}`;
+  return { empleado:elegido, newIndex:sorted.findIndex(e => e.id===elegido.id), position:Math.min(hechos+1, globales.length), total:globales.length, totalGlobal:sorted.length, porTipo:true, rotacionNP:true, hint };
+}
+
+function getEmpleadoParaPase(tipo){
+  if(esTipoRotacionNP(tipo)) return getNextEmployeeRotacionNP(tipo);
+  return esTipoPorEquidad(tipo) ? getNextEmployeePorTipo(tipo) : getNextEmployeeSinSideEffects(tipo);
+}
+
+async function guardarConfiguracion(){
+  try{
+    await db.collection('operador').doc('config').set({
+      lastIndex: state.lastIndex,
+      lastEmployeeIndex: state.lastEmployeeIndex
+    }, { merge:true });
+  }catch(e){ console.error('guardarConfiguracion', e); }
+}
+
+// ============================================================
+// FIRESTORE
+// ============================================================
 async function loadState(){
   try{
     const snap = await db.collection('operador').get();
-    const causas=[]; let ausencias=[];
-    let cfg={lastIndex:-1,lastEmployeeIndex:-1};
-    snap.forEach(doc=>{
-      const data=doc.data();
-      if(doc.id==='config'){ cfg=data; return; }
-      if(doc.id==='ausencias'){ ausencias=data.ausencias||[]; return; }
-      if(doc.id==='secretario_config') return;
-      if(doc.id==='tipos_custom') return;
-      if(esNumeroValido(data.numero)){ if(!data.id) data.id=doc.id; causas.push(data); }
+    const causas = [];
+    let ausencias = [];
+    let cfg = { lastIndex:-1, lastEmployeeIndex:-1 };
+    snap.forEach(doc => {
+      const data = doc.data();
+      if(doc.id === 'config'){ cfg = data; return; }
+      if(doc.id === 'ausencias'){ ausencias = data.ausencias || []; return; }
+      if(doc.id === 'secretario_config') return;
+      if(doc.id === 'tipos_custom') return;
+      if(esNumeroValido(data.numero)){ if(!data.id) data.id = doc.id; causas.push(data); }
     });
-    state.causas = causas; state.ausencias = ausencias;
+    state.causas = causas;
+    state.ausencias = ausencias;
     state.lastIndex = cfg.lastIndex ?? -1;
     state.lastEmployeeIndex = cfg.lastEmployeeIndex ?? -1;
+
     const cfgDoc = await db.collection('operador').doc('secretario_config').get();
-    if(cfgDoc.exists){ const empCfg=cfgDoc.data().empleados||[]; state.empleadosAusentes=empCfg.filter(e=>e.ausente===true).map(e=>e.id); }
-    else state.empleadosAusentes=[];
-  }catch(e){ console.error(e); showToast('Error al cargar datos','danger'); }
+    if(cfgDoc.exists){
+      const cfgData = cfgDoc.data();
+      const empCfg = cfgData.empleados || [];
+      state.empleadosCfg = empCfg;
+      state.empleadosAusentes = empCfg.filter(e => e.ausente === true).map(e => e.id);
+      state.exclusiones = cfgData.exclusionesTipo || {};
+    } else {
+      state.empleadosCfg = [];
+      state.empleadosAusentes = [];
+      state.exclusiones = {};
+    }
+  }catch(e){
+    console.error(e);
+    showToast('Error al cargar datos','danger');
+  }
 }
 async function addCausa(c){ await db.collection('operador').doc(c.id).set(c); }
 async function updateCausa(id,u){ await db.collection('operador').doc(id).update(u); }
 
 function iniciarListenerEmpleadosAusentes(){
   if(unsubscribeSecretarioConfig) unsubscribeSecretarioConfig();
-  unsubscribeSecretarioConfig = db.collection('operador').doc('secretario_config').onSnapshot(doc=>{
+  unsubscribeSecretarioConfig = db.collection('operador').doc('secretario_config').onSnapshot(doc => {
     if(doc.exists){
-      const empCfg = doc.data().empleados||[];
+      const cfgData = doc.data();
+      const empCfg = cfgData.empleados || [];
       const antes = state.empleadosAusentes.slice();
-      state.empleadosAusentes = empCfg.filter(e=>e.ausente===true).map(e=>e.id);
-      if(JSON.stringify(antes)!==JSON.stringify(state.empleadosAusentes)){
-        const nuevos = state.empleadosAusentes.filter(id=>!antes.includes(id));
-        const reintegrados = antes.filter(id=>!state.empleadosAusentes.includes(id));
-        nuevos.forEach(id=>showToast(`⛔ ${getEmpName(id)} marcado ausente`,'warning'));
-        reintegrados.forEach(id=>showToast(`✅ ${getEmpName(id)} reintegrado`,'success'));
-        renderPreview(); renderRecientes();
+      state.empleadosCfg = empCfg;
+      state.empleadosAusentes = empCfg.filter(e => e.ausente === true).map(e => e.id);
+
+      const exclPrev = state.exclusiones || {};
+      const exclNuevo = cfgData.exclusionesTipo || {};
+      state.exclusiones = exclNuevo;
+      let exclCambio = false;
+      new Set([...Object.keys(exclPrev), ...Object.keys(exclNuevo)]).forEach(id => {
+        const a = Array.isArray(exclPrev[id]) ? exclPrev[id] : [];
+        const b = Array.isArray(exclNuevo[id]) ? exclNuevo[id] : [];
+        const na = a.map(normTipoEq), nb = b.map(normTipoEq);
+        b.forEach((t,i) => { if(!na.includes(nb[i])){ exclCambio = true; showToast(`⛔ ${getEmpName(id)} excluido de «${t}»`,'warning'); } });
+        a.forEach((t,i) => { if(!nb.includes(na[i])){ exclCambio = true; showToast(`✅ ${getEmpName(id)} vuelve a recibir «${t}»`,'success'); } });
+      });
+      if(exclCambio) renderPreview();
+
+      if(JSON.stringify(antes) !== JSON.stringify(state.empleadosAusentes)){
+        const nuevos = state.empleadosAusentes.filter(id => !antes.includes(id));
+        const reintegrados = antes.filter(id => !state.empleadosAusentes.includes(id));
+        nuevos.forEach(id => showToast(`⛔ ${getEmpName(id)} marcado ausente`,'warning'));
+        reintegrados.forEach(id => showToast(`✅ ${getEmpName(id)} reintegrado`,'success'));
+        renderAusenciasEmpleadosModal();
+        renderPreview();
+        renderRecientes();
       }
     }
-  }, err=>console.error(err));
+  }, err => console.error('Listener secretario_config:', err));
 }
 
+// ============================================================
+// TIPOS PERSONALIZADOS
+// ============================================================
 async function cargarTiposPersonalizados(){
   try{
     const doc = await db.collection('operador').doc('tipos_custom').get();
     if(doc.exists){
-      const tipos = doc.data().tipos||[];
+      const tipos = doc.data().tipos || [];
       const tiposList = document.getElementById('tiposList');
-      tipos.forEach(t=>{ if(!CONFIG.tipos.includes(t)){ CONFIG.tipos.push(t); const o=document.createElement('option'); o.value=t; tiposList.appendChild(o); } });
+      tipos.forEach(t => {
+        if(!CONFIG.tipos.includes(t)){
+          CONFIG.tipos.push(t);
+          const o = document.createElement('option'); o.value = t; tiposList.appendChild(o);
+        }
+      });
     }
-  }catch(e){ console.error(e); }
+  }catch(e){ console.error('Error cargando tipos custom:', e); }
 }
 async function guardarNuevoTipo(){
-  const n = document.getElementById('inpNuevoTipo').value.trim();
-  if(!n){ showToast('Escriba el nuevo tipo','warning'); return; }
-  if(n.length<3){ showToast('Mínimo 3 caracteres','warning'); return; }
-  const ex = CONFIG.tipos.find(t=>t.toLowerCase()===n.toLowerCase());
-  if(ex){ showToast(`Tipo "${ex}" ya existe`,'info'); document.getElementById('inpTipo').value=ex; document.getElementById('nuevoTipoContainer').style.display='none'; document.getElementById('inpNuevoTipo').value=''; return; }
-  CONFIG.tipos.push(n);
-  const o=document.createElement('option'); o.value=n; document.getElementById('tiposList').appendChild(o);
-  document.getElementById('inpTipo').value=n; document.getElementById('nuevoTipoContainer').style.display='none'; document.getElementById('inpNuevoTipo').value='';
-  showToast(`✅ Tipo "${n}" agregado`,'success');
-  try{ await db.collection('operador').doc('tipos_custom').set({tipos:firebase.firestore.FieldValue.arrayUnion(n)},{merge:true}); }catch(e){ console.error(e); }
+  const nuevoTipo = document.getElementById('inpNuevoTipo').value.trim();
+  if(!nuevoTipo){ showToast('Escriba el nuevo tipo','warning'); return; }
+  if(nuevoTipo.length < 3){ showToast('El tipo debe tener al menos 3 caracteres','warning'); return; }
+  const existente = CONFIG.tipos.find(t => t.toLowerCase() === nuevoTipo.toLowerCase());
+  if(existente){
+    showToast(`El tipo "${existente}" ya existe en el listado`,'info');
+    document.getElementById('inpTipo').value = existente;
+    document.getElementById('nuevoTipoContainer').style.display = 'none';
+    document.getElementById('inpNuevoTipo').value = '';
+    return;
+  }
+  CONFIG.tipos.push(nuevoTipo);
+  const o = document.createElement('option'); o.value = nuevoTipo;
+  document.getElementById('tiposList').appendChild(o);
+  document.getElementById('inpTipo').value = nuevoTipo;
+  document.getElementById('nuevoTipoContainer').style.display = 'none';
+  document.getElementById('inpNuevoTipo').value = '';
+  showToast(`✅ Tipo "${nuevoTipo}" agregado`,'success');
+  try{
+    await db.collection('operador').doc('tipos_custom').set({
+      tipos: firebase.firestore.FieldValue.arrayUnion(nuevoTipo)
+    }, { merge: true });
+  }catch(e){ console.error('Error guardando tipo custom:', e); }
 }
 function toggleNuevoTipoField(){
-  const v = document.getElementById('inpTipo').value.trim();
-  const c = document.getElementById('nuevoTipoContainer');
-  if(v==='Otro'){ c.style.display='block'; setTimeout(()=>document.getElementById('inpNuevoTipo')?.focus(),50); }
-  else { c.style.display='none'; document.getElementById('inpNuevoTipo').value=''; }
+  const val = document.getElementById('inpTipo').value.trim();
+  const container = document.getElementById('nuevoTipoContainer');
+  if(val === 'Otro'){
+    container.style.display = 'block';
+    setTimeout(()=>{ const inp = document.getElementById('inpNuevoTipo'); if(inp) inp.focus(); }, 50);
+  } else {
+    container.style.display = 'none';
+    document.getElementById('inpNuevoTipo').value = '';
+  }
 }
 
-// ========== REGISTRAR ==========
-async function registrarCausa(num,tipo,obs,nivel,operador,accion,motivo,dependencia,modo,fuentes){
-  if(!num.trim()){ showToast('Ingrese número de expediente','warning'); return false; }
+// ============================================================
+// REGISTRAR CAUSA (con pase directo y asignación manual)
+// ============================================================
+async function registrarCausa(num, tipo, obs, nivel, operador, accion, motivo, dependencia, modo, fuentes, manual){
+  if(!num.trim()){ showToast('Ingrese número de expediente','warning'); return {ok:false}; }
+
   const now = new Date().toISOString();
-  let estado, empId=null, secId=null, fechaAsignacion=null, fechaLimite=null, accionHist='';
-  if(accion==='asignar'){
+  let estado, empleadoAsignado=null, secretarioId=null, fechaAsignacion=null, fechaLimite=null, accionHist='';
+  let asignacionManual=false, empleadoSugerido=null, secretarioSugerido=null;
+
+  if(accion === 'asignar'){
+    // N.P. / N.P.V.F.: se vuelven a leer los pases justo antes de asignar, para no repetir empleado
+    if(esTipoRotacionNP(tipo)) await loadState();
     const emp = getEmpleadoParaPase(tipo);
     const sec = getNextSecretarioSinSideEffects();
-    if(emp.sinDisponibles) showToast('⚠️ Sin empleados disponibles','warning');
-    if(sec.sinDisponibles) showToast('⚠️ Sin secretarios disponibles','warning');
-    if(emp.empleado) empId = emp.empleado.id;
-    if(sec.secretario) secId = sec.secretario.id;
-    estado='en_proceso'; fechaAsignacion=now;
+
+    const manualEmpId = manual && manual.empleadoId ? manual.empleadoId : null;
+    const manualSecId = manual && manual.secretarioId ? manual.secretarioId : null;
+    if(manualEmpId && empleadoNoAsignable(manualEmpId, tipo)){
+      showToast(`⚠️ ${getEmpName(manualEmpId)} no está disponible para este pase. Elija otro empleado.`,'warning'); return {ok:false};
+    }
+    if(manualSecId && estaSecretarioAusente(manualSecId, now)){
+      showToast(`⚠️ ${getSecName(manualSecId)} está ausente hoy. Elija otro secretario.`,'warning'); return {ok:false};
+    }
+    const sugEmpId = emp.empleado ? emp.empleado.id : null;
+    const sugSecId = sec.secretario ? sec.secretario.id : null;
+    const empCambiado = !!manualEmpId && manualEmpId !== sugEmpId;
+    const secCambiado = !!manualSecId && manualSecId !== sugSecId;
+    asignacionManual = empCambiado || secCambiado;
+    if(empCambiado) empleadoSugerido = sugEmpId;
+    if(secCambiado) secretarioSugerido = sugSecId;
+
+    if(!manualEmpId && emp.sinDisponibles) showToast('⚠️ No hay empleados disponibles para este tipo. Se registrará sin asignar.','warning');
+    if(!manualSecId && sec.sinDisponibles) showToast('⚠️ No hay secretarios disponibles. Se registrará sin secretario.','warning');
+
+    empleadoAsignado = manualEmpId || sugEmpId;
+    secretarioId = manualSecId || sugSecId;
+
+    estado = 'en_proceso';
+    fechaAsignacion = now;
     const fIni = calcFechaInicio(now);
-    fechaLimite = calcFechaLimite(fIni, parseInt(nivel)).toISOString();
-    const empN = empId?getEmpName(empId):'Sin asignar';
-    const secN = secId?getSecName(secId):'Sin secretario';
-    accionHist = `Asignado (Nivel ${nivel}) a ${empN} — Secretario: ${secN}`;
-    if(emp.empleado && !emp.porTipo) state.lastEmployeeIndex = emp.newIndex;
-    if(sec.secretario) state.lastIndex = sec.newIndex;
+    const fLim = calcFechaLimite(fIni, parseInt(nivel));
+    fechaLimite = fLim.toISOString();
+
+    const empNombre = empleadoAsignado ? getEmpName(empleadoAsignado) : 'Sin asignar (sin empleados disponibles)';
+    const secNombre = secretarioId ? getSecName(secretarioId) : 'Sin secretario';
+    accionHist = `Asignado (Nivel ${nivel}) a ${empNombre} — Secretario: ${secNombre}`;
+    const notas = [];
+    if(empCambiado) notas.push(`empleado elegido manualmente (rotación sugería: ${sugEmpId ? getEmpName(sugEmpId) : 'nadie'})`);
+    if(secCambiado) notas.push(`secretario elegido manualmente (rotación sugería: ${sugSecId ? getSecName(sugSecId) : 'nadie'})`);
+    if(notas.length) accionHist += ' · ' + notas.join('; ');
+
+    if(emp.empleado && !emp.porTipo && !empCambiado) state.lastEmployeeIndex = emp.newIndex;
+    if(sec.secretario && !secCambiado) state.lastIndex = sec.newIndex;
     await guardarConfiguracion();
-  } else if(accion==='devolver'){ estado='devuelto_siged'; accionHist='Devuelto a SIGED'; }
-  else if(accion==='remitir'){ estado='remitido'; accionHist=`Remitido a ${dependencia||'—'}`; }
-  else { estado='rechazado'; accionHist='Rechazado'; }
+  } else if(accion === 'directo'){
+    // PASE DIRECTO: Secretaría sin empleado
+    const sec = getNextSecretarioSinSideEffects();
+    const manualSecId = manual && manual.secretarioId ? manual.secretarioId : null;
+    if(manualSecId && estaSecretarioAusente(manualSecId, now)){
+      showToast(`⚠️ ${getSecName(manualSecId)} está ausente hoy. Elija otro secretario.`,'warning'); return {ok:false};
+    }
+    const sugSecId = sec.secretario ? sec.secretario.id : null;
+    const secCambiado = !!manualSecId && manualSecId !== sugSecId;
+    if(!manualSecId && sec.sinDisponibles) showToast('⚠️ No hay secretarios disponibles. Se registrará sin secretario.','warning');
+    asignacionManual = secCambiado;
+    if(secCambiado) secretarioSugerido = sugSecId;
+    secretarioId = manualSecId || sugSecId;
+    estado = 'en_secretaria';
+    const secNombre = secretarioId ? getSecName(secretarioId) : 'Sin secretario';
+    accionHist = `Pase directo a Secretario (sin empleado) — Secretario: ${secNombre}` +
+      (secCambiado ? ` · secretario elegido manualmente (rotación sugería: ${sugSecId ? getSecName(sugSecId) : 'nadie'})` : '');
+    if(sec.secretario && !secCambiado) state.lastIndex = sec.newIndex;
+    await guardarConfiguracion();
+  } else if(accion === 'devolver'){
+    estado = 'devuelto_siged'; accionHist = 'Devuelto a SIGED';
+  } else if(accion === 'remitir'){
+    estado = 'remitido'; accionHist = `Remitido a ${dependencia||'—'}`;
+  } else {
+    estado = 'rechazado'; accionHist = 'Rechazado';
+  }
+
   const causa = {
-    id:genId(), numero:num.trim().toUpperCase(), tipo:tipo||'Otro',
-    nivelOperador:parseInt(nivel)||2, nivelSecretario:parseInt(nivel)||2,
-    modoIntervencion:modo||'', observaciones:obs||'', estado,
-    empleadoAsignado:empId, empleadoNombre:empId?getEmpName(empId):null, empleadoId:empId,
-    secretarioId:secId, secretarioNombre:secId?getSecName(secId):null,
-    operador:operador||'Administrador',
-    fechaPaseSecretario:now, fechaAsignacion, fechaLimite,
-    fechaFinalizacion:null, fechaResolucionEmpleado:null,
-    motivoAccion:motivo||null, dependenciaRemision:dependencia||null,
-    fuenteSiged:fuentes.siged||false, fuenteZimbra:fuentes.zimbra||false, fuenteDeut:fuentes.deut||false,
-    historial:[{fecha:now,accion:accionHist,usuario:operador||'Administrador',comentario:motivo||obs||'Sin observaciones'}]
+    id: genId(),
+    numero: num.trim().toUpperCase(),
+    tipo: tipo||'Otro',
+    nivelOperador: parseInt(nivel)||2,
+    nivelSecretario: parseInt(nivel)||2,
+    modoIntervencion: modo||'',
+    observaciones: obs||'',
+    estado,
+    empleadoAsignado,
+    empleadoNombre: empleadoAsignado ? getEmpName(empleadoAsignado) : null,
+    empleadoId: empleadoAsignado,
+    secretarioId,
+    secretarioNombre: secretarioId ? getSecName(secretarioId) : null,
+    operador: operador||'Administrador',
+    fechaPaseSecretario: now,
+    fechaAsignacion,
+    fechaLimite,
+    fechaFinalizacion: null,
+    fechaResolucionEmpleado: null,
+    motivoAccion: motivo||null,
+    dependenciaRemision: dependencia||null,
+    fuenteSiged: fuentes.siged||false,
+    fuenteZimbra: fuentes.zimbra||false,
+    fuenteDeut: fuentes.deut||false,
+    asignacionManual,
+    paseDirecto: accion === 'directo',
+    empleadoSugerido,
+    secretarioSugerido,
+    historial: [{
+      fecha: now,
+      accion: accionHist,
+      usuario: operador || 'Administrador',
+      comentario: motivo || obs || 'Sin observaciones'
+    }]
   };
-  try{ await addCausa(causa); state.causas.push(causa); return {ok:true,causa}; }
-  catch(e){ console.error(e); showToast('Error al guardar','danger'); return {ok:false}; }
+
+  try{
+    await addCausa(causa);
+    state.causas.push(causa);
+    return {ok:true, causa};
+  }catch(e){
+    console.error(e);
+    showToast('Error al guardar','danger');
+    return {ok:false};
+  }
 }
 
-// ========== ELIMINAR ==========
+// ============================================================
+// ELIMINAR / MASIVA / EDITAR (todo lo de admin, sin cambios)
+// ============================================================
 function mostrarModalConfirmacion(id){
   const c = state.causas.find(x=>x.id===id);
   if(!c){ showToast('No encontrada','warning'); return; }
@@ -1101,17 +1625,24 @@ function mostrarModalConfirmacion(id){
 async function ejecutarEliminacion(){
   if(!pendingDeleteId) return;
   const c = state.causas.find(x=>x.id===pendingDeleteId);
-  try{ await db.collection('operador').doc(pendingDeleteId).delete(); state.causas = state.causas.filter(x=>x.id!==pendingDeleteId); showToast(`✅ ${c?.numero||''} eliminado`,'success'); renderKPIs(); renderRecientes(); renderRechazados(); }
-  catch(e){ console.error(e); showToast('Error al eliminar','danger'); }
-  finally{ pendingDeleteId=null; const m=bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEliminar')); if(m) m.hide(); }
+  try{
+    await db.collection('operador').doc(pendingDeleteId).delete();
+    state.causas = state.causas.filter(x=>x.id!==pendingDeleteId);
+    showToast(`✅ ${c?.numero||''} eliminado`,'success');
+    renderKPIs(); renderRecientes(); renderRechazados();
+  }catch(e){ console.error(e); showToast('Error al eliminar','danger'); }
+  finally{
+    pendingDeleteId=null;
+    const m=bootstrap.Modal.getInstance(document.getElementById('modalConfirmarEliminar')); if(m) m.hide();
+  }
 }
-
-// ========== ELIMINACIÓN MASIVA ==========
 async function eliminarTodosLosRegistros(){
   try{
     const snap = await db.collection('operador').get();
     const refs = [];
-    snap.forEach(doc=>{ if(doc.id!=='ausencias'&&doc.id!=='config'&&doc.id!=='secretario_config'&&doc.id!=='tipos_custom') refs.push(doc.ref); });
+    snap.forEach(doc=>{
+      if(doc.id!=='ausencias'&&doc.id!=='config'&&doc.id!=='secretario_config'&&doc.id!=='tipos_custom') refs.push(doc.ref);
+    });
     if(!refs.length){ showToast('No hay registros','info'); return; }
     for(let i=0;i<refs.length;i+=500){
       const batch = db.batch();
@@ -1124,7 +1655,6 @@ async function eliminarTodosLosRegistros(){
   }catch(e){ console.error(e); showToast('Error en eliminación masiva','danger'); }
 }
 
-// ========== EDITAR ==========
 function poblarSelectsEdicion(){
   const sT = document.getElementById('editTipo');
   if(sT && sT.options.length<=1) sT.innerHTML = '<option value="">Seleccione…</option>'+CONFIG.tipos.map(t=>`<option value="${t}">${t}</option>`).join('');
@@ -1169,105 +1699,247 @@ async function guardarEdicion(){
     fuenteSiged:document.getElementById('editFuenteSiged').checked,
     fuenteZimbra:document.getElementById('editFuenteZimbra').checked,
     fuenteDeut:document.getElementById('editFuenteDeut').checked,
-    historial:[...(c.historial||[]),{fecha:new Date().toISOString(),accion:'Edición de datos',usuario:'Administrador',comentario:cambios.join(' · ')||'Datos actualizados'}]
+    historial:[...(c.historial||[]),{
+      fecha:new Date().toISOString(),
+      accion:'Edición de datos',
+      usuario:'Administrador',
+      comentario:cambios.join(' · ')||'Datos actualizados'
+    }]
   };
-  try{ await updateCausa(pendingEditId,updates); const i=state.causas.findIndex(x=>x.id===pendingEditId); if(i>=0) state.causas[i]={...state.causas[i],...updates}; showToast(`✅ ${c.numero} actualizado`,'success'); renderKPIs(); renderRecientes(); renderRechazados(); }
-  catch(e){ console.error(e); showToast('Error al actualizar','danger'); }
-  finally{ pendingEditId=null; const m=bootstrap.Modal.getInstance(document.getElementById('modalEditar')); if(m) m.hide(); }
+  try{
+    await updateCausa(pendingEditId,updates);
+    const i=state.causas.findIndex(x=>x.id===pendingEditId);
+    if(i>=0) state.causas[i]={...state.causas[i],...updates};
+    showToast(`✅ ${c.numero} actualizado`,'success');
+    renderKPIs(); renderRecientes(); renderRechazados();
+  }catch(e){ console.error(e); showToast('Error al actualizar','danger'); }
+  finally{
+    pendingEditId=null;
+    const m=bootstrap.Modal.getInstance(document.getElementById('modalEditar')); if(m) m.hide();
+  }
 }
 
-// ========== FILTROS ==========
+// ============================================================
+// FILTROS
+// ============================================================
 function getFilterValues(){
   return {
-    search:(document.getElementById('filterSearch')?.value||'').trim().toLowerCase(),
-    fecha:document.getElementById('filterFecha')?.value||'',
-    operador:document.getElementById('filterOperador')?.value||'',
-    secretario:document.getElementById('filterSecretario')?.value||'',
-    empleado:document.getElementById('filterEmpleado')?.value||'',
-    tipo:document.getElementById('filterTipo')?.value||'',
-    nivel:document.getElementById('filterNivel')?.value||'',
-    fuente:document.getElementById('filterFuente')?.value||''
+    search: (document.getElementById('filterSearch')?.value || '').trim().toLowerCase(),
+    fecha: document.getElementById('filterFecha')?.value || '',
+    operador: document.getElementById('filterOperador')?.value || '',
+    secretario: document.getElementById('filterSecretario')?.value || '',
+    empleado: document.getElementById('filterEmpleado')?.value || '',
+    tipo: document.getElementById('filterTipo')?.value || '',
+    modo: document.getElementById('filterModo')?.value || '',
+    nivel: document.getElementById('filterNivel')?.value || '',
+    fuente: document.getElementById('filterFuente')?.value || ''
   };
 }
 function applyFilters(list){
   const f = getFilterValues();
   let r = list;
-  if(f.search){ r = r.filter(c=>{ const fields=[c.numero,c.tipo,c.observaciones,c.motivoAccion,c.dependenciaRemision,c.modoIntervencion,c.empleadoNombre,c.secretarioNombre,c.operador]; return fields.some(x=>(x||'').toString().toLowerCase().includes(f.search)); }); }
-  if(f.fecha){ r = r.filter(c=>{ const fechas=[c.fechaAsignacion,c.fechaPaseSecretario,c.fechaFinalizacion,c.fechaLimite]; return fechas.some(iso=>{ if(!iso) return false; const d=new Date(iso); const ymd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); return ymd===f.fecha; }); }); }
-  if(f.operador) r = r.filter(c=>c.operador===f.operador);
-  if(f.secretario) r = r.filter(c=>c.secretarioId===f.secretario);
-  if(f.empleado) r = r.filter(c=>c.empleadoAsignado===f.empleado);
-  if(f.tipo) r = r.filter(c=>c.tipo===f.tipo);
-  if(f.nivel) r = r.filter(c=>String(c.nivelOperador)===f.nivel);
-  if(f.fuente){ r = r.filter(c=>{ if(f.fuente==='siged') return !!c.fuenteSiged; if(f.fuente==='zimbra') return !!c.fuenteZimbra; if(f.fuente==='deut') return !!c.fuenteDeut; return true; }); }
+  if(f.search){
+    r = r.filter(c => {
+      const fields = [c.numero, c.tipo, c.observaciones, c.motivoAccion, c.dependenciaRemision, c.modoIntervencion, c.empleadoNombre, c.secretarioNombre, c.operador];
+      return fields.some(x => (x||'').toString().toLowerCase().includes(f.search));
+    });
+  }
+  if(f.fecha){
+    r = r.filter(c => {
+      const fechas = [c.fechaAsignacion, c.fechaPaseSecretario, c.fechaFinalizacion, c.fechaLimite];
+      return fechas.some(iso => {
+        if(!iso) return false;
+        const d = new Date(iso);
+        const ymd = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        return ymd === f.fecha;
+      });
+    });
+  }
+  if(f.operador) r = r.filter(c => c.operador === f.operador);
+  if(f.secretario) r = r.filter(c => c.secretarioId === f.secretario);
+  if(f.empleado) r = r.filter(c => c.empleadoAsignado === f.empleado);
+  if(f.tipo) r = r.filter(c => c.tipo === f.tipo);
+  if(f.modo) r = r.filter(c => c.modoIntervencion === f.modo);
+  if(f.nivel) r = r.filter(c => String(c.nivelOperador) === f.nivel);
+  if(f.fuente){
+    r = r.filter(c => {
+      if(f.fuente === 'siged') return !!c.fuenteSiged;
+      if(f.fuente === 'zimbra') return !!c.fuenteZimbra;
+      if(f.fuente === 'deut') return !!c.fuenteDeut;
+      return true;
+    });
+  }
   return r;
 }
-function updateFilterStatus(total,filtered){
-  const el = document.getElementById('filterStatus'); if(!el) return;
+function updateFilterStatus(total, filtered){
+  const el = document.getElementById('filterStatus');
+  if(!el) return;
   const vals = getFilterValues();
-  const has = Object.values(vals).some(v=>v&&v.length>0);
-  if(has){ el.innerHTML = `<i class="bi bi-funnel-fill"></i> Mostrando <strong>${filtered}</strong> de <strong>${total}</strong>.`; el.classList.add('show'); }
-  else { el.classList.remove('show'); el.innerHTML = ''; }
+  const hasFilters = Object.values(vals).some(v => v && v.length > 0);
+  if(hasFilters){
+    el.innerHTML = `<i class="bi bi-funnel-fill"></i> Mostrando <strong>${filtered}</strong> de <strong>${total}</strong>.`;
+    el.classList.add('show');
+  } else { el.classList.remove('show'); el.innerHTML = ''; }
 }
 function limpiarFiltrosPanel(){
-  ['filterSearch','filterFecha','filterOperador','filterSecretario','filterEmpleado','filterTipo','filterNivel','filterFuente'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  pagination.recientes.page=1; pagination.rechazados.page=1;
-  renderRecientes(); renderRechazados();
+  ['filterSearch','filterFecha','filterOperador','filterSecretario','filterEmpleado','filterTipo','filterModo','filterNivel','filterFuente'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  pagination.recientes.page = 1;
+  pagination.rechazados.page = 1;
+  renderRecientes();
+  renderRechazados();
 }
 
-// ========== RENDER ==========
+// ============================================================
+// RENDER
+// ============================================================
 function render(){ renderPreview(); renderKPIs(); renderRecientes(); renderRechazados(); renderSecretariosEstado(); }
 
+function motivoNoAsignable(id, tipo){
+  if(estaEmpleadoAusente(id)) return 'ausente';
+  if(estaExcluidoDeTipo(id, tipo)) return 'excluido de este tipo';
+  if(EMPLEADOS_EXCLUIDOS.includes(id) || esOperadorActivo(id)) return 'no recibe pases';
+  return '';
+}
+function setSelectHtml(sel, html){
+  if(sel.dataset.sig !== html){ sel.innerHTML = html; sel.dataset.sig = html; }
+}
+
 function renderPreview(){
-  const emp = getEmpleadoParaPase(document.getElementById('inpTipo')?.value||'');
+  const tipo = document.getElementById('inpTipo')?.value || '';
+  const emp = getEmpleadoParaPase(tipo);
+  const rondaNP = esTipoRotacionNP(tipo) ? calcularRondaNP(tipo).ronda : null;
   const sec = getNextSecretarioSinSideEffects();
-  const empEl = document.getElementById('previewEmpleado'), empPos = document.getElementById('previewEmpleadoPos');
-  const secEl = document.getElementById('previewSecretario'), secPos = document.getElementById('previewSecretarioPos');
-  if(emp.empleado){ empEl.textContent = emp.empleado.nombre; empEl.className='value'; empPos.textContent = emp.porTipo?`(${emp.cantidad} en ${emp.etiqueta})`:`(${emp.position}/${emp.total})`; }
-  else { empEl.textContent='⚠️ Todos ausentes'; empEl.className='value text-warning'; empPos.textContent=''; }
-  if(sec.secretario){ secEl.textContent = sec.secretario.nombre; secEl.className='value'; secPos.textContent = `(${sec.position}/${sec.total})`; }
-  else { secEl.textContent='⚠️ Sin secretarios'; secEl.className='value text-warning'; secPos.textContent=''; }
+  const hoyISO = new Date().toISOString();
+
+  const selE = document.getElementById('previewEmpleado');
+  const selS = document.getElementById('previewSecretario');
+  const hintE = document.getElementById('previewEmpleadoPos');
+  const hintS = document.getElementById('previewSecretarioPos');
+  if(!selE || !selS) return;
+
+  let curE = selE.value, curS = selS.value;
+  if(curE && empleadoNoAsignable(curE, tipo)){
+    showToast(`⚠️ ${getEmpName(curE)} ya no está disponible para este pase — se volvió a la asignación automática`,'warning');
+    curE = '';
+  }
+  if(curS && estaSecretarioAusente(curS, hoyISO)){
+    showToast(`⚠️ ${getSecName(curS)} ya no está disponible — se volvió a la asignación automática`,'warning');
+    curS = '';
+  }
+
+  const autoE = emp.empleado ? `⟳ Automático · ${emp.empleado.nombre}` : '⚠️ Sin empleados disponibles (elija uno)';
+  setSelectHtml(selE,
+    `<option value="">${autoE}</option><optgroup label="Elegir manualmente">` +
+    getSortedEmployees().map(e => {
+      const m = motivoNoAsignable(e.id, tipo);
+      const ya = (!m && rondaNP && rondaNP.has(e.id)) ? ' · ya recibió en esta ronda' : '';
+      return `<option value="${e.id}"${m ? ' disabled' : ''}>${e.nombre}${m ? ` (${m})` : ya}</option>`;
+    }).join('') + `</optgroup>`);
+  selE.value = curE;
+
+  if(curE && !(emp.empleado && emp.empleado.id === curE)){
+    hintE.innerHTML = `<span class="rot-manual"><i class="bi bi-pencil-fill"></i> Modificado manualmente</span> · sugerido: ${emp.empleado ? emp.empleado.nombre : '—'}<button type="button" class="rot-reset" data-sel="previewEmpleado">Restablecer</button>`;
+  } else if(emp.empleado){
+    hintE.textContent = emp.hint ? emp.hint : (emp.porTipo ? `${emp.cantidad} en ${emp.etiqueta}` : `Turno ${emp.position} de ${emp.total} disponibles`);
+  } else { hintE.textContent = ''; }
+
+  const autoS = sec.secretario ? `⟳ Automático · ${sec.secretario.nombre}` : '⚠️ Sin secretarios disponibles (elija uno)';
+  setSelectHtml(selS,
+    `<option value="">${autoS}</option><optgroup label="Elegir manualmente">` +
+    getSortedSecretarios().map(x => {
+      const aus = estaSecretarioAusente(x.id, hoyISO);
+      return `<option value="${x.id}"${aus ? ' disabled' : ''}>${x.nombre}${aus ? ' (ausente)' : ''}</option>`;
+    }).join('') + `</optgroup>`);
+  selS.value = curS;
+
+  if(curS && !(sec.secretario && sec.secretario.id === curS)){
+    hintS.innerHTML = `<span class="rot-manual"><i class="bi bi-pencil-fill"></i> Modificado manualmente</span> · sugerido: ${sec.secretario ? sec.secretario.nombre : '—'}<button type="button" class="rot-reset" data-sel="previewSecretario">Restablecer</button>`;
+  } else if(sec.secretario){
+    hintS.textContent = `Turno ${sec.position} de ${sec.total} disponibles`;
+  } else { hintS.textContent = ''; }
+
   renderAusentesList();
+  renderExcluidosTipo();
+}
+
+function renderExcluidosTipo(){
+  const el = document.getElementById('excluidosTipoList');
+  if(!el) return;
+  const tipo = (document.getElementById('inpTipo')?.value || '').trim();
+  const nombres = tipo ? CONFIG.empleados.filter(e => estaExcluidoDeTipo(e.id, tipo)).map(e => e.nombre) : [];
+  if(!nombres.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  const esc = x => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  el.style.display = 'flex';
+  el.innerHTML = `<span class="label-mini">Excluidos de «${esc(tipo)}»:</span>` + nombres.map(n => `<span class="emp-excluido-badge">${esc(n)}</span>`).join('');
 }
 function renderAusentesList(){
-  const el = document.getElementById('ausentesList'); if(!el) return;
-  if(!state.empleadosAusentes.length){ el.innerHTML = '<span class="label-mini" style="color:#059669;">✓ Todos los empleados activos</span>'; return; }
-  const nombres = state.empleadosAusentes.map(id=>getEmpName(id)).filter(Boolean);
-  el.innerHTML = `<span class="label-mini">Empleados ausentes:</span>` + nombres.map(n=>`<span class="emp-ausente-badge">${n}</span>`).join('');
+  const el = document.getElementById('ausentesList');
+  if(!el) return;
+  if(state.empleadosAusentes.length === 0){
+    el.innerHTML = '<span class="label-mini" style="color:#059669;">✓ Todos los empleados activos</span>';
+    return;
+  }
+  const nombres = state.empleadosAusentes.map(id => getEmpName(id)).filter(Boolean);
+  el.innerHTML = `<span class="label-mini">Empleados ausentes:</span>` +
+    nombres.map(n => `<span class="emp-ausente-badge">${n}</span>`).join('');
 }
 
 function renderKPIs(){
-  const panel = document.getElementById('kpiPanel'); if(!panel) return;
-  const todas = state.causas.filter(c=>esNumeroValido(c.numero));
+  const panel = document.getElementById('kpiPanel');
+  if(!panel) return;
+  const todas = state.causas.filter(c => esNumeroValido(c.numero));
   const totalGlobal = todas.length;
-  const totalEmp = todas.filter(c=>c.empleadoAsignado).length;
-  const remitidos = todas.filter(c=>c.estado==='remitido').length;
-  const rechazados = todas.filter(c=>c.estado==='rechazado').length;
-  const devueltos = todas.filter(c=>c.estado==='devuelto_siged').length;
-  const secStats = [...CONFIG.secretarios].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).map(s=>({...s,count:todas.filter(c=>c.secretarioId===s.id).length}));
-  let h = '';
-  h += `<div class="kpi-card total" title="Total Global"><div class="num">${totalGlobal}</div><div class="lbl">Total</div></div>`;
-  h += `<div class="kpi-card sec" title="Con empleado"><div class="num">${totalEmp}</div><div class="lbl">Empleados</div></div>`;
-  secStats.forEach(s=>{ const n = s.nombre.split(' ')[0]; h += `<div class="kpi-card sec" title="${s.nombre}"><div class="num">${s.count}</div><div class="lbl">${n}</div></div>`; });
-  h += `<div class="kpi-card rem"><div class="num">${remitidos}</div><div class="lbl">Remitidos</div></div>`;
-  h += `<div class="kpi-card rech"><div class="num">${rechazados}</div><div class="lbl">Rechazados</div></div>`;
-  h += `<div class="kpi-card dev"><div class="num">${devueltos}</div><div class="lbl">Devueltos</div></div>`;
-  panel.innerHTML = h;
+  const totalEmpleados = todas.filter(c => c.empleadoAsignado).length;
+  const remitidos = todas.filter(c => c.estado === 'remitido').length;
+  const rechazados = todas.filter(c => c.estado === 'rechazado').length;
+  const devueltos = todas.filter(c => c.estado === 'devuelto_siged').length;
+
+  const secStats = [...CONFIG.secretarios]
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
+    .map(sec => ({ ...sec, count: todas.filter(c => c.secretarioId === sec.id).length }));
+
+  let html = '';
+  html += `<div class="kpi-card total" title="Total Global"><div class="num">${totalGlobal}</div><div class="lbl">Total</div></div>`;
+  html += `<div class="kpi-card sec" title="Con empleado"><div class="num">${totalEmpleados}</div><div class="lbl">Empleados</div></div>`;
+  secStats.forEach(s => {
+    const n = s.nombre.split(' ')[0];
+    html += `<div class="kpi-card sec" title="${s.nombre}"><div class="num">${s.count}</div><div class="lbl">${n}</div></div>`;
+  });
+  html += `<div class="kpi-card rem"><div class="num">${remitidos}</div><div class="lbl">Remitidos</div></div>`;
+  html += `<div class="kpi-card rech"><div class="num">${rechazados}</div><div class="lbl">Rechazados</div></div>`;
+  html += `<div class="kpi-card dev"><div class="num">${devueltos}</div><div class="lbl">Devueltos</div></div>`;
+
+  panel.innerHTML = html;
 }
 
 function getBadgeEstado(estado){
-  const m = {'en_secretaria':'<span class="badge-status badge-secretaria">📋 Secretaría</span>','en_proceso':'<span class="badge-status badge-proceso">🔄 En proceso</span>','finalizada':'<span class="badge-status badge-finalizada">✅ Finalizada</span>','en_defensor':'<span class="badge-status badge-defensor">⚖️ Defensor</span>','devuelto_siged':'<span class="badge-status badge-devuelto">↩️ Devuelto</span>','remitido':'<span class="badge-status badge-remitido">📤 Remitido</span>','rechazado':'<span class="badge-status badge-rechazado">🚫 Rechazado</span>'};
-  return m[estado]||`<span class="badge-status">${estado}</span>`;
+  const map = {
+    'en_secretaria':'<span class="badge-status badge-secretaria">📋 Secretaría</span>',
+    'en_proceso':'<span class="badge-status badge-proceso">🔄 En proceso</span>',
+    'finalizada':'<span class="badge-status badge-finalizada">✅ Finalizada</span>',
+    'en_defensor':'<span class="badge-status badge-defensor">⚖️ Defensor</span>',
+    'devuelto_siged':'<span class="badge-status badge-devuelto">↩️ Devuelto</span>',
+    'remitido':'<span class="badge-status badge-remitido">📤 Remitido</span>',
+    'rechazado':'<span class="badge-status badge-rechazado">🚫 Rechazado</span>'
+  };
+  return map[estado] || `<span class="badge-status">${estado}</span>`;
 }
 
-// ========== TABLA RECIENTES ==========
+// ============================================================
+// TABLA RECIENTES
+// ============================================================
 function renderRecientes(){
-  const container = document.getElementById('tablaRecientesContainer'); if(!container) return;
+  const container = document.getElementById('tablaRecientesContainer');
+  if(!container) return;
+
   let list = state.causas.slice();
-  if(searchTerm) list = list.filter(c=>(c.numero||'').toLowerCase().includes(searchTerm.toLowerCase()));
+  if(searchTerm) list = list.filter(c => (c.numero||'').toLowerCase().includes(searchTerm.toLowerCase()));
   list = applyFilters(list);
   list.sort((a,b)=> new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
-  const {items,total,totalPages,page} = paginate(list, pagination.recientes);
+
+  const {items, total, totalPages, page} = paginate(list, pagination.recientes);
   updateFilterStatus(state.causas.length, list.length);
 
   if(!items.length){
@@ -1285,20 +1957,25 @@ function renderRecientes(){
         </tr>
       </thead>
       <tbody>
-        ${items.map(c=>{
-          const fs=[]; if(c.fuenteSiged)fs.push('S'); if(c.fuenteZimbra)fs.push('Z'); if(c.fuenteDeut)fs.push('D');
-          const fH = fs.length===0 ? '<span class="badge-fuente">—</span>' : `<span class="badge-fuente">${fs.join('/')}</span>`;
-          const empN = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : '—';
-          const empAus = c.empleadoAsignado && estaEmpleadoAusente(c.empleadoAsignado);
-          const secN = c.secretarioId ? getSecName(c.secretarioId) : '—';
+        ${items.map(c => {
+          const fuentes = [];
+          if(c.fuenteSiged) fuentes.push('S');
+          if(c.fuenteZimbra) fuentes.push('Z');
+          if(c.fuenteDeut) fuentes.push('D');
+          const fuenteHtml = fuentes.length === 0 ? '<span class="badge-fuente">—</span>' : `<span class="badge-fuente">${fuentes.join('/')}</span>`;
+          const empNombre = c.empleadoAsignado
+            ? getEmpName(c.empleadoAsignado)
+            : (c.paseDirecto ? '<span class="badge-directo"><i class="bi bi-arrow-right-short"></i>Directo a Secretaría</span>' : '—');
+          const empAusente = c.empleadoAsignado && estaEmpleadoAusente(c.empleadoAsignado);
+          const secNombre = c.secretarioId ? getSecName(c.secretarioId) : '—';
           return `
-          <tr class="${empAus ? 'row-empleado-ausente' : ''}">
+          <tr class="${empAusente ? 'row-empleado-ausente' : ''}">
             <td data-label="Expediente"><strong>${c.numero}</strong></td>
             <td data-label="Tipo" style="font-size:.8rem;">${c.tipo||'—'}</td>
             <td data-label="Nivel">N${c.nivelOperador}</td>
-            <td data-label="Fuente">${fH}</td>
-            <td data-label="Empleado">${empN}${empAus?' <span class="badge-bloqueado">BLOQ.</span>':''}</td>
-            <td data-label="Secretario">${secN}</td>
+            <td data-label="Fuente">${fuenteHtml}</td>
+            <td data-label="Empleado">${empNombre}${empAusente?' <span class="badge-bloqueado">BLOQ.</span>':''}</td>
+            <td data-label="Secretario">${secNombre}</td>
             <td data-label="Operador" style="color:var(--muted);font-size:.78rem;">${c.operador||'—'}</td>
             <td data-label="Fecha" style="font-size:.78rem;">${fmtDt(c.fechaPaseSecretario)}</td>
             <td data-label="Estado">${getBadgeEstado(c.estado)}</td>
@@ -1313,9 +1990,12 @@ function renderRecientes(){
     </table>
   `;
 
-  renderPagination('paginationRecientes', total, totalPages, page, pagination.recientes.perPage, (p,pp)=>{ pagination.recientes={page:p,perPage:pp}; renderRecientes(); });
+  renderPagination('paginationRecientes', total, totalPages, page, pagination.recientes.perPage, (p,pp)=>{
+    pagination.recientes = {page:p, perPage:pp};
+    renderRecientes();
+  });
   container.querySelectorAll('.btn-accion').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', () => {
       const id = b.dataset.id, a = b.dataset.a;
       if(a==='hist') abrirHistorial(id);
       else if(a==='edit') abrirModalEditar(id);
@@ -1324,14 +2004,19 @@ function renderRecientes(){
   });
 }
 
-// ========== TABLA RECHAZADOS ==========
+// ============================================================
+// TABLA RECHAZADOS
+// ============================================================
 function renderRechazados(){
-  const container = document.getElementById('tablaRechazadosContainer'); if(!container) return;
-  let list = state.causas.filter(c=>['devuelto_siged','remitido','rechazado'].includes(c.estado));
-  if(searchTerm) list = list.filter(c=>(c.numero||'').toLowerCase().includes(searchTerm.toLowerCase()));
+  const container = document.getElementById('tablaRechazadosContainer');
+  if(!container) return;
+
+  let list = state.causas.filter(c => ['devuelto_siged','remitido','rechazado'].includes(c.estado));
+  if(searchTerm) list = list.filter(c => (c.numero||'').toLowerCase().includes(searchTerm.toLowerCase()));
   list = applyFilters(list);
   list.sort((a,b)=> new Date(b.fechaPaseSecretario) - new Date(a.fechaPaseSecretario));
-  const {items,total,totalPages,page} = paginate(list, pagination.rechazados);
+
+  const {items, total, totalPages, page} = paginate(list, pagination.rechazados);
 
   if(!items.length){
     container.innerHTML = '<div class="empty-state"><i class="bi bi-check-circle" style="color:var(--success)"></i>Sin registros</div>';
@@ -1343,7 +2028,7 @@ function renderRechazados(){
     <table class="table-modern">
       <thead><tr><th>Expediente</th><th>Tipo</th><th>Operador</th><th>Estado</th><th>Motivo</th><th>Fecha</th><th>Acciones</th></tr></thead>
       <tbody>
-        ${items.map(c=>`
+        ${items.map(c => `
           <tr class="${c.estado==='devuelto_siged'?'tr-devuelto':''}">
             <td data-label="Expediente"><strong>${c.numero}</strong></td>
             <td data-label="Tipo" style="font-size:.8rem;">${c.tipo||'—'}</td>
@@ -1362,9 +2047,12 @@ function renderRechazados(){
     </table>
   `;
 
-  renderPagination('paginationRechazados', total, totalPages, page, pagination.rechazados.perPage, (p,pp)=>{ pagination.rechazados={page:p,perPage:pp}; renderRechazados(); });
+  renderPagination('paginationRechazados', total, totalPages, page, pagination.rechazados.perPage, (p,pp)=>{
+    pagination.rechazados = {page:p, perPage:pp};
+    renderRechazados();
+  });
   container.querySelectorAll('.btn-accion').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click', () => {
       const id = b.dataset.id, a = b.dataset.a;
       if(a==='hist') abrirHistorial(id);
       else if(a==='edit') abrirModalEditar(id);
@@ -1373,51 +2061,85 @@ function renderRechazados(){
   });
 }
 
-// ========== PAGINACIÓN ==========
-function paginate(data,{page,perPage}){ const total=data.length,tp=Math.ceil(total/perPage)||1,s=(page-1)*perPage; return {items:data.slice(s,s+perPage),total,totalPages:tp,page}; }
-function renderPagination(targetId,total,totalPages,page,perPage,cb){
-  const el = document.getElementById(targetId); if(!el) return;
-  let h = `<div class="d-flex justify-content-between align-items-center gap-2 mt-3" style="font-size:.78rem;"><span class="text-muted">${Math.min((page-1)*perPage+1,total)}-${Math.min(page*perPage,total)} de ${total}</span><div>`;
-  for(let i=1;i<=totalPages;i++){
-    if(totalPages>7 && i>2 && i<totalPages-1 && Math.abs(i-page)>1){ if(i===3||i===totalPages-2) h+='<span class="text-muted">…</span>'; continue; }
-    h += `<button class="btn-modern btn-sm-modern ${i===page?'btn-primary-modern':'btn-outline-modern'} page-btn" data-p="${i}">${i}</button>`;
+// ============================================================
+// PAGINACIÓN
+// ============================================================
+function paginate(data, {page, perPage}){
+  const total = data.length;
+  const totalPages = Math.ceil(total/perPage) || 1;
+  const start = (page-1)*perPage;
+  return {items: data.slice(start, start+perPage), total, totalPages, page};
+}
+function renderPagination(targetId, total, totalPages, page, perPage, callback){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  let html = `<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" style="font-size:.78rem;">
+    <span class="text-muted">${Math.min((page-1)*perPage+1,total)}-${Math.min(page*perPage,total)} de ${total}</span>
+    <div>`;
+  for(let i=1; i<=totalPages; i++){
+    if(totalPages>7 && i>2 && i<totalPages-1 && Math.abs(i-page)>1){
+      if(i===3 || i===totalPages-2) html += '<span class="text-muted">…</span>';
+      continue;
+    }
+    html += `<button class="btn-modern btn-sm-modern ${i===page?'btn-primary-modern':'btn-outline-modern'} page-btn" data-p="${i}">${i}</button>`;
   }
-  h += `</div></div>`;
-  el.innerHTML = h;
-  el.querySelectorAll('.page-btn').forEach(b=>b.addEventListener('click',()=>cb(parseInt(b.dataset.p),perPage)));
+  html += `</div></div>`;
+  el.innerHTML = html;
+  el.querySelectorAll('.page-btn').forEach(b=>{
+    b.addEventListener('click', ()=> callback(parseInt(b.dataset.p), perPage));
+  });
 }
 
-// ========== HISTORIAL ==========
+// ============================================================
+// HISTORIAL
+// ============================================================
 function abrirHistorial(id){
   const c = state.causas.find(x=>x.id===id);
-  if(!c){ showToast('No encontrada','danger'); return; }
+  if(!c){ showToast('Causa no encontrada','danger'); return; }
   document.getElementById('modalHistorialExp').textContent = c.numero;
   const body = document.getElementById('modalHistorialBody');
-  const empN = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
-  const secN = c.secretarioId ? getSecName(c.secretarioId) : 'Sin secretario';
-  let h = `<div class="mb-2"><strong>Empleado:</strong> ${empN}</div>`;
-  h += `<div class="mb-2"><strong>Secretario:</strong> ${secN}</div>`;
-  h += `<div class="mb-2"><strong>Operador:</strong> ${c.operador||'—'}</div>`;
-  if(c.modoIntervencion) h += `<div class="mb-3 p-3 bg-light rounded-3"><strong>Modo:</strong> ${c.modoIntervencion}</div>`;
-  h += `<hr /><h6>Movimientos</h6>`;
-  if(!c.historial?.length){ h += '<div class="text-muted">Sin movimientos.</div>'; }
-  else { h += c.historial.slice().reverse().map(m=>`<div style="border-bottom:1px solid var(--border);padding:.7rem 0;"><div class="d-flex justify-content-between flex-wrap gap-2"><strong style="font-size:.85rem;">${m.accion}</strong><span class="text-muted" style="font-size:.75rem;">${fmtDt(m.fecha)}</span></div><div style="font-size:.8rem;color:var(--muted);margin-top:4px;"><i class="bi bi-person"></i> ${m.usuario} — ${m.comentario||'—'}</div></div>`).join(''); }
-  body.innerHTML = h;
+  const empNombre = c.empleadoAsignado
+    ? getEmpName(c.empleadoAsignado)
+    : (c.paseDirecto ? 'Pase directo a Secretaría (sin empleado)' : 'Sin asignar');
+  const secNombre = c.secretarioId ? getSecName(c.secretarioId) : 'Sin secretario';
+  let html = `<div class="mb-2"><strong>Empleado actual:</strong> ${empNombre}</div>`;
+  html += `<div class="mb-2"><strong>Secretario:</strong> ${secNombre}</div>`;
+  html += `<div class="mb-2"><strong>Operador:</strong> ${c.operador||'—'}</div>`;
+  if(c.modoIntervencion) html += `<div class="mb-3 p-3 bg-light rounded-3"><strong>Modo:</strong> ${c.modoIntervencion}</div>`;
+  html += `<hr /><h6>Movimientos</h6>`;
+  if(!c.historial || !c.historial.length){
+    html += '<div class="text-muted">Sin movimientos.</div>';
+  } else {
+    html += c.historial.slice().reverse().map(m=>`
+      <div style="border-bottom:1px solid var(--border);padding:.7rem 0;">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+          <strong style="font-size:.85rem;">${m.accion}</strong>
+          <span class="text-muted" style="font-size:.75rem;">${fmtDt(m.fecha)}</span>
+        </div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:4px;">
+          <i class="bi bi-person"></i> ${m.usuario} — ${m.comentario||'—'}
+        </div>
+      </div>
+    `).join('');
+  }
+  body.innerHTML = html;
   new bootstrap.Modal(document.getElementById('modalHistorial')).show();
 }
 
-// ========== REPORTE ==========
+// ============================================================
+// REPORTE GENERAL (admin) — sin cambios
+// ============================================================
 function generarReporte(){
-  const causas = state.causas.filter(c=>esNumeroValido(c.numero));
+  const causas = state.causas.filter(c => esNumeroValido(c.numero));
   const filtradas = applyFilters(causas);
-  const rech = filtradas.filter(c=>['devuelto_siged','remitido','rechazado'].includes(c.estado));
-  const recientes = filtradas.filter(c=>!['devuelto_siged','remitido','rechazado'].includes(c.estado));
+  const rech = filtradas.filter(c => ['devuelto_siged','remitido','rechazado'].includes(c.estado));
+  const recientes = filtradas.filter(c => !['devuelto_siged','remitido','rechazado'].includes(c.estado));
   const now = new Date().toLocaleString('es-AR');
-  const tbl = (titulo,data)=>{
+  const tbl = (titulo, data) => {
     if(!data.length) return `<h3>${titulo}</h3><p style="color:#999;">Sin registros.</p>`;
     return `<h3>${titulo} (${data.length})</h3><table><thead><tr><th>Expediente</th><th>Tipo</th><th>Nivel</th><th>Fuente</th><th>Empleado</th><th>Secretario</th><th>Operador</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>${data.map(c=>{
       const fs=[]; if(c.fuenteSiged)fs.push('SIGED'); if(c.fuenteZimbra)fs.push('ZIMBRA'); if(c.fuenteDeut)fs.push('DEUT');
-      const e = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : '—';
+      const e = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : (c.paseDirecto ? 'Directo a Sec.' : '—');
       const s = c.secretarioId ? getSecName(c.secretarioId) : '—';
       return `<tr><td><strong>${c.numero}</strong></td><td>${c.tipo||'—'}</td><td>N${c.nivelOperador}</td><td>${fs.join('/')||'—'}</td><td>${e}</td><td>${s}</td><td>${c.operador||'—'}</td><td>${c.estado}</td><td>${fmtDt(c.fechaPaseSecretario)}</td></tr>`;
     }).join('')}</tbody></table>`;
@@ -1429,12 +2151,109 @@ function generarReporte(){
   setTimeout(()=>w.print(),500);
 }
 
-// ========== LOGIN / LOGOUT ==========
+// ============================================================
+// REPORTE POR DIMENSIONES (nuevo de operador)
+// ============================================================
+function calcularReportePorDimension(dimension){
+  const causas = state.causas.filter(c => esNumeroValido(c.numero));
+  const counts = {};
+  causas.forEach(c => {
+    let key = 'Sin especificar';
+    if(dimension === 'tipo') key = c.tipo || 'Sin especificar';
+    else if(dimension === 'modo') key = c.modoIntervencion || 'Sin especificar';
+    else if(dimension === 'nivel') key = 'Nivel ' + (c.nivelOperador || c.nivelSecretario || '?');
+    else if(dimension === 'empleado') key = c.empleadoAsignado ? getEmpName(c.empleadoAsignado) : 'Sin asignar';
+    else if(dimension === 'secretario') key = c.secretarioId ? getSecName(c.secretarioId) : 'Sin asignar';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return counts;
+}
+function renderReporteDimension(){
+  const dim = document.getElementById('selectDimensionReporte').value;
+  const counts = calcularReportePorDimension(dim);
+  const entries = Object.entries(counts).sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0],'es'));
+  const total = entries.reduce((s, [,v]) => s + v, 0);
+
+  const labels = { tipo:'Tipo de Causa', modo:'Modo de Intervención', nivel:'Nivel', empleado:'Empleado', secretario:'Secretario' };
+
+  let html = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold mb-0">Reporte por ${labels[dim]}</h6>
+      <span class="badge bg-primary" style="font-size:.75rem;">Total: ${total}</span>
+    </div>
+  `;
+  if(entries.length === 0){
+    html += `<div class="empty-state"><i class="bi bi-inbox"></i>Sin datos para mostrar</div>`;
+  } else {
+    html += `<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;">`;
+    entries.forEach(([k,v]) => {
+      const pct = total ? ((v/total)*100).toFixed(1) : '0.0';
+      html += `<div class="dim-report-row">
+        <div class="dim-report-name">${k}</div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="dim-report-pct">${pct}%</span>
+          <span class="dim-report-count">${v}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    html += `<div class="dim-report-total" style="margin-top:0;">
+      <span class="dim-report-name">TOTAL GENERAL</span>
+      <span class="dim-report-count">${total}</span>
+    </div>`;
+  }
+  document.getElementById('reporteDimensionesBody').innerHTML = html;
+}
+function imprimirReporteDimension(){
+  const dim = document.getElementById('selectDimensionReporte').value;
+  const body = document.getElementById('reporteDimensionesBody');
+  const labels = { tipo:'Tipo de Causa', modo:'Modo de Intervención', nivel:'Nivel', empleado:'Empleado', secretario:'Secretario' };
+  const now = new Date().toLocaleString('es-AR');
+  const w = window.open('','_blank');
+  if(!w){ showToast('Permita ventanas emergentes para imprimir','warning'); return; }
+  w.document.write(`
+    <html><head><title>Reporte por ${labels[dim]}</title>
+    <style>
+      body{font-family:'Plus Jakarta Sans',Arial,sans-serif;padding:24px;color:#0f172a;}
+      h3{margin:0 0 6px 0;font-size:1.2rem;font-weight:800;color:#1e1b4b;}
+      .meta{font-size:.85rem;color:#64748b;margin-bottom:20px;}
+      table{width:100%;border-collapse:collapse;font-size:12px;}
+      th,td{border:1px solid #cbd5e1;padding:8px 12px;text-align:left;}
+      th{background:#f1f5f9;font-weight:800;text-transform:uppercase;font-size:10px;letter-spacing:.5px;}
+      td.num{text-align:right;font-weight:700;}
+      tr.total{background:#eef2ff;font-weight:800;}
+      tr.total td{color:#4f46e5;}
+      .dim-report-row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #e2e8f0;}
+      .dim-report-name{font-weight:700;}
+      .dim-report-count{font-weight:800;color:#6366f1;}
+      .dim-report-pct{font-size:.78rem;color:#64748b;font-weight:600;min-width:60px;text-align:right;}
+      .dim-report-total{background:#eef2ff;font-weight:800;padding:12px 14px;border-top:2px solid #818cf8;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 12px 12px;}
+      @media print{ body{padding:12px;} }
+    </style>
+    </head><body>
+      <h3>Reporte Global por ${labels[dim]}</h3>
+      <div class="meta">Generado el ${now} · Defensoría Oficial Civil y Comercial 6</div>
+      ${body.innerHTML}
+    </body></html>
+  `);
+  w.document.close();
+  setTimeout(()=>w.print(), 500);
+}
+
+// ============================================================
+// LOGIN / LOGOUT
+// ============================================================
 async function handleLogin(){
   const p = document.getElementById('loginPassword').value;
   const e = document.getElementById('loginError');
-  if(p !== CONFIG.adminPassword){ e.textContent='❌ Clave incorrecta.'; e.style.display='block'; setTimeout(()=>e.style.display='none',3000); return; }
+  if(p !== CONFIG.adminPassword){
+    e.textContent='❌ Clave incorrecta.';
+    e.style.display='block';
+    setTimeout(()=>e.style.display='none',3000);
+    return;
+  }
   e.style.display='none';
+  currentOperator = 'Administrador';
   document.getElementById('loginOverlay').style.display='none';
   document.getElementById('appWrapper').classList.add('visible');
   await loadState();
@@ -1442,22 +2261,33 @@ async function handleLogin(){
   iniciarListenerEmpleadosAusentes();
   render();
   showToast('Bienvenido Administrador','success');
-  refreshInterval = setInterval(async ()=>{ if(!document.hidden){ await loadState(); render(); } }, 15*60*1000);
+  refreshInterval = setInterval(async ()=>{
+    if(!document.hidden){ await loadState(); render(); }
+  }, 15*60*1000);
 }
 function cerrarSesion(){
   if(refreshInterval) clearInterval(refreshInterval);
-  if(unsubscribeSecretarioConfig){ unsubscribeSecretarioConfig(); unsubscribeSecretarioConfig=null; }
+  if(unsubscribeSecretarioConfig){ unsubscribeSecretarioConfig(); unsubscribeSecretarioConfig = null; }
   document.getElementById('logoutAlert').classList.remove('show');
   document.getElementById('appWrapper').classList.remove('visible');
   document.getElementById('loginOverlay').style.display='flex';
   document.getElementById('loginPassword').value='';
-  state.causas=[]; state.ausencias=[]; state.empleadosAusentes=[];
-  state.lastIndex=-1; state.lastEmployeeIndex=-1;
+  state.causas = [];
+  state.ausencias = [];
+  state.empleadosAusentes = [];
+  state.empleadosCfg = [];
+  state.exclusiones = {};
+  state.lastIndex = -1;
+  state.lastEmployeeIndex = -1;
+  currentOperator = 'Administrador';
   showToast('Sesión cerrada','warning');
 }
 
-// ========== INIT ==========
+// ============================================================
+// INIT
+// ============================================================
 document.addEventListener('DOMContentLoaded', function(){
+  // Poblar selects base
   const selOp = document.getElementById('inpOperador');
   if(selOp) selOp.innerHTML = '<option value="Administrador">Administrador</option>' + CONFIG.operadores.map(op=>`<option value="${op}">${op}</option>`).join('');
   const tiposList = document.getElementById('tiposList');
@@ -1465,22 +2295,33 @@ document.addEventListener('DOMContentLoaded', function(){
   const modosList = document.getElementById('modosList');
   CONFIG.modos.forEach(m=>{ const o=document.createElement('option'); o.value=m; modosList.appendChild(o); });
 
+  // Filtros
   const fOp = document.getElementById('filterOperador');
-  if(fOp){ CONFIG.operadores.forEach(op=>{ const o=document.createElement('option'); o.value=op; o.textContent=op; fOp.appendChild(o); }); const oA=document.createElement('option'); oA.value='Administrador'; oA.textContent='Administrador'; fOp.appendChild(oA); }
+  if(fOp){
+    CONFIG.operadores.forEach(op=>{ const o=document.createElement('option'); o.value=op; o.textContent=op; fOp.appendChild(o); });
+    const oA=document.createElement('option'); oA.value='Administrador'; oA.textContent='Administrador'; fOp.appendChild(oA);
+  }
   const fSec = document.getElementById('filterSecretario');
   if(fSec){ [...CONFIG.secretarios].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=s.nombre; fSec.appendChild(o); }); }
   const fEmp = document.getElementById('filterEmpleado');
   if(fEmp){ [...CONFIG.empleados].sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).forEach(e=>{ const o=document.createElement('option'); o.value=e.id; o.textContent=e.nombre; fEmp.appendChild(o); }); }
   const fTip = document.getElementById('filterTipo');
   if(fTip){ CONFIG.tipos.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; fTip.appendChild(o); }); }
+  const fModo = document.getElementById('filterModo');
+  if(fModo){ CONFIG.modos.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; fModo.appendChild(o); }); }
 
-  ['filterSearch','filterFecha','filterOperador','filterSecretario','filterEmpleado','filterTipo','filterNivel','filterFuente'].forEach(id=>{
+  // Eventos de filtros
+  ['filterSearch','filterFecha','filterOperador','filterSecretario','filterEmpleado','filterTipo','filterModo','filterNivel','filterFuente'].forEach(id=>{
     const el = document.getElementById(id); if(!el) return;
     const evt = (id==='filterSearch'||id==='filterFecha')?'input':'change';
-    el.addEventListener(evt,()=>{ pagination.recientes.page=1; pagination.rechazados.page=1; renderRecientes(); renderRechazados(); });
+    el.addEventListener(evt,()=>{
+      pagination.recientes.page=1; pagination.rechazados.page=1;
+      renderRecientes(); renderRechazados();
+    });
   });
   document.getElementById('btnLimpiarFiltros').addEventListener('click', function(e){ e.stopPropagation(); limpiarFiltrosPanel(); });
 
+  // Paneles colapsables
   document.querySelectorAll('.collapsible-panel .collapsible-header').forEach(header=>{
     header.addEventListener('click', function(e){
       if(e.target.closest('.btn-clear-filters')) return;
@@ -1488,12 +2329,16 @@ document.addEventListener('DOMContentLoaded', function(){
       panel.classList.toggle('open');
       this.setAttribute('aria-expanded', panel.classList.contains('open') ? 'true' : 'false');
     });
-    header.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.click(); } });
+    header.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.click(); }
+    });
   });
 
+  // Login
   document.getElementById('btnLogin').addEventListener('click', handleLogin);
   document.getElementById('loginPassword').addEventListener('keypress', e=>{ if(e.key==='Enter') handleLogin(); });
 
+  // Formulario: tipo nuevo + preview
   const inpTipo = document.getElementById('inpTipo');
   inpTipo.addEventListener('input', toggleNuevoTipoField);
   inpTipo.addEventListener('change', toggleNuevoTipoField);
@@ -1501,16 +2346,37 @@ document.addEventListener('DOMContentLoaded', function(){
   inpTipo.addEventListener('change', renderPreview);
   document.getElementById('btnGuardarNuevoTipo').addEventListener('click', guardarNuevoTipo);
 
+  // Previews: reset manual
+  document.getElementById('rotationPreview').addEventListener('click', function(e){
+    const btn = e.target.closest('.rot-reset');
+    if(!btn) return;
+    const sel = document.getElementById(btn.dataset.sel);
+    if(sel){ sel.value = ''; renderPreview(); }
+  });
+
+  // Acción
   const accionSel = document.getElementById('inpAccion');
   accionSel.addEventListener('change', ()=>{
     const v = accionSel.value;
     const campos = document.getElementById('camposAccion');
     const dep = document.getElementById('campoDependencia');
-    if(v==='asignar'){ campos.style.display='none'; }
-    else { campos.style.display='block'; dep.style.display = v==='remitir'?'block':'none'; }
-    document.getElementById('rotationPreview').style.display = v==='asignar' ? 'block' : 'none';
+    const rot = document.getElementById('rotationPreview');
+    if(v==='asignar'){
+      campos.style.display='none';
+      rot.style.display='block';
+      rot.classList.remove('modo-directo');
+    } else if(v==='directo'){
+      campos.style.display='none';
+      rot.style.display='block';
+      rot.classList.add('modo-directo');
+    } else {
+      campos.style.display='block';
+      dep.style.display = v==='remitir'?'block':'none';
+      rot.style.display='none';
+    }
   });
 
+  // Submit del formulario
   document.getElementById('formIngreso').addEventListener('submit', async function(e){
     e.preventDefault();
     const operador = document.getElementById('inpOperador').value;
@@ -1522,53 +2388,110 @@ document.addEventListener('DOMContentLoaded', function(){
     const accion = document.getElementById('inpAccion').value;
     const motivo = document.getElementById('inpMotivo').value.trim();
     const dependencia = document.getElementById('inpDependencia').value.trim();
-    const fuentes = { siged:document.getElementById('fuenteSiged').checked, zimbra:document.getElementById('fuenteZimbra').checked, deut:document.getElementById('fuenteDeut').checked };
-    if(accion!=='asignar'){ if(!motivo){ showToast('Ingrese un motivo','warning'); return; } if(accion==='remitir' && !dependencia){ showToast('Ingrese dependencia','warning'); return; } }
+    const fuentes = {
+      siged: document.getElementById('fuenteSiged').checked,
+      zimbra: document.getElementById('fuenteZimbra').checked,
+      deut: document.getElementById('fuenteDeut').checked
+    };
+
+    if(accion!=='asignar' && accion!=='directo'){
+      if(!motivo){ showToast('Ingrese un motivo','warning'); return; }
+      if(accion==='remitir' && !dependencia){ showToast('Ingrese dependencia','warning'); return; }
+    }
+
+    const manual = {
+      empleadoId: document.getElementById('previewEmpleado').value || null,
+      secretarioId: document.getElementById('previewSecretario').value || null
+    };
+
+    // Snapshot de la sugerencia ANTES de registrar (para el toast informativo)
     const empPrev = getEmpleadoParaPase(tipo);
     const secPrev = getNextSecretarioSinSideEffects();
-    const res = await registrarCausa(num,tipo,obs,nivel,operador,accion,motivo,dependencia,modo,fuentes);
+
+    const res = await registrarCausa(num, tipo, obs, nivel, operador, accion, motivo, dependencia, modo, fuentes, manual);
     if(res.ok){
       if(accion==='asignar'){
-        const eT = empPrev.empleado ? empPrev.empleado.nombre : 'Sin asignar';
-        const sT = secPrev.secretario ? secPrev.secretario.nombre : 'Sin secretario';
+        const eT = res.causa.empleadoAsignado ? getEmpName(res.causa.empleadoAsignado) : 'Sin asignar';
+        const sT = res.causa.secretarioId ? getSecName(res.causa.secretarioId) : 'Sin secretario';
         showToast(`✅ ${res.causa.numero} → ${eT} · Sec: ${sT}`);
-      } else showToast(`✅ ${res.causa.numero} (${accion})`);
+      } else if(accion==='directo'){
+        const sT = res.causa.secretarioId ? getSecName(res.causa.secretarioId) : 'Sin secretario';
+        showToast(`✅ ${res.causa.numero} → Directo a Secretaría · Sec: ${sT}`);
+      } else {
+        showToast(`✅ ${res.causa.numero} (${accion})`);
+      }
       this.reset();
       document.getElementById('camposAccion').style.display='none';
       document.getElementById('nuevoTipoContainer').style.display='none';
+      document.getElementById('rotationPreview').classList.remove('modo-directo');
       document.getElementById('rotationPreview').style.display='block';
+      document.getElementById('previewEmpleado').value = '';
+      document.getElementById('previewSecretario').value = '';
       await loadState();
       render();
     }
   });
 
+  // Búsqueda global
   document.getElementById('globalSearch').addEventListener('input', function(){
     searchTerm = this.value.trim();
-    document.getElementById('filterSearch').value = searchTerm;
+    const fSearch = document.getElementById('filterSearch');
+    if(fSearch) fSearch.value = searchTerm;
     pagination.recientes.page=1; pagination.rechazados.page=1;
     renderRecientes(); renderRechazados();
   });
 
+  // Botones del header
   document.getElementById('btnReporte').addEventListener('click', generarReporte);
-  document.getElementById('btnActualizar').addEventListener('click', async ()=>{ await loadState(); render(); showToast('Datos actualizados','info'); });
-  document.getElementById('btnRespaldo').addEventListener('click', ()=>{ window.open('https://defensoria6.github.io/pase-digital/exportar','_blank'); });
+  document.getElementById('btnReporteDimension').addEventListener('click', function(){
+    renderReporteDimension();
+    new bootstrap.Modal(document.getElementById('modalReporteDimensiones')).show();
+  });
+  document.getElementById('btnActualizar').addEventListener('click', async ()=>{
+    await loadState();
+    render();
+    showToast('Datos actualizados','info');
+  });
+  document.getElementById('btnRespaldo').addEventListener('click', ()=>{
+    window.open('https://defensoria6.github.io/pase-digital/exportar','_blank');
+  });
 
+  // Eliminación masiva
   const modalEM = new bootstrap.Modal(document.getElementById('modalEliminacionMasiva'));
   const chk = document.getElementById('confirmMassiveDelete');
   const btnConfEM = document.getElementById('btnConfirmarEliminacionMasiva');
-  document.getElementById('btnEliminacionMasiva').addEventListener('click', ()=>{ document.getElementById('totalRegistrosAEliminar').textContent = state.causas.length; chk.checked=false; btnConfEM.disabled=true; modalEM.show(); });
+  document.getElementById('btnEliminacionMasiva').addEventListener('click', ()=>{
+    document.getElementById('totalRegistrosAEliminar').textContent = state.causas.length;
+    chk.checked=false; btnConfEM.disabled=true;
+    modalEM.show();
+  });
   chk.addEventListener('change', ()=>{ btnConfEM.disabled = !chk.checked; });
-  btnConfEM.addEventListener('click', async ()=>{ if(!chk.checked) return; btnConfEM.disabled=true; chk.disabled=true; modalEM.hide(); await eliminarTodosLosRegistros(); chk.disabled=false; btnConfEM.disabled=false; });
-  document.getElementById('modalEliminacionMasiva').addEventListener('hidden.bs.modal', ()=>{ chk.checked=false; btnConfEM.disabled=true; chk.disabled=false; });
+  btnConfEM.addEventListener('click', async ()=>{
+    if(!chk.checked) return;
+    btnConfEM.disabled=true; chk.disabled=true;
+    modalEM.hide();
+    await eliminarTodosLosRegistros();
+    chk.disabled=false; btnConfEM.disabled=false;
+  });
+  document.getElementById('modalEliminacionMasiva').addEventListener('hidden.bs.modal', ()=>{
+    chk.checked=false; btnConfEM.disabled=true; chk.disabled=false;
+  });
 
+  // Confirmaciones y edit
   document.getElementById('btnConfirmarEliminar').addEventListener('click', ejecutarEliminacion);
   document.getElementById('btnGuardarEdicion').addEventListener('click', guardarEdicion);
   document.getElementById('formEditar').addEventListener('submit', e=>{ e.preventDefault(); guardarEdicion(); });
 
-  document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{ document.getElementById('logoutAlert').classList.add('show'); });
-  document.getElementById('btnCancelarSalida').addEventListener('click', ()=>{ document.getElementById('logoutAlert').classList.remove('show'); });
+  // Logout
+  document.getElementById('btnCerrarSesion').addEventListener('click', ()=>{
+    document.getElementById('logoutAlert').classList.add('show');
+  });
+  document.getElementById('btnCancelarSalida').addEventListener('click', ()=>{
+    document.getElementById('logoutAlert').classList.remove('show');
+  });
   document.getElementById('btnConfirmarSalida').addEventListener('click', cerrarSesion);
 
+  // Ausencias de secretarios
   document.getElementById('btnGestionAusencias').addEventListener('click', function(){
     const sel = document.getElementById('ausenciaSecretario');
     sel.innerHTML = '<option value="">Seleccione secretario…</option>';
@@ -1588,6 +2511,16 @@ document.addEventListener('DOMContentLoaded', function(){
       document.getElementById('ausenciaFechaFin').value='';
     }
   });
+
+  // Ausencias de empleados (nuevo de operador)
+  document.getElementById('btnGestionAusenciasEmpleados').addEventListener('click', function(){
+    renderAusenciasEmpleadosModal();
+    new bootstrap.Modal(document.getElementById('modalAusenciasEmpleados')).show();
+  });
+
+  // Reporte por dimensión: select + imprimir
+  document.getElementById('selectDimensionReporte').addEventListener('change', renderReporteDimension);
+  document.getElementById('btnImprimirDimension').addEventListener('click', imprimirReporteDimension);
 });
 })();
 </script>
