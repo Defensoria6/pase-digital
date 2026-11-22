@@ -431,7 +431,7 @@ function grupos(o){
 }
 const empTxt=c=>[c.empleadoAsignado,c.empleadoId,c.empleadoOriginal].filter(Boolean).map(nomEmp).concat(c.empleadoNombre||[]).join(' ');
 const coincide=(c,q)=>{const n=sq(q);return !n||sq(c.numero).includes(n)||sq(c.tipo).includes(n)||sq(empTxt(c)).includes(n)};
-const ordenar=(L,t)=>[...L].sort((a,b)=>t==='cerr'?ult(b)-ult(a):t==='proc'?T(a.fechaLimite)-T(b.fechaLimite):T(refF(a,t))-T(refF(b,t)));
+const ordenar=(L,t)=>[...L].sort((a,b)=>rec(b)-rec(a)||ult(b)-ult(a)); // más reciente primero (fecha y hora de «Recibido»)
 function situTxt(c,t){
   if(t==='cerr')return ESTL[c.estado]||c.estado;
   if(t==='proc'){const v=c.fechaLimite&&new Date(c.fechaLimite)<new Date();return (v?'Vencido':'En plazo')+(c.fechaLimite?' · vence '+fmt(c.fechaLimite).slice(0,10):'')}
